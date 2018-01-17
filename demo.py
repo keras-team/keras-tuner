@@ -1,40 +1,41 @@
 import random
 import numpy as np
-from hypertuner.distributions import Range, Choice, Fixed
-from hypertuner.layers import MDense
-from hypertuner.tuners import RandomSearch
-
-import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense, Dropout
 from keras.optimizers import Adam, SGD
+
+from kerastuner.distributions import Range, Choice, Fixed, Bool
+from kerastuner.tuners import RandomSearch
+
 x_train = np.random.random((1000, 20))
 y_train = np.random.randint(2, size=(1000, 1))
 
-# Initial layer
-IL_UNITS = Range(16, 32, 2)
-IL_INPUT_SHAPE = Fixed(20)
+def model_fn():
+  # Initial layer
+  IL_UNITS = Range(16, 32, 2)
+  # Hidden layer
+  L2_UNITS = Range(16, 32, 2)
+  L2_ACTIVATION = Choice(['relu', 'tanh'])
+  L2_OPTIONAL = Bool()
+  # Last layer
+  LL_UNITS = Fixed(1)
+  LL_ACTIVATION = Choice(['sigmoid', 'tanh'])
+  # Compile options
+  OPTIMIZER = Choice([Adam(), SGD()])
+  LOSS = Choice(['binary_crossentropy', 'mse'])
+  METRICS = Fixed(['accuracy'])
 
-# Hidden layer
-L2_UNITS = Range(16, 32, 2)
-L2_ACTIVATION = Choice(['relu', 'tanh'])
-L2_OPTIONAL = True
+  model = Sequential()
+  model.add(Dense(IL_UNITS, input_shape=(20,)))
+  if L2_OPTIONAL:
+    model.add(Dense(L2_UNITS, activation=L2_ACTIVATION))
+  model.add(Dense(LL_UNITS, activation=LL_ACTIVATION))
+  model.compile(optimizer=OPTIMIZER, loss=LOSS, metrics=METRICS)
+  return model
 
-# Last layer
-LL_UNITS = Fixed(1)
-LL_ACTIVATION = Choice(['sigmoid', 'tanh'])
-
-# Compile options
-OPTIMIZER = Choice([Adam(), SGD()])
-LOSS = Choice(['binary_crossentropy', 'mse'])
-METRICS = Fixed(['accuracy'])
-
-# Meta model
-mmodel = RandomSearch(iterations=20)
-mmodel.add(MDense(IL_UNITS, input_shape=IL_INPUT_SHAPE))
-mmodel.add(MDense(L2_UNITS, activation=L2_ACTIVATION, optional=L2_OPTIONAL))
-mmodel.add(MDense(LL_UNITS, activation=['sigmoid']))
-mmodel.compile(optimizer=OPTIMIZER, loss=LOSS, metrics=METRICS)
-mmodel.summary()
+#model = model_fn()
+#model.summary()
+mmodel = RandomSearch(model_fn, iterations=5)
+#mmodel = RandomSearch(model_fn, iterations=20)
 mmodel.search(x_train, y_train, validation_split=0.01)
 mmodel.statistics()

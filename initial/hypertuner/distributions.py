@@ -4,6 +4,7 @@ def Fixed(val):
     "Return a fixed selected value"
     return [val]
 
+
 def Choice(selection):
     "Return all possible choices"
     return selection
