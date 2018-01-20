@@ -33,9 +33,7 @@ def model_fn():
   model.compile(optimizer=OPTIMIZER, loss=LOSS, metrics=METRICS)
   return model
 
-#model = model_fn()
-#model.summary()
-mmodel = RandomSearch(model_fn, iterations=5)
-#mmodel = RandomSearch(model_fn, iterations=20)
+mmodel = RandomSearch(model_fn, iterations=2, executions=2)
 mmodel.search(x_train, y_train, validation_split=0.01)
 mmodel.statistics()
+mmodel.record_run_info('results.json')

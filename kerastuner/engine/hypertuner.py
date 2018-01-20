@@ -1,8 +1,9 @@
 "Meta classs for hypertuner"
+import time
 import keras
 import random
-import copy
 import sys
+import json
 
 from termcolor import cprint
 from xxhash import xxh32
@@ -15,19 +16,19 @@ class HyperTuner(object):
     """Abstract hypertuner class."""
 
     def __init__(self, model_fn, **kwargs):
-        self.iterations = kwargs.get('iterations', 10)
-        self.runs = kwargs.get('runs', 3)
+        self.iterations = kwargs.get('iterations', 10) # how many models
+        self.executions = kwargs.get('executions', 3) # how many executions
         self.dryrun = kwargs.get('dryrun', False)
         self.max_fail_streak = kwargs.get('max_fail_streak', 20)
         self.invalid_models = 0 # how many models didn't work
         self.collisions = 0 # how many time we regenerated the same model
         self.instances = {} # All the models we trained with their stats and info
         self.model_fn = model_fn
-
+        self.ts = int(time.time())
         #statistics
-        self.max_acc = 0
+        self.max_acc = -1
         self.min_loss = sys.maxint
-        self.max_val_acc = 0
+        self.max_val_acc = -1
         self.min_val_loss = sys.maxint
       
     def get_random_instance(self):
@@ -54,21 +55,25 @@ class HyperTuner(object):
       self.instances[idx] = Instance(model, idx)
       return self.instances[idx] 
 
-    def record_results(self, instance, results):
+    def record_results(self, execution, results):
       "Process the results of an instance training"
-      self.max_acc = max(self.max_acc, results.history['acc'][-1])
-      self.min_loss = min(self.min_loss, results.history['loss'][-1])
 
-      #for progress bar
-      stats = {'max_acc': self.max_acc, 'min_loss': self.min_loss}
+      self.min_loss = min(self.min_loss, min(results.history['loss']))
+      stats = {'min_loss': self.min_loss} # stats dict is for the progress bar
             
+      if 'acc' in results.history:
+        self.max_acc = max(self.max_acc, max(results.history['acc']))
+        stats['max_acc'] = self.max_acc
+
       if 'val_acc' in results.history:
-        self.max_val_acc = max(self.max_val_acc, results.history['val_acc'][-1])
+        self.max_val_acc = max(self.max_val_acc, max(results.history['val_acc']))
         stats['max_val_acc'] = self.max_val_acc
             
       if 'val_loss' in results.history:
-        self.min_val_loss = min(self.min_val_loss, results.history['val_loss'][-1])
+        self.min_val_loss = min(self.min_val_loss, min(results.history['val_loss']))
         stats['min_val_loss'] = self.min_val_loss
+
+      execution.record_results(results)
 
       return stats
 
@@ -81,4 +86,28 @@ class HyperTuner(object):
     def statistics(self):
       print "Invalid models:%s" % self.invalid_models
       print "Collisions: %s" % self.collisions
-      
+    
+    def record_run_info(self, fname):
+      "Dump run info into a file for post analysis"
+
+      #FIXME should allows saving to GS as well
+      run = {
+        'ts': self.ts,
+        'iterations': self.iterations,
+        'executions': self.executions,
+        'min_loss': self.min_loss,
+      }
+
+      if self.max_acc != -1:
+        run['max_acc'] = self.max_acc
+      if self.max_val_acc != -1:
+        run['max_val_acc'] = self.max_val_acc
+      if self.min_val_loss != sys.maxint:
+        run['min_val_loss'] = self.min_val_loss
+
+      instances_stats = []
+      for instance in self.instances.values():
+        instances_stats.append(instance.get_stats())
+      run['instances'] = instances_stats
+      with open(fname, 'w') as outfile:
+        outfile.write(json.dumps(run))
