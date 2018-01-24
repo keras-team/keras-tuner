@@ -1,4 +1,6 @@
-numpy
-tqdm
-tabulate
 cprint
+numpy
+tabulate
+termcolor
+tqdm
+xxhash
