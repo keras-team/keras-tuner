@@ -4,6 +4,7 @@ import numpy as np
 from os import path
 from collections import defaultdict
 from tensorflow.python.lib.io import file_io # allows to write to GCP or local
+from termcolor import cprint
 
 from execution import InstanceExecution
 
@@ -36,13 +37,25 @@ class Instance(object):
     self.executions.append(execution)
     return execution
 
-  def record_results(self, output_dir, save_models=True):
+  def __save_to_gs(self, fname, local_dir, gs_dir):
+    "Store file remotely in a given GS bucket path"
+    local_path = path.join(local_dir, fname)
+    remote_path = "%s%s" % (gs_dir, fname)
+    cprint("[INFO] Uploading %s to %s" % (local_path, remote_path), 'cyan')
+    with file_io.FileIO(local_path, mode='r') as input_f:
+      with file_io.FileIO(remote_path, mode='w+') as output_f:
+        output_f.write(input_f.read())
+
+
+  def record_results(self, local_dir, gs_dir=None, save_models=True):
     """Record training results
     Args
       output_dir (str): either a local or cloud directory where to store results
       save_models (bool): save the trained models?
     """
 
+    cprint("[INFO] Saving results to %s" % local_dir, 'cyan')
+    
     results = {
         "idx": self.idx,
         "ts": self.ts,
@@ -51,15 +64,18 @@ class Instance(object):
         "model": self.model.to_json()
     }
 
-    # collecting executions data
+    # collecting executions results
     exec_metrics = defaultdict(lambda : defaultdict(list))
     executions = [] # execution data
     for execution in self.executions:
+
+      # metrics collection
       for metric, data in execution.metrics.items():
         exec_metrics[metric]['min'].append(execution.metrics[metric]['min'])
         exec_metrics[metric]['max'].append(execution.metrics[metric]['max'])
 
-      execution = {
+      # execution data
+      execution_info = {
         "num_epochs": execution.num_epochs,
         "history": execution.history,
         "loss_fn": execution.model.loss,
@@ -67,7 +83,28 @@ class Instance(object):
         #FIXME record optimizer parameters
         #"optimizer": execution.model.optimizer
       }
-      executions.append(execution)
+      executions.append(execution_info)
+
+      # save model if needed
+      if save_models:
+        mdl_base_fname = "%s-%s" % (self.idx, execution.ts)
+        
+        # config
+        config_fname = "%s-config.json" % (mdl_base_fname)
+        local_path = path.join(local_dir, config_fname)
+        with file_io.FileIO(local_path, 'w') as output:
+          output.write(execution.model.to_json())
+        if gs_dir:
+          self.__save_to_gs(config_fname, local_dir, gs_dir)
+
+        # weight
+        weights_fname = "%s-weights.h5" % (mdl_base_fname)
+        local_path = path.join(local_dir, weights_fname)
+        execution.model.save_weights(local_path)
+        if gs_dir:
+          self.__save_to_gs(weights_fname, local_dir, gs_dir)
+
+
     results['executions'] = executions
 
     # aggregating statistics
@@ -91,7 +128,9 @@ class Instance(object):
     #FIXME save model
 
     fname = '%s-%s-results.json' % (self.idx, self.training_size)
-    out_path = path.join(output_dir, fname)
-    with file_io.FileIO(out_path, 'w') as outfile:
+    output_path = path.join(local_dir, fname)
+    with file_io.FileIO(output_path, 'w') as outfile:
       outfile.write(json.dumps(results))
+    if gs_dir:
+      self.__save_to_gs(fname, local_dir, gs_dir)
     return results

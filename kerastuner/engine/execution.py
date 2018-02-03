@@ -1,10 +1,11 @@
+import time
 from keras.models import clone_model
 from keras.utils import multi_gpu_model
 class InstanceExecution(object):
   """Model Execution class. Each Model instance can be executed N time"""
 
   def __init__(self, model, num_gpu, gpu_mem):
-    #final value
+    self.ts = int(time.time())
     self.num_epochs = -1
     self.num_gpu = num_gpu
     self.gpu_mem = gpu_mem

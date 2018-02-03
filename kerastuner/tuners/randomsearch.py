@@ -15,6 +15,9 @@ class RandomSearch(HyperTuner):
             num_gpu (int): number of gpu to use. Default 0
             gpu_mem (int): amount of RAM per GPU. Used for batch size calculation
 
+            local_dir (str): where to store results and models. Default results/
+            gs_dir (str): Google cloud bucket to use to store results and model (optional). Default None
+
             dryrun (bool): do not train the model just run the pipeline. Default False
             max_fail_streak (int): number of failed model before giving up. Default 20
 

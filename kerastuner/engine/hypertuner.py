@@ -22,7 +22,8 @@ class HyperTuner(object):
         self.max_fail_streak = kwargs.get('max_fail_streak', 20)
         self.num_gpu = kwargs.get('num_gpu', -1)
         self.gpu_mem = kwargs.get('gpu_mem', -1)
-        self.output_dir = kwargs.get('output_dir', 'results/')
+        self.local_dir = kwargs.get('local_dir', 'results/')
+        self.gs_dir = kwargs.get('gs_dir', None)
         self.invalid_models = 0 # how many models didn't work
         self.collisions = 0 # how many time we regenerated the same model
         self.instances = {} # All the models we trained with their stats and info
@@ -36,8 +37,8 @@ class HyperTuner(object):
         self.min_val_loss = sys.maxint
     
         # create local dir if needed
-        if "gs://" not in self.output_dir and not os.path.exists(self.output_dir):
-          os.makedirs(self.output_dir)
+        if not os.path.exists(self.local_dir):
+          os.makedirs(self.local_dir)
 
     def get_random_instance(self):
       "Return a never seen before random model instance"
@@ -75,7 +76,7 @@ class HyperTuner(object):
         instance = self.instances[self.current_instance_idx]
       else:
         instance = self.instances[idx]
-      instance.record_results(self.output_dir, save_models=save_models)
+      instance.record_results(self.local_dir, gs_dir=self.gs_dir, save_models=save_models)
 
       #FIXME stats here
       #self.min_loss = min(self.min_loss, min(results.history['loss']))
