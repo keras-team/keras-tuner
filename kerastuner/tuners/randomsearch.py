@@ -30,21 +30,15 @@ class RandomSearch(HyperTuner):
             use_progress_bar = True
 
         if use_progress_bar:
-            pb = tqdm(total=self.iterations, desc='Instances', unit='instance')
+            pb = tqdm(total=self.num_iterations, desc='Instances', unit='instance')
         
-        for _ in range(self.iterations):
+        for _ in range(self.num_iterations):
             instance = self.get_random_instance()
-            if not instance:
-                return
-            if use_progress_bar:
-                pb2 = tqdm(total=self.executions, desc='Executions', unit='model',leave=False)
+            for _ in range(self.num_executions):
+                #Note: the results are not used for this tuner.
+                results = instance.fit(x, y, **kwargs)
             
-            for _ in range(self.executions):
-                execution = instance.new_execution()
-                results = execution.fit(x, y, **kwargs)
-                stats = self.record_results(execution, results)
-                pb2.update(1)
-            
+            self.record_results()
             if use_progress_bar:
-                pb.set_postfix(stats)
+                #pb.set_postfix(stats)
                 pb.update(1)

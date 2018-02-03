@@ -5,10 +5,6 @@ class InstanceExecution(object):
 
   def __init__(self, model, num_gpu, gpu_mem):
     #final value
-    self.acc = -1
-    self.loss = -1
-    self.val_acc = -1
-    self.val_loss = -1
     self.num_epochs = -1
     self.num_gpu = num_gpu
     self.gpu_mem = gpu_mem
@@ -33,13 +29,15 @@ class InstanceExecution(object):
 
   def record_results(self, results):
     "Record execution results"
-    self.history = results.history
-    self.loss = min(self.history['loss'])
-    self.num_epochs = len(self.history)
     
-    if 'acc' in self.history:
-      self.acc = max(self.history['acc'])
-    if 'val_acc' in self.history:
-      self.val_acc = max(self.history['val_acc'])
-    if 'val_loss' in self.history:
-      self.val_loss = min(self.history['val_loss'])
+    self.history = results.history
+    self.num_epochs = len(self.history)
+
+    # generic metric recording 
+    self.metrics = {}
+    for metric, data in self.history.items():
+      metric_results = {
+        'min': min(data),
+        'max': max(data)
+      }
+      self.metrics[metric] = metric_results
