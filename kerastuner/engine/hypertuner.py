@@ -6,7 +6,7 @@ import sys
 import json
 
 from termcolor import cprint
-from xxhash import xxh32
+from xxhash import xxh64 # xxh64 is faster
 from tabulate import tabulate
 
 from instance import Instance
@@ -20,6 +20,8 @@ class HyperTuner(object):
         self.executions = kwargs.get('executions', 3) # how many executions
         self.dryrun = kwargs.get('dryrun', False)
         self.max_fail_streak = kwargs.get('max_fail_streak', 20)
+        self.num_gpu = kwargs.get('num_gpu', -1)
+        self.gpu_mem = kwargs.get('gpu_mem', -1)
         self.invalid_models = 0 # how many models didn't work
         self.collisions = 0 # how many time we regenerated the same model
         self.instances = {} # All the models we trained with their stats and info
@@ -30,7 +32,7 @@ class HyperTuner(object):
         self.min_loss = sys.maxint
         self.max_val_acc = -1
         self.min_val_loss = sys.maxint
-      
+    
     def get_random_instance(self):
       "Return a never seen before random model instance"
       fail_streak = 0
@@ -52,7 +54,7 @@ class HyperTuner(object):
           raise Exception('Too many failed models in a row: %s' % fail_streak)
 
 
-      self.instances[idx] = Instance(model, idx)
+      self.instances[idx] = Instance(model, idx, self.num_gpu, self.gpu_mem)
       return self.instances[idx] 
 
     def record_results(self, execution, results):
@@ -79,9 +81,9 @@ class HyperTuner(object):
 
     def get_model_by_id(self, idx):
       return  self.modes.get(idx, None)
-      
+     
     def __compute_model_id(self, model):
-      return xxh32(str(model.get_config())).hexdigest()
+      return xxh64(str(model.get_config())).hexdigest()
 
     def statistics(self):
       print "Invalid models:%s" % self.invalid_models
@@ -98,6 +100,7 @@ class HyperTuner(object):
         'min_loss': self.min_loss,
       }
 
+      #FIXME revamp for all accuracy
       if self.max_acc != -1:
         run['max_acc'] = self.max_acc
       if self.max_val_acc != -1:
