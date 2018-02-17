@@ -22,8 +22,7 @@ class InstanceExecution(object):
       
       if self.num_gpu > 1:
         model = multi_gpu_model(self.model, gpus=self.num_gpu)
-        model.compile(loss=self.model.loss_fn, optimizer=self.model.optimizer, metrics=self.model.metrics, 
-                      loss_weights=self.model.loss_weights)
+        model.compile(optimizer=self.model.optimizer, loss=self.model.loss, metrics=self.model.metrics, loss_weights=self.model.loss_weights)
       else:
         model = self.model
 
