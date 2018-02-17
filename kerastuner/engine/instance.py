@@ -6,7 +6,7 @@ from collections import defaultdict
 from tensorflow.python.lib.io import file_io # allows to write to GCP or local
 from termcolor import cprint
 
-from execution import InstanceExecution
+from .execution import InstanceExecution
 
 
 class Instance(object):

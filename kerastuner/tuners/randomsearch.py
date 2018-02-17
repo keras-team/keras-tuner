@@ -1,4 +1,4 @@
-from tqdm import tqdm
+from termcolor import cprint
 import copy
 import sys
 from ..engine import HyperTuner
@@ -24,24 +24,16 @@ class RandomSearch(HyperTuner):
         """  
         super(RandomSearch, self).__init__(model_fn, **kwargs)
 
-    def search(self,x, y, **kwargs):
-        # Overwrite Keras default verbose value
-        if not kwargs.get('verbose', None): 
-            kwargs['verbose'] = 0
-        # Use progress bar if no verbose
-        if kwargs['verbose'] == 0:
-            use_progress_bar = True
-
-        if use_progress_bar:
-            pb = tqdm(total=self.num_iterations, desc='Instances', unit='instance')
-        
-        for _ in range(self.num_iterations):
+    def search(self,x, y, **kwargs):      
+        for cur_iteration in range(self.num_iterations):
+            cprint("[%s/%s instance]" % (cur_iteration, self.num_iterations), 'magenta') 
+            
             instance = self.get_random_instance()
-            for _ in range(self.num_executions):
+            if not instance:
+                cprint("[FATAL] No valid model found - check your model_fn() function is valid", 'red')
+                return
+            for cur_execution in range(self.num_executions):
+                cprint(" |- %s/%s" % (cur_execution, self.num_executions), 'cyan')
                 #Note: the results are not used for this tuner.
                 results = instance.fit(x, y, **kwargs)
-            
-            self.record_results()
-            if use_progress_bar:
-                #pb.set_postfix(stats)
-                pb.update(1)
+        num_instances += 1

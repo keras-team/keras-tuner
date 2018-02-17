@@ -9,7 +9,7 @@ from termcolor import cprint
 from xxhash import xxh64 # xxh64 is faster
 from tabulate import tabulate
 
-from instance import Instance
+from .instance import Instance
 
 
 class HyperTuner(object):
@@ -32,9 +32,9 @@ class HyperTuner(object):
         self.ts = int(time.time())
         #statistics
         self.max_acc = -1
-        self.min_loss = sys.maxint
+        self.min_loss = sys.maxsize
         self.max_val_acc = -1
-        self.min_val_loss = sys.maxint
+        self.min_val_loss = sys.maxsize
     
         # create local dir if needed
         if not os.path.exists(self.local_dir):
@@ -49,6 +49,9 @@ class HyperTuner(object):
           model = self.model_fn()
         except:
           self.invalid_models += 1
+          cprint("[WARN] invalid model %s/%s" % (self.invalid_models, self.max_fail_streak), 'yellow')
+          if self.invalid_models >= self.max_fail_streak:
+            return None
           continue
 
         idx = self.__compute_model_id(model)
@@ -57,8 +60,6 @@ class HyperTuner(object):
           break
         self.collisions += 1
         
-        if fail_streak == self.max_fail_streak:
-          raise Exception('Too many failed models in a row: %s' % fail_streak)
 
 
       self.instances[idx] = Instance(model, idx, self.num_gpu, self.gpu_mem)
@@ -109,5 +110,5 @@ class HyperTuner(object):
       ##  'min_loss': self.min_loss,
       ##}
 
-      print "Invalid models:%s" % self.invalid_models
-      print "Collisions: %s" % self.collisions
+      print("Invalid models:%s" % self.invalid_models)
+      print("Collisions: %s" % self.collisions)
