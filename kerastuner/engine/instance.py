@@ -47,11 +47,12 @@ class Instance(object):
         output_f.write(input_f.read())
 
 
-  def record_results(self, local_dir, gs_dir=None, save_models=True):
+  def record_results(self, local_dir, gs_dir=None, save_models=True, prefix=''):
     """Record training results
     Args
       output_dir (str): either a local or cloud directory where to store results
       save_models (bool): save the trained models?
+      prefix (str): what string to use to prefix the models
     """
 
     cprint("[INFO] Saving results to %s" % local_dir, 'cyan')
@@ -90,7 +91,7 @@ class Instance(object):
         mdl_base_fname = "%s-%s" % (self.idx, execution.ts)
         
         # config
-        config_fname = "%s-config.json" % (mdl_base_fname)
+        config_fname = "%s-%s-config.json" % (prefix, mdl_base_fname)
         local_path = path.join(local_dir, config_fname)
         with file_io.FileIO(local_path, 'w') as output:
           output.write(execution.model.to_json())
@@ -98,7 +99,7 @@ class Instance(object):
           self.__save_to_gs(config_fname, local_dir, gs_dir)
 
         # weight
-        weights_fname = "%s-weights.h5" % (mdl_base_fname)
+        weights_fname = "%s-%s-weights.h5" % (prefix, mdl_base_fname)
         local_path = path.join(local_dir, weights_fname)
         execution.model.save_weights(local_path)
         if gs_dir:
@@ -124,10 +125,8 @@ class Instance(object):
     for tm in top_metrics:
       if tm[0] in metrics:
         results[tm[0]] = metrics[tm[0]][tm[1]]['median']
-
-    #FIXME save model
-
-    fname = '%s-%s-results.json' % (self.idx, self.training_size)
+        
+    fname = '%s-%s-%s-results.json' % (prefix, self.idx, self.training_size)
     output_path = path.join(local_dir, fname)
     with file_io.FileIO(output_path, 'w') as outfile:
       outfile.write(json.dumps(results))

@@ -36,9 +36,9 @@ class InstanceExecution(object):
         memory = psutil.virtual_memory()
         mem = int(memory.available / 1073741824) - 1
       print("mem:%s, max_size:%s" % (mem, len(x)))
-      batch_size = self.__compute_batch_size(self.model, mem, len(x))
+      batch_size, num_params = self.__compute_batch_size(self.model, mem, len(x))
       cprint("|-batch_size is:%d" % batch_size, 'cyan')
-
+      cprint("|-model size is:%d" % num_params, 'cyan')
       return model.fit(x, y, batch_size=batch_size, **kwargs) 
 
   def record_results(self, results):
@@ -67,7 +67,7 @@ class InstanceExecution(object):
       if  memory_needed > memory:
         break
       batch_size = bs
-    return batch_size
+    return batch_size, model_num_params
 
   def __get_model_memory_usage(self, model, batch_size):
     "comput the memory usage for a given model and batch "

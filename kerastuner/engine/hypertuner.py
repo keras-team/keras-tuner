@@ -24,6 +24,7 @@ class HyperTuner(object):
         self.gpu_mem = kwargs.get('gpu_mem', -1)
         self.local_dir = kwargs.get('local_dir', 'results/')
         self.gs_dir = kwargs.get('gs_dir', None)
+        self.model_name = kwargs.get('model_name', str(int(time.time())))
         self.invalid_models = 0 # how many models didn't work
         self.collisions = 0 # how many time we regenerated the same model
         self.instances = {} # All the models we trained with their stats and info
@@ -77,7 +78,7 @@ class HyperTuner(object):
         instance = self.instances[self.current_instance_idx]
       else:
         instance = self.instances[idx]
-      instance.record_results(self.local_dir, gs_dir=self.gs_dir, save_models=save_models)
+      instance.record_results(self.local_dir, gs_dir=self.gs_dir, save_models=save_models, prefix=self.model_name)
 
       #FIXME stats here
       #self.min_loss = min(self.min_loss, min(results.history['loss']))

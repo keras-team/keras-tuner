@@ -9,6 +9,7 @@ class RandomSearch(HyperTuner):
     def __init__(self, model_fn, **kwargs):
         """ RandomSearch hypertuner
         Args:
+            model_name (str): used to prefix results. Default: ts
             iterations (int): number of model to test
             executions (int): number of exection for each model tested
 
@@ -36,3 +37,4 @@ class RandomSearch(HyperTuner):
                 cprint(" |- %s/%s execution" % (cur_execution, self.num_executions), 'cyan')
                 #Note: the results are not used for this tuner.
                 results = instance.fit(x, y, **kwargs)
+            self.record_results() # save curren result
