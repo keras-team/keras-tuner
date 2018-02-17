@@ -1,5 +1,5 @@
 "Function that returns values from a set using specific set of distribution"
-from numpy import random
+from numpy import random, linspace
 
 def Fixed(val):
   "Return a fixed selected value"
@@ -21,9 +21,9 @@ def Choice(selection):
 def Range(start, stop, increment=1):
     """Return a random value from a range.
     Args:
-        start (int/float): lower bound of the range
-        stop (int/float): upper bound of the range
-        increment (int, float): incremental step
+        start (int): lower bound of the range
+        stop (int): upper bound of the range
+        increment (int): incremental step
     Returns:
         an element of the range
     
@@ -33,3 +33,17 @@ def Range(start, stop, increment=1):
     my_range = range(start, stop, increment)
     return random.choice(my_range)
 
+def Linear(start, stop, num_samples):
+    """Return a random value from a range which is linearly divided.
+    Args:
+        start (int/float): lower bound of the range
+        stop (int/float): upper bound of the range
+        num_samples (int): incremental step
+    Returns:
+        an element of the range
+    
+    Todo:
+      Don't generate the full range, do something more optimal
+    """
+    my_range = linspace(start, stop, num_samples)
+    return random.choice(my_range)
