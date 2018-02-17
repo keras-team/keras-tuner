@@ -10,8 +10,11 @@ class RandomSearch(HyperTuner):
         """ RandomSearch hypertuner
         Args:
             model_name (str): used to prefix results. Default: ts
+
             iterations (int): number of model to test
             executions (int): number of exection for each model tested
+
+            display_model (bool): print keras model summary for each iteration. default (false)
 
             num_gpu (int): number of gpu to use. Default 0
             gpu_mem (int): amount of RAM per GPU. Used for batch size calculation

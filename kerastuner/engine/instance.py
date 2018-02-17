@@ -12,13 +12,14 @@ from .execution import InstanceExecution
 class Instance(object):
   """Model instance class."""
 
-  def __init__(self, model, idx, num_gpu, gpu_mem):
+  def __init__(self, model, idx, num_gpu, gpu_mem, display_model):
     self.ts = int(time.time())
     self.training_size = -1
     self.model = model
     self.idx = idx
     self.num_gpu = num_gpu
     self.gpu_mem = gpu_mem
+    self.display_model = display_model
     self.ts = int(time.time())
     self.executions = []
 
@@ -33,7 +34,7 @@ class Instance(object):
     return results
 
   def __new_execution(self):
-    execution = InstanceExecution(self.model, self.num_gpu, self.gpu_mem)
+    execution = InstanceExecution(self.model, self.num_gpu, self.gpu_mem, self.display_model)
     self.executions.append(execution)
     return execution
 
@@ -125,7 +126,7 @@ class Instance(object):
     for tm in top_metrics:
       if tm[0] in metrics:
         results[tm[0]] = metrics[tm[0]][tm[1]]['median']
-        
+
     fname = '%s-%s-%s-results.json' % (prefix, self.idx, self.training_size)
     output_path = path.join(local_dir, fname)
     with file_io.FileIO(output_path, 'w') as outfile:

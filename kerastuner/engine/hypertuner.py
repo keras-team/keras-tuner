@@ -25,6 +25,7 @@ class HyperTuner(object):
         self.local_dir = kwargs.get('local_dir', 'results/')
         self.gs_dir = kwargs.get('gs_dir', None)
         self.model_name = kwargs.get('model_name', str(int(time.time())))
+        self.display_model = kwargs.get('display_model', False)
         self.invalid_models = 0 # how many models didn't work
         self.collisions = 0 # how many time we regenerated the same model
         self.instances = {} # All the models we trained with their stats and info
@@ -61,9 +62,7 @@ class HyperTuner(object):
           break
         self.collisions += 1
         
-
-
-      self.instances[idx] = Instance(model, idx, self.num_gpu, self.gpu_mem)
+      self.instances[idx] = Instance(model, idx, self.num_gpu, self.gpu_mem, self.display_model)
       self.current_instance_idx = idx
       return self.instances[idx] 
 

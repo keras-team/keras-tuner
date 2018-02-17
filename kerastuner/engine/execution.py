@@ -5,11 +5,12 @@ from keras.utils import multi_gpu_model
 class InstanceExecution(object):
   """Model Execution class. Each Model instance can be executed N time"""
 
-  def __init__(self, model, num_gpu, gpu_mem):
+  def __init__(self, model, num_gpu, gpu_mem, display_model):
     self.ts = int(time.time())
     self.num_epochs = -1
     self.num_gpu = num_gpu
     self.gpu_mem = gpu_mem
+    self.display_model = display_model
     # keep a separated model per instance
     self.model = clone_model(model)
     # This is directly using Keras model class attribute - I wish there is a better way 
@@ -25,10 +26,12 @@ class InstanceExecution(object):
         model.compile(optimizer=self.model.optimizer, loss=self.model.loss, metrics=self.model.metrics, loss_weights=self.model.loss_weights)
       else:
         model = self.model
+      if self.display_model:
+            model.summary()
 
       # optimize batch_size for gpu memory if needed
       if self.gpu_mem > 1:
-        mem = self.gpu_mem 
+        mem = self.gpu_mem * self.num_gpu
       else:
         # optimize for available system memory
         import psutil
@@ -38,6 +41,7 @@ class InstanceExecution(object):
       batch_size, num_params = self.__compute_batch_size(self.model, mem, len(x))
       cprint("|-batch_size is:%d" % batch_size, 'cyan')
       cprint("|-model size is:%d" % num_params, 'cyan')
+
       return model.fit(x, y, batch_size=batch_size, **kwargs) 
 
   def record_results(self, results):
