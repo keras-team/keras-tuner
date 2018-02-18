@@ -34,7 +34,7 @@ class InstanceExecution(object):
 
       # optimize batch_size for gpu memory if needed
       if self.gpu_mem > 1:
-        mem = self.gpu_mem * self.num_gpu
+        mem = self.gpu_mem # trying to do more result sometime in OOM
       else:
         # optimize for available system memory
         import psutil
