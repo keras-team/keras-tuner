@@ -25,7 +25,7 @@ class HyperTuner(object):
         self.local_dir = kwargs.get('local_dir', 'results/')
         self.gs_dir = kwargs.get('gs_dir', None)
         self.model_name = kwargs.get('model_name', str(int(time.time())))
-        self.display_model = kwargs.get('display_model', False)
+        self.display_model = kwargs.get('display_model', '') # which models to display
         self.invalid_models = 0 # how many models didn't work
         self.collisions = 0 # how many time we regenerated the same model
         self.instances = {} # All the models we trained with their stats and info
@@ -37,6 +37,9 @@ class HyperTuner(object):
         self.min_loss = sys.maxsize
         self.max_val_acc = -1
         self.min_val_loss = sys.maxsize
+
+        if self.display_model not in ['', 'base', 'multi-gpu', 'both']:
+              raise Exception('Invalid display_model value: can be either base, multi-gpu or both')
     
         # create local dir if needed
         if not os.path.exists(self.local_dir):

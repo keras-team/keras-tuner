@@ -21,13 +21,16 @@ class InstanceExecution(object):
       Note: This wrapper around Keras fit allows to handle multi-gpu support
       """
       
+      if self.display_model == 'base' or self.display_model == 'both':
+        self.model.summary()
+
       if self.num_gpu > 1:
         model = multi_gpu_model(self.model, gpus=self.num_gpu)
         model.compile(optimizer=self.model.optimizer, loss=self.model.loss, metrics=self.model.metrics, loss_weights=self.model.loss_weights)
+        if self.display_model == 'multi-gpu' or self.display_model == 'both':
+          self.model.summary()
       else:
         model = self.model
-      if self.display_model:
-            model.summary()
 
       # optimize batch_size for gpu memory if needed
       if self.gpu_mem > 1:
