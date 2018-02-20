@@ -48,12 +48,17 @@ class Instance(object):
         output_f.write(input_f.read())
 
 
-  def record_results(self, local_dir, gs_dir=None, save_models=True, prefix=''):
+  def record_results(self, local_dir, gs_dir=None, save_models=True, prefix='', 
+                    key_metrics=[('loss', 'min'), ('acc', 'max')]):
     """Record training results
     Args
-      output_dir (str): either a local or cloud directory where to store results
+      local_dir (str): local saving directory
+      gs_dir (str): Google cloud bucket path. Default None
       save_models (bool): save the trained models?
       prefix (str): what string to use to prefix the models
+      key_metrics: which metrics media value should be a top field?. default loss and acc
+    Returns:
+      dict: results data
     """
 
     cprint("[INFO] Saving results to %s" % local_dir, 'cyan')
@@ -122,11 +127,11 @@ class Instance(object):
     results['metrics'] = metrics
     
     # Usual metrics reported as top fields for their median values
-    top_metrics = [('loss', 'min'), ('val_loss', 'min'), ('acc', 'max'), ('val_acc', 'max')]
-    for tm in top_metrics:
+    for tm in key_metrics:
       if tm[0] in metrics:
         results[tm[0]] = metrics[tm[0]][tm[1]]['median']
 
+      
     fname = '%s-%s-%s-results.json' % (prefix, self.idx, self.training_size)
     output_path = path.join(local_dir, fname)
     with file_io.FileIO(output_path, 'w') as outfile:

@@ -1,4 +1,5 @@
 import time
+import copy
 from termcolor import cprint
 from keras.models import clone_model
 from keras.utils import multi_gpu_model
@@ -40,12 +41,14 @@ class InstanceExecution(object):
         import psutil
         memory = psutil.virtual_memory()
         mem = int(memory.available / 1073741824) - 1
-      print("mem:%s, max_size:%s" % (mem, len(x)))
       batch_size, num_params = self.__compute_batch_size(self.model, mem, len(x))
       cprint("|-batch_size is:%d" % batch_size, 'cyan')
       cprint("|-model size is:%d" % num_params, 'cyan')
-
-      return model.fit(x, y, batch_size=batch_size, **kwargs) 
+      callbacks = kwargs.get('callbacks')
+      if callbacks:
+            kwargs['callbacks'] = copy.deepcopy(callbacks)
+      results = model.fit(x, y, batch_size=batch_size, **kwargs) 
+      return results
 
   def record_results(self, results):
     "Record execution results"

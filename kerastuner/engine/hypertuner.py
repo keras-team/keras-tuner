@@ -14,7 +14,6 @@ from .instance import Instance
 
 class HyperTuner(object):
     """Abstract hypertuner class."""
-
     def __init__(self, model_fn, **kwargs):
         self.num_iterations = kwargs.get('num_iterations', 10) # how many models
         self.num_executions = kwargs.get('num_executions', 3) # how many executions
@@ -32,12 +31,43 @@ class HyperTuner(object):
         self.current_instance_idx = -1 # track the current instance trained
         self.model_fn = model_fn
         self.ts = int(time.time())
-        #statistics
+
+
+        
+        # metrics     
+        self.METRIC_NAME = 0
+        self.METRIC_DIRECTION = 1
         self.max_acc = -1
         self.min_loss = sys.maxsize
         self.max_val_acc = -1
         self.min_val_loss = sys.maxsize
 
+        
+        # including user metrics
+        user_metrics = kwargs.get('metrics')
+        if user_metrics:
+          self.key_metrics = []
+          for tm in user_metrics:
+            if not isinstance(tm, tuple):
+              cprint("[Error] Invalid metric format: %s (%s) - metric format is (metric_name, direction) e.g ('val_acc', 'max') - Ignoring" % (tm, type(tm)), 'red')
+              continue
+            if tm[self.METRIC_DIRECTION] not in ['min', 'max']:
+              cprint("[Error] Invalid metric direction for: %s - metric format is (metric_name, direction). direction is min or max - Ignoring" % tm, 'red')
+              continue
+            self.key_metrics.append(tm)
+        else:
+          # sensible default
+          self.key_metrics = [('loss', 'min'), ('val_loss', 'min'), ('acc', 'max'), ('val_acc', 'max')]
+
+        # initializing key metrics
+        self.stats = {}
+        for km in self.key_metrics:
+          if km[self.METRIC_DIRECTION] == 'min':
+            self.stats[km[self.METRIC_NAME]] = sys.maxsize
+          else:
+            self.stats[km[self.METRIC_NAME]] = -1
+
+        # output control
         if self.display_model not in ['', 'base', 'multi-gpu', 'both']:
               raise Exception('Invalid display_model value: can be either base, multi-gpu or both')
     
@@ -80,23 +110,22 @@ class HyperTuner(object):
         instance = self.instances[self.current_instance_idx]
       else:
         instance = self.instances[idx]
-      instance.record_results(self.local_dir, gs_dir=self.gs_dir, save_models=save_models, prefix=self.model_name)
+      results = instance.record_results(self.local_dir, gs_dir=self.gs_dir, save_models=save_models, prefix=self.model_name, key_metrics=self.key_metrics)
 
-      #FIXME stats here
-      #self.min_loss = min(self.min_loss, min(results.history['loss']))
-      #stats = {'min_loss': self.min_loss} # stats dict is for the progress bar
-            
-      #if 'acc' in results.history:
-      #  self.max_acc = max(self.max_acc, max(results.history['acc']))
-      #  stats['max_acc'] = self.max_acc
-
-      #if 'val_acc' in results.history:
-      #  self.max_val_acc = max(self.max_val_acc, max(results.history['val_acc']))
-      #  stats['max_val_acc'] = self.max_val_acc
-            
-      #if 'val_loss' in results.history:
-      #  self.min_val_loss = min(self.min_val_loss, min(results.history['val_loss']))
-      #  stats['min_val_loss'] = self.min_val_loss
+      cprint("Key metrics", "magenta")
+      report = [['Metric', 'Best', 'Last']]
+      for km in self.key_metrics:
+        metric_name = km[self.METRIC_NAME]
+        if metric_name in results:
+          curr_best = self.stats[metric_name]
+          res_val = results[metric_name]
+          if km[self.METRIC_DIRECTION] == 'min':
+            best = min(curr_best, res_val)
+          else:
+            best = max(curr_best, res_val)
+          self.stats[metric_name] = best
+        report.append([metric_name, best, res_val])
+      print (tabulate(report, headers="firstrow"))
 
     def get_model_by_id(self, idx):
       return self.modes.get(idx, None)
