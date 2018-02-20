@@ -34,7 +34,7 @@ class Instance(object):
     return results
 
   def __new_execution(self):
-    execution = InstanceExecution(self.model, self.num_gpu, self.gpu_mem, self.display_model)
+    execution = InstanceExecution(self.model, self.num_gpu, self.gpu_mem, self.display_model, self.idx)
     self.executions.append(execution)
     return execution
 

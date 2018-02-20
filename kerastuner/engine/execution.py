@@ -3,11 +3,13 @@ import copy
 from termcolor import cprint
 from keras.models import clone_model
 from keras.utils import multi_gpu_model
+from os import path
 class InstanceExecution(object):
   """Model Execution class. Each Model instance can be executed N time"""
 
-  def __init__(self, model, num_gpu, gpu_mem, display_model):
+  def __init__(self, model, num_gpu, gpu_mem, display_model, idx):
     self.ts = int(time.time())
+    self.idx = idx
     self.num_epochs = -1
     self.num_gpu = num_gpu
     self.gpu_mem = gpu_mem
@@ -46,7 +48,13 @@ class InstanceExecution(object):
       cprint("|-model size is:%d" % num_params, 'cyan')
       callbacks = kwargs.get('callbacks')
       if callbacks:
-            kwargs['callbacks'] = copy.deepcopy(callbacks)
+            callbacks = copy.deepcopy(callbacks)
+            for callback in callbacks:
+              # patching tensorboard log dir
+              if 'TensorBoard' in str(type(callback)):
+                eidx = "%s-%s" % (self.idx, self.ts)
+                callback.log_dir = path.join(callback.log_dir, eidx)
+            kwargs['callbacks'] = callbacks
       results = model.fit(x, y, batch_size=batch_size, **kwargs) 
       return results
 
