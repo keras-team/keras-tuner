@@ -2,23 +2,8 @@
 """
 
 import enum
-import numbers
-
-from numpy import random
-from numpy import linspace
 
 import attr
-
-
-class AbstractHyperParameter(object):
-  """Abstract class for hyper parameters."""
-
-  def __init__(self):
-    pass
-
-  def __set_name__(self, owner, name):
-    del owner  # not used
-    self._name = name
 
 
 class ParameterType(enum.Enum):
@@ -109,7 +94,7 @@ class DiscreteParameter(AbstractParameterSpec):
 
 
 class ParameterSpace(object):
-  """Holds the list of hyperparameters."""
+  """Represents a set of hyperparameters."""
 
   def __init__(self):
     self._params = []
@@ -120,6 +105,7 @@ class ParameterSpace(object):
                   max_value,
                   scale_type=ScaleType.UNIT_LINEAR_SCALE,
                   default=None):
+    """Adds an integer range to the hyperparameter space."""
     parameter = RealParameter(
         name=name,
         min_value=min_value,
@@ -129,12 +115,13 @@ class ParameterSpace(object):
         parameter_type=ParameterType.INTEGER)
     self._params.append(parameter)
 
-  def add_double(self,
-                 name,
-                 min_value,
-                 max_value,
-                 scale_type=ScaleType.UNIT_LINEAR_SCALE,
-                 default=None):
+  def add_real(self,
+               name,
+               min_value,
+               max_value,
+               scale_type=ScaleType.UNIT_LINEAR_SCALE,
+               default=None):
+    """Adds an real range to the hyperparameter space."""
     parameter = RealParameter(
         name=name,
         min_value=min_value,
@@ -160,21 +147,21 @@ class ParameterSpace(object):
         parameter_type=ParameterType.CATEGORICAL)
     self._params.append(parameter)
 
+  def as_list(self):
+    """Returns the hyperparameters as a list."""
+    return self._params
+
   def as_cloud_ml_engine_parameter_specs(self):
-    """Returns a list parameters usable in a Cloud ML Engine
-    HyperparameterSpec.param.
+    """Returns a list of parameters usable in a Cloud ML Engine
+    HyperparameterSpec.param field.
     """
     params = [
         param.as_cloudml_engine_parameter_spec() for param in self._params
     ]
     return params
 
-  def as_list(self):
-    """Returns a list parameters"""
-    return self._params
-
   def populate_arg_parser(self, arg_parser):
-    """Populate the parser with args created for the parameter space."""
+    """Populate an argparse parser with args matching the parameter space."""
     for param in self.as_list():
       name = '--' + param.name
       if param.parameter_type == ParameterType.INTEGER:
