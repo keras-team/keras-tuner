@@ -81,6 +81,7 @@ class CategoricalParameter(AbstractParameterSpec):
 @attr.s()
 class DiscreteParameter(AbstractParameterSpec):
   discrete_values = attr.ib()
+  coalesce = attr.ib()
 
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
@@ -131,11 +132,12 @@ class ParameterSpace(object):
         parameter_type=ParameterType.DOUBLE)
     self._params.append(parameter)
 
-  def add_discrete(self, name, discrete_values, default=None):
+  def add_discrete(self, name, discrete_values, default=None, coalesce=float):
     parameter = DiscreteParameter(
         name=name,
         discrete_values=discrete_values,
         default=default,
+        coalesce=coalesce,
         parameter_type=ParameterType.DISCRETE)
     self._params.append(parameter)
 
@@ -171,7 +173,7 @@ class ParameterSpace(object):
       elif param.parameter_type == ParameterType.DISCRETE:
         arg_parser.add_argument(
             name,
-            type=float,
+            type=param.coalesce,
             choices=param.discrete_values,
             default=param.default)
       elif param.parameter_type == ParameterType.CATEGORICAL:
