@@ -115,12 +115,12 @@ class ParameterSpace(object):
         parameter_type=ParameterType.INTEGER)
     self._params.append(parameter)
 
-  def add_real(self,
-               name,
-               min_value,
-               max_value,
-               scale_type=ScaleType.UNIT_LINEAR_SCALE,
-               default=None):
+  def add_double(self,
+                 name,
+                 min_value,
+                 max_value,
+                 scale_type=ScaleType.UNIT_LINEAR_SCALE,
+                 default=None):
     """Adds an real range to the hyperparameter space."""
     parameter = RealParameter(
         name=name,
