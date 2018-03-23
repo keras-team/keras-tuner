@@ -33,9 +33,18 @@ class ScaleType(enum.Enum):
 
 @attr.s(frozen=True)
 class AbstractParameterSpec(object):
+  """Class representing a hyperparameter.
+
+  Attrs:
+    name: A string, the name of the parameter, as used in the code
+    parameter_type: ParameterType
+    default: Default value for this hyperparameter
+    frozen: A bool, whether the parameter value can very from the default value
+  """
   name = attr.ib(type=str)
   parameter_type = attr.ib(validator=attr.validators.in_(ParameterType))
   default = attr.ib()
+  frozen = attr.ib()
 
   def as_cloudml_engine_parameter_spec(self):
     return {
@@ -105,7 +114,8 @@ class ParameterSpace(object):
                   min_value,
                   max_value,
                   scale_type=ScaleType.UNIT_LINEAR_SCALE,
-                  default=None):
+                  default=None,
+                  frozen=False):
     """Adds an integer range to the hyperparameter space."""
     parameter = RealParameter(
         name=name,
@@ -113,6 +123,7 @@ class ParameterSpace(object):
         max_value=max_value,
         scale_type=scale_type,
         default=default,
+        frozen=frozen,
         parameter_type=ParameterType.INTEGER)
     self._params.append(parameter)
 
@@ -121,7 +132,8 @@ class ParameterSpace(object):
                  min_value,
                  max_value,
                  scale_type=ScaleType.UNIT_LINEAR_SCALE,
-                 default=None):
+                 default=None,
+                 frozen=False):
     """Adds an real range to the hyperparameter space."""
     parameter = RealParameter(
         name=name,
@@ -129,23 +141,31 @@ class ParameterSpace(object):
         max_value=max_value,
         scale_type=scale_type,
         default=default,
+        frozen=frozen,
         parameter_type=ParameterType.DOUBLE)
     self._params.append(parameter)
 
-  def add_discrete(self, name, discrete_values, default=None, coalesce=float):
+  def add_discrete(self,
+                   name,
+                   discrete_values,
+                   default=None,
+                   coalesce=float,
+                   frozen=False):
     parameter = DiscreteParameter(
         name=name,
         discrete_values=discrete_values,
         default=default,
         coalesce=coalesce,
+        frozen=frozen,
         parameter_type=ParameterType.DISCRETE)
     self._params.append(parameter)
 
-  def add_categorical(self, name, discrete_values, default=None):
+  def add_categorical(self, name, discrete_values, default=None, frozen=False):
     parameter = CategoricalParameter(
         name=name,
         categorical_values=discrete_values,
         default=default,
+        frozen=frozen,
         parameter_type=ParameterType.CATEGORICAL)
     self._params.append(parameter)
 
@@ -158,7 +178,9 @@ class ParameterSpace(object):
     HyperparameterSpec.param field.
     """
     params = [
-        param.as_cloudml_engine_parameter_spec() for param in self._params
+        param.as_cloudml_engine_parameter_spec()
+        for param in self._params
+        if not param.frozen
     ]
     return params
 
