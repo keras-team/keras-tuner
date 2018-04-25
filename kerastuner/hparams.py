@@ -1,4 +1,57 @@
-"""Functions that returns values from a set using specific set of distribution.
+"""Hyper parameter space definition.
+
+Container for defining, reading and checking parameters. Compatible with Google
+Cloud ML Engine hypertuner and the argparse module.
+
+Basic usage:
+
+  >>> hparams_spec = ParameterSpace()
+
+Add an integer parameter named 'layers' with values between 1 and 4.
+
+  >>> hparams_spec.add_integer('layers', 1, 4)
+
+Generate Cloud ML Engine hypertuning configuration:
+
+  >>> hparams_spec.as_cloud_ml_engine_parameter_specs() == \
+        [{'parameterName': 'layers', 'type': 'INTEGER', 'maxValue': 4, \
+        'scaleType': 'UNIT_LINEAR_SCALE', 'minValue': 1}]
+  True
+
+Populate an argparse parser with parameters definitions from hparams_spec:
+
+  >>> import argparse
+  >>> parser = argparse.ArgumentParser()
+  >>> hparams_spec.populate_arg_parser(parser)
+  >>> hparams = parser.parse_args(args=['--layers', '3'])
+  >>> hparams.layers
+  3
+
+User the parsed args for model definition:
+
+  >>> from keras.models import Sequential
+  >>> from keras.layers import Dense, InputLayer
+  >>> model = Sequential()
+  >>> model.add(InputLayer(input_shape=(5000,)))
+  >>> for _ in range(hparams.layers):
+  ...   model.add(Dense(256))
+
+Freezing an hyperparameter removes it from the Cloud ML Engine hypertuning
+configuration:
+
+  >>> hparams_spec = ParameterSpace()
+  >>> hparams_spec.add_integer('layers', 1, 4, default=1, frozen=True)
+  >>> hparams_spec.as_cloud_ml_engine_parameter_specs()
+  []
+
+Freezed parameters will use the default value in the argument parser object:
+
+  >>> parser = argparse.ArgumentParser()
+  >>> hparams_spec.populate_arg_parser(parser)
+  >>> hparams = parser.parse_args(args=[])
+  >>> hparams.layers
+  1
+
 """
 
 import enum
@@ -20,7 +73,7 @@ class ParameterType(enum.Enum):
 
 
 class ScaleType(enum.Enum):
-  """Implementation of ML Engine v1 ScaleType
+  """Implementation of ML Engine v1 ScaleType.
 
   See
   https://cloud.google.com/ml-engine/reference/rest/v1/projects.jobs#scaletype
@@ -35,11 +88,11 @@ class ScaleType(enum.Enum):
 class AbstractParameterSpec(object):
   """Class representing a hyperparameter.
 
-  Attrs:
+  Attributes:
     name: A string, the name of the parameter, as used in the code
     parameter_type: ParameterType
     default: Default value for this hyperparameter
-    frozen: A bool, whether the parameter value can very from the default value
+    frozen: A bool, whether the parameter value can vary from the default value
   """
   name = attr.ib(type=str)
   parameter_type = attr.ib(validator=attr.validators.in_(ParameterType))
@@ -104,7 +157,10 @@ class DiscreteParameter(AbstractParameterSpec):
 
 
 class ParameterSpace(object):
-  """Represents a set of hyperparameters."""
+  """Represents a set of hyperparameters.
+
+
+  """
 
   def __init__(self):
     self._params = []
@@ -134,7 +190,7 @@ class ParameterSpace(object):
                  scale_type=ScaleType.UNIT_LINEAR_SCALE,
                  default=None,
                  frozen=False):
-    """Adds an real range to the hyperparameter space."""
+    """Adds a real range to the hyperparameter space."""
     parameter = RealParameter(
         name=name,
         min_value=min_value,
@@ -151,6 +207,7 @@ class ParameterSpace(object):
                    default=None,
                    coalesce=float,
                    frozen=False):
+    """Adds a discrete range of values to the hyperparameter space."""
     parameter = DiscreteParameter(
         name=name,
         discrete_values=discrete_values,
@@ -161,6 +218,7 @@ class ParameterSpace(object):
     self._params.append(parameter)
 
   def add_categorical(self, name, discrete_values, default=None, frozen=False):
+    """Adds a categorical set of values to the hyperparameter space."""
     parameter = CategoricalParameter(
         name=name,
         categorical_values=discrete_values,
@@ -175,8 +233,7 @@ class ParameterSpace(object):
 
   def as_cloud_ml_engine_parameter_specs(self):
     """Returns a list of parameters usable in a Cloud ML Engine
-    HyperparameterSpec.param field.
-    """
+    HyperparameterSpec.param field."""
     params = [
         param.as_cloudml_engine_parameter_spec()
         for param in self._params
@@ -185,7 +242,7 @@ class ParameterSpace(object):
     return params
 
   def populate_arg_parser(self, arg_parser):
-    """Populate an argparse parser with args matching the parameter space."""
+    """Populates an argparse parser with args matching the parameter space."""
     for param in self.as_list():
       name = '--' + param.name
       if param.parameter_type == ParameterType.INTEGER:
