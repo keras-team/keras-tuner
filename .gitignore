@@ -2,3 +2,4 @@ results.json
 results/
 .vscode/
 logs
+*.pyc

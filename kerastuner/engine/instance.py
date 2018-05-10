@@ -12,17 +12,17 @@ from .execution import InstanceExecution
 class Instance(object):
   """Model instance class."""
 
-  def __init__(self, model, idx, num_gpu, gpu_mem, display_model):
+  def __init__(self, model, idx, model_name, num_gpu, gpu_mem, display_model):
     self.ts = int(time.time())
     self.training_size = -1
     self.model = model
     self.idx = idx
+    self.model_name = model_name
     self.num_gpu = num_gpu
     self.gpu_mem = gpu_mem
     self.display_model = display_model
     self.ts = int(time.time())
     self.executions = []
-
 
   def fit(self, x, y, **kwargs):
     "Fit an execution of the model"
@@ -34,7 +34,7 @@ class Instance(object):
     return results
 
   def __new_execution(self):
-    execution = InstanceExecution(self.model, self.num_gpu, self.gpu_mem, self.display_model, self.idx)
+    execution = InstanceExecution(self.model, self.idx, self.model_name, self.num_gpu, self.gpu_mem, self.display_model)
     self.executions.append(execution)
     return execution
 

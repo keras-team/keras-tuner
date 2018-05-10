@@ -95,7 +95,7 @@ class HyperTuner(object):
           break
         self.collisions += 1
         
-      self.instances[idx] = Instance(model, idx, self.num_gpu, self.gpu_mem, self.display_model)
+      self.instances[idx] = Instance(model, idx, self.model_name, self.num_gpu, self.gpu_mem, self.display_model)
       self.current_instance_idx = idx
       return self.instances[idx] 
 
@@ -117,18 +117,18 @@ class HyperTuner(object):
       for km in self.key_metrics:
         metric_name = km[self.METRIC_NAME]
         if metric_name in results:
-          curr_best = self.stats[metric_name]
+          current_best = self.stats[metric_name]
           res_val = results[metric_name]
           if km[self.METRIC_DIRECTION] == 'min':
-            best = min(curr_best, res_val)
+            best = min(current_best, res_val)
           else:
-            best = max(curr_best, res_val)
+            best = max(current_best, res_val)
           self.stats[metric_name] = best
         report.append([metric_name, best, res_val])
       print (tabulate(report, headers="firstrow"))
 
     def get_model_by_id(self, idx):
-      return self.modes.get(idx, None)
+      return self.instances.get(idx, None)
      
     def __compute_model_id(self, model):
       return xxh64(str(model.get_config())).hexdigest()

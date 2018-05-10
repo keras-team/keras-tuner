@@ -7,9 +7,10 @@ from os import path
 class InstanceExecution(object):
   """Model Execution class. Each Model instance can be executed N time"""
 
-  def __init__(self, model, num_gpu, gpu_mem, display_model, idx):
+  def __init__(self, model, idx, model_name, num_gpu, gpu_mem, display_model):
     self.ts = int(time.time())
     self.idx = idx
+    self.model_name = model_name
     self.num_epochs = -1
     self.num_gpu = num_gpu
     self.gpu_mem = gpu_mem
@@ -52,8 +53,8 @@ class InstanceExecution(object):
             for callback in callbacks:
               # patching tensorboard log dir
               if 'TensorBoard' in str(type(callback)):
-                eidx = "%s-%s" % (self.idx, self.ts)
-                callback.log_dir = path.join(callback.log_dir, eidx)
+                tensorboard_idx = "%s-%s-%s" % (self.model_name, self.idx, self.ts)
+                callback.log_dir = path.join(callback.log_dir, tensorboard_idx)
             kwargs['callbacks'] = callbacks
       results = model.fit(x, y, batch_size=batch_size, **kwargs) 
       return results
