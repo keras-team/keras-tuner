@@ -5,3 +5,4 @@ tabulate
 termcolor
 tqdm
 xxhash
+psutil
