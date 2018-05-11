@@ -3,3 +3,6 @@ results/
 .vscode/
 logs
 *.pyc
+Kerastuner.egg-info/
+build/
+dist/
