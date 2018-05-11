@@ -5,7 +5,7 @@ def Fixed(val):
   "Return a fixed selected value"
   return val
 
-def Bool():
+def Boolean():
     "Return a random bool"
     return random.choice([True, False])
 

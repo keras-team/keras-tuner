@@ -12,13 +12,13 @@ def test_fixed_correctness():
 # Boolean
 def test_bool_correctness():
   for _ in range(SAMPLE_SIZE):
-    res = distributions.Bool()
+    res = distributions.Boolean()
     assert res == True or res == False
   
 def test_bool_randomness():
   res = defaultdict(int)
   for _ in range(SAMPLE_SIZE):
-    x = distributions.Bool()
+    x = distributions.Boolean()
     res[x] += 1
   prob = round(res[True] / float(SAMPLE_SIZE), 1)
   assert prob == 0.5
