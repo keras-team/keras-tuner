@@ -7,7 +7,7 @@ from os import path
 class InstanceExecution(object):
   """Model Execution class. Each Model instance can be executed N time"""
 
-  def __init__(self, model, idx, model_name, num_gpu, gpu_mem, display_model):
+  def __init__(self, model, idx, model_name, num_gpu, gpu_mem, display_model, display_info):
     self.ts = int(time.time())
     self.idx = idx
     self.model_name = model_name
@@ -15,6 +15,7 @@ class InstanceExecution(object):
     self.num_gpu = num_gpu
     self.gpu_mem = gpu_mem
     self.display_model = display_model
+    self.display_info = display_info
     # keep a separated model per instance
     self.model = clone_model(model)
     # This is directly using Keras model class attribute - I wish there is a better way 
@@ -45,8 +46,9 @@ class InstanceExecution(object):
         memory = psutil.virtual_memory()
         mem = int(memory.available / 1073741824) - 1
       batch_size, num_params = self.__compute_batch_size(self.model, mem, len(x))
-      cprint("|-batch_size is:%d" % batch_size, 'cyan')
-      cprint("|-model size is:%d" % num_params, 'cyan')
+      if self.display_info:
+        cprint("|-batch size is:%d" % batch_size, 'blue')
+        cprint("|-model size is:%d" % num_params, 'cyan')
       callbacks = kwargs.get('callbacks')
       if callbacks:
             callbacks = copy.deepcopy(callbacks)

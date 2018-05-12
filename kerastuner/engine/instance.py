@@ -34,7 +34,13 @@ class Instance(object):
     return results
 
   def __new_execution(self):
-    execution = InstanceExecution(self.model, self.idx, self.model_name, self.num_gpu, self.gpu_mem, self.display_model)
+    num_executions = len(self.executions)
+    if num_executions > 0:
+      display_model = None
+      display_info = False
+    else:
+      display_info = True
+    execution = InstanceExecution(self.model, self.idx, self.model_name, self.num_gpu, self.gpu_mem, self.display_model, display_info)
     self.executions.append(execution)
     return execution
 

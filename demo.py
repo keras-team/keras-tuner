@@ -6,7 +6,7 @@ from keras.optimizers import Adam, SGD
 from keras.callbacks import EarlyStopping
 
 # hypertune imports
-from kerastuner.distributions import Range, Choice, Fixed, Bool
+from kerastuner.distributions import Range, Choice, Fixed, Boolean
 from kerastuner.tuners import RandomSearch
 
 # just a simple model to demo how easy it is to use KerasTuner 
@@ -19,7 +19,7 @@ def model_fn():
   # Hidden layer
   L2_UNITS = Range(16, 32, 2)
   L2_ACTIVATION = Choice('relu', 'tanh')
-  L2_OPTIONAL = Bool()
+  L2_OPTIONAL = Boolean()
   # Last layer
   LL_UNITS = Fixed(1)
   LL_ACTIVATION = Choice('sigmoid', 'tanh')
