@@ -38,7 +38,9 @@ def model_fn():
 callbacks = [
   EarlyStopping(monitor='loss', min_delta=0.01, patience=1, verbose=0, mode='auto')
 ]
-METRIC_TO_REPORT = [('loss', 'min'), ('val_loss', 'min'), ('acc', 'max'), ('val_acc', 'max')] # which metrics to track accross the run and display
-mmodel = RandomSearch(model_fn, num_iterations=2, num_executions=2, metrics=METRIC_TO_REPORT)
-mmodel.search(x_train, y_train, epochs=10, validation_split=0.01, callbacks=callbacks)
-mmodel.statistics()
+
+# which metrics to track across the runs and display
+METRIC_TO_REPORT = [('loss', 'min'), ('val_loss', 'min'), ('acc', 'max'), ('val_acc', 'max')]
+hypermodel = RandomSearch(model_fn, num_iterations=2, num_executions=2, metrics=METRIC_TO_REPORT)
+hypermodel.search(x_train, y_train, epochs=10, validation_split=0.01, callbacks=callbacks)
+hypermodel.statistics()
