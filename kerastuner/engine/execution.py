@@ -1,19 +1,22 @@
 import time
 import copy
+import numpy as np
 from termcolor import cprint
 from keras.models import clone_model
 from keras.utils import multi_gpu_model
+from keras import backend as K
 from os import path
+
 class InstanceExecution(object):
   """Model Execution class. Each Model instance can be executed N time"""
 
-  def __init__(self, model, idx, model_name, num_gpu, gpu_mem, display_model, display_info):
+  def __init__(self, model, idx, model_name, num_gpu, batch_size, display_model, display_info):
     self.ts = int(time.time())
     self.idx = idx
     self.model_name = model_name
     self.num_epochs = -1
     self.num_gpu = num_gpu
-    self.gpu_mem = gpu_mem
+    self.batch_size = batch_size
     self.display_model = display_model
     self.display_info = display_info
     # keep a separated model per instance
@@ -37,18 +40,10 @@ class InstanceExecution(object):
       else:
         model = self.model
 
-      # optimize batch_size for gpu memory if needed
-      if self.gpu_mem >= 1:
-        mem = self.gpu_mem - 1# trying to do more result sometime in OOM
-      else:
-        # optimize for available system memory
-        import psutil
-        memory = psutil.virtual_memory()
-        mem = int(memory.available / 1073741824) - 1
-      batch_size, num_params = self.__compute_batch_size(self.model, mem, len(x))
       if self.display_info:
-        cprint("|-batch size is:%d" % batch_size, 'blue')
-        cprint("|-model size is:%d" % num_params, 'cyan')
+        model_size = self.__compute_model_size(model)
+        cprint("|- model size is:%d" % model_size, 'blue')
+      
       callbacks = kwargs.get('callbacks')
       if callbacks:
             callbacks = copy.deepcopy(callbacks)
@@ -58,7 +53,7 @@ class InstanceExecution(object):
                 tensorboard_idx = "%s-%s-%s" % (self.model_name, self.idx, self.ts)
                 callback.log_dir = path.join(callback.log_dir, tensorboard_idx)
             kwargs['callbacks'] = callbacks
-      results = model.fit(x, y, batch_size=batch_size, **kwargs) 
+      results = model.fit(x, y, batch_size=self.batch_size, **kwargs) 
       return results
 
   def record_results(self, results):
@@ -75,38 +70,7 @@ class InstanceExecution(object):
         'max': max(data)
       }
       self.metrics[metric] = metric_results
-
-  def __compute_batch_size(self, model, memory, max_size):
-    "Find the largest batch size usuable so we maximize ressources usage"
-    batch_size =  16
-    while 1:
-      bs = batch_size + 2
-      if bs >= max_size:
-        break
-      memory_needed, model_num_params = self.__get_model_memory_usage(model, bs)
-      if  memory_needed > memory:
-        break
-      batch_size = bs
-    return batch_size, model_num_params
-
-  def __get_model_memory_usage(self, model, batch_size):
-    "comput the memory usage for a given model and batch "
-    import numpy as np
-    from keras import backend as K
-
-    shapes_mem_count = 0
-    for l in model.layers:
-        single_layer_mem = 1
-        for s in l.output_shape:
-            if s is None:
-                continue
-            single_layer_mem *= s
-        shapes_mem_count += single_layer_mem
-
-    trainable_count = np.sum([K.count_params(p) for p in set(model.trainable_weights)])
-    non_trainable_count = np.sum([K.count_params(p) for p in set(model.non_trainable_weights)])
-
-    total_memory = 4.0*batch_size*(shapes_mem_count + trainable_count + non_trainable_count)
-    gbytes = np.round(total_memory / (1024.0 ** 3), 3)
-    #print("train count ", trainable_count, "mem per instance", total_memory, "gbytes ", gbytes)
-    return gbytes, trainable_count
+  
+  def __compute_model_size(self, model):
+    "comput the size of a given model"
+    return np.sum([K.count_params(p) for p in set(model.trainable_weights)])

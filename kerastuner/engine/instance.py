@@ -12,14 +12,14 @@ from .execution import InstanceExecution
 class Instance(object):
   """Model instance class."""
 
-  def __init__(self, model, idx, model_name, num_gpu, gpu_mem, display_model):
+  def __init__(self, model, idx, model_name, num_gpu, batch_size, display_model):
     self.ts = int(time.time())
     self.training_size = -1
     self.model = model
     self.idx = idx
     self.model_name = model_name
     self.num_gpu = num_gpu
-    self.gpu_mem = gpu_mem
+    self.batch_size = batch_size
     self.display_model = display_model
     self.ts = int(time.time())
     self.executions = []
@@ -35,12 +35,16 @@ class Instance(object):
 
   def __new_execution(self):
     num_executions = len(self.executions)
+    
+    # ensure that info is only displayed once per iteration
     if num_executions > 0:
       display_model = None
       display_info = False
     else:
       display_info = True
-    execution = InstanceExecution(self.model, self.idx, self.model_name, self.num_gpu, self.gpu_mem, self.display_model, display_info)
+      display_model = self.display_model
+
+    execution = InstanceExecution(self.model, self.idx, self.model_name, self.num_gpu, self.batch_size, display_model, display_info)
     self.executions.append(execution)
     return execution
 

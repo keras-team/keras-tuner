@@ -37,7 +37,7 @@ class RandomSearch(HyperTuner):
                 cprint("[FATAL] No valid model found - check your model_fn() function is valid", 'red')
                 return
             for cur_execution in range(self.num_executions):
-                cprint("|- %s/%s execution" % (cur_execution + 1, self.num_executions), 'cyan')
+                cprint("|- execution: %s/%s" % (cur_execution + 1, self.num_executions), 'cyan')
                 #Note: the results are not used for this tuner.
                 results = instance.fit(x, y, **kwargs)
-            self.record_results() # save curren result
+            self.record_results()

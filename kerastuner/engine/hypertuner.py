@@ -20,7 +20,7 @@ class HyperTuner(object):
         self.dryrun = kwargs.get('dryrun', False)
         self.max_fail_streak = kwargs.get('max_fail_streak', 20)
         self.num_gpu = kwargs.get('num_gpu', -1)
-        self.gpu_mem = kwargs.get('gpu_mem', -1)
+        self.batch_size = kwargs.get('batch_size', 32)
         self.local_dir = kwargs.get('local_dir', 'results/')
         self.gs_dir = kwargs.get('gs_dir', None)
         self.model_name = kwargs.get('model_name', str(int(time.time())))
@@ -95,7 +95,7 @@ class HyperTuner(object):
           break
         self.collisions += 1
         
-      self.instances[idx] = Instance(model, idx, self.model_name, self.num_gpu, self.gpu_mem, self.display_model)
+      self.instances[idx] = Instance(model, idx, self.model_name, self.num_gpu, self.batch_size, self.display_model)
       self.current_instance_idx = idx
       return self.instances[idx] 
 
