@@ -5,6 +5,7 @@ from os import path
 from collections import defaultdict
 from tensorflow.python.lib.io import file_io # allows to write to GCP or local
 from termcolor import cprint
+from keras import backend as K
 
 from .execution import InstanceExecution
 
@@ -23,6 +24,14 @@ class Instance(object):
     self.display_model = display_model
     self.ts = int(time.time())
     self.executions = []
+    self.model_size = self.__compute_model_size(model)
+    self.validation
+    cprint("|- model size is:%d" % self.model_size, 'blue')
+
+      
+  def __compute_model_size(self, model):
+    "comput the size of a given model"
+    return np.sum([K.count_params(p) for p in set(model.trainable_weights)])
 
   def fit(self, x, y, **kwargs):
     "Fit an execution of the model"
@@ -78,7 +87,11 @@ class Instance(object):
         "ts": self.ts,
         "training_size": self.training_size,
         "num_executions": len(self.executions),
-        "model": self.model.to_json()
+        "model": self.model.to_json(),
+        "model_name": self.model_name,
+        "num_gpu": self.num_gpu,
+        "batch_size": self.batch_size,
+        "model_size": self.model_size,
     }
 
     # collecting executions results

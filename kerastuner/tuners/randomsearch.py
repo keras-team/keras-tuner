@@ -28,7 +28,7 @@ class RandomSearch(HyperTuner):
         """  
         super(RandomSearch, self).__init__(model_fn, **kwargs)
 
-    def search(self,x, y, **kwargs):      
+    def search(self,x, y, **kwargs):
         for cur_iteration in range(self.num_iterations):
             cprint("[%s/%s instance]" % (cur_iteration, self.num_iterations), 'magenta') 
             
@@ -39,5 +39,5 @@ class RandomSearch(HyperTuner):
             for cur_execution in range(self.num_executions):
                 cprint("|- execution: %s/%s" % (cur_execution + 1, self.num_executions), 'cyan')
                 #Note: the results are not used for this tuner.
-                results = instance.fit(x, y, **kwargs)
+                _ = instance.fit(x, y, **kwargs)
             self.record_results()

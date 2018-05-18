@@ -4,7 +4,6 @@ import numpy as np
 from termcolor import cprint
 from keras.models import clone_model
 from keras.utils import multi_gpu_model
-from keras import backend as K
 from os import path
 
 class InstanceExecution(object):
@@ -29,21 +28,17 @@ class InstanceExecution(object):
       Note: This wrapper around Keras fit allows to handle multi-gpu support
       """
       
-      if self.display_model == 'base' or self.display_model == 'both':
+      if (self.display_model == 'base' or self.display_model == 'both') and self.display_info :
         self.model.summary()
 
       if self.num_gpu > 1:
         model = multi_gpu_model(self.model, gpus=self.num_gpu)
         model.compile(optimizer=self.model.optimizer, loss=self.model.loss, metrics=self.model.metrics, loss_weights=self.model.loss_weights)
-        if self.display_model == 'multi-gpu' or self.display_model == 'both':
+        if (self.display_model == 'multi-gpu' or self.display_model == 'both') and self.display_info:
           self.model.summary()
       else:
         model = self.model
 
-      if self.display_info:
-        model_size = self.__compute_model_size(model)
-        cprint("|- model size is:%d" % model_size, 'blue')
-      
       callbacks = kwargs.get('callbacks')
       if callbacks:
             callbacks = copy.deepcopy(callbacks)
@@ -71,6 +66,3 @@ class InstanceExecution(object):
       }
       self.metrics[metric] = metric_results
   
-  def __compute_model_size(self, model):
-    "comput the size of a given model"
-    return np.sum([K.count_params(p) for p in set(model.trainable_weights)])
