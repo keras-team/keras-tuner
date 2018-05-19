@@ -43,9 +43,10 @@ class Instance(object):
 
     if resume_execution and len(self.executions):
       execution = self.executions[-1]
+      results = execution.fit(x, y, initial_epoch=execution.num_epochs ,**kwargs)
     else:
       execution = self.__new_execution()
-    results = execution.fit(x, y, **kwargs)
+      results  = execution.fit(x, y, **kwargs)
     # compute execution level metrics
     execution.record_results(results)
     return results
@@ -88,19 +89,18 @@ class Instance(object):
       dict: results data
     """
 
-    cprint("[INFO] Saving results to %s" % local_dir, 'cyan')
-
     results = {
         "key_metrics": {},
         "idx": self.idx,
         "ts": self.ts,
         "training_size": self.training_size,
+        "validation_size": self.validation_size,
         "num_executions": len(self.executions),
         "model": self.model.to_json(),
         "model_name": self.model_name,
         "num_gpu": self.num_gpu,
         "batch_size": self.batch_size,
-        "model_size": self.model_size,
+        "model_size": int(self.model_size),
     }
 
     # collecting executions results

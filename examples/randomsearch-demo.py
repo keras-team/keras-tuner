@@ -7,12 +7,11 @@ from keras.callbacks import EarlyStopping
 
 # hypertune imports
 from kerastuner.distributions import Range, Choice, Fixed, Boolean
-from kerastuner.tuners import UltraBand
+from kerastuner.tuners import RandomSearch
 
 # just a simple model to demo how easy it is to use KerasTuner 
 x_train = np.random.random((1000, 20))
 y_train = np.random.randint(2, size=(1000, 1))
-DRY_RUN = True # DRY_RUN: True don't train the models,  DRY_RUN: False: train models.
 
 def model_fn():
   # Initial layer
@@ -38,5 +37,5 @@ def model_fn():
 
 # which metrics to track across the runs and display
 METRIC_TO_REPORT = [('loss', 'min'), ('val_loss', 'min'), ('acc', 'max'), ('val_acc', 'max')]
-hypermodel = UltraBand(model_fn, epoch_budget=300,  dry_run=DRY_RUN, model_name="kerastuner-demo", metrics=METRIC_TO_REPORT)
-hypermodel.search(x_train, y_train, validation_split=0.01)
+hypermodel = RandomSearch(model_fn, model_name="kerastuner-randomsearch-demo", num_iterations=2, num_executions=1, metrics=METRIC_TO_REPORT)
+hypermodel.search(x_train, y_train, epochs=10, validation_split=0.01)

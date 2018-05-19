@@ -40,10 +40,13 @@ class UltraBand(HyperTuner):
       local_dir (str): where to store results and models. Default results/
       gs_dir (str): Google cloud bucket to use to store results and model (optional). Default None
 
-      dryrun (bool): do not train the model just run the pipeline. Default False
+      dry_run (bool): do not train the model just run the pipeline. Default False
       max_fail_streak (int): number of failed model before giving up. Default 20
 
-    FIXME: allows different halving ratio for epochs and models, allows differnet type of distribution
+    FIXME: 
+     - Deal with early stop correctly
+     - allows different halving ratio for epochs and models
+     - allows differnet type of distribution
 
     """
 
@@ -55,7 +58,9 @@ class UltraBand(HyperTuner):
     self.epoch_budget_expensed = 0
     self.epoch_sequence = self.__geometric_seq(self.halving_ratio , self.min_epochs, self.max_epochs)
     self.model_sequence = list(reversed(self.epoch_sequence)) # FIXME: allows to use another type of sequence
-    
+    # clip epoch_sequence to ensure we don't train past max epochs
+    self.epoch_sequence[-1] = self.epoch_sequence[-1] - np.sum(self.epoch_sequence[:-1])
+
     self.band_costs = []
     for i in range(1, len(self.epoch_sequence) + 1):
       s1 = self.epoch_sequence[:i]
@@ -104,16 +109,17 @@ class UltraBand(HyperTuner):
         cprint('|- Generating %s models' % num_models, 'yellow')
         model_instances = []
         kwargs['epochs'] = num_epochs
-        for _ in range(num_models):
-          model_instances.append(self.get_random_instance())
+        if not self.dry_run:
+          for _ in range(num_models):
+            model_instances.append(self.get_random_instance())
 
 
 
         #Training here
         cprint('|- Training %s models for %s epochs' % (num_models, num_epochs), 'yellow')
         kwargs['epochs'] = num_epochs
-        if self.dryrun:
-          model_instances = np.random.rand(num_models) #real training instead
+        if self.dry_run:
+          loss_values = model_instances = np.random.rand(num_models) #real training instead
         else:
           loss_values = []
           for instance in model_instances:
@@ -130,14 +136,14 @@ class UltraBand(HyperTuner):
           band_total_cost += cost
           
           # selecting best model
-          band_models = self.__sort_models(band_models, loss_values) #Bogus replace 2nd term with the loss array
+          band_models = self.__sort_models(model_instances, loss_values) #Bogus replace 2nd term with the loss array
           band_models = band_models[:num_models] # halve the m odels
           
           #train
           cprint('|- Training %s models for an additional %s epochs' % (num_models, num_epochs), 'yellow')
           kwargs['epochs'] = num_epochs
-          if self.dryrun:
-            model_instances = np.random.rand(num_models) #real training instead
+          if self.dry_run:
+            loss_values = model_instances = np.random.rand(num_models) #real training instead
           else:
             loss_values = []
             for instance in model_instances:

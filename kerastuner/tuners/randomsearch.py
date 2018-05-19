@@ -22,7 +22,7 @@ class RandomSearch(HyperTuner):
             local_dir (str): where to store results and models. Default results/
             gs_dir (str): Google cloud bucket to use to store results and model (optional). Default None
 
-            dryrun (bool): do not train the model just run the pipeline. Default False
+            dry_run (bool): do not train the model just run the pipeline. Default False
             max_fail_streak (int): number of failed model before giving up. Default 20
 
         """  
@@ -41,6 +41,6 @@ class RandomSearch(HyperTuner):
             for cur_execution in range(self.num_executions):
                 cprint("|- execution: %s/%s" % (cur_execution + 1, self.num_executions), 'cyan')
                 #Note: the results are not used for this tuner.
-                if not self.dryrun:
+                if not self.dry_run:
                     _ = instance.fit(x, y, **kwargs)
             self.record_results()

@@ -17,7 +17,7 @@ class HyperTuner(object):
     def __init__(self, model_fn, **kwargs):
         self.num_iterations = kwargs.get('num_iterations', 10) # how many models
         self.num_executions = kwargs.get('num_executions', 3) # how many executions
-        self.dryrun = kwargs.get('dryrun', False)
+        self.dry_run = kwargs.get('dry_run', False)
         self.max_fail_streak = kwargs.get('max_fail_streak', 20)
         self.num_gpu = kwargs.get('num_gpu', -1)
         self.batch_size = kwargs.get('batch_size', 32)
@@ -74,6 +74,7 @@ class HyperTuner(object):
         # create local dir if needed
         if not os.path.exists(self.local_dir):
           os.makedirs(self.local_dir)
+        cprint("|- Saving results in %s" % self.local_dir, 'cyan')
 
     def get_random_instance(self):
       "Return a never seen before random model instance"
