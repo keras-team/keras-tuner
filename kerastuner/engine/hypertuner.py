@@ -33,8 +33,8 @@ class HyperTuner(object):
         self.ts = int(time.time())
 
 
-        
-        # metrics     
+
+        # metrics
         self.METRIC_NAME = 0
         self.METRIC_DIRECTION = 1
         self.max_acc = -1
@@ -42,7 +42,7 @@ class HyperTuner(object):
         self.max_val_acc = -1
         self.min_val_loss = sys.maxsize
 
-        
+
         # including user metrics
         user_metrics = kwargs.get('metrics')
         if user_metrics:
@@ -70,7 +70,7 @@ class HyperTuner(object):
         # output control
         if self.display_model not in ['', 'base', 'multi-gpu', 'both']:
               raise Exception('Invalid display_model value: can be either base, multi-gpu or both')
-    
+
         # create local dir if needed
         if not os.path.exists(self.local_dir):
           os.makedirs(self.local_dir)
@@ -90,20 +90,20 @@ class HyperTuner(object):
           continue
 
         idx = self.__compute_model_id(model)
-        
+
         if idx not in self.instances:
           break
         self.collisions += 1
-        
+
       self.instances[idx] = Instance(model, idx, self.model_name, self.num_gpu, self.batch_size, self.display_model)
       self.current_instance_idx = idx
-      return self.instances[idx] 
+      return self.instances[idx]
 
     def record_results(self, save_models=True, idx=None):
       """Record instance results
       Args:
         save_model (bool): Save the trained models?
-        idx (xxhash): index of the instance. By default use the lastest instance for convience.  
+        idx (xxhash): index of the instance. By default use the lastest instance for convience.
       """
 
       if not idx:
@@ -116,9 +116,9 @@ class HyperTuner(object):
       report = [['Metric', 'Best', 'Last']]
       for km in self.key_metrics:
         metric_name = km[self.METRIC_NAME]
-        if metric_name in results:
+        if metric_name in results['key_metrics']:
           current_best = self.stats[metric_name]
-          res_val = results[metric_name]
+          res_val = results['key_metrics'][metric_name]
           if km[self.METRIC_DIRECTION] == 'min':
             best = min(current_best, res_val)
           else:
@@ -129,7 +129,7 @@ class HyperTuner(object):
 
     def get_model_by_id(self, idx):
       return self.instances.get(idx, None)
-     
+
     def __compute_model_id(self, model):
       return xxh64(str(model.get_config())).hexdigest()
 

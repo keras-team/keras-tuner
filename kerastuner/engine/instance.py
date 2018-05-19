@@ -28,7 +28,7 @@ class Instance(object):
     self.validation
     cprint("|- model size is:%d" % self.model_size, 'blue')
 
-      
+
   def __compute_model_size(self, model):
     "comput the size of a given model"
     return np.sum([K.count_params(p) for p in set(model.trainable_weights)])
@@ -44,7 +44,7 @@ class Instance(object):
 
   def __new_execution(self):
     num_executions = len(self.executions)
-    
+
     # ensure that info is only displayed once per iteration
     if num_executions > 0:
       display_model = None
@@ -67,7 +67,7 @@ class Instance(object):
         output_f.write(input_f.read())
 
 
-  def record_results(self, local_dir, gs_dir=None, save_models=True, prefix='', 
+  def record_results(self, local_dir, gs_dir=None, save_models=True, prefix='',
                     key_metrics=[('loss', 'min'), ('acc', 'max')]):
     """Record training results
     Args
@@ -81,8 +81,9 @@ class Instance(object):
     """
 
     cprint("[INFO] Saving results to %s" % local_dir, 'cyan')
-    
+
     results = {
+        "key_metrics": {},
         "idx": self.idx,
         "ts": self.ts,
         "training_size": self.training_size,
@@ -118,7 +119,7 @@ class Instance(object):
       # save model if needed
       if save_models:
         mdl_base_fname = "%s-%s" % (self.idx, execution.ts)
-        
+
         # config
         config_fname = "%s-%s-config.json" % (prefix, mdl_base_fname)
         local_path = path.join(local_dir, config_fname)
@@ -148,13 +149,13 @@ class Instance(object):
           "median": np.median(data)
         }
     results['metrics'] = metrics
-    
+
     # Usual metrics reported as top fields for their median values
     for tm in key_metrics:
       if tm[0] in metrics:
-        results[tm[0]] = metrics[tm[0]][tm[1]]['median']
+        results['key_metrics'][tm[0]] = metrics[tm[0]][tm[1]]['median']
 
-      
+
     fname = '%s-%s-%s-results.json' % (prefix, self.idx, self.training_size)
     output_path = path.join(local_dir, fname)
     with file_io.FileIO(output_path, 'w') as outfile:
