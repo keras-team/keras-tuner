@@ -37,5 +37,5 @@ def model_fn():
 
 # which metrics to track across the runs and display
 METRIC_TO_REPORT = [('loss', 'min'), ('val_loss', 'min'), ('acc', 'max'), ('val_acc', 'max')]
-hypermodel = (model_fn, model_name="keras-demo", num_iterations=10, num_executions=3, metrics=METRIC_TO_REPORT)
+hypermodel = RandomSearch(model_fn, model_name="keras-demo", num_iterations=10, num_executions=3, metrics=METRIC_TO_REPORT)
 hypermodel.search(x_train, y_train, epochs=10, validation_split=0.01)

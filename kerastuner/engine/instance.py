@@ -25,18 +25,26 @@ class Instance(object):
     self.ts = int(time.time())
     self.executions = []
     self.model_size = self.__compute_model_size(model)
-    self.validation
-    cprint("|- model size is:%d" % self.model_size, 'blue')
-
+    self.validation_size = 0
+    
       
   def __compute_model_size(self, model):
     "comput the size of a given model"
     return np.sum([K.count_params(p) for p in set(model.trainable_weights)])
 
-  def fit(self, x, y, **kwargs):
-    "Fit an execution of the model"
+  def fit(self, x, y, resume_execution=False, **kwargs):
+    """Fit an execution of the model instance
+    Args:
+      resume_execution (bool): Instead of creating a new execution, resume training the previous one. Default false.
+    """
     self.training_size = len(y)
-    execution = self.__new_execution()
+    if kwargs.get('validation_data'):
+      self.validation_size = len(kwargs['validation_data'][1]) 
+
+    if resume_execution and len(self.executions):
+      execution = self.executions[-1]
+    else:
+      execution = self.__new_execution()
     results = execution.fit(x, y, **kwargs)
     # compute execution level metrics
     execution.record_results(results)

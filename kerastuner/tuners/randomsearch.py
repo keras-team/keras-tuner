@@ -26,6 +26,7 @@ class RandomSearch(HyperTuner):
             max_fail_streak (int): number of failed model before giving up. Default 20
 
         """  
+        cprint('-=[RandomSearch Tuning]=-', 'magenta')
         super(RandomSearch, self).__init__(model_fn, **kwargs)
 
     def search(self,x, y, **kwargs):
@@ -33,11 +34,13 @@ class RandomSearch(HyperTuner):
             cprint("[%s/%s instance]" % (cur_iteration, self.num_iterations), 'magenta') 
             
             instance = self.get_random_instance()
+            cprint("|- model size is:%d" % instance.model_size, 'blue')
             if not instance:
                 cprint("[FATAL] No valid model found - check your model_fn() function is valid", 'red')
                 return
             for cur_execution in range(self.num_executions):
                 cprint("|- execution: %s/%s" % (cur_execution + 1, self.num_executions), 'cyan')
                 #Note: the results are not used for this tuner.
-                _ = instance.fit(x, y, **kwargs)
+                if not self.dryrun:
+                    _ = instance.fit(x, y, **kwargs)
             self.record_results()
