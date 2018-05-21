@@ -16,7 +16,13 @@ def Choice(*selection):
     Returns:
         an element of the selecting
     """
-    return random.choice(selection)
+    x = random.choice(selection)
+    if isinstance(selection[0], int):
+        return int(x)
+    elif isinstance(selection[0], float):
+        return float(x)
+    else:
+        return x
 
 def Range(start, stop, increment=1):
     """Return a random value from a range.
@@ -55,3 +61,8 @@ def Linear(start, stop, num_buckets, precision=0):
         if precision > 0:
             var = round(var, precision + 1)
         return var
+
+if __name__ == "__main__":
+    x = Choice(1, 2, 3)
+    print(isinstance(x, int))
+    print(type(x))

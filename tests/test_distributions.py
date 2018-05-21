@@ -27,12 +27,15 @@ def test_bool_randomness():
 def test_choice_correctness():
   res = distributions.Choice('a', 'b', 'c')
   assert res in ['a', 'b', 'c']
+  assert isinstance(res, str)
 
   res = distributions.Choice(1, 2, 3)
   assert res in [1, 2, 3]
 
+
   res = distributions.Choice(1.1, 2.2, 3.3)
   assert res in [1.1, 2.2, 3.3]
+  assert isinstance(res, float)
 
 def test_choice_randomness():
   res = defaultdict(int)
