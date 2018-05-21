@@ -4,8 +4,6 @@ Initial algorithm: https://gist.github.com/ebursztein/8304de052a40058fd0ebaf08c9
 
 """
 
-
-
 import numpy as np
 from termcolor import cprint
 
@@ -14,6 +12,7 @@ import copy
 import sys
 import numpy as np
 from math import log, ceil
+from tqdm import tqdm
 
 from ..engine import HyperTuner
 
@@ -110,7 +109,7 @@ class UltraBand(HyperTuner):
         model_instances = []
         kwargs['epochs'] = num_epochs
         if not self.dry_run:
-          for _ in range(num_models):
+          for _ in tqdm(range(num_models), desc='Generating models', unit='model'):
             model_instances.append(self.get_random_instance())
 
 
