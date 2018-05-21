@@ -21,8 +21,10 @@ def Choice(*selection):
         return int(x)
     elif isinstance(selection[0], float):
         return float(x)
+    elif isinstance(selection[0], str):
+        return str(x)
     else:
-        return x
+        Exception('unknown type')
 
 def Range(start, stop, increment=1):
     """Return a random value from a range.
@@ -65,4 +67,8 @@ def Linear(start, stop, num_buckets, precision=0):
 if __name__ == "__main__":
     x = Choice(1, 2, 3)
     print(isinstance(x, int))
+    print(type(x))
+
+    x = Choice(1.1, 2.2)
+    print(isinstance(x, float))
     print(type(x))

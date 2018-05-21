@@ -31,7 +31,7 @@ def test_choice_correctness():
 
   res = distributions.Choice(1, 2, 3)
   assert res in [1, 2, 3]
-
+  assert isinstance(res, int)
 
   res = distributions.Choice(1.1, 2.2, 3.3)
   assert res in [1.1, 2.2, 3.3]
