@@ -2,8 +2,7 @@ import time
 import copy
 import numpy as np
 from termcolor import cprint
-from keras.models import clone_model
-from keras.utils import multi_gpu_model
+import keras
 from os import path
 
 class InstanceExecution(object):
@@ -19,7 +18,7 @@ class InstanceExecution(object):
     self.display_model = display_model
     self.display_info = display_info
     # keep a separated model per instance
-    self.model = clone_model(model)
+    self.model = keras.models.clone_model(model)
     # This is directly using Keras model class attribute - I wish there is a better way 
     self.model.compile(optimizer=model.optimizer, loss=model.loss, metrics=model.metrics, loss_weights=model.loss_weights)
 
@@ -32,7 +31,7 @@ class InstanceExecution(object):
         self.model.summary()
 
       if self.num_gpu > 1:
-        model = multi_gpu_model(self.model, gpus=self.num_gpu)
+        model = keras.utils.multi_gpu_model(self.model, gpus=self.num_gpu)
         model.compile(optimizer=self.model.optimizer, loss=self.model.loss, metrics=self.model.metrics, loss_weights=self.model.loss_weights)
         if (self.display_model == 'multi-gpu' or self.display_model == 'both') and self.display_info:
           self.model.summary()
