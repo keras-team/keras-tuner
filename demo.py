@@ -7,12 +7,12 @@ from keras.callbacks import EarlyStopping
 
 # hypertune imports
 from kerastuner.distributions import Range, Choice, Fixed, Boolean
-from kerastuner.tuners import UltraBand
+from kerastuner.tuners import RandomSearch
 
 # just a simple model to demo how easy it is to use KerasTuner 
 x_train = np.random.random((1000, 20))
 y_train = np.random.randint(2, size=(1000, 1))
-DRY_RUN = True # DRY_RUN: True don't train the models,  DRY_RUN: False: train models.
+DRY_RUN = False # DRY_RUN: True don't train the models,  DRY_RUN: False: train models.
 
 def model_fn():
   # Initial layer
@@ -25,7 +25,6 @@ def model_fn():
   LL_UNITS = Fixed(1)
   LL_ACTIVATION = Choice('sigmoid', 'tanh')
   # Compile options
-  OPTIMIZER = Choice(Adam(), SGD())
   LOSS = Choice('binary_crossentropy', 'mse')
 
   model = Sequential()
@@ -33,10 +32,10 @@ def model_fn():
   if L2_OPTIONAL:
     model.add(Dense(L2_UNITS, activation=L2_ACTIVATION))
   model.add(Dense(LL_UNITS, activation=LL_ACTIVATION))
-  model.compile(optimizer=OPTIMIZER, loss=LOSS, metrics=['accuracy'])
+  model.compile(optimizer='adam', loss=LOSS, metrics=['accuracy'])
   return model
 
 # which metrics to track across the runs and display
 METRIC_TO_REPORT = [('loss', 'min'), ('val_loss', 'min'), ('acc', 'max'), ('val_acc', 'max')]
-hypermodel = UltraBand(model_fn, epoch_budget=300,  dry_run=DRY_RUN, model_name="kerastuner-demo", metrics=METRIC_TO_REPORT)
+hypermodel = RandomSearch(model_fn, epoch_budget=90, max_epochs=10, dry_run=DRY_RUN, model_name="kerastuner-demo", metrics=METRIC_TO_REPORT)
 hypermodel.search(x_train, y_train, validation_split=0.01)

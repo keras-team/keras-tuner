@@ -26,6 +26,7 @@ class Instance(object):
     self.executions = []
     self.model_size = self.__compute_model_size(model)
     self.validation_size = 0
+    self.results = None
     
       
   def __compute_model_size(self, model):
@@ -171,4 +172,6 @@ class Instance(object):
       outfile.write(json.dumps(results))
     if gs_dir:
       self.__save_to_gs(fname, local_dir, gs_dir)
+    
+    self.results = results
     return results

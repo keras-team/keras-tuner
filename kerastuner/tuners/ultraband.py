@@ -49,9 +49,7 @@ class UltraBand(HyperTuner):
 
     """
 
-    self.epoch_budget = kwargs.get('epoch_budget', 1890)
-    self.max_epochs = kwargs.get('max_epochs', 45)
-    self.min_epochs = kwargs.get('min_epochs', 3)
+
     self.halving_ratio = kwargs.get('halving_ratio', 3)
 
     self.epoch_budget_expensed = 0

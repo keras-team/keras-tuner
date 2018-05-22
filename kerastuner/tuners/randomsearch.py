@@ -9,10 +9,11 @@ class RandomSearch(HyperTuner):
     def __init__(self, model_fn, **kwargs):
         """ RandomSearch hypertuner
         Args:
-            model_name (str): used to prefix results. Default: ts
+            epoch_budget (int): How many epochs to spend hyper-tuning. Default 3171
+            max_epochs (int): How long to train model at most. default 50
+            model_name (str): used to prefix results. Default: timestamp
 
-            iterations (int): number of model to test
-            executions (int): number of exection for each model tested
+            executions (int): number of execution for each model tested
 
             display_model (str): base: cpu/single gpu version, multi-gpu: multi-gpu, both: base and multi-gpu. default (Nothing)
 
@@ -26,21 +27,27 @@ class RandomSearch(HyperTuner):
             max_fail_streak (int): number of failed model before giving up. Default 20
 
         """  
-        cprint('-=[RandomSearch Tuning]=-', 'magenta')
         super(RandomSearch, self).__init__(model_fn, **kwargs)
+        self.log.tuner_name("RandomSearch")
 
     def search(self,x, y, **kwargs):
-        for cur_iteration in range(self.num_iterations):
-            cprint("[%s/%s instance]" % (cur_iteration, self.num_iterations), 'magenta') 
-            
+        remaining_budget = self.epoch_budget
+        num_instances = 0 
+        while remaining_budget > self.max_epochs:
             instance = self.get_random_instance()
-            cprint("|- model size is:%d" % instance.model_size, 'blue')
             if not instance:
-                cprint("[FATAL] No valid model found - check your model_fn() function is valid", 'red')
+                self.log.error("[FATAL] No valid model found - check your model_fn() function is valid")
                 return
+            num_instances += 1
+            self.log.new_instance(instance, num_instances, remaining_budget)
             for cur_execution in range(self.num_executions):
                 cprint("|- execution: %s/%s" % (cur_execution + 1, self.num_executions), 'cyan')
-                #Note: the results are not used for this tuner.
-                if not self.dry_run:
-                    _ = instance.fit(x, y, **kwargs)
-            self.record_results()
+                if self.dry_run:
+                    remaining_budget -= self.max_epochs
+                else:
+                    kwargs['epochs'] = self.max_epochs
+                    history = instance.fit(x, y, **kwargs)
+                    remaining_budget -= len(history.history['loss'])
+                    self.record_results()
+            self.statistics()
+        self.log.done()

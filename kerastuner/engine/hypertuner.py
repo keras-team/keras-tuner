@@ -10,12 +10,16 @@ from xxhash import xxh64 # xxh64 is faster
 from tabulate import tabulate
 
 from .instance import Instance
+from .logger import Logger
 
 
 class HyperTuner(object):
     """Abstract hypertuner class."""
     def __init__(self, model_fn, **kwargs):
-        self.num_iterations = kwargs.get('num_iterations', 10) # how many models
+        self.epoch_budget = kwargs.get('epoch_budget', 3713)
+        self.max_epochs = kwargs.get('max_epochs', 50)
+        self.min_epochs = kwargs.get('min_epochs', 3)
+
         self.num_executions = kwargs.get('num_executions', 3) # how many executions
         self.dry_run = kwargs.get('dry_run', False)
         self.max_fail_streak = kwargs.get('max_fail_streak', 20)
@@ -27,12 +31,13 @@ class HyperTuner(object):
         self.display_model = kwargs.get('display_model', '') # which models to display
         self.invalid_models = 0 # how many models didn't work
         self.collisions = 0 # how many time we regenerated the same model
-        self.instances = {} # All the models we trained with their stats and info
+        self.instances = {} # All the models we trained
         self.current_instance_idx = -1 # track the current instance trained
         self.model_fn = model_fn
         self.ts = int(time.time())
 
-
+        #log
+        self.log = Logger(self)
 
         # metrics
         self.METRIC_NAME = 0
@@ -113,8 +118,7 @@ class HyperTuner(object):
         instance = self.instances[idx]
       results = instance.record_results(self.local_dir, gs_dir=self.gs_dir, save_models=save_models, prefix=self.model_name, key_metrics=self.key_metrics)
 
-      cprint("Key metrics", "magenta")
-      report = [['Metric', 'Best', 'Last']]
+      #compute overall statisitcs
       for km in self.key_metrics:
         metric_name = km[self.METRIC_NAME]
         if metric_name in results['key_metrics']:
@@ -125,8 +129,6 @@ class HyperTuner(object):
           else:
             best = max(current_best, res_val)
           self.stats[metric_name] = best
-        report.append([metric_name, best, res_val])
-      print (tabulate(report, headers="firstrow"))
 
     def get_model_by_id(self, idx):
       return self.instances.get(idx, None)
@@ -135,13 +137,20 @@ class HyperTuner(object):
       return xxh64(str(model.get_config())).hexdigest()
 
     def statistics(self):
-      # FIXME expand statistics
-      ###       run = {
-      ##  'ts': self.ts,
-      ##  'iterations': self.num_iterations,
-      ##  'executions': self.num_executions,
-      ##  'min_loss': self.min_loss,
-      ##}
+      #compute overall statisitcs
+      latest_instance_results = self.instances[self.current_instance_idx].results
+      report = [['Metric', 'Best', 'Last']]
+      for km in self.key_metrics:
+        metric_name = km[self.METRIC_NAME]
+        if metric_name in latest_instance_results['key_metrics']:
+          current_best = self.stats[metric_name]
+          res_val = latest_instance_results['key_metrics'][metric_name]
+          if km[self.METRIC_DIRECTION] == 'min':
+            best = min(current_best, res_val)
+          else:
+            best = max(current_best, res_val)
+        report.append([metric_name, best, res_val])
+      print (tabulate(report, headers="firstrow"))
 
       print("Invalid models:%s" % self.invalid_models)
       print("Collisions: %s" % self.collisions)
