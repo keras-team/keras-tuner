@@ -43,6 +43,7 @@ class Instance(object):
 
     if resume_execution and len(self.executions):
       execution = self.executions[-1]
+      #FIXME: merge accuracy back
       results = execution.fit(x, y, initial_epoch=execution.num_epochs ,**kwargs)
     else:
       execution = self.__new_execution()

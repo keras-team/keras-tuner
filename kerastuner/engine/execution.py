@@ -29,7 +29,7 @@ class InstanceExecution(object):
       
       if (self.display_model == 'base' or self.display_model == 'both') and self.display_info :
         self.model.summary()
-
+      #FIXME: need to be moved to init
       if self.num_gpu > 1:
         model = keras.utils.multi_gpu_model(self.model, gpus=self.num_gpu)
         model.compile(optimizer=self.model.optimizer, loss=self.model.loss, metrics=self.model.metrics, loss_weights=self.model.loss_weights)
