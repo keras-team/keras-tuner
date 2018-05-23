@@ -9,7 +9,7 @@ def Boolean():
     "Return a random bool"
     return random.choice([True, False])
 
-def Choice(*selection):
+def Choice(selection):
     """Return a random value from an explicit list of choice.
     Args:
         *selection: a set of explicit choices
@@ -26,7 +26,7 @@ def Choice(*selection):
     else:
         Exception('unknown type')
 
-def Range(start, stop, increment=1):
+def Range(start, stop, increment):
     """Return a random value from a range.
     Args:
         start (int): lower bound of the range
@@ -41,7 +41,7 @@ def Range(start, stop, increment=1):
     my_range = range(start, stop, increment)
     return int(random.choice(my_range))
 
-def Linear(start, stop, num_buckets, precision=0):
+def Linear(start, stop, num_buckets, precision):
     """Return a random value from a range which is linearly divided.
     Args:
         start (int/float): lower bound of the range

@@ -1,3 +1,3 @@
-from . import distributions
+from . import hyperparameters
 from . import engine
 from . import tuners

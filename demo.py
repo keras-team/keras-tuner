@@ -6,7 +6,7 @@ from keras.optimizers import Adam, SGD
 from keras.callbacks import EarlyStopping
 
 # hypertune imports
-from kerastuner.distributions import Range, Choice, Fixed, Boolean
+from kerastuner.hyperparameters import HyperParameters
 from kerastuner.tuners import RandomSearch
 
 # just a simple model to demo how easy it is to use KerasTuner 
@@ -15,17 +15,18 @@ y_train = np.random.randint(2, size=(1000, 1))
 DRY_RUN = False # DRY_RUN: True don't train the models,  DRY_RUN: False: train models.
 
 def model_fn():
-  # Initial layer
-  IL_UNITS = Range(16, 32, 2)
+  hp = HyperParameters()
+  # Input layer
+  IL_UNITS = hp.Range('input dims', 16, 32, 2)
   # Hidden layer
-  L2_UNITS = Range(16, 32, 2)
-  L2_ACTIVATION = Choice('relu', 'tanh')
-  L2_OPTIONAL = Boolean()
+  L2_UNITS = hp.Range('hidden dims', 16, 32, 2)
+  L2_ACTIVATION = hp.Choice('hidden activation', ['relu', 'tanh'])
+  L2_OPTIONAL = hp.Boolean('use hidden layer')
   # Last layer
-  LL_UNITS = Fixed(1)
-  LL_ACTIVATION = Choice('sigmoid', 'tanh')
+  LL_UNITS = hp.Fixed('ouput dims', 1)
+  LL_ACTIVATION = hp.Choice('output activation', ['sigmoid', 'tanh'])
   # Compile options
-  LOSS = Choice('binary_crossentropy', 'mse')
+  LOSS = hp.Choice('loss', ['binary_crossentropy', 'mse'])
 
   model = Sequential()
   model.add(Dense(IL_UNITS, input_shape=(20,)))
@@ -33,8 +34,9 @@ def model_fn():
     model.add(Dense(L2_UNITS, activation=L2_ACTIVATION))
   model.add(Dense(LL_UNITS, activation=LL_ACTIVATION))
   model.compile(optimizer='adam', loss=LOSS, metrics=['accuracy'])
-  return model
-
+  return model, hp
+mdl, _ = model_fn()
+mdl.summary()
 # which metrics to track across the runs and display
 METRIC_TO_REPORT = [('loss', 'min'), ('val_loss', 'min'), ('acc', 'max'), ('val_acc', 'max')]
 hypermodel = RandomSearch(model_fn, epoch_budget=90, max_epochs=10, dry_run=DRY_RUN, model_name="kerastuner-demo", metrics=METRIC_TO_REPORT)

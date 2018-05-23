@@ -13,10 +13,11 @@ from .execution import InstanceExecution
 class Instance(object):
   """Model instance class."""
 
-  def __init__(self, model, idx, model_name, num_gpu, batch_size, display_model):
-    self.ts = int(time.time())
+  def __init__(self, idx, model, hyper_parameters,  model_name, num_gpu, batch_size, display_model):
+    self.ts = int(time.time()) 
     self.training_size = -1
     self.model = model
+    self.hyper_parameters = hyper_parameters
     self.idx = idx
     self.model_name = model_name
     self.num_gpu = num_gpu
@@ -103,6 +104,7 @@ class Instance(object):
         "num_gpu": self.num_gpu,
         "batch_size": self.batch_size,
         "model_size": int(self.model_size),
+        "hyper_parameters": self.hyper_parameters
     }
 
     # collecting executions results
