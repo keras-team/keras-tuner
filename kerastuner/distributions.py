@@ -1,74 +1,83 @@
 "Function that returns values from a set using specific set of distribution"
 from numpy import random, linspace
+hyper_parameters = {}
 
-def Fixed(val):
-  "Return a fixed selected value"
-  return val
+def __record_parameter(name, value, param_type):
+    global hyperparameters
+    hyper_parameters[name] = {"value": "%s" % value, "type": param_type}
 
-def Boolean():
-    "Return a random bool"
-    return random.choice([True, False])
+def Fixed(name, value):
+    "Return a fixed selected value"
+    __record_parameter(name, value, "Fixed")
+    return value
 
-def Choice(selection):
+
+def Boolean(name):
+    """Return a random Boolean value.
+    Args:
+        name (str): name of the parameter
+    Returns:
+        an boolean
+    """
+    value = random.choice([True, False])
+    __record_parameter(name, value, "Boolean")
+    return value
+
+def Choice(name, selection):
     """Return a random value from an explicit list of choice.
     Args:
-        *selection: a set of explicit choices
+        name (str): name of the parameter
+        selection (list): list of explicit choices
     Returns:
-        an element of the selecting
+        an element of the list provided
     """
-    x = random.choice(selection)
+    value = random.choice(selection)
     if isinstance(selection[0], int):
-        return int(x)
+        value = int(value)
     elif isinstance(selection[0], float):
-        return float(x)
+        value = float(value)
     elif isinstance(selection[0], str):
-        return str(x)
+        value = str(value)
     else:
         Exception('unknown type')
+    __record_parameter(name, value, "Choice")
+    return value
 
-def Range(start, stop, increment):
+
+def Range(name, start, stop, increment=1):
     """Return a random value from a range.
     Args:
+        name (str): name of the parameter
         start (int): lower bound of the range
         stop (int): upper bound of the range
         increment (int): incremental step
     Returns:
         an element of the range
-    
-    Todo:
-      Don't generate the full range, do something more optimal
     """
     my_range = range(start, stop, increment)
-    return int(random.choice(my_range))
+    value = int(random.choice(my_range))
+    __record_parameter(name, value, "Range")
+    return value
 
-def Linear(start, stop, num_buckets, precision):
+
+def Linear(name, start, stop, num_buckets, precision=0):
     """Return a random value from a range which is linearly divided.
     Args:
+        name (str): name of the parameter
         start (int/float): lower bound of the range
         stop (int/float): upper bound of the range
         divider (int): into how many buckets should the range being divided in
         precision (int): For float range. Round the result rounded to the nth decimal if needed. 0 means not rounded
     Returns:
         an element of the range
-    
-    Todo:
-      Don't generate the full range, do something more optimal
     """
     my_range = linspace(start, stop, num_buckets)
-    var = random.choice(my_range)
+    value = random.choice(my_range)
     if isinstance(start, int):
-        return int(var)
+        value = int(value)
     else:
-        var = float(var)
+        value = float(value)
         if precision > 0:
-            var = round(var, precision + 1)
-        return var
-
-if __name__ == "__main__":
-    x = Choice(1, 2, 3)
-    print(isinstance(x, int))
-    print(type(x))
-
-    x = Choice(1.1, 2.2)
-    print(isinstance(x, float))
-    print(type(x))
+            value = round(value, precision + 1)
+    __record_parameter(name, value, "Linear")
+    return value

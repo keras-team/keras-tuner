@@ -11,6 +11,7 @@ from tabulate import tabulate
 
 from .instance import Instance
 from .logger import Logger
+from ..distributions import hyper_parameters
 
 
 class HyperTuner(object):
@@ -87,8 +88,7 @@ class HyperTuner(object):
       while 1:
         fail_streak += 1
         try:
-          model, hp = self.model_fn()
-          hyper_parameters = hp.get_parameters()
+          model = self.model_fn()
         except:
           self.invalid_models += 1
           cprint("[WARN] invalid model %s/%s" % (self.invalid_models, self.max_fail_streak), 'yellow')
@@ -101,8 +101,8 @@ class HyperTuner(object):
         if idx not in self.instances:
           break
         self.collisions += 1
-
-      self.instances[idx] = Instance(idx, model, hyper_parameters, self.model_name, self.num_gpu, self.batch_size, self.display_model)
+      hp = hyper_parameters
+      self.instances[idx] = Instance(idx, model, hp, self.model_name, self.num_gpu, self.batch_size, self.display_model)
       self.current_instance_idx = idx
       return self.instances[idx]
 

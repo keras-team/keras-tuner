@@ -29,7 +29,6 @@ class Instance(object):
     self.validation_size = 0
     self.results = None
     
-      
   def __compute_model_size(self, model):
     "comput the size of a given model"
     return np.sum([K.count_params(p) for p in set(model.trainable_weights)])
