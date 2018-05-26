@@ -5,10 +5,13 @@ from termcolor import cprint
 import keras
 from os import path
 
+from .tunercallback import TunerCallback
+
 class InstanceExecution(object):
   """Model Execution class. Each Model instance can be executed N time"""
 
-  def __init__(self, model, idx, model_name, num_gpu, batch_size, display_model, display_info):
+  def __init__(self, model, idx, model_name, num_gpu, batch_size, display_model, 
+               display_info, instance_info, key_metrics):
     self.ts = int(time.time())
     self.idx = idx
     self.model_name = model_name
@@ -21,6 +24,8 @@ class InstanceExecution(object):
     self.model = keras.models.clone_model(model)
     # This is directly using Keras model class attribute - I wish there is a better way 
     self.model.compile(optimizer=model.optimizer, loss=model.loss, metrics=model.metrics, loss_weights=model.loss_weights)
+    self.instance_info = instance_info
+    self.key_metrics = key_metrics
 
   def fit(self, x, y, **kwargs):
       """Fit a given model 
@@ -38,6 +43,8 @@ class InstanceExecution(object):
       else:
         model = self.model
 
+      self.instance_info['execution_idx'] = self.ts
+      tcb = TunerCallback(self.instance_info, self.key_metrics)
       callbacks = kwargs.get('callbacks')
       if callbacks:
             callbacks = copy.deepcopy(callbacks)
@@ -46,7 +53,10 @@ class InstanceExecution(object):
               if 'TensorBoard' in str(type(callback)):
                 tensorboard_idx = "%s-%s-%s" % (self.model_name, self.idx, self.ts)
                 callback.log_dir = path.join(callback.log_dir, tensorboard_idx)
-            kwargs['callbacks'] = callbacks
+            callbacks.append(tcb)
+      else: 
+          callbacks = [tcb]
+      kwargs['callbacks'] = callbacks
       results = model.fit(x, y, batch_size=self.batch_size, **kwargs) 
       return results
 
@@ -55,6 +65,7 @@ class InstanceExecution(object):
     
     self.history = results.history
     self.num_epochs = len(self.history)
+    self.ts = int(time.time())
 
     # generic metric recording 
     self.metrics = {}

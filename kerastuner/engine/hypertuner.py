@@ -102,7 +102,8 @@ class HyperTuner(object):
           break
         self.collisions += 1
       hp = hyper_parameters
-      self.instances[idx] = Instance(idx, model, hp, self.model_name, self.num_gpu, self.batch_size, self.display_model)
+      self.instances[idx] = Instance(idx, model, hp, self.model_name, self.num_gpu, 
+                              self.batch_size, self.display_model, self.key_metrics, self.local_dir)
       self.current_instance_idx = idx
       return self.instances[idx]
 
@@ -117,7 +118,7 @@ class HyperTuner(object):
         instance = self.instances[self.current_instance_idx]
       else:
         instance = self.instances[idx]
-      results = instance.record_results(self.local_dir, gs_dir=self.gs_dir, save_models=save_models, prefix=self.model_name, key_metrics=self.key_metrics)
+      results = instance.record_results(gs_dir=self.gs_dir, save_models=save_models)
 
       #compute overall statisitcs
       for km in self.key_metrics:

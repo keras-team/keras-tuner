@@ -8,12 +8,13 @@ from termcolor import cprint
 from keras import backend as K
 
 from .execution import InstanceExecution
+from .tunercallback import TunerCallback
 
 
 class Instance(object):
   """Model instance class."""
 
-  def __init__(self, idx, model, hyper_parameters,  model_name, num_gpu, batch_size, display_model):
+  def __init__(self, idx, model, hyper_parameters,  model_name, num_gpu, batch_size, display_model, key_metrics, local_dir):
     self.ts = int(time.time()) 
     self.training_size = -1
     self.model = model
@@ -27,8 +28,32 @@ class Instance(object):
     self.executions = []
     self.model_size = self.__compute_model_size(model)
     self.validation_size = 0
-    self.results = None
-    
+    self.results = {}
+    self.key_metrics = key_metrics
+    self.local_dir = local_dir
+
+  def __get_instance_info(self):
+    """Return a dictionary of the model parameters
+
+      Used both for the instance result file and the execution result file 
+    """
+    info = {
+        "key_metrics": {}, #key metrics results dict. not key metrics definition
+        "idx": self.idx,
+        "ts": self.ts,
+        "training_size": self.training_size,
+        "validation_size": self.validation_size,
+        "num_executions": len(self.executions),
+        "model": self.model.to_json(),
+        "model_name": self.model_name,
+        "num_gpu": self.num_gpu,
+        "batch_size": self.batch_size,
+        "model_size": int(self.model_size),
+        "hyper_parameters": self.hyper_parameters,
+        "local_dir": self.local_dir
+    }
+    return info
+
   def __compute_model_size(self, model):
     "comput the size of a given model"
     return np.sum([K.count_params(p) for p in set(model.trainable_weights)])
@@ -64,7 +89,10 @@ class Instance(object):
       display_info = True
       display_model = self.display_model
 
-    execution = InstanceExecution(self.model, self.idx, self.model_name, self.num_gpu, self.batch_size, display_model, display_info)
+    instance_info = self.__get_instance_info()
+    execution = InstanceExecution(self.model, self.idx, self.model_name, 
+                  self.num_gpu, self.batch_size, display_model, display_info, 
+                  instance_info, self.key_metrics)
     self.executions.append(execution)
     return execution
 
@@ -78,34 +106,22 @@ class Instance(object):
         output_f.write(input_f.read())
 
 
-  def record_results(self, local_dir, gs_dir=None, save_models=True, prefix='', 
-                    key_metrics=[('loss', 'min'), ('acc', 'max')]):
+  def record_results(self, gs_dir=None, save_models=True):
     """Record training results
     Args
       local_dir (str): local saving directory
       gs_dir (str): Google cloud bucket path. Default None
       save_models (bool): save the trained models?
       prefix (str): what string to use to prefix the models
-      key_metrics: which metrics media value should be a top field?. default loss and acc
     Returns:
       dict: results data
     """
 
-    results = {
-        "key_metrics": {},
-        "idx": self.idx,
-        "ts": self.ts,
-        "training_size": self.training_size,
-        "validation_size": self.validation_size,
-        "num_executions": len(self.executions),
-        "model": self.model.to_json(),
-        "model_name": self.model_name,
-        "num_gpu": self.num_gpu,
-        "batch_size": self.batch_size,
-        "model_size": int(self.model_size),
-        "hyper_parameters": self.hyper_parameters
-    }
-
+    results = self.__get_instance_info()
+    local_dir = results['local_dir']
+    prefix = results['model_name'] 
+    #cprint(results, 'magenta')
+    
     # collecting executions results
     exec_metrics = defaultdict(lambda : defaultdict(list))
     executions = [] # execution data
@@ -161,13 +177,16 @@ class Instance(object):
         }
     results['metrics'] = metrics
 
+    #cprint(results, 'cyan')
+    
     # Usual metrics reported as top fields for their median values
-    for tm in key_metrics:
+    for tm in self.key_metrics:
       if tm[0] in metrics:
         results['key_metrics'][tm[0]] = metrics[tm[0]][tm[1]]['median']
 
+    #cprint(results, 'yellow')
 
-    fname = '%s-%s-%s-results.json' % (prefix, self.idx, self.training_size)
+    fname = '%s-%s-%s-instance-results.json' % (prefix, self.idx, self.training_size)
     output_path = path.join(local_dir, fname)
     with file_io.FileIO(output_path, 'w') as outfile:
       outfile.write(json.dumps(results))
