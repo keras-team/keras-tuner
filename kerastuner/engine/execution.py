@@ -10,8 +10,7 @@ from .tunercallback import TunerCallback
 class InstanceExecution(object):
   """Model Execution class. Each Model instance can be executed N time"""
 
-  def __init__(self, model, idx, model_name, num_gpu, batch_size, display_model, 
-               display_info, instance_info, key_metrics):
+  def __init__(self, model, idx, model_name, num_gpu, batch_size, display_model, display_info, instance_info, key_metrics):
     self.ts = int(time.time())
     self.idx = idx
     self.model_name = model_name

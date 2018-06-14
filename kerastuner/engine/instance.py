@@ -44,7 +44,7 @@ class Instance(object):
         "training_size": self.training_size,
         "validation_size": self.validation_size,
         "num_executions": len(self.executions),
-        "model": self.model.to_json(),
+        "model": json.loads(self.model.to_json()),
         "model_name": self.model_name,
         "num_gpu": self.num_gpu,
         "batch_size": self.batch_size,

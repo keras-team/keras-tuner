@@ -34,6 +34,7 @@ def model_fn():
   model.add(Dense(LL_UNITS, activation=LL_ACTIVATION))
   model.compile(optimizer='adam', loss=LOSS, metrics=['accuracy'])
   return model
+  
 mdl = model_fn()
 mdl.summary()
 # which metrics to track across the runs and display
