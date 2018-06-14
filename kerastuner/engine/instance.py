@@ -15,7 +15,7 @@ class Instance(object):
   """Model instance class."""
 
   def __init__(self, idx, model, hyper_parameters,  model_name, num_gpu, batch_size, display_model, key_metrics, local_dir):
-    self.ts = int(time.time()) 
+    self.ts = int(time.time())
     self.training_size = -1
     self.model = model
     self.hyper_parameters = hyper_parameters
@@ -35,7 +35,7 @@ class Instance(object):
   def __get_instance_info(self):
     """Return a dictionary of the model parameters
 
-      Used both for the instance result file and the execution result file 
+      Used both for the instance result file and the execution result file
     """
     info = {
         "key_metrics": {}, #key metrics results dict. not key metrics definition
@@ -65,7 +65,7 @@ class Instance(object):
     """
     self.training_size = len(y)
     if kwargs.get('validation_data'):
-      self.validation_size = len(kwargs['validation_data'][1]) 
+      self.validation_size = len(kwargs['validation_data'][1])
 
     if resume_execution and len(self.executions):
       execution = self.executions[-1]
@@ -80,7 +80,7 @@ class Instance(object):
 
   def __new_execution(self):
     num_executions = len(self.executions)
-    
+
     # ensure that info is only displayed once per iteration
     if num_executions > 0:
       display_model = None
@@ -90,16 +90,30 @@ class Instance(object):
       display_model = self.display_model
 
     instance_info = self.__get_instance_info()
-    execution = InstanceExecution(self.model, self.idx, self.model_name, 
-                  self.num_gpu, self.batch_size, display_model, display_info, 
+    execution = InstanceExecution(self.model, self.idx, self.model_name,
+                  self.num_gpu, self.batch_size, display_model, display_info,
                   instance_info, self.key_metrics)
     self.executions.append(execution)
     return execution
 
-  def __save_to_gs(self, fname, local_dir, gs_dir):
-    "Store file remotely in a given GS bucket path"
-    local_path = path.join(local_dir, fname)
-    remote_path = "%s%s" % (gs_dir, fname)
+  def __save_to_gs(
+      self,
+      category,
+      architecture,
+      instance,
+      local_path,
+      gs_dir,
+      execution=None,
+      training_size=None):
+    """Stores file remotely in a given GS bucket path."""
+    if not gs_dir:
+      return
+    remote_path = path.join(
+        gs_dir,
+        architecture,
+        instance,
+        category,
+        '%s.json' % (execution or training_size or 'results'))
     cprint("[INFO] Uploading %s to %s" % (local_path, remote_path), 'cyan')
     with file_io.FileIO(local_path, mode='r') as input_f:
       with file_io.FileIO(remote_path, mode='w+') as output_f:
@@ -119,9 +133,9 @@ class Instance(object):
 
     results = self.__get_instance_info()
     local_dir = results['local_dir']
-    prefix = results['model_name'] 
+    prefix = results['model_name']
     #cprint(results, 'magenta')
-    
+
     # collecting executions results
     exec_metrics = defaultdict(lambda : defaultdict(list))
     executions = [] # execution data
@@ -152,15 +166,25 @@ class Instance(object):
         local_path = path.join(local_dir, config_fname)
         with file_io.FileIO(local_path, 'w') as output:
           output.write(execution.model.to_json())
-        if gs_dir:
-          self.__save_to_gs(config_fname, local_dir, gs_dir)
+        self.__save_to_gs(
+            category='config',
+            architecture=prefix,
+            instance=self.idx,
+            execution=execution.ts,
+            local_path=local_path,
+            gs_dir=gs_dir)
 
         # weight
         weights_fname = "%s-%s-weights.h5" % (prefix, mdl_base_fname)
         local_path = path.join(local_dir, weights_fname)
         execution.model.save_weights(local_path)
-        if gs_dir:
-          self.__save_to_gs(weights_fname, local_dir, gs_dir)
+        self.__save_to_gs(
+            category='weights',
+            architecture=prefix,
+            instance=self.idx,
+            execution=execution.ts,
+            local_path=local_path,
+            gs_dir=gs_dir)
 
 
     results['executions'] = executions
@@ -178,7 +202,7 @@ class Instance(object):
     results['metrics'] = metrics
 
     #cprint(results, 'cyan')
-    
+
     # Usual metrics reported as top fields for their median values
     for tm in self.key_metrics:
       if tm[0] in metrics:
@@ -190,8 +214,13 @@ class Instance(object):
     output_path = path.join(local_dir, fname)
     with file_io.FileIO(output_path, 'w') as outfile:
       outfile.write(json.dumps(results))
-    if gs_dir:
-      self.__save_to_gs(fname, local_dir, gs_dir)
-    
+    self.__save_to_gs(
+        category='instance-results',
+        architecture=prefix,
+        instance=self.idx,
+        training_size=self.training_size,
+        local_path=output_path,
+        gs_dir=gs_dir)
+
     self.results = results
     return results
