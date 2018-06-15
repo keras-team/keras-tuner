@@ -9,12 +9,12 @@ from keras import backend as K
 
 from .execution import InstanceExecution
 from .tunercallback import TunerCallback
-
+from . import keraslyzer
 
 class Instance(object):
   """Model instance class."""
 
-  def __init__(self, idx, model, hyper_parameters,  model_name, num_gpu, batch_size, display_model, key_metrics, local_dir):
+  def __init__(self, idx, model, hyper_parameters,  model_name, num_gpu, batch_size, display_model, key_metrics, local_dir, gs_dir):
     self.ts = int(time.time())
     self.training_size = -1
     self.model = model
@@ -31,6 +31,7 @@ class Instance(object):
     self.results = {}
     self.key_metrics = key_metrics
     self.local_dir = local_dir
+    self.gs_dir = gs_dir
 
   def __get_instance_info(self):
     """Return a dictionary of the model parameters
@@ -92,47 +93,21 @@ class Instance(object):
     instance_info = self.__get_instance_info()
     execution = InstanceExecution(self.model, self.idx, self.model_name,
                   self.num_gpu, self.batch_size, display_model, display_info,
-                  instance_info, self.key_metrics)
+                  instance_info, self.key_metrics, self.gs_dir)
     self.executions.append(execution)
     return execution
 
-  def __save_to_gs(
-      self,
-      category,
-      architecture,
-      instance,
-      local_path,
-      gs_dir,
-      execution=None,
-      training_size=None):
-    """Stores file remotely in a given GS bucket path."""
-    if not gs_dir:
-      return
-    remote_path = path.join(
-        gs_dir,
-        architecture,
-        instance,
-        category,
-        '%s.json' % (execution or training_size or 'results'))
-    cprint("[INFO] Uploading %s to %s" % (local_path, remote_path), 'cyan')
-    with file_io.FileIO(local_path, mode='r') as input_f:
-      with file_io.FileIO(remote_path, mode='w+') as output_f:
-        output_f.write(input_f.read())
-
-
-  def record_results(self, gs_dir=None, save_models=True):
+  def record_results(self, save_models=True):
     """Record training results
     Args
-      local_dir (str): local saving directory
-      gs_dir (str): Google cloud bucket path. Default None
       save_models (bool): save the trained models?
-      prefix (str): what string to use to prefix the models
     Returns:
       dict: results data
     """
 
     results = self.__get_instance_info()
     local_dir = results['local_dir']
+    gs_dir = self.gs_dir
     prefix = results['model_name']
     #cprint(results, 'magenta')
 
@@ -166,25 +141,15 @@ class Instance(object):
         local_path = path.join(local_dir, config_fname)
         with file_io.FileIO(local_path, 'w') as output:
           output.write(execution.model.to_json())
-        self.__save_to_gs(
-            category='config',
-            architecture=prefix,
-            instance=self.idx,
-            execution=execution.ts,
-            local_path=local_path,
-            gs_dir=gs_dir)
+        keraslyzer.cloud_save(category='config', architecture=prefix, instance=self.idx,
+            execution=execution.ts, local_path=local_path, gs_dir=gs_dir)
 
         # weight
         weights_fname = "%s-%s-weights.h5" % (prefix, mdl_base_fname)
         local_path = path.join(local_dir, weights_fname)
         execution.model.save_weights(local_path)
-        self.__save_to_gs(
-            category='weights',
-            architecture=prefix,
-            instance=self.idx,
-            execution=execution.ts,
-            local_path=local_path,
-            gs_dir=gs_dir)
+        keraslyzer.cloud_save(category='weights', architecture=prefix, instance=self.idx,
+            execution=execution.ts, local_path=local_path, gs_dir=gs_dir)
 
 
     results['executions'] = executions
@@ -214,13 +179,8 @@ class Instance(object):
     output_path = path.join(local_dir, fname)
     with file_io.FileIO(output_path, 'w') as outfile:
       outfile.write(json.dumps(results))
-    self.__save_to_gs(
-        category='instance-results',
-        architecture=prefix,
-        instance=self.idx,
-        training_size=self.training_size,
-        local_path=output_path,
-        gs_dir=gs_dir)
+    keraslyzer.cloud_save(category='instance-results', architecture=prefix, instance=self.idx,
+        training_size=self.training_size, local_path=output_path, gs_dir=gs_dir)
 
     self.results = results
     return results

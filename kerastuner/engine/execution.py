@@ -10,7 +10,7 @@ from .tunercallback import TunerCallback
 class InstanceExecution(object):
   """Model Execution class. Each Model instance can be executed N time"""
 
-  def __init__(self, model, idx, model_name, num_gpu, batch_size, display_model, display_info, instance_info, key_metrics):
+  def __init__(self, model, idx, model_name, num_gpu, batch_size, display_model, display_info, instance_info, key_metrics, gs_dir):
     self.ts = int(time.time())
     self.idx = idx
     self.model_name = model_name
@@ -19,6 +19,7 @@ class InstanceExecution(object):
     self.batch_size = batch_size
     self.display_model = display_model
     self.display_info = display_info
+    self.gs_dir = gs_dir
     # keep a separated model per instance
     self.model = keras.models.clone_model(model)
     # This is directly using Keras model class attribute - I wish there is a better way 
@@ -43,7 +44,7 @@ class InstanceExecution(object):
         model = self.model
 
       self.instance_info['execution_idx'] = self.ts
-      tcb = TunerCallback(self.instance_info, self.key_metrics)
+      tcb = TunerCallback(self.instance_info, self.key_metrics, gs_dir=self.gs_dir)
       callbacks = kwargs.get('callbacks')
       if callbacks:
             callbacks = copy.deepcopy(callbacks)

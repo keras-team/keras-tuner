@@ -20,14 +20,12 @@ class HyperTuner(object):
         self.epoch_budget = kwargs.get('epoch_budget', 3713)
         self.max_epochs = kwargs.get('max_epochs', 50)
         self.min_epochs = kwargs.get('min_epochs', 3)
-
         self.num_executions = kwargs.get('num_executions', 3) # how many executions
         self.dry_run = kwargs.get('dry_run', False)
         self.max_fail_streak = kwargs.get('max_fail_streak', 20)
         self.num_gpu = kwargs.get('num_gpu', -1)
         self.batch_size = kwargs.get('batch_size', 32)
         self.local_dir = kwargs.get('local_dir', 'results/')
-        self.gs_dir = kwargs.get('gs_dir', None)
         self.model_name = kwargs.get('model_name', str(int(time.time())))
         self.display_model = kwargs.get('display_model', '') # which models to display
         self.invalid_models = 0 # how many models didn't work
@@ -36,6 +34,11 @@ class HyperTuner(object):
         self.current_instance_idx = -1 # track the current instance trained
         self.model_fn = model_fn
         self.ts = int(time.time())
+
+        #keraslyzer service
+        self.gs_dir = None
+        if kwargs.get('keraslyzer_user'):
+          self.gs_dir = 'gs://keras-tuner.appspot.com/%s/' % kwargs.get('keraslyzer_user')
 
         #log
         self.log = Logger(self)
@@ -102,8 +105,8 @@ class HyperTuner(object):
           break
         self.collisions += 1
       hp = hyper_parameters
-      self.instances[idx] = Instance(idx, model, hp, self.model_name, self.num_gpu, 
-                              self.batch_size, self.display_model, self.key_metrics, self.local_dir)
+      self.instances[idx] = Instance(idx, model, hp, self.model_name, self.num_gpu, self.batch_size, 
+                            self.display_model, self.key_metrics, self.local_dir, self.gs_dir)
       self.current_instance_idx = idx
       return self.instances[idx]
 
@@ -118,7 +121,7 @@ class HyperTuner(object):
         instance = self.instances[self.current_instance_idx]
       else:
         instance = self.instances[idx]
-      results = instance.record_results(gs_dir=self.gs_dir, save_models=save_models)
+      results = instance.record_results(save_models=save_models)
 
       #compute overall statisitcs
       for km in self.key_metrics:
