@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     name="Kerastuner",
-    version="0.1",
+    version="0.5",
     description="Hypertuner for Keras",
     author='Elie Bursztein',
     author_email='elieb@google.com',

@@ -30,7 +30,7 @@ class RandomSearch(HyperTuner):
         super(RandomSearch, self).__init__(model_fn, **kwargs)
         self.log.tuner_name("RandomSearch")
 
-    def search(self,x, y, **kwargs):
+    def hypertune(self, x, y, **kwargs):
         remaining_budget = self.epoch_budget
         num_instances = 0 
         while remaining_budget > self.max_epochs:

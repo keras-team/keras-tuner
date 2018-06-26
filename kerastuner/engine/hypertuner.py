@@ -34,7 +34,7 @@ class HyperTuner(object):
         self.current_instance_idx = -1 # track the current instance trained
         self.model_fn = model_fn
         self.ts = int(time.time())
-
+        self.kera_function = 'fit'
         #keraslyzer service
         self.gs_dir = None
         if kwargs.get('keraslyzer_user'):
@@ -85,6 +85,15 @@ class HyperTuner(object):
           os.makedirs(self.local_dir)
         cprint("|- Saving results in %s" % self.local_dir, 'cyan')
 
+    def search(self, x, y, **kwargs):
+      self.kera_function = 'fit'
+      self.hypertune(x, y, **kwargs)
+    
+    def search_generator(self, x, **kwargs):
+      self.kera_function = 'fit_generator'
+      y = None # fit_generator don't use this so we put none to be able to have a single hypertune function
+      self.hypertune(x, y, **kwargs)
+
     def get_random_instance(self):
       "Return a never seen before random model instance"
       fail_streak = 0
@@ -106,7 +115,7 @@ class HyperTuner(object):
         self.collisions += 1
       hp = hyper_parameters
       self.instances[idx] = Instance(idx, model, hp, self.model_name, self.num_gpu, self.batch_size, 
-                            self.display_model, self.key_metrics, self.local_dir, self.gs_dir)
+                            self.display_model, self.key_metrics, self.local_dir, self.gs_dir, self.kera_function)
       self.current_instance_idx = idx
       return self.instances[idx]
 

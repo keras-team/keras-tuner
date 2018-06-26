@@ -2,6 +2,11 @@
 
 Major KerasTuner changes by version
 
+## v0.5
+
+- Added the ability to use generator via the `search_generator` function
+- Various bug fixes
+
 ## v0.4
 
 - Cloudstreaming to keraslyzer service implemented.

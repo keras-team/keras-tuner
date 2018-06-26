@@ -14,7 +14,7 @@ from . import keraslyzer
 class Instance(object):
   """Model instance class."""
 
-  def __init__(self, idx, model, hyper_parameters,  model_name, num_gpu, batch_size, display_model, key_metrics, local_dir, gs_dir):
+  def __init__(self, idx, model, hyper_parameters, model_name, num_gpu, batch_size, display_model, key_metrics, local_dir, gs_dir, keras_function):
     self.ts = int(time.time())
     self.training_size = -1
     self.model = model
@@ -22,7 +22,7 @@ class Instance(object):
     self.idx = idx
     self.model_name = model_name
     self.num_gpu = num_gpu
-    self.batch_size = batch_size
+    self.batch_size = batch_size #we keep batch_size explicit to be able to record it
     self.display_model = display_model
     self.ts = int(time.time())
     self.executions = []
@@ -32,6 +32,7 @@ class Instance(object):
     self.key_metrics = key_metrics
     self.local_dir = local_dir
     self.gs_dir = gs_dir
+    self.keras_function = keras_function
 
   def __get_instance_info(self):
     """Return a dictionary of the model parameters
@@ -39,19 +40,20 @@ class Instance(object):
       Used both for the instance result file and the execution result file
     """
     info = {
-        "key_metrics": {}, #key metrics results dict. not key metrics definition
-        "idx": self.idx,
-        "ts": self.ts,
-        "training_size": self.training_size,
-        "validation_size": self.validation_size,
-        "num_executions": len(self.executions),
-        "model": json.loads(self.model.to_json()),
-        "model_name": self.model_name,
-        "num_gpu": self.num_gpu,
-        "batch_size": self.batch_size,
-        "model_size": int(self.model_size),
-        "hyper_parameters": self.hyper_parameters,
-        "local_dir": self.local_dir
+      "key_metrics": {}, #key metrics results dict. not key metrics definition
+      "idx": self.idx,
+      "ts": self.ts,
+      "training_size": self.training_size,
+      #FIXME: add validation split if needed
+      "validation_size": self.validation_size,
+      "num_executions": len(self.executions),
+      "model": json.loads(self.model.to_json()),
+      "model_name": self.model_name,
+      "num_gpu": self.num_gpu,
+      "batch_size": self.batch_size,
+      "model_size": int(self.model_size),
+      "hyper_parameters": self.hyper_parameters,
+      "local_dir": self.local_dir
     }
     return info
 
@@ -92,8 +94,8 @@ class Instance(object):
 
     instance_info = self.__get_instance_info()
     execution = InstanceExecution(self.model, self.idx, self.model_name,
-                  self.num_gpu, self.batch_size, display_model, display_info,
-                  instance_info, self.key_metrics, self.gs_dir)
+                  self.num_gpu, display_model, display_info,
+                  instance_info, self.key_metrics, self.gs_dir, self.keras_function)
     self.executions.append(execution)
     return execution
 
