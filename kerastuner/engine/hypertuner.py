@@ -34,7 +34,7 @@ class HyperTuner(object):
         self.num_executions = kwargs.get('num_executions', 3) # how many executions
         self.dry_run = kwargs.get('dry_run', False)
         self.max_fail_streak = kwargs.get('max_fail_streak', 20)
-        self.num_gpu = kwargs.get('num_gpu', -1)
+        self.num_gpu = kwargs.get('num_gpu', 0)
         self.batch_size = kwargs.get('batch_size', 32)
         self.save_models = kwargs.get('save_models', True)
         self.display_model = kwargs.get('display_model', '') # which models to display
