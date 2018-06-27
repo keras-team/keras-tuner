@@ -3,7 +3,7 @@ from os import path
 from tensorflow.python.lib.io import file_io # allows to write to GCP or local
 from termcolor import cprint
 
-def cloud_save(local_path, ftype, meta_data, debug=1):
+def cloud_save(local_path, ftype, meta_data, debug=0):
     """Stores file remotely to Kerastuner service or fork
 
     Args:
