@@ -64,7 +64,10 @@ class Instance(object):
     Args:
       resume_execution (bool): Instead of creating a new execution, resume training the previous one. Default false.
     """
-    self.training_size = len(y)
+    if self.keras_function == 'fit':
+      self.training_size = len(y)
+    else:
+      self.training_size = '-1'
     if kwargs.get('validation_data'):
       self.validation_size = len(kwargs['validation_data'][1])
 

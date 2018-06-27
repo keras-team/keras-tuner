@@ -55,7 +55,7 @@ class InstanceExecution(object):
             for callback in callbacks:
               # patching tensorboard log dir
               if 'TensorBoard' in str(type(callback)):
-                tensorboard_idx = "%s-%s-%s" % (self.model_name, self.idx, self.ts)
+                tensorboard_idx = "%s-%s-%s-%s" % (self.meta_data['project'], self.meta_data['architecture'], self.meta_data['instance'], self.meta_data['execution'])
                 callback.log_dir = path.join(callback.log_dir, tensorboard_idx)
             callbacks.append(tcb)
       else: 
@@ -63,10 +63,10 @@ class InstanceExecution(object):
       kwargs['callbacks'] = callbacks
       if self.keras_function == 'fit':
         results = self.model.fit(x, y, **kwargs)
-      elif self.keras_function == 'generator':
+      elif self.keras_function == 'fit_generator':
         results = self.model.fit_generator(x, **kwargs)
       else:
-        Exception("Unknown keras function requested ", self.keras_function)
+        raise ValueError("Unknown keras function requested ", self.keras_function)
       return results
 
   def record_results(self, results):
