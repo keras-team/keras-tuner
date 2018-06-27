@@ -4,21 +4,25 @@ import numpy as np
 from termcolor import cprint
 import keras
 from os import path
-
+from tensorflow.python.lib.io import file_io # allows to write to GCP or local
+import keraslyzer
 from .tunercallback import TunerCallback
 
 class InstanceExecution(object):
   """Model Execution class. Each Model instance can be executed N time"""
 
-  def __init__(self, model, idx, model_name, num_gpu, display_model, display_info, instance_info, key_metrics, gs_dir, keras_function):
+  def __init__(self, model, idx, meta_data, num_gpu, display_model, display_info, instance_info, key_metrics, keras_function, save_models):
     self.ts = int(time.time())
     self.idx = idx
-    self.model_name = model_name
+    
+    self.meta_data = copy.deepcopy(meta_data)
+    self.meta_data['execution'] = self.ts
+
     self.num_epochs = -1
     self.num_gpu = num_gpu
     self.display_model = display_model
     self.display_info = display_info
-    self.gs_dir = gs_dir
+    self.save_models = save_models
     # keep a separated model per instance
     self.model = keras.models.clone_model(model)
     # This is directly using Keras model class attribute - I wish there is a better way 
@@ -38,15 +42,13 @@ class InstanceExecution(object):
         self.model.summary()
     else:
       model = self.model
-    self.instance_info['execution_idx'] = self.ts
-
 
   def fit(self, x, y, **kwargs):
       """Fit a given model 
       Note: This wrapper around Keras fit allows to handle multi-gpu support and use fit or fit_generator
       """
 
-      tcb = TunerCallback(self.instance_info, self.key_metrics, gs_dir=self.gs_dir)
+      tcb = TunerCallback(self.instance_info, self.key_metrics, self.meta_data)
       callbacks = kwargs.get('callbacks')
       if callbacks:
             callbacks = copy.deepcopy(callbacks)
@@ -83,3 +85,20 @@ class InstanceExecution(object):
       }
       self.metrics[metric] = metric_results
   
+    # save model if needed
+    if self.save_models:
+        # we save model and weights separately because the model might be trained with multi-gpu which use a different architecture
+        
+        #config
+        prefix = '%s-%s-%s-%s' % (self.meta_data['project'], self.meta_data['architecture'], self.meta_data['instance'], self.meta_data['execution'])
+        config_fname = "%s-config.json" % (prefix)
+        local_path = path.join(self.meta_data['local_dir'], config_fname)
+        with file_io.FileIO(local_path, 'w') as output:
+            output.write(self.model.to_json())
+        keraslyzer.cloud_save(local_path=local_path, ftype='config', meta_data=self.meta_data)
+
+        # weights
+        weights_fname = "%s-weights.h5" % (prefix)
+        local_path = path.join(self.meta_data['local_dir'], weights_fname)
+        self.model.save_weights(local_path)
+        keraslyzer.cloud_save(local_path=local_path, ftype='weights', meta_data=self.meta_data)

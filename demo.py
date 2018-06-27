@@ -13,8 +13,7 @@ from kerastuner.tuners import RandomSearch
 x_train = np.random.random((1000, 20))
 y_train = np.random.randint(2, size=(1000, 1))
 DRY_RUN = False # DRY_RUN: True don't train the models,  DRY_RUN: False: train models.
-keraslyzer_user = None
-keraslyzer_user = "elieb@google.com"
+username = "demo@kerastuner.io"
 
 
 def model_fn():
@@ -42,5 +41,5 @@ mdl = model_fn()
 mdl.summary()
 # which metrics to track across the runs and display
 METRIC_TO_REPORT = [('loss', 'min'), ('val_loss', 'min'), ('acc', 'max'), ('val_acc', 'max')]
-hypermodel = RandomSearch(model_fn, epoch_budget=90, max_epochs=10, dry_run=DRY_RUN, model_name="kerastuner-demo", keraslyzer_user=keraslyzer_user, metrics=METRIC_TO_REPORT)
+hypermodel = RandomSearch(model_fn, epoch_budget=90, max_epochs=10, dry_run=DRY_RUN, project="kerastuner-demo", architecture="MLP", username=username, metrics=METRIC_TO_REPORT)
 hypermodel.search(x_train, y_train, validation_split=0.01)

@@ -12,7 +12,7 @@ from . import keraslyzer
 
 class TunerCallback(keras.callbacks.Callback):
     "Monitoring callback"
-    def __init__(self, info, key_metrics, gs_dir=None, log_interval=30):
+    def __init__(self, info, key_metrics, meta_data, log_interval=30):
         """
         Args:
         log_interval: interval of time in second between the execution stats are written on disk
@@ -21,7 +21,7 @@ class TunerCallback(keras.callbacks.Callback):
         self.key_metrics = []
         for k in key_metrics:
             self.key_metrics.append(k[0])
-        self.gs_dir = gs_dir
+        self.meta_data = meta_data
         self.start_ts = int(time.time())
         self.last_write = time.time()
         self.current_epoch_history = defaultdict(list)
@@ -92,14 +92,12 @@ class TunerCallback(keras.callbacks.Callback):
         results['ts'] = {"start": self.start_ts, "stop": int(time.time())}
         results['num_epochs'] = len(self.history)
         results['training_complete'] = self.training_complete
+        results['meta_data'] = self.meta_data
 
-        fname = '%s-%s-%s-execution-results.json' % (self.info['model_name'], self.info['idx'], self.info['execution_idx'])
-        output_path = path.join(self.info['local_dir'], fname)
-        with file_io.FileIO(output_path, 'w') as outfile:
+        fname = '%s-%s-%s-%s-execution.json' % (self.meta_data['project'], self.meta_data['architecture'], self.meta_data['instance'], self.meta_data['execution'])
+        local_path = path.join(self.meta_data['local_dir'], fname)
+        with file_io.FileIO(local_path, 'w') as outfile:
             outfile.write(json.dumps(results))
 
-
-        keraslyzer.cloud_save(category='within-batch', architecture=self.info['model_name'], 
-                            instance=self.info['idx'], execution=self.info['execution_idx'],
-                            local_path=output_path, gs_dir=self.gs_dir)
+        keraslyzer.cloud_save(local_path=local_path, ftype='execution', meta_data=self.meta_data )
         self.last_write = time.time()

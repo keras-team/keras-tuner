@@ -8,6 +8,8 @@ import os
 from termcolor import cprint
 from xxhash import xxh64 # xxh64 is faster
 from tabulate import tabulate
+import socket
+
 
 from .instance import Instance
 from .logger import Logger
@@ -17,6 +19,15 @@ from ..distributions import hyper_parameters
 class HyperTuner(object):
     """Abstract hypertuner class."""
     def __init__(self, model_fn, **kwargs):
+        """
+        Args:
+            architecture (str): name of the architecture that is being tuned.
+            project (str): name of the project the architecture belongs to.
+
+        Notes:
+            All architecture meta data are stored into the self.meta_data field as they are only used for recording
+        """
+
         self.epoch_budget = kwargs.get('epoch_budget', 3713)
         self.max_epochs = kwargs.get('max_epochs', 50)
         self.min_epochs = kwargs.get('min_epochs', 3)
@@ -25,8 +36,7 @@ class HyperTuner(object):
         self.max_fail_streak = kwargs.get('max_fail_streak', 20)
         self.num_gpu = kwargs.get('num_gpu', -1)
         self.batch_size = kwargs.get('batch_size', 32)
-        self.local_dir = kwargs.get('local_dir', 'results/')
-        self.model_name = kwargs.get('model_name', str(int(time.time())))
+        self.save_models = kwargs.get('save_models', True)
         self.display_model = kwargs.get('display_model', '') # which models to display
         self.invalid_models = 0 # how many models didn't work
         self.collisions = 0 # how many time we regenerated the same model
@@ -35,10 +45,19 @@ class HyperTuner(object):
         self.model_fn = model_fn
         self.ts = int(time.time())
         self.kera_function = 'fit'
-        #keraslyzer service
-        self.gs_dir = None
-        if kwargs.get('keraslyzer_user'):
-          self.gs_dir = 'gs://keras-tuner.appspot.com/%s/' % kwargs.get('keraslyzer_user')
+
+        # Model meta data
+        self.meta_data = {
+            "local_dir": kwargs.get('local_dir', 'results/'),
+            "architecture": kwargs.get('architecture', str(int(time.time()))),
+            "project": kwargs.get('project', 'default'),
+            "hostname": socket.gethostname(),
+            "num_gpu": self.num_gpu
+        }
+
+        if kwargs.get('username'):
+          self.meta_data['username'] = kwargs.get('username')
+          self.meta_data['gs_dir'] = kwargs.get('gs_dir', 'gs://keras-tuner.appspot.com/')
 
         #log
         self.log = Logger(self)
@@ -81,9 +100,9 @@ class HyperTuner(object):
               raise Exception('Invalid display_model value: can be either base, multi-gpu or both')
 
         # create local dir if needed
-        if not os.path.exists(self.local_dir):
-          os.makedirs(self.local_dir)
-        cprint("|- Saving results in %s" % self.local_dir, 'cyan')
+        if not os.path.exists(self.meta_data['local_dir']):
+          os.makedirs(self.meta_data['local_dir'])
+        cprint("|- Saving results in %s" % self.meta_data['local_dir'], 'cyan')
 
     def search(self, x, y, **kwargs):
       self.kera_function = 'fit'
@@ -114,15 +133,14 @@ class HyperTuner(object):
           break
         self.collisions += 1
       hp = hyper_parameters
-      self.instances[idx] = Instance(idx, model, hp, self.model_name, self.num_gpu, self.batch_size, 
-                            self.display_model, self.key_metrics, self.local_dir, self.gs_dir, self.kera_function)
+      self.instances[idx] = Instance(idx, model, hp, self.meta_data, self.num_gpu, self.batch_size, 
+                            self.display_model, self.key_metrics, self.kera_function, self.save_models)
       self.current_instance_idx = idx
       return self.instances[idx]
 
-    def record_results(self, save_models=True, idx=None):
+    def record_results(self, idx=None):
       """Record instance results
       Args:
-        save_model (bool): Save the trained models?
         idx (xxhash): index of the instance. By default use the lastest instance for convience.
       """
 
@@ -130,7 +148,7 @@ class HyperTuner(object):
         instance = self.instances[self.current_instance_idx]
       else:
         instance = self.instances[idx]
-      results = instance.record_results(save_models=save_models)
+      results = instance.record_results()
 
       #compute overall statisitcs
       for km in self.key_metrics:

@@ -6,7 +6,7 @@ from collections import defaultdict
 from tensorflow.python.lib.io import file_io # allows to write to GCP or local
 from termcolor import cprint
 from keras import backend as K
-
+import copy
 from .execution import InstanceExecution
 from .tunercallback import TunerCallback
 from . import keraslyzer
@@ -14,13 +14,17 @@ from . import keraslyzer
 class Instance(object):
   """Model instance class."""
 
-  def __init__(self, idx, model, hyper_parameters, model_name, num_gpu, batch_size, display_model, key_metrics, local_dir, gs_dir, keras_function):
+  def __init__(self, idx, model, hyper_parameters, meta_data, num_gpu, batch_size, display_model, key_metrics, keras_function, save_models):
     self.ts = int(time.time())
     self.training_size = -1
     self.model = model
     self.hyper_parameters = hyper_parameters
+    self.meta_data = meta_data
+    self.save_models = save_models
+
     self.idx = idx
-    self.model_name = model_name
+    self.meta_data['instance'] = idx
+
     self.num_gpu = num_gpu
     self.batch_size = batch_size #we keep batch_size explicit to be able to record it
     self.display_model = display_model
@@ -30,8 +34,6 @@ class Instance(object):
     self.validation_size = 0
     self.results = {}
     self.key_metrics = key_metrics
-    self.local_dir = local_dir
-    self.gs_dir = gs_dir
     self.keras_function = keras_function
 
   def __get_instance_info(self):
@@ -41,19 +43,15 @@ class Instance(object):
     """
     info = {
       "key_metrics": {}, #key metrics results dict. not key metrics definition
-      "idx": self.idx,
       "ts": self.ts,
       "training_size": self.training_size,
       #FIXME: add validation split if needed
       "validation_size": self.validation_size,
       "num_executions": len(self.executions),
       "model": json.loads(self.model.to_json()),
-      "model_name": self.model_name,
-      "num_gpu": self.num_gpu,
       "batch_size": self.batch_size,
       "model_size": int(self.model_size),
-      "hyper_parameters": self.hyper_parameters,
-      "local_dir": self.local_dir
+      "hyper_parameters": self.hyper_parameters
     }
     return info
 
@@ -93,68 +91,47 @@ class Instance(object):
       display_model = self.display_model
 
     instance_info = self.__get_instance_info()
-    execution = InstanceExecution(self.model, self.idx, self.model_name,
-                  self.num_gpu, display_model, display_info,
-                  instance_info, self.key_metrics, self.gs_dir, self.keras_function)
+    execution = InstanceExecution(self.model, self.idx, self.meta_data, self.num_gpu, 
+                display_model, display_info, instance_info, self.key_metrics, 
+                self.keras_function, self.save_models)
     self.executions.append(execution)
     return execution
 
-  def record_results(self, save_models=True):
+  def record_results(self):
     """Record training results
-    Args
-      save_models (bool): save the trained models?
     Returns:
       dict: results data
     """
 
     results = self.__get_instance_info()
-    local_dir = results['local_dir']
-    gs_dir = self.gs_dir
-    prefix = results['model_name']
+    local_dir = self.meta_data['local_dir']
     #cprint(results, 'magenta')
 
     # collecting executions results
     exec_metrics = defaultdict(lambda : defaultdict(list))
     executions = [] # execution data
     for execution in self.executions:
+        execution_id = execution.meta_data['execution']
 
-      # metrics collection
-      for metric, data in execution.metrics.items():
-        exec_metrics[metric]['min'].append(execution.metrics[metric]['min'])
-        exec_metrics[metric]['max'].append(execution.metrics[metric]['max'])
+         # metrics collection
+        for metric, data in execution.metrics.items():
+            exec_metrics[metric]['min'].append(execution.metrics[metric]['min'])
+            exec_metrics[metric]['max'].append(execution.metrics[metric]['max'])
 
-      # execution data
-      execution_info = {
-        "num_epochs": execution.num_epochs,
-        "history": execution.history,
-        "loss_fn": execution.model.loss,
-        "loss_weigths": execution.model.loss_weights,
-        #FIXME record optimizer parameters
-        #"optimizer": execution.model.optimizer
-      }
-      executions.append(execution_info)
-
-      # save model if needed
-      if save_models:
-        mdl_base_fname = "%s-%s" % (self.idx, execution.ts)
-
-        # config
-        config_fname = "%s-%s-config.json" % (prefix, mdl_base_fname)
-        local_path = path.join(local_dir, config_fname)
-        with file_io.FileIO(local_path, 'w') as output:
-          output.write(execution.model.to_json())
-        keraslyzer.cloud_save(category='config', architecture=prefix, instance=self.idx,
-            execution=execution.ts, local_path=local_path, gs_dir=gs_dir)
-
-        # weight
-        weights_fname = "%s-%s-weights.h5" % (prefix, mdl_base_fname)
-        local_path = path.join(local_dir, weights_fname)
-        execution.model.save_weights(local_path)
-        keraslyzer.cloud_save(category='weights', architecture=prefix, instance=self.idx,
-            execution=execution.ts, local_path=local_path, gs_dir=gs_dir)
-
+        # execution data
+        execution_info = {
+            "num_epochs": execution.num_epochs,
+            "history": execution.history,
+            "loss_fn": execution.model.loss,
+            "loss_weigths": execution.model.loss_weights,
+            "meta_data": execution.meta_data
+            #FIXME record optimizer parameters
+            #"optimizer": execution.model.optimizer
+        }
+        executions.append(execution_info)
 
     results['executions'] = executions
+    results['meta_data'] = self.meta_data
 
     # aggregating statistics
     metrics = defaultdict(dict)
@@ -172,17 +149,14 @@ class Instance(object):
 
     # Usual metrics reported as top fields for their median values
     for tm in self.key_metrics:
-      if tm[0] in metrics:
-        results['key_metrics'][tm[0]] = metrics[tm[0]][tm[1]]['median']
+        if tm[0] in metrics:
+            results['key_metrics'][tm[0]] = metrics[tm[0]][tm[1]]['median']
 
-    #cprint(results, 'yellow')
-
-    fname = '%s-%s-%s-instance-results.json' % (prefix, self.idx, self.training_size)
-    output_path = path.join(local_dir, fname)
-    with file_io.FileIO(output_path, 'w') as outfile:
-      outfile.write(json.dumps(results))
-    keraslyzer.cloud_save(category='instance-results', architecture=prefix, instance=self.idx,
-        training_size=self.training_size, local_path=output_path, gs_dir=gs_dir)
+    fname = '%s-%s-%s-results.json' % (self.meta_data['project'], self.meta_data['architecture'], self.meta_data['instance'])
+    local_path = path.join(local_dir, fname)
+    with file_io.FileIO(local_path, 'w') as outfile:
+        outfile.write(json.dumps(results))
+    keraslyzer.cloud_save(local_path=local_path, ftype='results', meta_data=self.meta_data) #be sure to pass instance data
 
     self.results = results
     return results
