@@ -31,7 +31,7 @@ class HyperTuner(object):
         self.epoch_budget = kwargs.get('epoch_budget', 3713)
         self.max_epochs = kwargs.get('max_epochs', 50)
         self.min_epochs = kwargs.get('min_epochs', 3)
-        self.num_executions = kwargs.get('num_executions', 3) # how many executions
+        self.num_executions = kwargs.get('num_executions', 1) # how many executions
         self.dry_run = kwargs.get('dry_run', False)
         self.max_fail_streak = kwargs.get('max_fail_streak', 20)
         self.num_gpu = kwargs.get('num_gpu', 0)

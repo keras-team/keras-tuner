@@ -84,7 +84,8 @@ class TunerCallback(keras.callbacks.Callback):
             current_epoch_metrics[k] = avg
             if k in self.current_epoch_key_metrics:
                 current_epoch_key_metrics[k] = avg
-        results['batch_size'] = self.current_epoch_history['size'][0]
+        if 'size' in self.current_epoch_history and len(self.current_epoch_history['size']):
+            results['batch_size'] = self.current_epoch_history['size'][0]
         results['current_epoch_metrics'] = current_epoch_metrics
         results['current_epoch_key_metrics'] = current_epoch_key_metrics
 
