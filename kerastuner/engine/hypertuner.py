@@ -45,6 +45,7 @@ class HyperTuner(object):
         self.model_fn = model_fn
         self.ts = int(time.time())
         self.kera_function = 'fit'
+        self.info = kwargs.get('info', {}) # additional info provided by users
 
         # Model meta data
         self.meta_data = {
@@ -52,7 +53,8 @@ class HyperTuner(object):
             "architecture": kwargs.get('architecture', str(int(time.time()))),
             "project": kwargs.get('project', 'default'),
             "hostname": socket.gethostname(),
-            "num_gpu": self.num_gpu
+            "num_gpu": self.num_gpu,
+            "info": self.info
         }
 
         if kwargs.get('username'):

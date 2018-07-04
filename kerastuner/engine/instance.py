@@ -19,10 +19,11 @@ class Instance(object):
     self.training_size = -1
     self.model = model
     self.hyper_parameters = hyper_parameters
-    self.meta_data = meta_data
+ 
     self.save_models = save_models
-
     self.idx = idx
+    
+    self.meta_data = copy.deepcopy(meta_data) # ensure meta data dopn't have side effect
     self.meta_data['instance'] = idx
 
     self.num_gpu = num_gpu
