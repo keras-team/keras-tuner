@@ -49,7 +49,7 @@ class UltraBand(HyperTuner):
 
     """
 
-
+    self.tuner_name = 'UltraBand'
     self.halving_ratio = kwargs.get('halving_ratio', 3)
 
     self.epoch_budget_expensed = 0

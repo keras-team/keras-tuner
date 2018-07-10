@@ -5,7 +5,7 @@ from termcolor import cprint
 import keras
 from os import path
 from tensorflow.python.lib.io import file_io # allows to write to GCP or local
-import keraslyzer
+from . import backend
 from .tunercallback import TunerCallback
 
 class InstanceExecution(object):
@@ -75,6 +75,7 @@ class InstanceExecution(object):
     self.history = results.history
     self.num_epochs = len(self.history)
     self.ts = int(time.time())
+    local_dir = self.meta_data['server']['local_dir']
 
     # generic metric recording 
     self.metrics = {}
@@ -92,13 +93,13 @@ class InstanceExecution(object):
         #config
         prefix = '%s-%s-%s-%s' % (self.meta_data['project'], self.meta_data['architecture'], self.meta_data['instance'], self.meta_data['execution'])
         config_fname = "%s-config.json" % (prefix)
-        local_path = path.join(self.meta_data['local_dir'], config_fname)
+        local_path = path.join(local_dir, config_fname)
         with file_io.FileIO(local_path, 'w') as output:
             output.write(self.model.to_json())
-        keraslyzer.cloud_save(local_path=local_path, ftype='config', meta_data=self.meta_data)
+        backend.cloud_save(local_path=local_path, ftype='config', meta_data=self.meta_data)
 
         # weights
         weights_fname = "%s-weights.h5" % (prefix)
-        local_path = path.join(self.meta_data['local_dir'], weights_fname)
+        local_path = path.join(local_dir, weights_fname)
         self.model.save_weights(local_path)
-        keraslyzer.cloud_save(local_path=local_path, ftype='weights', meta_data=self.meta_data)
+        backend.cloud_save(local_path=local_path, ftype='weights', meta_data=self.meta_data)

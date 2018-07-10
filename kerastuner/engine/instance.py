@@ -9,7 +9,7 @@ from keras import backend as K
 import copy
 from .execution import InstanceExecution
 from .tunercallback import TunerCallback
-from . import keraslyzer
+from . import backend
 
 class Instance(object):
   """Model instance class."""
@@ -108,7 +108,7 @@ class Instance(object):
     """
 
     results = self.__get_instance_info()
-    local_dir = self.meta_data['local_dir']
+    local_dir = self.meta_data['server']['local_dir']
     #cprint(results, 'magenta')
 
     # collecting executions results
@@ -160,7 +160,7 @@ class Instance(object):
     local_path = path.join(local_dir, fname)
     with file_io.FileIO(local_path, 'w') as outfile:
         outfile.write(json.dumps(results))
-    keraslyzer.cloud_save(local_path=local_path, ftype='results', meta_data=self.meta_data) #be sure to pass instance data
+    backend.cloud_save(local_path=local_path, ftype='results', meta_data=self.meta_data) #be sure to pass instance data
 
     self.results = results
     return results

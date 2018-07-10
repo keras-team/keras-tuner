@@ -7,7 +7,7 @@ import json
 import numpy as np
 from tensorflow.python.lib.io import file_io # allows to write to GCP or local
 
-from . import keraslyzer
+from . import backend
 
 
 class TunerCallback(keras.callbacks.Callback):
@@ -74,6 +74,16 @@ class TunerCallback(keras.callbacks.Callback):
         ts = time.time()
         results  = self.info
 
+        #ETA
+        elapsed_time = ts - self.start_ts
+        num_epochs = len(self.history)
+        
+        
+        results['num_epochs'] = num_epochs
+        results['time_per_epoch'] = int(elapsed_time / float(num_epochs))
+        results['eta'] = (self.meta_data['tuner']['max_epochs'] - num_epochs) * results['time_per_epoch']
+
+
         #epoch data must be aggregated
         current_epoch_metrics = {}
         current_epoch_key_metrics = {}
@@ -91,14 +101,14 @@ class TunerCallback(keras.callbacks.Callback):
 
         results['history'] = self.history
         results['ts'] = {"start": self.start_ts, "stop": int(time.time())}
-        results['num_epochs'] = len(self.history)
+        results['num_epochs'] = num_epochs
         results['training_complete'] = self.training_complete
         results['meta_data'] = self.meta_data
 
         fname = '%s-%s-%s-%s-execution.json' % (self.meta_data['project'], self.meta_data['architecture'], self.meta_data['instance'], self.meta_data['execution'])
-        local_path = path.join(self.meta_data['local_dir'], fname)
+        local_path = path.join(self.meta_data['server']['local_dir'], fname)
         with file_io.FileIO(local_path, 'w') as outfile:
             outfile.write(json.dumps(results))
 
-        keraslyzer.cloud_save(local_path=local_path, ftype='execution', meta_data=self.meta_data )
+        backend.cloud_save(local_path=local_path, ftype='execution', meta_data=self.meta_data )
         self.last_write = time.time()

@@ -25,10 +25,13 @@ class RandomSearch(HyperTuner):
 
             dry_run (bool): do not train the model just run the pipeline. Default False
             max_fail_streak (int): number of failed model before giving up. Default 20
-
         """  
+
+        self.tuner_name = 'RandomSearch'
+
+        # Do the super last -- it uses the variable setup by the tuner
         super(RandomSearch, self).__init__(model_fn, **kwargs)
-        self.log.tuner_name("RandomSearch")
+
 
     def hypertune(self, x, y, **kwargs):
         remaining_budget = self.epoch_budget

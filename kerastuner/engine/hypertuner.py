@@ -9,11 +9,13 @@ from termcolor import cprint
 from xxhash import xxh64 # xxh64 is faster
 from tabulate import tabulate
 import socket
+from tensorflow.python.lib.io import file_io # allows to write to GCP or local
 
-
+from . import backend
 from .instance import Instance
 from .logger import Logger
 from ..distributions import hyper_parameters
+
 
 
 class HyperTuner(object):
@@ -49,17 +51,24 @@ class HyperTuner(object):
 
         # Model meta data
         self.meta_data = {
-            "local_dir": kwargs.get('local_dir', 'results/'),
             "architecture": kwargs.get('architecture', str(int(time.time()))),
             "project": kwargs.get('project', 'default'),
-            "hostname": socket.gethostname(),
-            "num_gpu": self.num_gpu,
             "info": self.info
         }
 
-        if kwargs.get('username'):
-          self.meta_data['username'] = kwargs.get('username')
-          self.meta_data['gs_dir'] = kwargs.get('gs_dir', 'gs://keras-tuner.appspot.com/')
+        self.meta_data['server'] = {
+                "local_dir": kwargs.get('local_dir', 'results/'),
+                "hostname": socket.gethostname(),
+                "num_gpu": self.num_gpu,
+            }
+
+        self.meta_data['tuner'] = {
+            "name": self.tuner_name,
+            "epoch_budget": self.epoch_budget,
+            "min_epochs": self.min_epochs,
+            "max_epochs": self.max_epochs,
+            "save_models": self.save_models
+            }
 
         #log
         self.log = Logger(self)
@@ -102,18 +111,39 @@ class HyperTuner(object):
               raise Exception('Invalid display_model value: can be either base, multi-gpu or both')
 
         # create local dir if needed
-        if not os.path.exists(self.meta_data['local_dir']):
-          os.makedirs(self.meta_data['local_dir'])
-        cprint("|- Saving results in %s" % self.meta_data['local_dir'], 'cyan')
+        if not os.path.exists(self.meta_data['server']['local_dir']):
+          os.makedirs(self.meta_data['server']['local_dir'])
+        
+        self.log.tuner_name(self.tuner_name)
+        cprint("|- Saving results in %s" % self.meta_data['server']['local_dir'], 'cyan') #fixme use logger
+
+
+    def backend(self, username, **kwargs):
+        "setup backend configuration"
+
+        self.meta_data['backend']  = {
+            "username": username,
+            "url": kwargs.get('url', 'gs://keras-tuner.appspot.com/'),
+            "crash_notification": kwargs.get("crash_notification", False),
+            "tuning_completion_notification": kwargs.get("tuning_completion_notification", False),
+            "instance_trained_notification": kwargs.get("instance_trained_notification", False),
+        }
+
+        config_fname = '%s-%s-meta_data.json' % (self.meta_data['project'], self.meta_data['architecture'])
+        local_path = os.path.join(self.meta_data['server']['local_dir'], config_fname)
+        with file_io.FileIO(local_path, 'w') as output:
+            output.write(json.dumps(self.meta_data))
+        backend.cloud_save(local_path=local_path, ftype='meta_data', meta_data=self.meta_data)
+
 
     def search(self, x, y, **kwargs):
-      self.kera_function = 'fit'
-      self.hypertune(x, y, **kwargs)
+        self.kera_function = 'fit'
+        self.hypertune(x, y, **kwargs)
     
     def search_generator(self, x, **kwargs):
-      self.kera_function = 'fit_generator'
-      y = None # fit_generator don't use this so we put none to be able to have a single hypertune function
-      self.hypertune(x, y, **kwargs)
+        self.kera_function = 'fit_generator'
+        y = None # fit_generator don't use this so we put none to be able to have a single hypertune function
+        self.hypertune(x, y, **kwargs)
 
     def get_random_instance(self):
       "Return a never seen before random model instance"

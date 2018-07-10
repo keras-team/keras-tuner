@@ -9,6 +9,7 @@ class Logger():
         self.hypertuner = hypertuner
 
     def tuner_name(self, name):
+        "Report tuner used"
         cprint("-=[%s]=-" % name, 'magenta')
 
     def new_instance(self, instance, num_instances, remaining_budget):

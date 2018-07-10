@@ -2,7 +2,14 @@
 
 Major KerasTuner changes by version
 
+
 ## v0.5
+
+- Moved the cloud configuration to backend() function with notification configuration
+- Added additional statistics reporting: 
+   - overall: epoch budget, epoch budget remaining, eta, hypertuner used
+   - per instance: eta, epoch remaining 
+
 
 - Added the ability to use generator via the `search_generator` function
 - Various bug fixes
