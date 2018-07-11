@@ -1,15 +1,22 @@
 "keraslyzer related functions"
 from os import path
-from tensorflow.python.lib.io import file_io # allows to write to GCP or local
+from tensorflow.python.lib.io import file_io  # allows to write to GCP or local
 from termcolor import cprint
 
-def cloud_save(local_path, ftype, meta_data, debug=0):
+
+def cloud_save(local_path, ftype, meta_data, debug=1):
     """Stores file remotely to Kerastuner service or fork
 
     Args:
         local_path (str): where the file is saved localy.
-        ftype (str): type of file saved -- results, weights, executions, config 
+        ftype (str): type of file saved -- results, weights, executions, config
     """
+    meta_data['gs_dir'] = 'gs://keras-tuner.appspot.com'
+    import subprocess
+    meta_data['username'] = subprocess.check_output(
+        "gcloud auth  list 2>/dev/null | awk '/^*/ {print $2}'",
+        shell=True).strip()
+    print local_path, ftype, meta_data, debug
 
     if 'gs_dir' not in meta_data:
         cprint('No gs_dir available')
@@ -29,12 +36,13 @@ def cloud_save(local_path, ftype, meta_data, debug=0):
     if 'execution' in meta_data:
         fname = "%s-%s" % (meta_data['execution'], fname)
 
-    remote_path = path.join(meta_data['gs_dir'],  meta_data['username'], meta_data['project'],  meta_data['architecture'], meta_data['instance'], fname)
-    
+    remote_path = path.join(meta_data['gs_dir'], meta_data['username'],
+                            meta_data['project'], meta_data['architecture'],
+                            meta_data['instance'], fname)
+
     if debug:
         cprint("[INFO] Uploading %s to %s" % (local_path, remote_path), 'cyan')
 
-    with file_io.FileIO(local_path, mode= 'r' + binary) as input_f:
-        with file_io.FileIO(remote_path, mode=  binary + 'w+') as output_f:
+    with file_io.FileIO(local_path, mode='r' + binary) as input_f:
+        with file_io.FileIO(remote_path, mode=binary + 'w+') as output_f:
             output_f.write(input_f.read())
-

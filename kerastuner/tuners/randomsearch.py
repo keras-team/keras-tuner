@@ -3,6 +3,7 @@ import copy
 import sys
 from ..engine import HyperTuner
 
+
 class RandomSearch(HyperTuner):
     "Basic hypertuner"
 
@@ -25,26 +26,29 @@ class RandomSearch(HyperTuner):
 
             dry_run (bool): do not train the model just run the pipeline. Default False
             max_fail_streak (int): number of failed model before giving up. Default 20
-        """  
 
-        self.tuner_name = 'RandomSearch'
-
-        # Do the super last -- it uses the variable setup by the tuner
+        """
+        self.tuner_name = "RandomSearch"
         super(RandomSearch, self).__init__(model_fn, **kwargs)
-
+        print kwargs
+        self.log.tuner_name(self.tuner_name)
 
     def hypertune(self, x, y, **kwargs):
         remaining_budget = self.epoch_budget
-        num_instances = 0 
+        num_instances = 0
         while remaining_budget > self.max_epochs:
             instance = self.get_random_instance()
             if not instance:
-                self.log.error("[FATAL] No valid model found - check your model_fn() function is valid")
+                self.log.error(
+                    "[FATAL] No valid model found - check your model_fn() function is valid"
+                )
                 return
             num_instances += 1
             self.log.new_instance(instance, num_instances, remaining_budget)
             for cur_execution in range(self.num_executions):
-                cprint("|- execution: %s/%s" % (cur_execution + 1, self.num_executions), 'cyan')
+                cprint(
+                    "|- execution: %s/%s" % (cur_execution + 1,
+                                             self.num_executions), 'cyan')
                 if self.dry_run:
                     remaining_budget -= self.max_epochs
                 else:

@@ -2,9 +2,9 @@
 from termcolor import cprint
 
 class Logger():
- 
+
     def __init__(self, hypertuner):
-        
+
         # store a reference to the current tuner
         self.hypertuner = hypertuner
 
@@ -20,8 +20,9 @@ class Logger():
         cprint("|- num params: %s" % instance.model_size)
 
     def done(self):
-        msg = "Hypertuning complete - result in %s" % self.hypertuner.local_dir
-        cprint(msg, 'green')
-    
+      if hasattr(self.hypertuner, 'local_dir'):
+          msg = "Hypertuning complete - result in %s" % self.hypertuner.local_dir
+          cprint(msg, 'green')
+
     def error(self, msg):
         cprint(msg, 'red')
