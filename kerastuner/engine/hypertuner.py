@@ -129,6 +129,9 @@ class HyperTuner(object):
             "instance_trained_notification": kwargs.get("instance_trained_notification", False),
         }
 
+        # user custom information
+        self.meta_data['tags'] = kwargs.get('tags', [])
+
         config_fname = '%s-%s-meta_data.json' % (self.meta_data['project'], self.meta_data['architecture'])
         local_path = os.path.join(self.meta_data['server']['local_dir'], config_fname)
         with file_io.FileIO(local_path, 'w') as output:
