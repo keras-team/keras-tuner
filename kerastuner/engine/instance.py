@@ -95,8 +95,8 @@ class Instance(object):
       display_model = self.display_model
 
     instance_info = self.__get_instance_info()
-    execution = InstanceExecution(self.model, self.idx, self.meta_data, self.num_gpu, 
-                display_model, display_info, instance_info, self.key_metrics, 
+    execution = InstanceExecution(self.model, self.idx, self.meta_data, self.num_gpu,
+                display_model, display_info, instance_info, self.key_metrics,
                 self.keras_function, self.save_models)
     self.executions.append(execution)
     return execution
