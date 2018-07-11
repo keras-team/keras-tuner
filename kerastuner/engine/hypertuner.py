@@ -119,7 +119,11 @@ class HyperTuner(object):
 
 
     def backend(self, username, **kwargs):
-        "setup backend configuration"
+        """Setup backend configuration
+        
+          Args
+            info (dict): free form dictionary of information supplied by the user about the hypertuning. MUST be JSON serializable.
+        """
 
         self.meta_data['backend']  = {
             "username": username,
@@ -130,7 +134,7 @@ class HyperTuner(object):
         }
 
         # user custom information
-        self.meta_data['tags'] = kwargs.get('tags', [])
+        self.meta_data['user_info'] = kwargs.get('info', {})
 
         config_fname = '%s-%s-meta_data.json' % (self.meta_data['project'], self.meta_data['architecture'])
         local_path = os.path.join(self.meta_data['server']['local_dir'], config_fname)
