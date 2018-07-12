@@ -80,7 +80,7 @@ class TunerCallback(keras.callbacks.Callback):
         
         
         results['num_epochs'] = num_epochs
-        results['time_per_epoch'] = int(elapsed_time / float(num_epochs))
+        results['time_per_epoch'] = int(elapsed_time / float(max(num_epochs, 1))
         results['eta'] = (self.meta_data['tuner']['max_epochs'] - num_epochs) * results['time_per_epoch']
 
 
