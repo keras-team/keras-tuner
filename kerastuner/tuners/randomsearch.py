@@ -30,7 +30,6 @@ class RandomSearch(HyperTuner):
         """
         self.tuner_name = "RandomSearch"
         super(RandomSearch, self).__init__(model_fn, **kwargs)
-        print kwargs
         self.log.tuner_name(self.tuner_name)
 
     def hypertune(self, x, y, **kwargs):
