@@ -31,7 +31,7 @@ class Instance(object):
     self.display_model = display_model
     self.ts = int(time.time())
     self.executions = []
-    self.model_size = self.__compute_model_size(model)
+    self.model_size = self.compute_model_size()
     self.validation_size = 0
     self.results = {}
     self.key_metrics = key_metrics
@@ -56,9 +56,9 @@ class Instance(object):
     }
     return info
 
-  def __compute_model_size(self, model):
+  def compute_model_size(self):
     "comput the size of a given model"
-    return np.sum([K.count_params(p) for p in set(model.trainable_weights)])
+    return np.sum([K.count_params(p) for p in set(self.model.trainable_weights)])
 
   def fit(self, x, y, resume_execution=False, **kwargs):
     """Fit an execution of the model instance

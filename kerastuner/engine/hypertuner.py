@@ -23,6 +23,8 @@ class HyperTuner(object):
     def __init__(self, model_fn, **kwargs):
         """
         Args:
+            max_params (int): Maximum number of parameters a model can have - anything above will be discarded
+
             architecture (str): name of the architecture that is being tuned.
             project (str): name of the project the architecture belongs to.
 
@@ -38,16 +40,19 @@ class HyperTuner(object):
         self.max_fail_streak = kwargs.get('max_fail_streak', 20)
         self.num_gpu = kwargs.get('num_gpu', 0)
         self.batch_size = kwargs.get('batch_size', 32)
+        self.max_params = kwargs.get('max_params', 100000000)
         self.save_models = kwargs.get('save_models', True)
         self.display_model = kwargs.get('display_model', '') # which models to display
         self.invalid_models = 0 # how many models didn't work
         self.collisions = 0 # how many time we regenerated the same model
+        self.over_sized_model = 0 # how many models had a param counts > max_params
         self.instances = {} # All the models we trained
         self.current_instance_idx = -1 # track the current instance trained
         self.model_fn = model_fn
         self.ts = int(time.time())
         self.kera_function = 'fit'
         self.info = kwargs.get('info', {}) # additional info provided by users
+
 
         # Model meta data
         self.meta_data = {
@@ -67,7 +72,10 @@ class HyperTuner(object):
             "epoch_budget": self.epoch_budget,
             "min_epochs": self.min_epochs,
             "max_epochs": self.max_epochs,
-            "save_models": self.save_models
+            "save_models": self.save_models,
+            "max_params": self.max_params,
+            "collisions": self.collisions,
+            "over_size_models": self.over_sized_model,
             }
 
         #log
@@ -154,7 +162,10 @@ class HyperTuner(object):
 
     def get_random_instance(self):
       "Return a never seen before random model instance"
+      global hyper_parameters
       fail_streak = 0
+      collision_streak = 0
+      over_sized_streak = 0
       while 1:
         fail_streak += 1
         try:
@@ -168,12 +179,30 @@ class HyperTuner(object):
 
         idx = self.__compute_model_id(model)
 
-        if idx not in self.instances:
-          break
-        self.collisions += 1
-      hp = hyper_parameters
-      self.instances[idx] = Instance(idx, model, hp, self.meta_data, self.num_gpu, self.batch_size, 
+        if idx in self.instances:
+          collision_streak += 1
+          self.collisions += 1
+          self.meta_data['tuner']['collisions'] = self.collisions
+          cprint("[WARN] collision detect model %s already trained -- skipping" % (idx), 'yellow')
+          if collision_streak >= self.max_fail_streak:
+            return None
+          continue
+
+        instance = Instance(idx, model, hyper_parameters, self.meta_data, self.num_gpu, self.batch_size, 
                             self.display_model, self.key_metrics, self.kera_function, self.save_models)
+        num_params = instance.compute_model_size()
+        if num_params > self.max_params:
+          over_sized_streak += 1
+          self.over_sized_model += 1
+          self.meta_data['tuner']['over_sized_model'] = self.over_sized_model
+          cprint("[WARN] Oversized model: %s parameters-- skipping" % (num_params), 'yellow')
+          if over_sized_streak >= self.max_fail_streak:
+            return None
+          continue
+        
+        break
+
+      self.instances[idx] = instance
       self.current_instance_idx = idx
       return self.instances[idx]
 
