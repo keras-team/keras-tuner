@@ -50,7 +50,7 @@ class HyperTuner(object):
         self.current_instance_idx = -1 # track the current instance trained
         self.model_fn = model_fn
         self.ts = int(time.time())
-        self.kera_function = 'fit'
+        self.keras_function = 'fit'
         self.info = kwargs.get('info', {}) # additional info provided by users
 
 
@@ -152,11 +152,11 @@ class HyperTuner(object):
 
 
     def search(self, x, y, **kwargs):
-        self.kera_function = 'fit'
+        self.keras_functionkera_function = 'fit'
         self.hypertune(x, y, **kwargs)
     
     def search_generator(self, x, **kwargs):
-        self.kera_function = 'fit_generator'
+        self.keras_function = 'fit_generator'
         y = None # fit_generator don't use this so we put none to be able to have a single hypertune function
         self.hypertune(x, y, **kwargs)
 
@@ -189,7 +189,7 @@ class HyperTuner(object):
           continue
 
         instance = Instance(idx, model, hyper_parameters, self.meta_data, self.num_gpu, self.batch_size, 
-                            self.display_model, self.key_metrics, self.kera_function, self.save_models)
+                            self.display_model, self.key_metrics, self.keras_function, self.save_models)
         num_params = instance.compute_model_size()
         if num_params > self.max_params:
           over_sized_streak += 1
