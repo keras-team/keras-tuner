@@ -51,11 +51,14 @@ class HyperTuner(object):
         self.model_fn = model_fn
         self.ts = int(time.time())
         self.keras_function = 'fit'
+        self.info = kwargs.get('info', {}) # additional info provided by users
+
 
         # Model meta data
         self.meta_data = {
             "architecture": kwargs.get('architecture', str(int(time.time()))),
             "project": kwargs.get('project', 'default'),
+            "user_info": self.info
         }
 
         self.meta_data['server'] = {
@@ -137,9 +140,6 @@ class HyperTuner(object):
             "tuning_completion_notification": kwargs.get("tuning_completion_notification", False),
             "instance_trained_notification": kwargs.get("instance_trained_notification", False),
         }
-
-        # user custom information
-        self.meta_data['user_info'] = kwargs.get('info', {})
 
         config_fname = '%s-%s-meta_data.json' % (self.meta_data['project'], self.meta_data['architecture'])
         local_path = os.path.join(self.meta_data['server']['local_dir'], config_fname)
