@@ -51,14 +51,11 @@ class HyperTuner(object):
         self.model_fn = model_fn
         self.ts = int(time.time())
         self.keras_function = 'fit'
-        self.info = kwargs.get('info', {}) # additional info provided by users
-
 
         # Model meta data
         self.meta_data = {
             "architecture": kwargs.get('architecture', str(int(time.time()))),
             "project": kwargs.get('project', 'default'),
-            "info": self.info
         }
 
         self.meta_data['server'] = {
