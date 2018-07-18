@@ -49,6 +49,7 @@ class HyperTuner(object):
         self.instances = {} # All the models we trained
         self.current_instance_idx = -1 # track the current instance trained
         self.model_fn = model_fn
+        self.callback_fn = kwargs.get('callback_generator', None)
         self.ts = int(time.time())
         self.keras_function = 'fit'
         self.info = kwargs.get('info', {}) # additional info provided by users
@@ -186,7 +187,7 @@ class HyperTuner(object):
           continue
 
         instance = Instance(idx, model, hyper_parameters, self.meta_data, self.num_gpu, self.batch_size, 
-                            self.display_model, self.key_metrics, self.keras_function, self.save_models)
+                            self.display_model, self.key_metrics, self.keras_function, self.save_models, self.callback_fn)
         num_params = instance.compute_model_size()
         if num_params > self.max_params:
           over_sized_streak += 1

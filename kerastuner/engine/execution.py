@@ -11,7 +11,7 @@ from .tunercallback import TunerCallback
 class InstanceExecution(object):
   """Model Execution class. Each Model instance can be executed N time"""
 
-  def __init__(self, model, idx, meta_data, num_gpu, display_model, display_info, instance_info, key_metrics, keras_function, save_models):
+  def __init__(self, model, idx, meta_data, num_gpu, display_model, display_info, instance_info, key_metrics, keras_function, save_models, callback_fn):
     self.ts = int(time.time())
     self.idx = idx
     
@@ -30,8 +30,19 @@ class InstanceExecution(object):
     self.instance_info = instance_info
     self.key_metrics = key_metrics
     self.keras_function = keras_function
-
+    self.callback_fn = callback_fn
       
+    # reflected to the callback_fn which is a user function and therefore must be documented / decoupled 
+    self.execution_info = {}
+
+    for k in ['project', 'architecture', 'instance', 'execution']:
+        self.execution_info[k] = self.meta_data[k]
+
+    for k in ['training_size', 'validation_size', 'batch_size', 'model_size', 'hyper_parameters']:
+        self.execution_info[k] = self.instance_info[k]
+
+
+
     if (self.display_model == 'base' or self.display_model == 'both') and self.display_info :
       self.model.summary()
 
@@ -47,16 +58,21 @@ class InstanceExecution(object):
       """Fit a given model 
       Note: This wrapper around Keras fit allows to handle multi-gpu support and use fit or fit_generator
       """
-
       tcb = TunerCallback(self.instance_info, self.key_metrics, self.meta_data)
       callbacks = kwargs.get('callbacks')
       if callbacks:
             callbacks = copy.deepcopy(callbacks)
+            
             for callback in callbacks:
               # patching tensorboard log dir
               if 'TensorBoard' in str(type(callback)):
                 tensorboard_idx = "%s-%s-%s-%s" % (self.meta_data['project'], self.meta_data['architecture'], self.meta_data['instance'], self.meta_data['execution'])
                 callback.log_dir = path.join(callback.log_dir, tensorboard_idx)
+
+            if self.callback_fn:
+                callbacks.extend(self.callback_fn(self.execution_info))
+
+
             callbacks.append(tcb)
       else: 
           callbacks = [tcb]
