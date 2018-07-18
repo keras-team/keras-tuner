@@ -60,9 +60,12 @@ class InstanceExecution(object):
       """
       tcb = TunerCallback(self.instance_info, self.key_metrics, self.meta_data)
       callbacks = kwargs.get('callbacks')
-      if callbacks:
-            callbacks = copy.deepcopy(callbacks)
-            
+      if callbacks or self.callback_fn:
+            if callbacks:
+                callbacks = copy.deepcopy(callbacks)
+            else:
+                callbacks = []
+
             for callback in callbacks:
               # patching tensorboard log dir
               if 'TensorBoard' in str(type(callback)):
@@ -74,6 +77,7 @@ class InstanceExecution(object):
 
 
             callbacks.append(tcb)
+            
       else: 
           callbacks = [tcb]
       kwargs['callbacks'] = callbacks

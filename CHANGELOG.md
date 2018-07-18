@@ -11,12 +11,15 @@ Major KerasTuner changes by version
 - Added the ability to supply a personalized callback_generator function that is invoked at every execution and receive execution_info as input. Allows to use callbacks which are different from one execution to another which is needed to support complex models such a triplet loss.
 - Added a `test(int)` function which allows to test the model function before getting started
 
-### Extras 
+### Extras
+
 - Add a configurable model over_size detection to avoid OOM errors when TF attempt to train model with too many parameters
 - Moved the cloud configuration to backend() function with notification configuration
 - Added additional statistics reporting: 
-   - overall: epoch budget, epoch budget remaining, eta, hypertuner used
-   - per instance: eta, epoch remaining 
+
+  - overall: epoch budget, epoch budget remaining, eta, hypertuner used
+  - per instance: eta, epoch remaining 
+
 - Various bug fixes including GPU memory release which caused OOM crash
 
 ## v0.4
