@@ -46,8 +46,7 @@ class RandomSearch(HyperTuner):
             self.log.new_instance(instance, num_instances, remaining_budget)
             for cur_execution in range(self.num_executions):
                 cprint(
-                    "|- execution: %s/%s" % (cur_execution + 1,
-                                             self.num_executions), 'cyan')
+                    "|- execution: %s/%s" % (cur_execution + 1, self.num_executions), 'cyan')
                 if self.dry_run:
                     remaining_budget -= self.max_epochs
                 else:

@@ -6,7 +6,9 @@ from collections import defaultdict
 from tensorflow.python.lib.io import file_io # allows to write to GCP or local
 from termcolor import cprint
 from keras import backend as K
+import gc
 import copy
+
 from .execution import InstanceExecution
 from .tunercallback import TunerCallback
 from . import backend
@@ -133,6 +135,11 @@ class Instance(object):
             #"optimizer": execution.model.optimizer
         }
         executions.append(execution_info)
+
+        #cleanup memory by destroying the model
+        del execution.model
+        K.clear_session()
+        gc.collect()
 
     results['executions'] = executions
     results['meta_data'] = self.meta_data
