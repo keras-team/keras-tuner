@@ -38,6 +38,8 @@ def clean_value(value):
         for x in v:
             cleaned_v.append(clean_value(v))
         return cleaned_v
+    else:
+        return value
 
 def clean_result(results):
     clean = {}
