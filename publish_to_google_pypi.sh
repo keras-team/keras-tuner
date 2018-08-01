@@ -20,7 +20,7 @@ password: your_pypi_password
 [google]
 username: your_google_pypi_user
 password: your_google_pypi_password
-repository=https://pypy-dot-keras-tuner.appspot.com
+repository=https://pypi-dot-protect-research.appspot.com
 EOS
 
 if [ ! -f "$HOME/.pypirc" ]; then
