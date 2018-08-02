@@ -2,32 +2,49 @@
 from numpy import random, linspace
 hyper_parameters = {}
 
-def __record_parameter(name, value, param_type):
+def __record_parameter(name, value, param_type,  space_size, group):
+    """ Record hyper parameters value
+    Args:
+        name (str): name of the hyperparameter
+        value: value of the hyperparameter
+        param_type (str): type of hyperparameters
+        space_size (int): how big is the param size search space
+        group (str): which logical group this parameters belongs to
+    """
     global hyperparameters
-    hyper_parameters[name] = {"value": "%s" % value, "type": param_type}
+    hyper_parameters[name] = {"value": "%s" % value, "type": param_type, "group":group, "space_size": space_size}
 
-def Fixed(name, value):
-    "Return a fixed selected value"
-    __record_parameter(name, value, "Fixed")
+def Fixed(name, value, group="default"):
+    """Return a fixed selected value
+    Args:
+        name (str): name of the parameter
+        value: value of the parameter
+        group (str): Optional logical grouping of the parameters
+    Returns:
+        value
+    """
+    __record_parameter(name, value, "Fixed", 1, group)
     return value
 
 
-def Boolean(name):
+def Boolean(name, group="default"):
     """Return a random Boolean value.
     Args:
         name (str): name of the parameter
+        group (str): Optional logical grouping of the parameters
     Returns:
         an boolean
     """
     value = random.choice([True, False])
-    __record_parameter(name, value, "Boolean")
+    __record_parameter(name, value, "Boolean", 2, group)
     return value
 
-def Choice(name, selection):
+def Choice(name, selection, group="default"):
     """Return a random value from an explicit list of choice.
     Args:
         name (str): name of the parameter
         selection (list): list of explicit choices
+        group (str): Optional logical group name this parameter belongs to
     Returns:
         an element of the list provided
     """
@@ -40,11 +57,11 @@ def Choice(name, selection):
         value = str(value)
     else:
         Exception('unknown type')
-    __record_parameter(name, value, "Choice")
+    __record_parameter(name, value, "Choice", len(selection), group)
     return value
 
 
-def Range(name, start, stop, increment=1):
+def Range(name, start, stop, increment=1, group='default'):
     """Return a random value from a range.
     Args:
         name (str): name of the parameter
@@ -56,11 +73,11 @@ def Range(name, start, stop, increment=1):
     """
     my_range = range(start, stop, increment)
     value = int(random.choice(my_range))
-    __record_parameter(name, value, "Range")
+    __record_parameter(name, value, "Range", len(my_range), group)
     return value
 
 
-def Linear(name, start, stop, num_buckets, precision=0):
+def Linear(name, start, stop, num_buckets, precision=0, group='default'):
     """Return a random value from a range which is linearly divided.
     Args:
         name (str): name of the parameter
@@ -79,5 +96,5 @@ def Linear(name, start, stop, num_buckets, precision=0):
         value = float(value)
         if precision > 0:
             value = round(value, precision + 1)
-    __record_parameter(name, value, "Linear")
+    __record_parameter(name, value, "Linear", num_buckets, group)
     return value

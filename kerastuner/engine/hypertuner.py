@@ -10,6 +10,7 @@ from xxhash import xxh64 # xxh64 is faster
 from tabulate import tabulate
 import socket
 from tensorflow.python.lib.io import file_io # allows to write to GCP or local
+from collections import defaultdict
 
 from . import backend
 from .instance import Instance
@@ -125,6 +126,35 @@ class HyperTuner(object):
         
         self.log.tuner_name(self.tuner_name)
         cprint("|- Saving results in %s" % self.meta_data['server']['local_dir'], 'cyan') #fixme use logger
+
+
+    def summary(self):
+      global hyper_parameters
+  
+      #compute the size of the hyperparam space by generating a model
+      m = self.model_fn()
+      group_size = defaultdict(lambda:1)
+      total_size = 1
+      table = [['Group', 'Param', 'Space size']]
+      
+      #param by param
+      self.log.section("Hyperparams search space by params")
+      for name, data in hyper_parameters.items():
+        row = [data['group'], name, data['space_size']]
+        table.append(row)
+        group_size[data['group']] *= data['space_size']
+        total_size *= data['space_size']
+      self.log.text(tabulate(table, headers="firstrow", tablefmt="grid"))
+      
+      #by group
+      self.log.section("Hyperparams search space by group")
+      group_table = [['Group', 'Size']]
+      for g, v in group_size.items():
+        group_table.append([g, v])
+      self.log.text(tabulate(group_table, headers="firstrow", tablefmt="grid"))
+
+      self.log.text("Total search space:%s" % total_size)
+      
 
 
     def backend(self, username, **kwargs):

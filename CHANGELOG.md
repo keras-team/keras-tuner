@@ -2,6 +2,11 @@
 
 Major KerasTuner changes by version
 
+## v0.6
+
+- Added reporting of the search space size for each hyperparameter
+- Added the ability to group hyperparameters in groups to make it easier for post processing
+- Added a summary() function that provide a breakdown of the hyperparameter search space.
 
 ## v0.5
 

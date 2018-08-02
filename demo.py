@@ -23,16 +23,16 @@ username = "demo@kerastuner.io"
 
 def model_fn():
   # Input layer
-  IL_UNITS = Range('input dims', 16, 32, 2)
+  IL_UNITS = Range('input dims', 16, 32, 2, group='inputs')
   # Hidden layer
-  L2_UNITS = Range('hidden dims', 16, 32, 2)
-  L2_ACTIVATION = Choice('hidden activation', ['relu', 'tanh'])
-  L2_OPTIONAL = Boolean('use hidden layer')
+  L2_UNITS = Range('hidden dims', 16, 32, 2, group="hidden_layers")
+  L2_ACTIVATION = Choice('hidden activation', ['relu', 'tanh'], group="hidden_layers")
+  L2_OPTIONAL = Boolean('use hidden layer', group="hidden_layers")
   # Last layer
-  LL_UNITS = Fixed('ouput dims', 1)
-  LL_ACTIVATION = Choice('output activation', ['sigmoid', 'tanh'])
+  LL_UNITS = Fixed('ouput dims', 1, group="output")
+  LL_ACTIVATION = Choice('output activation', ['sigmoid', 'tanh'], group="output")
   # Compile options
-  LOSS = Choice('loss', ['binary_crossentropy', 'mse'])
+  LOSS = Choice('loss', ['binary_crossentropy', 'mse'], group="optimizer")
 
   model = Sequential()
   model.add(Dense(IL_UNITS, input_shape=(20,)))
@@ -47,5 +47,6 @@ mdl.summary()
 # which metrics to track across the runs and display
 METRIC_TO_REPORT = [('loss', 'min'), ('val_loss', 'min'), ('acc', 'max'), ('val_acc', 'max')]
 hypermodel = RandomSearch(model_fn, epoch_budget=90, max_epochs=10, dry_run=DRY_RUN, project="kerastuner-demo", architecture="MLP", info={'model_type':'MLP'}, metrics=METRIC_TO_REPORT)
+hypermodel.summary()
 hypermodel.backend(username=username)
 hypermodel.search(x_train, y_train, validation_split=0.01)

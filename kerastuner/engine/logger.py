@@ -10,7 +10,14 @@ class Logger():
 
     def tuner_name(self, name):
         "Report tuner used"
+        self.section(name)
+
+    def section(self, name):
         cprint("-=[%s]=-" % name, 'magenta')
+
+    def text(self, text):
+        "print text value"
+        print(text)
 
     def new_instance(self, instance, num_instances, remaining_budget):
         "Report the search of a new instance"
