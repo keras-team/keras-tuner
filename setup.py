@@ -4,12 +4,21 @@ from setuptools import setup
 
 setup(
     name="Kerastuner",
-    version="0.5",
+    version="0.6",
     description="Hypertuner for Keras",
     author='Elie Bursztein',
     author_email='elieb@google.com',
     url='https://fixme',
     license='Apache License 2.0',
-    install_requires=open("requirements.txt").read().splitlines(),
+    install_requires=[
+        "attrs",
+        "cprint",
+        "numpy",
+        "tabulate",
+        "termcolor",
+        "tqdm",
+        "xxhash",
+        "psutil",
+    ],
     packages=find_packages(),
 )
