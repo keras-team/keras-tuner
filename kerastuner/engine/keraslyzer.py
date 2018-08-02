@@ -1,23 +1,20 @@
-"Backend related function"
+"keraslyzer related functions"
 from os import path
 from tensorflow.python.lib.io import file_io # allows to write to GCP or local
 from termcolor import cprint
 
-def cloud_save(local_path, ftype, meta_data, debug=1):
-    """Stores file remotely to backend servic
+def cloud_save(local_path, ftype, meta_data, debug=0):
+    """Stores file remotely to Kerastuner service or fork
 
     Args:
         local_path (str): where the file is saved localy.
-        ftype (str): type of file saved -- results, weights, executions, config.
-        meta_data (dict): tuning meta data information
-        debug (bool): print debug
+        ftype (str): type of file saved -- results, weights, executions, config 
     """
 
-    if 'backend' not in meta_data:
-        #cprint('No backend configuration available')
+    if 'gs_dir' not in meta_data:
+        cprint('No gs_dir available')
         return
-
-    if ftype not in ['meta_data', 'config', 'results', 'weights', 'execution']:
+    if ftype not in ['config', 'results', 'weights', 'execution']:
         Exception('Invalid ftype: ', fname)
 
     if ".json" in local_path:
@@ -32,10 +29,7 @@ def cloud_save(local_path, ftype, meta_data, debug=1):
     if 'execution' in meta_data:
         fname = "%s-%s" % (meta_data['execution'], fname)
 
-    if 'instance' not in meta_data:
-        meta_data['instance'] = 'meta_data'
-
-    remote_path = path.join(meta_data['backend']['url'],  meta_data['backend']['username'], meta_data['project'],  meta_data['architecture'], meta_data['instance'], fname)
+    remote_path = path.join(meta_data['gs_dir'],  meta_data['username'], meta_data['project'],  meta_data['architecture'], meta_data['instance'], fname)
     
     if debug:
         cprint("[INFO] Uploading %s to %s" % (local_path, remote_path), 'cyan')

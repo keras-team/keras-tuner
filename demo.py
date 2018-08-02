@@ -1,20 +1,15 @@
-import subprocess
-import random
 import numpy as np
-import functools
-
 # standard Keras import
 from keras.models import Sequential
 from keras.layers import Dense, Dropout
 from keras.optimizers import Adam, SGD
 from keras.callbacks import EarlyStopping
-from tensorflow.examples.tutorials.mnist import input_data
 
 # hypertune imports
 from kerastuner.distributions import Range, Choice, Boolean, Fixed
 from kerastuner.tuners import RandomSearch
 
-# just a simple model to demo how easy is it to use KerasTuner 
+# just a simple model to demo how easy it is to use KerasTuner 
 x_train = np.random.random((1000, 20))
 y_train = np.random.randint(2, size=(1000, 1))
 DRY_RUN = False # DRY_RUN: True don't train the models,  DRY_RUN: False: train models.
