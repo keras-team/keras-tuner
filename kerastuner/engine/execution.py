@@ -11,7 +11,7 @@ from .tunercallback import TunerCallback
 class InstanceExecution(object):
   """Model Execution class. Each Model instance can be executed N time"""
 
-  def __init__(self, model, idx, meta_data, num_gpu, display_model, display_info, instance_info, key_metrics, keras_function, save_models, callback_fn):
+  def __init__(self, model, idx, meta_data, num_gpu, display_model, display_info, instance_info, key_metrics, keras_function, checkpoint, callback_fn):
     self.ts = int(time.time())
     self.idx = idx
     
@@ -22,7 +22,7 @@ class InstanceExecution(object):
     self.num_gpu = num_gpu
     self.display_model = display_model
     self.display_info = display_info
-    self.save_models = save_models
+    self.checkpoint = checkpoint
     # keep a separated model per instance
     self.model = keras.models.clone_model(model)
     # This is directly using Keras model class attribute - I wish there is a better way 
@@ -58,7 +58,7 @@ class InstanceExecution(object):
       """Fit a given model 
       Note: This wrapper around Keras fit allows to handle multi-gpu support and use fit or fit_generator
       """
-      tcb = TunerCallback(self.instance_info, self.key_metrics, self.meta_data)
+      tcb = TunerCallback(self.instance_info, self.key_metrics, self.meta_data, self.checkpoint)
       callbacks = kwargs.get('callbacks')
       if callbacks or self.callback_fn:
             if callbacks:
@@ -105,21 +105,3 @@ class InstanceExecution(object):
         'max': max(data)
       }
       self.metrics[metric] = metric_results
-  
-    # save model if needed
-    if self.save_models:
-        # we save model and weights separately because the model might be trained with multi-gpu which use a different architecture
-        
-        #config
-        prefix = '%s-%s-%s-%s' % (self.meta_data['project'], self.meta_data['architecture'], self.meta_data['instance'], self.meta_data['execution'])
-        config_fname = "%s-config.json" % (prefix)
-        local_path = path.join(local_dir, config_fname)
-        with file_io.FileIO(local_path, 'w') as output:
-            output.write(self.model.to_json())
-        backend.cloud_save(local_path=local_path, ftype='config', meta_data=self.meta_data)
-
-        # weights
-        weights_fname = "%s-weights.h5" % (prefix)
-        local_path = path.join(local_dir, weights_fname)
-        self.model.save_weights(local_path)
-        backend.cloud_save(local_path=local_path, ftype='weights', meta_data=self.meta_data)

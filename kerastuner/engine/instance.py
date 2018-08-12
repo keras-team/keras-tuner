@@ -16,13 +16,13 @@ from . import backend
 class Instance(object):
   """Model instance class."""
 
-  def __init__(self, idx, model, hyper_parameters, meta_data, num_gpu, batch_size, display_model, key_metrics, keras_function, save_models, callback_fn):
+  def __init__(self, idx, model, hyper_parameters, meta_data, num_gpu, batch_size, display_model, key_metrics, keras_function, checkpoint, callback_fn):
     self.ts = int(time.time())
     self.training_size = -1
     self.model = model
     self.hyper_parameters = hyper_parameters
  
-    self.save_models = save_models
+    self.checkpoint = checkpoint
     self.idx = idx
     
     self.meta_data = copy.deepcopy(meta_data) # ensure meta data dopn't have side effect
@@ -100,7 +100,7 @@ class Instance(object):
     instance_info = self.__get_instance_info()
     execution = InstanceExecution(self.model, self.idx, self.meta_data, self.num_gpu,
                 display_model, display_info, instance_info, self.key_metrics,
-                self.keras_function, self.save_models, self.callback_fn)
+                self.keras_function, self.checkpoint, self.callback_fn)
     self.executions.append(execution)
     return execution
 

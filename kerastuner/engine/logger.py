@@ -27,7 +27,7 @@ class Logger():
         cprint("|- num params: %s" % instance.model_size)
 
     def done(self):
-        msg = "Hypertuning complete - result in %s" % self.hypertuner.local_dir
+        msg = "Hypertuning complete - result in %s" % self.hypertuner.meta_data['server']['local_dir']
         cprint(msg, 'green')
     
     def error(self, msg):

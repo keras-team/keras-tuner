@@ -42,7 +42,7 @@ class HyperTuner(object):
         self.num_gpu = kwargs.get('num_gpu', 0)
         self.batch_size = kwargs.get('batch_size', 32)
         self.max_params = kwargs.get('max_params', 100000000)
-        self.save_models = kwargs.get('save_models', True)
+
         self.display_model = kwargs.get('display_model', '') # which models to display
         self.invalid_models = 0 # how many models didn't work
         self.collisions = 0 # how many time we regenerated the same model
@@ -54,7 +54,15 @@ class HyperTuner(object):
         self.ts = int(time.time())
         self.keras_function = 'fit'
         self.info = kwargs.get('info', {}) # additional info provided by users
-
+        
+        #model checkpointing
+        self.checkpoint = {
+          "enable": kwargs.get('checkpoint_models', True),
+          "metric": kwargs.get('checkpoint_metric', 'val_loss'),
+          "mode":  kwargs.get('checkpoint_mode', 'min'),
+        }
+        if self.checkpoint['mode'] != 'min' and self.checkpoint['mode'] != 'max':
+          raise Exception('checkpoint_mode must be either min or max - current value:', self.checkpoint['mode'])
 
         # Model meta data
         self.meta_data = {
@@ -74,10 +82,10 @@ class HyperTuner(object):
             "epoch_budget": self.epoch_budget,
             "min_epochs": self.min_epochs,
             "max_epochs": self.max_epochs,
-            "save_models": self.save_models,
             "max_params": self.max_params,
             "collisions": self.collisions,
             "over_size_models": self.over_sized_model,
+            "checkpoint": self.checkpoint
             }
 
         #log
@@ -217,7 +225,7 @@ class HyperTuner(object):
           continue
 
         instance = Instance(idx, model, hyper_parameters, self.meta_data, self.num_gpu, self.batch_size, 
-                            self.display_model, self.key_metrics, self.keras_function, self.save_models, self.callback_fn)
+                            self.display_model, self.key_metrics, self.keras_function, self.checkpoint, self.callback_fn)
         num_params = instance.compute_model_size()
         if num_params > self.max_params:
           over_sized_streak += 1

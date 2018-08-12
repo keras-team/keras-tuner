@@ -1,5 +1,6 @@
 import keras
 import time
+import sys
 from termcolor import cprint
 from collections import defaultdict
 from os import path
@@ -12,7 +13,7 @@ from . import backend
 
 class TunerCallback(keras.callbacks.Callback):
     "Monitoring callback"
-    def __init__(self, info, key_metrics, meta_data, log_interval=30):
+    def __init__(self, info, key_metrics, meta_data, checkpoint, log_interval=30):
         """
         Args:
         log_interval: interval of time in second between the execution stats are written on disk
@@ -21,6 +22,7 @@ class TunerCallback(keras.callbacks.Callback):
         self.key_metrics = []
         for k in key_metrics:
             self.key_metrics.append(k[0])
+        
         self.meta_data = meta_data
         self.start_ts = int(time.time())
         self.last_write = time.time()
@@ -30,6 +32,13 @@ class TunerCallback(keras.callbacks.Callback):
         self.history_key_metrics = defaultdict(list)
         self.log_interval = log_interval
         self.training_complete = False
+
+        self.checkpoint = checkpoint
+        if checkpoint['enable']:
+            if checkpoint['mode'] == "max":
+                self.checkpoint_current_value = -sys.maxsize -1
+            else:
+                self.checkpoint_current_value = sys.maxsize
 
     def on_train_begin(self, logs={}):
         return
@@ -50,6 +59,21 @@ class TunerCallback(keras.callbacks.Callback):
             self.history[k].append(v)
             if k in self.key_metrics:
                 self.history_key_metrics[k].append(v)
+
+            # checkpointing model if needed
+            update  = False
+            if k == self.checkpoint['metric'] and self.checkpoint['enable']:
+                if self.checkpoint['mode'] == "min" and v < self.checkpoint_current_value:
+                    cprint('diff:%s'% round(self.checkpoint_current_value - v, 4), 'yellow' )
+                    update = True
+                elif self.checkpoint['mode'] == "max" and v > self.checkpoint_current_value:
+                    update = True
+            
+            if update:
+                cprint("[INFO] Saving model %s improved from %s to %s" % (k, round(self.checkpoint_current_value, 4), round(v, 4)), 'cyan')
+                self.checkpoint_current_value = v
+                self.__save_model()
+
         self.__log()
         return
 
@@ -62,6 +86,28 @@ class TunerCallback(keras.callbacks.Callback):
             if k in self.key_metrics:
                 self.current_epoch_key_metrics[k].append(v)
             self.__log()
+        return
+
+    def __save_model(self):
+        """Save model
+            
+            note: we save model and weights separately because the model might be trained with multi-gpu which use a different architecture
+        """
+        local_dir = self.meta_data['server']['local_dir']
+
+        #config
+        prefix = '%s-%s-%s-%s' % (self.meta_data['project'], self.meta_data['architecture'], self.meta_data['instance'], self.meta_data['execution'])
+        config_fname = "%s-config.json" % (prefix)
+        local_path = path.join(local_dir, config_fname)
+        with file_io.FileIO(local_path, 'w') as output:
+            output.write(self.model.to_json())
+        backend.cloud_save(local_path=local_path, ftype='config', meta_data=self.meta_data)
+
+        # weights
+        weights_fname = "%s-weights.h5" % (prefix)
+        local_path = path.join(local_dir, weights_fname)
+        self.model.save_weights(local_path)
+        backend.cloud_save(local_path=local_path, ftype='weights', meta_data=self.meta_data)
         return
 
     def __log(self):
