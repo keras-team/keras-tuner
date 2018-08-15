@@ -10,6 +10,7 @@ from xxhash import xxh64 # xxh64 is faster
 from tabulate import tabulate
 import socket
 from tensorflow.python.lib.io import file_io # allows to write to GCP or local
+from collections import defaultdict
 
 from . import backend
 from .instance import Instance
@@ -41,7 +42,7 @@ class HyperTuner(object):
         self.num_gpu = kwargs.get('num_gpu', 0)
         self.batch_size = kwargs.get('batch_size', 32)
         self.max_params = kwargs.get('max_params', 100000000)
-        self.save_models = kwargs.get('save_models', True)
+
         self.display_model = kwargs.get('display_model', '') # which models to display
         self.invalid_models = 0 # how many models didn't work
         self.collisions = 0 # how many time we regenerated the same model
@@ -49,10 +50,19 @@ class HyperTuner(object):
         self.instances = {} # All the models we trained
         self.current_instance_idx = -1 # track the current instance trained
         self.model_fn = model_fn
+        self.callback_fn = kwargs.get('callback_generator', None)
         self.ts = int(time.time())
         self.keras_function = 'fit'
         self.info = kwargs.get('info', {}) # additional info provided by users
-
+        
+        #model checkpointing
+        self.checkpoint = {
+          "enable": kwargs.get('checkpoint_models', True),
+          "metric": kwargs.get('checkpoint_metric', 'val_loss'),
+          "mode":  kwargs.get('checkpoint_mode', 'min'),
+        }
+        if self.checkpoint['mode'] != 'min' and self.checkpoint['mode'] != 'max':
+          raise Exception('checkpoint_mode must be either min or max - current value:', self.checkpoint['mode'])
 
         # Model meta data
         self.meta_data = {
@@ -72,10 +82,10 @@ class HyperTuner(object):
             "epoch_budget": self.epoch_budget,
             "min_epochs": self.min_epochs,
             "max_epochs": self.max_epochs,
-            "save_models": self.save_models,
             "max_params": self.max_params,
             "collisions": self.collisions,
             "over_size_models": self.over_sized_model,
+            "checkpoint": self.checkpoint
             }
 
         #log
@@ -124,6 +134,35 @@ class HyperTuner(object):
         
         self.log.tuner_name(self.tuner_name)
         cprint("|- Saving results in %s" % self.meta_data['server']['local_dir'], 'cyan') #fixme use logger
+
+
+    def summary(self):
+      global hyper_parameters
+  
+      #compute the size of the hyperparam space by generating a model
+      m = self.model_fn()
+      group_size = defaultdict(lambda:1)
+      total_size = 1
+      table = [['Group', 'Param', 'Space size']]
+      
+      #param by param
+      self.log.section("Hyperparams search space by params")
+      for name, data in hyper_parameters.items():
+        row = [data['group'], name, data['space_size']]
+        table.append(row)
+        group_size[data['group']] *= data['space_size']
+        total_size *= data['space_size']
+      self.log.text(tabulate(table, headers="firstrow", tablefmt="grid"))
+      
+      #by group
+      self.log.section("Hyperparams search space by group")
+      group_table = [['Group', 'Size']]
+      for g, v in group_size.items():
+        group_table.append([g, v])
+      self.log.text(tabulate(group_table, headers="firstrow", tablefmt="grid"))
+
+      self.log.text("Total search space:%s" % total_size)
+      
 
 
     def backend(self, username, **kwargs):
@@ -186,7 +225,7 @@ class HyperTuner(object):
           continue
 
         instance = Instance(idx, model, hyper_parameters, self.meta_data, self.num_gpu, self.batch_size, 
-                            self.display_model, self.key_metrics, self.keras_function, self.save_models)
+                            self.display_model, self.key_metrics, self.keras_function, self.checkpoint, self.callback_fn)
         num_params = instance.compute_model_size()
         if num_params > self.max_params:
           over_sized_streak += 1

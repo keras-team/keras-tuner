@@ -14,7 +14,7 @@ def cloud_save(local_path, ftype, meta_data, debug=1):
     """
 
     if 'backend' not in meta_data:
-        cprint('No backend configuration available')
+        #cprint('No backend configuration available')
         return
 
     if ftype not in ['meta_data', 'config', 'results', 'weights', 'execution']:

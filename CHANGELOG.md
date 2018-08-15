@@ -2,17 +2,31 @@
 
 Major KerasTuner changes by version
 
+## v0.6
+
+- Replaced model saving at the end of the training with model checkpointing at epoch end: model are now saved when they improve.
+- Added reporting of the search space size for each hyperparameter
+- Added the ability to group hyperparameters in groups to make it easier for post processing
+- Added a summary() function that provide a breakdown of the hyperparameter search space.
 
 ## v0.5
 
-- Moved the cloud configuration to backend() function with notification configuration
-- Added additional statistics reporting: 
-   - overall: epoch budget, epoch budget remaining, eta, hypertuner used
-   - per instance: eta, epoch remaining 
-
+### Major features
 
 - Added the ability to use generator via the `search_generator` function
-- Various bug fixes
+- Added the ability to supply a personalized callback_generator function that is invoked at every execution and receive execution_info as input. Allows to use callbacks which are different from one execution to another which is needed to support complex models such a triplet loss.
+- Added a `test(int)` function which allows to test the model function before getting started
+
+### Extras
+
+- Add a configurable model over_size detection to avoid OOM errors when TF attempt to train model with too many parameters
+- Moved the cloud configuration to backend() function with notification configuration
+- Added additional statistics reporting: 
+
+  - overall: epoch budget, epoch budget remaining, eta, hypertuner used
+  - per instance: eta, epoch remaining 
+
+- Various bug fixes including GPU memory release which caused OOM crash
 
 ## v0.4
 
