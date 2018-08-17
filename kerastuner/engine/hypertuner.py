@@ -33,6 +33,9 @@ class HyperTuner(object):
             All architecture meta data are stored into the self.meta_data field as they are only used for recording
         """
 
+        #log
+        self.log = Logger(self)
+
         self.epoch_budget = kwargs.get('epoch_budget', 3713)
         self.max_epochs = kwargs.get('max_epochs', 50)
         self.min_epochs = kwargs.get('min_epochs', 3)
@@ -61,8 +64,12 @@ class HyperTuner(object):
           "metric": kwargs.get('checkpoint_metric', 'val_loss'),
           "mode":  kwargs.get('checkpoint_mode', 'min'),
         }
+          
         if self.checkpoint['mode'] != 'min' and self.checkpoint['mode'] != 'max':
           raise Exception('checkpoint_mode must be either min or max - current value:', self.checkpoint['mode'])
+
+        if self.checkpoint['enable']:
+          self.log.info("Model checkpoint enabled - metric:%s mode:%s" % (self.checkpoint['metric'], self.checkpoint['mode']))
 
         # Model meta data
         self.meta_data = {
@@ -88,8 +95,7 @@ class HyperTuner(object):
             "checkpoint": self.checkpoint
             }
 
-        #log
-        self.log = Logger(self)
+
 
         # metrics
         self.METRIC_NAME = 0

@@ -30,5 +30,8 @@ class Logger():
         msg = "Hypertuning complete - result in %s" % self.hypertuner.meta_data['server']['local_dir']
         cprint(msg, 'green')
     
+    def info(self, msg):
+        cprint(msg, 'cyan')
+
     def error(self, msg):
         cprint(msg, 'red')
