@@ -64,13 +64,15 @@ class TunerCallback(keras.callbacks.Callback):
             update  = False
             if k == self.checkpoint['metric'] and self.checkpoint['enable']:
                 if self.checkpoint['mode'] == "min" and v < self.checkpoint_current_value:
-                    cprint('diff:%s'% round(self.checkpoint_current_value - v, 4), 'yellow' )
+                    #cprint('diff:%s'% round(self.checkpoint_current_value - v, 4), 'yellow' )
+                    word = "decreased"
                     update = True
                 elif self.checkpoint['mode'] == "max" and v > self.checkpoint_current_value:
+                    word = "increased"
                     update = True
             
             if update:
-                cprint("[INFO] Saving model %s improved from %s to %s" % (k, round(self.checkpoint_current_value, 4), round(v, 4)), 'cyan')
+                cprint("[INFO] Saving model %s %s from %s to %s" % (k, word, round(self.checkpoint_current_value, 4), round(v, 4)), 'yellow')
                 self.checkpoint_current_value = v
                 self.__save_model()
 
