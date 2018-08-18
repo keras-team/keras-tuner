@@ -3,7 +3,7 @@
 Major KerasTuner changes by version
 
 ## v0.6
-
+ --- Implement get_config()  / from_config()
 - Replaced model saving at the end of the training with model checkpointing at epoch end: model are now saved when they improve.
 - Added reporting of the search space size for each hyperparameter
 - Added the ability to group hyperparameters in groups to make it easier for post processing
