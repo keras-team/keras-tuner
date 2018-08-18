@@ -52,7 +52,7 @@ class Instance(object):
       #FIXME: add validation split if needed
       "validation_size": self.validation_size,
       "num_executions": len(self.executions),
-      "model": json.loads(self.model.to_json()),
+      "model": self.model.get_config(),
       "batch_size": self.batch_size,
       "model_size": int(self.model_size),
       "hyper_parameters": self.hyper_parameters
@@ -131,9 +131,8 @@ class Instance(object):
             "history": execution.history,
             "loss_fn": execution.model.loss,
             "loss_weigths": execution.model.loss_weights,
-            "meta_data": execution.meta_data
-            #FIXME record optimizer parameters
-            #"optimizer": execution.model.optimizer
+            "meta_data": execution.meta_data,
+            "optimizer": execution.model.optimizer.get_config()
         }
         executions.append(execution_info)
 
