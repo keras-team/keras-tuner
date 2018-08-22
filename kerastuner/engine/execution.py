@@ -2,7 +2,9 @@ import time
 import copy
 import numpy as np
 from termcolor import cprint
-import keras
+from tensorflow import keras
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.optimizers import Optimizer
 from os import path
 from tensorflow.python.lib.io import file_io # allows to write to GCP or local
 from . import backend
@@ -23,10 +25,16 @@ class InstanceExecution(object):
     self.display_model = display_model
     self.display_info = display_info
     self.checkpoint = checkpoint
+    
     # keep a separated model per instance
-    self.model = keras.models.clone_model(model)
-    # This is directly using Keras model class attribute - I wish there is a better way 
-    self.model.compile(optimizer=model.optimizer, loss=model.loss, metrics=model.metrics, loss_weights=model.loss_weights)
+    config = model.get_config()
+    if isinstance(model, Sequential):
+      self.model = Sequential.from_config(config)
+    else:
+      self.model = keras.Model.from_config(config)
+    optimizer_config = model.optimizer.get_config()
+    optimizer = model.optimizer.__class__.from_config(optimizer_config)
+    self.model.compile(optimizer=optimizer, loss=model.loss, metrics=model.metrics, loss_weights=model.loss_weights)
     self.instance_info = instance_info
     self.key_metrics = key_metrics
     self.keras_function = keras_function

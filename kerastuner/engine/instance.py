@@ -5,7 +5,7 @@ from os import path
 from collections import defaultdict
 from tensorflow.python.lib.io import file_io # allows to write to GCP or local
 from termcolor import cprint
-from keras import backend as K
+from tensorflow.keras import backend as K
 import gc
 import copy
 

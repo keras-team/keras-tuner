@@ -1,12 +1,12 @@
 "Meta classs for hypertuner"
 import time
-import keras
+import tensorflow.keras as keras
 import random
 import sys
 import json
 import os
 from termcolor import cprint
-from xxhash import xxh64 # xxh64 is faster
+import farmhash
 from tabulate import tabulate
 import socket
 from tensorflow.python.lib.io import file_io # allows to write to GCP or local
@@ -141,6 +141,9 @@ class HyperTuner(object):
         self.log.tuner_name(self.tuner_name)
         cprint("|- Saving results in %s" % self.meta_data['server']['local_dir'], 'cyan') #fixme use logger
 
+    def __hash(self, val):
+      "Return a hexdigest for a given value"
+
 
     def summary(self):
       global hyper_parameters
@@ -251,7 +254,7 @@ class HyperTuner(object):
     def record_results(self, idx=None):
       """Record instance results
       Args:
-        idx (xxhash): index of the instance. By default use the lastest instance for convience.
+        idx (str): index of the instance. By default use the lastest instance for convience.
       """
 
       if not idx:
@@ -276,7 +279,7 @@ class HyperTuner(object):
       return self.instances.get(idx, None)
 
     def __compute_model_id(self, model):
-      return xxh64(str(model.get_config())).hexdigest()
+      return hex(farmhash.hash64(str(model.get_config())))[2:]  #remove the 0x
 
     def statistics(self):
       #compute overall statisitcs

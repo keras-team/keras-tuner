@@ -1,9 +1,10 @@
 import numpy as np
+
 # standard Keras import
-from keras.models import Sequential
-from keras.layers import Dense, Dropout
-from keras.optimizers import Adam, SGD
-from keras.callbacks import EarlyStopping
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.optimizers import Adam, SGD
+from tensorflow.keras.callbacks import EarlyStopping
 
 # hypertune imports
 from kerastuner.distributions import Range, Choice, Boolean, Fixed

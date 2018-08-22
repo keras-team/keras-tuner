@@ -4,5 +4,4 @@ numpy
 tabulate
 termcolor
 tqdm
-xxhash
-psutil
+pyfarmhash
