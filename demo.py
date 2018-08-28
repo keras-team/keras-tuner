@@ -35,7 +35,8 @@ def model_fn():
   if L2_OPTIONAL:
     model.add(Dense(L2_UNITS, activation=L2_ACTIVATION))
   model.add(Dense(LL_UNITS, activation=LL_ACTIVATION))
-  model.compile(optimizer='adam', loss=LOSS, metrics=['accuracy'])
+  optimizer = Adam(lr=0.001)
+  model.compile(optimizer=optimizer, loss=LOSS, metrics=['accuracy'])
   return model
 
 mdl = model_fn()

@@ -294,7 +294,7 @@ class HyperTuner(object):
             best = min(current_best, res_val)
           else:
             best = max(current_best, res_val)
-        report.append([metric_name, best, res_val])
+          report.append([metric_name, best, res_val])
       print (tabulate(report, headers="firstrow"))
 
       print("Invalid models:%s" % self.invalid_models)
