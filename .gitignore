@@ -8,3 +8,4 @@ build/
 dist/
 .pytest_cache
 bigquery/
+collect/

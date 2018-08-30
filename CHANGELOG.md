@@ -13,6 +13,8 @@ Major KerasTuner changes by version
 ### Extras
 - Switched from keras to tf.keras
 - Switched xxhash to farmhash
+- Multigpu fixed
+- Many Bugs fixed including callback overflows
 
 ## v0.5
 

@@ -56,7 +56,7 @@ pb = tqdm(total=len(results_filenames), desc="Parsing results files", unit='file
 
 table = []
 for fname in results_filenames:
-    info = json.loads(open(fname).read())
+    info = json.loads(open(str(fname)).read())
     project_name = info['meta_data']['project']
     #filtering if needed
     if args.project and args.project != project_name:
