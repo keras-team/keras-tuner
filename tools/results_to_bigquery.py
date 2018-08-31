@@ -61,7 +61,7 @@ results_filenames = list(input_dir.glob("*-results.json"))
 pb = tqdm(total=len(results_filenames), desc="Parsing results files", unit='file')
 tables = defaultdict(list)
 for fname in results_filenames:
-    info = json.loads(open(fname).read())
+    info = json.loads(open(str(fname)).read())
     project_name = info['meta_data']['project']
     #filtering if needed
     if args.project and args.project != project_name:
@@ -81,7 +81,7 @@ for fname in results_filenames:
 
 for project_name, results in tables.items():
     fname = output_dir / (project_name + ".json")
-    out = open(fname, 'w+')
+    out = open(str(fname), 'w+')
     for result in results:
         line = "%s\n" % json.dumps(result)
         out.write(line)
