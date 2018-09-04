@@ -27,10 +27,9 @@ class RandomSearch(HyperTuner):
             max_fail_streak (int): number of failed model before giving up. Default 20
         """  
 
-        self.tuner_name = 'RandomSearch'
-
         # Do the super last -- it uses the variable setup by the tuner
         super(RandomSearch, self).__init__(model_fn, **kwargs)
+        self.set_tuner_name('RandomSearch') # used in result meta_data
 
 
     def hypertune(self, x, y, **kwargs):
@@ -39,7 +38,7 @@ class RandomSearch(HyperTuner):
         while remaining_budget > self.max_epochs:
             instance = self.get_random_instance()
             if not instance:
-                self.log.error("[FATAL] No valid model found - check your model_fn() function is valid")
+                self.log.error("No valid model found - check your model_fn() function is valid")
                 return
             num_instances += 1
             self.log.new_instance(instance, num_instances, remaining_budget)

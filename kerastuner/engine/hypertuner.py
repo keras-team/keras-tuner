@@ -1,4 +1,5 @@
 "Meta classs for hypertuner"
+from abc import abstractmethod
 import time
 import tensorflow.keras as keras
 import random
@@ -9,6 +10,8 @@ from termcolor import cprint
 import farmhash
 from tabulate import tabulate
 import socket
+from tqdm import tqdm
+from pathlib import Path
 from tensorflow.python.lib.io import file_io # allows to write to GCP or local
 from collections import defaultdict
 
@@ -16,8 +19,6 @@ from . import backend
 from .instance import Instance
 from .logger import Logger
 from ..distributions import hyper_parameters
-
-
 
 class HyperTuner(object):
     """Abstract hypertuner class."""
@@ -47,17 +48,22 @@ class HyperTuner(object):
         self.max_params = kwargs.get('max_params', 100000000)
 
         self.display_model = kwargs.get('display_model', '') # which models to display
-        self.invalid_models = 0 # how many models didn't work
-        self.collisions = 0 # how many time we regenerated the same model
-        self.over_sized_model = 0 # how many models had a param counts > max_params
+
+        # instances management 
         self.instances = {} # All the models we trained
+        self.previous_instances = {} # instance previously trained 
         self.current_instance_idx = -1 # track the current instance trained
+        self.invalid_models = 0 # how many models didn't work
+        self.skipped_models = 0 # how many models were already trained 
+        self.collisions = 0 # how many time we regenerated the same model
+        self.over_sized_models = 0 # how many models had a param counts > max_params
+
         self.model_fn = model_fn
         self.callback_fn = kwargs.get('callback_generator', None)
         self.ts = int(time.time())
         self.keras_function = 'fit'
         self.info = kwargs.get('info', {}) # additional info provided by users
-        
+        self.tuner_name = 'default'
         #model checkpointing
         self.checkpoint = {
           "enable": kwargs.get('checkpoint_models', True),
@@ -91,11 +97,9 @@ class HyperTuner(object):
             "max_epochs": self.max_epochs,
             "max_params": self.max_params,
             "collisions": self.collisions,
-            "over_size_models": self.over_sized_model,
+            "over_size_models": self.over_sized_models,
             "checkpoint": self.checkpoint
             }
-
-
 
         # metrics
         self.METRIC_NAME = 0
@@ -104,7 +108,6 @@ class HyperTuner(object):
         self.min_loss = sys.maxsize
         self.max_val_acc = -1
         self.min_val_loss = sys.maxsize
-
 
         # including user metrics
         user_metrics = kwargs.get('metrics')
@@ -137,25 +140,40 @@ class HyperTuner(object):
         # create local dir if needed
         if not os.path.exists(self.meta_data['server']['local_dir']):
           os.makedirs(self.meta_data['server']['local_dir'])
-        
-        self.log.tuner_name(self.tuner_name)
+        else:
+          #check for models already trained
+          self._load_previously_trained_instances(**kwargs)
         cprint("|- Saving results in %s" % self.meta_data['server']['local_dir'], 'cyan') #fixme use logger
 
-    def __hash(self, val):
-      "Return a hexdigest for a given value"
 
+    def set_tuner_name(self, name):
+      self.tuner_name = name
+      self.log.tuner_name(self.tuner_name)
+
+
+    def _load_previously_trained_instances(self, **kwargs):
+      "Checking for existing models"
+      result_path = Path(kwargs.get('local_dir', 'results/'))
+      filenames = list(result_path.glob('*-results.json'))
+      for filename in tqdm(filenames, unit='model', desc='Finding previously trained models'):
+        data = json.loads(open(str(filename)).read())
+
+        # Narrow down to matching project and architecture
+        if (data['meta_data']['architecture'] == self.meta_data['architecture'] 
+            and data['meta_data']['project'] == self.meta_data['project']):
+              # storing previous instance results in memory in case the tuner needs them.
+              self.previous_instances[data['meta_data']['instance']] = data
 
     def summary(self):
       global hyper_parameters
   
       #compute the size of the hyperparam space by generating a model
-      m = self.model_fn()
       group_size = defaultdict(lambda:1)
       total_size = 1
       table = [['Group', 'Param', 'Space size']]
       
       #param by param
-      self.log.section("Hyperparams search space by params")
+      self.log.section("Hyper-params search space by params")
       for name, data in hyper_parameters.items():
         row = [data['group'], name, data['space_size']]
         table.append(row)
@@ -164,7 +182,7 @@ class HyperTuner(object):
       self.log.text(tabulate(table, headers="firstrow", tablefmt="grid"))
       
       #by group
-      self.log.section("Hyperparams search space by group")
+      self.log.section("Hyper-params search space by group")
       group_table = [['Group', 'Size']]
       for g, v in group_size.items():
         group_table.append([g, v])
@@ -217,18 +235,23 @@ class HyperTuner(object):
           model = self.model_fn()
         except:
           self.invalid_models += 1
-          cprint("[WARN] invalid model %s/%s" % (self.invalid_models, self.max_fail_streak), 'yellow')
+          self.log.warning("invalid model %s/%s" % (self.invalid_models, self.max_fail_streak))
           if self.invalid_models >= self.max_fail_streak:
             return None
           continue
 
         idx = self.__compute_model_id(model)
 
+        if idx in self.previous_instances:
+          self.log.info("model %s already trained -- skipping" % idx)
+          self.skipped_models += 1
+          continue
+
         if idx in self.instances:
           collision_streak += 1
           self.collisions += 1
           self.meta_data['tuner']['collisions'] = self.collisions
-          cprint("[WARN] collision detect model %s already trained -- skipping" % (idx), 'yellow')
+          self.log.warning("collision detect model %s already trained -- skipping" % (idx))
           if collision_streak >= self.max_fail_streak:
             return None
           continue
@@ -238,8 +261,8 @@ class HyperTuner(object):
         num_params = instance.compute_model_size()
         if num_params > self.max_params:
           over_sized_streak += 1
-          self.over_sized_model += 1
-          self.meta_data['tuner']['over_sized_model'] = self.over_sized_model
+          self.over_sized_models += 1
+          self.meta_data['tuner']['over_sized_model'] = self.over_sized_models
           cprint("[WARN] Oversized model: %s parameters-- skipping" % (num_params), 'yellow')
           if over_sized_streak >= self.max_fail_streak:
             return None
@@ -254,7 +277,7 @@ class HyperTuner(object):
     def record_results(self, idx=None):
       """Record instance results
       Args:
-        idx (str): index of the instance. By default use the lastest instance for convience.
+        idx (str): index of the instance. By default use the lastest instance for convenience.
       """
 
       if not idx:
@@ -263,7 +286,7 @@ class HyperTuner(object):
         instance = self.instances[idx]
       results = instance.record_results()
 
-      #compute overall statisitcs
+      #compute overall statistics
       for km in self.key_metrics:
         metric_name = km[self.METRIC_NAME]
         if metric_name in results['key_metrics']:
@@ -282,7 +305,7 @@ class HyperTuner(object):
       return hex(farmhash.hash64(str(model.get_config())))[2:]  #remove the 0x
 
     def statistics(self):
-      #compute overall statisitcs
+      #compute overall statistics
       latest_instance_results = self.instances[self.current_instance_idx].results
       report = [['Metric', 'Best', 'Last']]
       for km in self.key_metrics:
@@ -297,5 +320,10 @@ class HyperTuner(object):
           report.append([metric_name, best, res_val])
       print (tabulate(report, headers="firstrow"))
 
-      print("Invalid models:%s" % self.invalid_models)
-      print("Collisions: %s" % self.collisions)
+      print("Invalid models:\t%s" % self.invalid_models)
+      print("Collisions:\t%s" % self.collisions)
+      print("Skipped models:\t%s" % self.skipped_models)
+    
+    @abstractmethod
+    def hypertune(self, x, y, **kwargs):
+      "method called by the hypertuner to train an instance"
