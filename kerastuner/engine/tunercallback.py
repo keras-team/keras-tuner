@@ -55,10 +55,13 @@ class TunerCallback(keras.callbacks.Callback):
         return
 
     def on_epoch_end(self, epoch, logs={}):
+
+        logs = self.__compute_avg_accuracy(logs) # for multi-points
         for k,v in logs.items():
             self.history[k].append(v)
             if k in self.key_metrics:
                 self.history_key_metrics[k].append(v)
+
 
             # checkpointing model if needed
             update  = False
@@ -111,6 +114,39 @@ class TunerCallback(keras.callbacks.Callback):
         self.model.save_weights(local_path)
         backend.cloud_save(local_path=local_path, ftype='weights', meta_data=self.meta_data)
         return
+
+    def __compute_avg_accuracy(self, logs):
+        """Compute average accuracy metrics for multi-points if needed
+        Args:
+            logs: epoch_end logs
+        returns
+            logs: epoch_end logs with additional metrics
+        """
+        #Adding combined accuracy metrics for multi-output if needed
+        num_acc_metrics = 0
+        num_val_acc_metrics = 0
+        for k in logs.keys():
+            if '_accuracy' in k:
+                if 'val_' in k:
+                    num_val_acc_metrics += 1
+                else:
+                    num_acc_metrics += 1
+
+        # multi acc metric -> compute average one
+        if num_acc_metrics > 1:
+            total_acc = 0
+            total_val_acc = 0
+            for k, v in logs.items():
+                if '_accuracy' in k:
+                    if 'val_' in k:
+                        total_val_acc += v
+                    else:
+                        total_acc += v
+            logs['avg_accuracy'] = round(total_acc / float(num_acc_metrics), 4)
+            if num_val_acc_metrics:
+                logs['val_avg_accuracy'] = round(total_val_acc / float(num_val_acc_metrics), 4)
+        return logs
+
 
     def __log(self):
         # If not enough time has passed since the last upload, skip it. However,
