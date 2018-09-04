@@ -239,6 +239,10 @@ class HyperTuner(object):
           if self.invalid_models >= self.max_fail_streak:
             return None
           continue
+        
+        # stop if the model_fn() return nothing
+        if not model:
+          return None
 
         idx = self.__compute_model_id(model)
 
