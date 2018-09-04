@@ -45,7 +45,7 @@ class TunerCallback(keras.callbacks.Callback):
 
     def on_train_end(self, logs={}):
         self.training_complete = True
-        self.__log()
+        self._log()
         return
 
     def on_epoch_begin(self, epoch, logs={}):
@@ -56,7 +56,7 @@ class TunerCallback(keras.callbacks.Callback):
 
     def on_epoch_end(self, epoch, logs={}):
 
-        logs = self.__compute_avg_accuracy(logs) # for multi-points
+        logs = self._compute_avg_accuracy(logs) # for multi-points
         for k,v in logs.items():
             self.history[k].append(v)
             if k in self.key_metrics:
@@ -77,9 +77,9 @@ class TunerCallback(keras.callbacks.Callback):
             if update:
                 cprint("[INFO] Saving model %s %s from %s to %s" % (k, word, round(self.checkpoint_current_value, 4), round(v, 4)), 'yellow')
                 self.checkpoint_current_value = v
-                self.__save_model()
+                self._save_model()
 
-        self.__log()
+        self._log()
         return
 
     def on_batch_begin(self, batch, logs={}):
@@ -90,10 +90,10 @@ class TunerCallback(keras.callbacks.Callback):
             self.current_epoch_history[k].append(v)
             if k in self.key_metrics:
                 self.current_epoch_key_metrics[k].append(v)
-            self.__log()
+            self._log()
         return
 
-    def __save_model(self):
+    def _save_model(self):
         """Save model
             
             note: we save model and weights separately because the model might be trained with multi-gpu which use a different architecture
@@ -115,7 +115,7 @@ class TunerCallback(keras.callbacks.Callback):
         backend.cloud_save(local_path=local_path, ftype='weights', meta_data=self.meta_data)
         return
 
-    def __compute_avg_accuracy(self, logs):
+    def _compute_avg_accuracy(self, logs):
         """Compute average accuracy metrics for multi-points if needed
         Args:
             logs: epoch_end logs
@@ -148,7 +148,7 @@ class TunerCallback(keras.callbacks.Callback):
         return logs
 
 
-    def __log(self):
+    def _log(self):
         # If not enough time has passed since the last upload, skip it. However,
         # don't skip it if it's the last write we make about this training.
         if (time.time() - self.last_write) < self.log_interval:

@@ -21,7 +21,7 @@ def test_avg_accuracy_computation():
   meta_data = {'meta1': 'val1'}
 
   tcb = TunerCallback(info, key_metrics , meta_data, checkpoint)
-  logs = tcb._TunerCallback__compute_avg_accuracy(logs)
+  logs = tcb._compute_avg_accuracy(logs)
   assert "avg_accuracy" in logs
   assert logs['avg_accuracy'] == 0.6
 
