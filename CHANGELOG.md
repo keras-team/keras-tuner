@@ -3,7 +3,8 @@
 Major KerasTuner changes by version
 
 ## v0.6
-
+- Upon restarting the tuner -- already existing instances are loaded to prevent retraining them
+- Added avg_accuracy metric computation in callback to allows checkpointing on accuracy for multi-output
 - Replaced model saving at the end of the training with model checkpointing at epoch end: model are now saved when they improve.
 - Added reporting of the search space size for each hyperparameter
 - Added the ability to group hyperparameters in groups to make it easier for post processing
