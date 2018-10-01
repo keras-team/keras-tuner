@@ -38,8 +38,9 @@ class RandomSearch(HyperTuner):
         while remaining_budget > self.max_epochs:
             instance = self.get_random_instance()
             if not instance:
-                self.log.error("No valid model found - check your model_fn() function is valid")
-                return
+                # not instances left time to wrap-up
+                self.statistics()
+                break
             num_instances += 1
             self.log.new_instance(instance, num_instances, remaining_budget)
             for cur_execution in range(self.num_executions):

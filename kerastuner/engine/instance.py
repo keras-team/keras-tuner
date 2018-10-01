@@ -6,6 +6,7 @@ from collections import defaultdict
 from tensorflow.python.lib.io import file_io # allows to write to GCP or local
 from termcolor import cprint
 from tensorflow.keras import backend as K
+import tensorflow as tf
 import gc
 import copy
 
@@ -104,6 +105,15 @@ class Instance(object):
     self.executions.append(execution)
     return execution
 
+  def _clear_gpu_memory(self):
+        "Clear tensorflow graph to avoid OOM issues"
+        K.get_session().close()
+        cfg = tf.ConfigProto()
+        cfg.gpu_options.allow_growth = True
+        K.set_session(tf.Session(config=cfg))
+        # K.clear_session() # replaced by recreating a TF config
+        gc.collect()
+
   def record_results(self):
     """Record training results
     Returns:
@@ -136,10 +146,9 @@ class Instance(object):
         }
         executions.append(execution_info)
 
-        #cleanup memory by destroying the model
+        #cleanup memory
         del execution.model
-        K.clear_session()
-        gc.collect()
+        self._clear_gpu_memory()
 
     results['executions'] = executions
     results['meta_data'] = self.meta_data
@@ -171,3 +180,5 @@ class Instance(object):
 
     self.results = results
     return results
+    
+

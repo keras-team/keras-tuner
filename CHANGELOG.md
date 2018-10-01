@@ -16,6 +16,7 @@ Major KerasTuner changes by version
 - Switched xxhash to farmhash
 - Multigpu fixed
 - Many Bugs fixed including callback overflows
+- Fixing OOM issues while training on GPU
 
 ## v0.5
 
