@@ -14,6 +14,8 @@ from tqdm import tqdm
 from pathlib import Path
 from tensorflow.python.lib.io import file_io # allows to write to GCP or local
 from collections import defaultdict
+import tensorflow as tf
+import tensorflow.keras.backend as K
 
 from . import backend
 from .instance import Instance
@@ -145,6 +147,10 @@ class HyperTuner(object):
           self._load_previously_trained_instances(**kwargs)
         cprint("|- Saving results in %s" % self.meta_data['server']['local_dir'], 'cyan') #fixme use logger
 
+        # make sure TF session is configured correctly
+        cfg = tf.ConfigProto()
+        cfg.gpu_options.allow_growth = True
+        K.set_session(tf.Session(config=cfg))
 
     def set_tuner_name(self, name):
       self.tuner_name = name

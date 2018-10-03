@@ -107,12 +107,14 @@ class Instance(object):
 
   def _clear_gpu_memory(self):
         "Clear tensorflow graph to avoid OOM issues"
+        K.clear_session()
         K.get_session().close()
+        
+        gc.collect()
+
         cfg = tf.ConfigProto()
         cfg.gpu_options.allow_growth = True
         K.set_session(tf.Session(config=cfg))
-        # K.clear_session() # replaced by recreating a TF config
-        gc.collect()
 
   def record_results(self):
     """Record training results
