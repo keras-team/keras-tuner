@@ -1,6 +1,9 @@
 "Logging functions to ensure unified output accross tuners"
 from termcolor import cprint
 
+SETTING_COLORS = ['green', 'cyan']
+
+
 class Logger():
  
     def __init__(self, hypertuner):
@@ -24,13 +27,18 @@ class Logger():
         msg = "New instance - Remaining Epoch Budget %s/%s Num Instances %s" % (
                 remaining_budget, self.hypertuner.epoch_budget, num_instances)
         cprint(msg, 'yellow')
-        cprint("|- num params: %s" % instance.model_size)
+        self.setting("num params: %s" % instance.model_size)
 
     #TODO refactor to move the message out
     def done(self):
         msg = "Hypertuning complete - result in %s" % self.hypertuner.meta_data['server']['local_dir']
         cprint(msg, 'green')
     
+
+    def setting(self, msg):
+        color = SETTING_COLORS[0]
+        cprint('|- %s' % msg, color)
+
     def info(self, msg):
         self.print_msg('INFO', msg, 'cyan')
   

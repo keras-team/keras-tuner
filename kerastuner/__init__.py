@@ -2,4 +2,4 @@ from . import engine
 from . import tuners
 from . import distributions
 
-__version__ = '0.6.14'
+__version__ = '0.6.15'

@@ -3,20 +3,25 @@
 Major KerasTuner changes by version
 
 ## v0.6
+
 - Upon restarting the tuner -- already existing instances are loaded to prevent retraining them
 - Added avg_accuracy metric computation in callback to allows checkpointing on accuracy for multi-output
 - Replaced model saving at the end of the training with model checkpointing at epoch end: model are now saved when they improve.
 - Added reporting of the search space size for each hyperparameter
 - Added the ability to group hyperparameters in groups to make it easier for post processing
 - Added a summary() function that provide a breakdown of the hyperparameter search space.
-- Added a tool to display results summary in terminal `tools/display-results-summary.pyt`
+- Added a tool to display results summary in terminal `tools/display-results-summary.py`
 
 ### Extras
 - Switched from keras to tf.keras
 - Switched xxhash to farmhash
-- Multigpu fixed
-- Many Bugs fixed including callback overflows
-- Fixing OOM issues while training on GPU
+
+### Major bugs fixes
+- Callback overflows
+- OOM issues while training on GPU
+- Multi-gpu is now working as intended
+- Model generation stats are now correctly displayed
+- Dryrun mode now works as intended
 
 ## v0.5
 

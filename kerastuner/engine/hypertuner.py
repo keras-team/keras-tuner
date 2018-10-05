@@ -55,10 +55,11 @@ class HyperTuner(object):
         self.instances = {} # All the models we trained
         self.previous_instances = {} # instance previously trained 
         self.current_instance_idx = -1 # track the current instance trained
-        self.invalid_models = 0 # how many models didn't work
+        self.num_generated_models = 0 # overall number of model generated
+        self.num_invalid_models = 0 # how many models didn't work
         self.skipped_models = 0 # how many models were already trained 
-        self.collisions = 0 # how many time we regenerated the same model
-        self.over_sized_models = 0 # how many models had a param counts > max_params
+        self.num_collisions = 0 # how many time we regenerated the same model
+        self.num_over_sized_models = 0 # how many models had a param counts > max_params
 
         self.model_fn = model_fn
         self.callback_fn = kwargs.get('callback_generator', None)
@@ -66,13 +67,20 @@ class HyperTuner(object):
         self.keras_function = 'fit'
         self.info = kwargs.get('info', {}) # additional info provided by users
         self.tuner_name = 'default'
+        
+        #recap
+        self.log.section("Key paramss")
+        self.log.setting("Num GPU: %s" % self.num_gpu)
+        self.log.setting("Model Max params: %.1fM" % (self.max_params / 1000000.0))
+        
+        
         #model checkpointing
         self.checkpoint = {
           "enable": kwargs.get('checkpoint_models', True),
           "metric": kwargs.get('checkpoint_metric', 'val_loss'),
           "mode":  kwargs.get('checkpoint_mode', 'min'),
         }
-          
+        
         if self.checkpoint['mode'] != 'min' and self.checkpoint['mode'] != 'max':
           raise Exception('checkpoint_mode must be either min or max - current value:', self.checkpoint['mode'])
 
@@ -98,8 +106,8 @@ class HyperTuner(object):
             "min_epochs": self.min_epochs,
             "max_epochs": self.max_epochs,
             "max_params": self.max_params,
-            "collisions": self.collisions,
-            "over_size_models": self.over_sized_models,
+            "collisions": self.num_collisions,
+            "over_size_models": self.num_over_sized_models,
             "checkpoint": self.checkpoint
             }
 
@@ -172,7 +180,10 @@ class HyperTuner(object):
 
     def summary(self):
       global hyper_parameters
-  
+
+      #Calling the model function to get a set of params
+      self.model_fn()
+
       #compute the size of the hyperparam space by generating a model
       group_size = defaultdict(lambda:1)
       total_size = 1
@@ -236,13 +247,14 @@ class HyperTuner(object):
       collision_streak = 0
       over_sized_streak = 0
       while 1:
+        self.num_generated_models += 1
         fail_streak += 1
         try:
           model = self.model_fn()
         except:
-          self.invalid_models += 1
-          self.log.warning("invalid model %s/%s" % (self.invalid_models, self.max_fail_streak))
-          if self.invalid_models >= self.max_fail_streak:
+          self.num_invalid_models += 1
+          self.log.warning("invalid model %s/%s" % (self.num_invalid_models, self.max_fail_streak))
+          if self.num_invalid_models >= self.max_fail_streak:
             return None
           continue
         
@@ -259,8 +271,8 @@ class HyperTuner(object):
 
         if idx in self.instances:
           collision_streak += 1
-          self.collisions += 1
-          self.meta_data['tuner']['collisions'] = self.collisions
+          self.num_collisions += 1
+          self.meta_data['tuner']['collisions'] = self.num_collisions
           self.log.warning("collision detect model %s already trained -- skipping" % (idx))
           if collision_streak >= self.max_fail_streak:
             return None
@@ -271,8 +283,8 @@ class HyperTuner(object):
         num_params = instance.compute_model_size()
         if num_params > self.max_params:
           over_sized_streak += 1
-          self.over_sized_models += 1
-          self.meta_data['tuner']['over_sized_model'] = self.over_sized_models
+          self.num_over_sized_models += 1
+          self.meta_data['tuner']['over_sized_model'] = self.num_over_sized_models
           cprint("[WARN] Oversized model: %s parameters-- skipping" % (num_params), 'yellow')
           if over_sized_streak >= self.max_fail_streak:
             return None
@@ -316,11 +328,13 @@ class HyperTuner(object):
 
     def statistics(self):
       #compute overall statistics
+      print("")
+      self.log.section("Models stats")
       latest_instance_results = self.instances[self.current_instance_idx].results
-      report = [['Metric', 'Best', 'Last']]
+      report = [['Metric', 'Best mdl', 'Last mdl']]
       for km in self.key_metrics:
         metric_name = km[self.METRIC_NAME]
-        if metric_name in latest_instance_results['key_metrics']:
+        if 'key_metrics' in latest_instance_results and metric_name in latest_instance_results['key_metrics']:
           current_best = self.stats[metric_name]
           res_val = latest_instance_results['key_metrics'][metric_name]
           if km[self.METRIC_DIRECTION] == 'min':
@@ -328,11 +342,16 @@ class HyperTuner(object):
           else:
             best = max(current_best, res_val)
           report.append([metric_name, best, res_val])
-      print (tabulate(report, headers="firstrow"))
+      cprint(tabulate(report, headers="firstrow"), 'green')
+      print("")
 
-      print("Invalid models:\t%s" % self.invalid_models)
-      print("Collisions:\t%s" % self.collisions)
-      print("Skipped models:\t%s" % self.skipped_models)
+      self.log.section("Generation stats")
+      self.log.setting("Generated:\t%s" % (self.num_generated_models))
+      self.log.setting("Invalid:\t%s (%.1f%%)" % (self.num_invalid_models,  (self.num_invalid_models / float(self.num_generated_models)) * 100))
+      self.log.setting("Oversized:\t%s (%.1f%%)" % (self.num_over_sized_models,  (self.num_over_sized_models / float(self.num_generated_models)) * 100 ))
+      self.log.setting("Collisions:\t%s (%.1f%%)" % (self.num_collisions, (self.num_collisions / float(self.num_generated_models)) * 100))
+      print("")
+      #print("Skipped models:\t%s" % self.skipped_models)
     
     @abstractmethod
     def hypertune(self, x, y, **kwargs):
