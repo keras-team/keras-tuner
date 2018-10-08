@@ -15,7 +15,9 @@ from pathlib import Path
 from tensorflow.python.lib.io import file_io # allows to write to GCP or local
 from collections import defaultdict
 import tensorflow as tf
+from tensorflow.python.framework import ops as tf_ops
 import tensorflow.keras.backend as K
+import gc
 
 from . import backend
 from .instance import Instance
@@ -240,6 +242,11 @@ class HyperTuner(object):
         y = None # fit_generator don't use this so we put none to be able to have a single hypertune function
         self.hypertune(x, y, **kwargs)
 
+    def _clear_tf_graph(self):
+      "clear the content of the TF graph to ensure on the valid model is in memory"
+      K.clear_session()
+      gc.collect()
+    
     def get_random_instance(self):
       "Return a never seen before random model instance"
       global hyper_parameters
@@ -247,6 +254,7 @@ class HyperTuner(object):
       collision_streak = 0
       over_sized_streak = 0
       while 1:
+        self._clear_tf_graph() #clean-up TF graph from previously stored (defunct) graph
         self.num_generated_models += 1
         fail_streak += 1
         try:
