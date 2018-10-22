@@ -9,7 +9,7 @@ from setuptools import setup
 
 setup(
     name="Kerastuner",
-    version="0.6.16",
+    version="0.6.17",
     description="Hypertuner for Keras",
     author='Elie Bursztein',
     author_email='elieb@google.com',

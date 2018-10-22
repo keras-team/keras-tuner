@@ -22,7 +22,7 @@ import gc
 from . import backend
 from .instance import Instance
 from .logger import Logger
-from ..distributions import hyper_parameters
+from ..distributions import hyper_parameters, clear_hyperparameters
 
 class HyperTuner(object):
     """Abstract hypertuner class."""
@@ -46,6 +46,7 @@ class HyperTuner(object):
         self.min_epochs = kwargs.get('min_epochs', 3)
         self.num_executions = kwargs.get('num_executions', 1) # how many executions
         self.dry_run = kwargs.get('dry_run', False)
+        self.debug = kwargs.get('debug', False)
         self.max_fail_streak = kwargs.get('max_fail_streak', 20)
         self.num_gpu = kwargs.get('num_gpu', 0)
         self.batch_size = kwargs.get('batch_size', 32)
@@ -59,7 +60,7 @@ class HyperTuner(object):
         self.current_instance_idx = -1 # track the current instance trained
         self.num_generated_models = 0 # overall number of model generated
         self.num_invalid_models = 0 # how many models didn't work
-        self.skipped_models = 0 # how many models were already trained 
+        self.num_mdl_previously_trained = 0 # how many models were already trained 
         self.num_collisions = 0 # how many time we regenerated the same model
         self.num_over_sized_models = 0 # how many models had a param counts > max_params
 
@@ -83,11 +84,19 @@ class HyperTuner(object):
           "mode":  kwargs.get('checkpoint_mode', 'min'),
         }
         
+        if 'accuracy' in self.checkpoint['metric'] and self.checkpoint['mode'] == 'min':
+            self.log.warning("Potentially incorrect checkpoint configuration: %s %s  -- change checkpoint_mode to 'max'? " 
+            % (self.checkpoint['metric'], self.checkpoint['mode']))
+
+        if 'loss' in self.checkpoint['metric'] and self.checkpoint['mode'] == 'max':
+            self.log.warning("Potentially incorrect checkpoint configuration: %s %s  -- change checkpoint_mode to 'max'? "
+            % (self.checkpoint['metric'], self.checkpoint['mode']))
+
         if self.checkpoint['mode'] != 'min' and self.checkpoint['mode'] != 'max':
-          raise Exception('checkpoint_mode must be either min or max - current value:', self.checkpoint['mode'])
+            raise Exception('checkpoint_mode must be either min or max - current value:', self.checkpoint['mode'])
 
         if self.checkpoint['enable']:
-          self.log.info("Model checkpoint enabled - metric:%s mode:%s" % (self.checkpoint['metric'], self.checkpoint['mode']))
+            self.log.info("Model checkpoint enabled - metric:%s mode:%s" % (self.checkpoint['metric'], self.checkpoint['mode']))
 
         # Model meta data
         self.meta_data = {
@@ -124,37 +133,37 @@ class HyperTuner(object):
         # including user metrics
         user_metrics = kwargs.get('metrics')
         if user_metrics:
-          self.key_metrics = []
-          for tm in user_metrics:
-            if not isinstance(tm, tuple):
-              cprint("[Error] Invalid metric format: %s (%s) - metric format is (metric_name, direction) e.g ('val_acc', 'max') - Ignoring" % (tm, type(tm)), 'red')
-              continue
-            if tm[self.METRIC_DIRECTION] not in ['min', 'max']:
-              cprint("[Error] Invalid metric direction for: %s - metric format is (metric_name, direction). direction is min or max - Ignoring" % tm, 'red')
-              continue
-            self.key_metrics.append(tm)
-        else:
-          # sensible default
-          self.key_metrics = [('loss', 'min'), ('val_loss', 'min'), ('acc', 'max'), ('val_acc', 'max')]
+            self.key_metrics = []
+            for tm in user_metrics:
+                if not isinstance(tm, tuple):
+                    cprint("[Error] Invalid metric format: %s (%s) - metric format is (metric_name, direction) e.g ('val_acc', 'max') - Ignoring" % (tm, type(tm)), 'red')
+                    continue
+                if tm[self.METRIC_DIRECTION] not in ['min', 'max']:
+                    cprint("[Error] Invalid metric direction for: %s - metric format is (metric_name, direction). direction is min or max - Ignoring" % tm, 'red')
+                    continue
+                self.key_metrics.append(tm)
+            else:
+                # sensible default
+                self.key_metrics = [('loss', 'min'), ('val_loss', 'min'), ('acc', 'max'), ('val_acc', 'max')]
 
         # initializing key metrics
         self.stats = {}
         for km in self.key_metrics:
-          if km[self.METRIC_DIRECTION] == 'min':
-            self.stats[km[self.METRIC_NAME]] = sys.maxsize
-          else:
-            self.stats[km[self.METRIC_NAME]] = -1
+            if km[self.METRIC_DIRECTION] == 'min':
+                self.stats[km[self.METRIC_NAME]] = sys.maxsize
+            else:
+                self.stats[km[self.METRIC_NAME]] = -1
 
         # output control
         if self.display_model not in ['', 'base', 'multi-gpu', 'both']:
-              raise Exception('Invalid display_model value: can be either base, multi-gpu or both')
+            raise Exception('Invalid display_model value: can be either base, multi-gpu or both')
 
         # create local dir if needed
         if not os.path.exists(self.meta_data['server']['local_dir']):
-          os.makedirs(self.meta_data['server']['local_dir'])
+            os.makedirs(self.meta_data['server']['local_dir'])
         else:
-          #check for models already trained
-          self._load_previously_trained_instances(**kwargs)
+            #check for models already trained
+            self._load_previously_trained_instances(**kwargs)
         cprint("|- Saving results in %s" % self.meta_data['server']['local_dir'], 'cyan') #fixme use logger
 
         # make sure TF session is configured correctly
@@ -254,12 +263,16 @@ class HyperTuner(object):
       collision_streak = 0
       over_sized_streak = 0
       while 1:
+        clear_hyperparameters() # clear the hyperparmaters table between run
         self._clear_tf_graph() #clean-up TF graph from previously stored (defunct) graph
         self.num_generated_models += 1
         fail_streak += 1
         try:
           model = self.model_fn()
         except:
+          if self.debug:
+            import traceback
+            traceback.print_exc()
           self.num_invalid_models += 1
           self.log.warning("invalid model %s/%s" % (self.num_invalid_models, self.max_fail_streak))
           if self.num_invalid_models >= self.max_fail_streak:
@@ -274,7 +287,7 @@ class HyperTuner(object):
 
         if idx in self.previous_instances:
           self.log.info("model %s already trained -- skipping" % idx)
-          self.skipped_models += 1
+          self.num_mdl_previously_trained += 1
           continue
 
         if idx in self.instances:
@@ -354,10 +367,12 @@ class HyperTuner(object):
       print("")
 
       self.log.section("Generation stats")
-      self.log.setting("Generated:\t%s" % (self.num_generated_models))
-      self.log.setting("Invalid:\t%s (%.1f%%)" % (self.num_invalid_models,  (self.num_invalid_models / float(self.num_generated_models)) * 100))
-      self.log.setting("Oversized:\t%s (%.1f%%)" % (self.num_over_sized_models,  (self.num_over_sized_models / float(self.num_generated_models)) * 100 ))
-      self.log.setting("Collisions:\t%s (%.1f%%)" % (self.num_collisions, (self.num_collisions / float(self.num_generated_models)) * 100))
+      self.log.setting("Generated:\t\t%s" % (self.num_generated_models))
+      self.log.setting("Invalid:\t\t%s (%.1f%%)" % (self.num_invalid_models,  (self.num_invalid_models / float(self.num_generated_models)) * 100))
+      self.log.setting("Oversized:\t\t%s (%.1f%%)" % (self.num_over_sized_models,  (self.num_over_sized_models / float(self.num_generated_models)) * 100 ))
+      self.log.setting("Collisions:\t\t%s (%.1f%%)" % (self.num_collisions, (self.num_collisions / float(self.num_generated_models)) * 100))
+      self.log.setting("Prev. trained:\t%s (%.1f%%)" % (self.num_mdl_previously_trained, (self.num_mdl_previously_trained / float(self.num_generated_models)) * 100))
+
       print("")
       #print("Skipped models:\t%s" % self.skipped_models)
     

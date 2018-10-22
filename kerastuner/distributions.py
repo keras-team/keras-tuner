@@ -2,6 +2,13 @@
 from numpy import random, linspace
 hyper_parameters = {}
 
+
+def clear_hyperparameters():
+    "clear the hyperparmeter stack"
+    global hyper_parameters
+    hyper_parameters = {}
+
+
 def __record_parameter(name, value, param_type,  space_size, group):
     """ Record hyper parameters value
     Args:
@@ -11,8 +18,12 @@ def __record_parameter(name, value, param_type,  space_size, group):
         space_size (int): how big is the param size search space
         group (str): which logical group this parameters belongs to
     """
-    global hyperparameters
-    hyper_parameters[name] = {"value": "%s" % value, "type": param_type, "group":group, "space_size": space_size}
+    global hyper_parameters
+    k = "%s:%s" % (group, name)
+    if k in hyper_parameters:
+        msg = "duplicate name/group for distribution:%s" % k
+        raise ValueError(msg)
+    hyper_parameters[k] = {"value": "%s" % value, "type": param_type, "group":group, "space_size": space_size}
 
 def Fixed(name, value, group="default"):
     """Return a fixed selected value
