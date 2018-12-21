@@ -1,4 +1,4 @@
-import keras
+from tensorflow import keras
 import time
 import sys
 from termcolor import cprint
@@ -22,7 +22,7 @@ class TunerCallback(keras.callbacks.Callback):
         self.key_metrics = []
         for k in key_metrics:
             self.key_metrics.append(k[0])
-        
+
         self.meta_data = meta_data
         self.start_ts = int(time.time())
         self.last_write = time.time()
