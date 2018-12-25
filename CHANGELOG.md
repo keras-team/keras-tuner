@@ -13,10 +13,14 @@ Major KerasTuner changes by version
 - Added a tool to display results summary in terminal `tools/display-results-summary.py`
 
 ### Extras
+
 - Switched from keras to tf.keras
 - Switched xxhash to farmhash
 
 ### Major bugs fixes
+
+- Num epochs is properly tracked
+- History is now serializable
 - Callback overflows
 - OOM issues while training on GPU
 - Multi-gpu is now working as intended

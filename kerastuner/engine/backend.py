@@ -1,7 +1,13 @@
 "Backend related function"
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from os import path
-from tensorflow.python.lib.io import file_io # allows to write to GCP or local
+from tensorflow.python.lib.io import file_io  # allows to write to GCP or local
 from termcolor import cprint
+
+
 
 def cloud_save(local_path, ftype, meta_data, debug=1):
     """Stores file remotely to backend servic
@@ -13,12 +19,12 @@ def cloud_save(local_path, ftype, meta_data, debug=1):
         debug (bool): print debug
     """
 
+    # test if we need to do something or we just return
     if 'backend' not in meta_data:
-        #cprint('No backend configuration available')
         return
 
     if ftype not in ['meta_data', 'config', 'results', 'weights', 'execution']:
-        Exception('Invalid ftype: ', fname)
+        Exception('Invalid ftype: ', ftype)
 
     if ".json" in local_path:
         binary = ''
@@ -40,7 +46,9 @@ def cloud_save(local_path, ftype, meta_data, debug=1):
     if debug:
         cprint("[INFO] Uploading %s to %s" % (local_path, remote_path), 'cyan')
 
-    with file_io.FileIO(local_path, mode= 'r' + binary) as input_f:
-        with file_io.FileIO(remote_path, mode=  binary + 'w+') as output_f:
-            output_f.write(input_f.read())
-
+    with file_io.FileIO(local_path, mode='r' + binary) as input_f:
+        with file_io.FileIO(remote_path, mode=binary + 'w+') as output_f:
+            try:
+                output_f.write(input_f.read())
+            except:
+                cprint("GS:// backend not supported", 'yellow')

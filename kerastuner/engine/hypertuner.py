@@ -1,8 +1,10 @@
 "Meta classs for hypertuner"
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from abc import abstractmethod
 import time
-import tensorflow.keras as keras
-import random
 import sys
 import json
 import os
@@ -12,10 +14,9 @@ from tabulate import tabulate
 import socket
 from tqdm import tqdm
 from pathlib import Path
-from tensorflow.python.lib.io import file_io # allows to write to GCP or local
+from tensorflow.python.lib.io import file_io  # allows to write to GCP or local
 from collections import defaultdict
 import tensorflow as tf
-from tensorflow.python.framework import ops as tf_ops
 import tensorflow.keras.backend as K
 import gc
 
@@ -190,39 +191,46 @@ class HyperTuner(object):
               self.previous_instances[data['meta_data']['instance']] = data
 
     def summary(self):
-      global hyper_parameters
+        "Print a summary of the hyperparams search"
+        global hyper_parameters
 
-      #Calling the model function to get a set of params
-      self.model_fn()
+        #clean hyperparameters
+        clear_hyperparameters()
 
-      #compute the size of the hyperparam space by generating a model
-      group_size = defaultdict(lambda:1)
-      total_size = 1
-      table = [['Group', 'Param', 'Space size']]
-      
-      #param by param
-      self.log.section("Hyper-params search space by params")
-      for name, data in hyper_parameters.items():
-        row = [data['group'], name, data['space_size']]
-        table.append(row)
-        group_size[data['group']] *= data['space_size']
-        total_size *= data['space_size']
-      self.log.text(tabulate(table, headers="firstrow", tablefmt="grid"))
-      
-      #by group
-      self.log.section("Hyper-params search space by group")
-      group_table = [['Group', 'Size']]
-      for g, v in group_size.items():
-        group_table.append([g, v])
-      self.log.text(tabulate(group_table, headers="firstrow", tablefmt="grid"))
+        # Calling the model function to get a set of params
+        self.model_fn()
 
-      self.log.text("Total search space:%s" % total_size)
-      
+        # if no hyper_params returning
+        if len(hyper_parameters) == 0:
+            self.log.info("No hyper-parameters")
+            return
 
+        # Compute the size of the hyperparam space by generating a model
+        group_size = defaultdict(lambda: 1)
+        total_size = 1
+        table = [['Group', 'Param', 'Space size']]
+
+        # param by param
+        self.log.section("Hyper-params search space by params")
+        for name, data in hyper_parameters.items():
+            row = [data['group'], name, data['space_size']]
+            table.append(row)
+            group_size[data['group']] *= data['space_size']
+            total_size *= data['space_size']
+        self.log.text(tabulate(table, headers="firstrow", tablefmt="grid"))
+
+        # by group
+        self.log.section("Hyper-params search space by group")
+        group_table = [['Group', 'Size']]
+        for g, v in group_size.items():
+            group_table.append([g, v])
+        self.log.text(tabulate(group_table, headers="firstrow", tablefmt="grid"))
+
+        self.log.highlight("Total search space:%s" % total_size)
 
     def backend(self, username, **kwargs):
         """Setup backend configuration
-        
+ 
           Args
             info (dict): free form dictionary of information supplied by the user about the hypertuning. MUST be JSON serializable.
         """
@@ -262,9 +270,14 @@ class HyperTuner(object):
       fail_streak = 0
       collision_streak = 0
       over_sized_streak = 0
+
       while 1:
-        clear_hyperparameters() # clear the hyperparmaters table between run
-        self._clear_tf_graph() #clean-up TF graph from previously stored (defunct) graph
+
+        # clear the hyperparmaters table between run
+        clear_hyperparameters() 
+
+        # clean-up TF graph from previously stored (defunct) graph
+        self._clear_tf_graph()
         self.num_generated_models += 1
         fail_streak += 1
         try:

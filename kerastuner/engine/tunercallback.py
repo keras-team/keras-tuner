@@ -6,13 +6,14 @@ from collections import defaultdict
 from os import path
 import json
 import numpy as np
-from tensorflow.python.lib.io import file_io # allows to write to GCP or local
+from tensorflow.python.lib.io import file_io  # allows to write to GCP or local
 
 from . import backend
 
 
 class TunerCallback(keras.callbacks.Callback):
     "Monitoring callback"
+
     def __init__(self, info, key_metrics, meta_data, checkpoint, log_interval=30):
         """
         Args:
@@ -36,9 +37,9 @@ class TunerCallback(keras.callbacks.Callback):
         self.checkpoint = checkpoint
         if checkpoint['enable']:
             if checkpoint['mode'] == "max":
-                self.checkpoint_current_value = -sys.maxsize -1
+                self.cpt_cur_val = -sys.maxsize - 1
             else:
-                self.checkpoint_current_value = sys.maxsize
+                self.cpt_cur_val = sys.maxsize
 
     def on_train_begin(self, logs={}):
         return
@@ -49,34 +50,37 @@ class TunerCallback(keras.callbacks.Callback):
         return
 
     def on_epoch_begin(self, epoch, logs={}):
-        #clearing epoch
+        " clearing metric data at epoch end"
         self.current_epoch_history = defaultdict(list)
         self.current_epoch_key_metrics = defaultdict(list)
         return
 
     def on_epoch_end(self, epoch, logs={}):
 
-        logs = self._compute_avg_accuracy(logs) # for multi-points
-        for k,v in logs.items():
-            self.history[k].append(v)
+        # for multi-points compute average accuracy
+        logs = self._compute_avg_accuracy(logs)
+        for k, v in logs.items():
+            # must cast v to float for serialization
+            self.history[k].append(float(v))
             if k in self.key_metrics:
-                self.history_key_metrics[k].append(v)
-
+                self.history_key_metrics[k].append(float(v))
 
             # checkpointing model if needed
-            update  = False
+            update = False
             if k == self.checkpoint['metric'] and self.checkpoint['enable']:
-                if self.checkpoint['mode'] == "min" and v < self.checkpoint_current_value:
-                    #cprint('diff:%s'% round(self.checkpoint_current_value - v, 4), 'yellow' )
+                if self.checkpoint['mode'] == "min" and v < self.cpt_cur_val:
                     word = "decreased"
                     update = True
-                elif self.checkpoint['mode'] == "max" and v > self.checkpoint_current_value:
+                elif self.checkpoint['mode'] == "max" and v > self.cpt_cur_val:
                     word = "increased"
                     update = True
-            
+
             if update:
-                cprint("[INFO] Saving model %s %s from %s to %s" % (k, word, round(self.checkpoint_current_value, 4), round(v, 4)), 'yellow')
-                self.checkpoint_current_value = v
+                cprint("[INFO] Saving model %s %s from %s to %s" % (
+                    k, word, round(self.cpt_cur_val, 4), 
+                    round(v, 4)), 'yellow')
+                
+                self.cpt_cur_val = v
                 self._save_model()
 
         self._log()
@@ -86,7 +90,7 @@ class TunerCallback(keras.callbacks.Callback):
         return
 
     def on_batch_end(self, batch, logs={}):
-        for k,v in logs.items():
+        for k, v in logs.items():
             self.current_epoch_history[k].append(v)
             if k in self.key_metrics:
                 self.current_epoch_key_metrics[k].append(v)
@@ -95,24 +99,31 @@ class TunerCallback(keras.callbacks.Callback):
 
     def _save_model(self):
         """Save model
-            
-            note: we save model and weights separately because the model might be trained with multi-gpu which use a different architecture
+
+            note: we save model and weights separately because
+            the model might be trained with multi-gpu
+            which use a different architecture
         """
         local_dir = self.meta_data['server']['local_dir']
 
-        #config
-        prefix = '%s-%s-%s-%s' % (self.meta_data['project'], self.meta_data['architecture'], self.meta_data['instance'], self.meta_data['execution'])
+        # config
+        prefix = '%s-%s-%s-%s' % (self.meta_data['project'],
+                                  self.meta_data['architecture'],
+                                  self.meta_data['instance'],
+                                  self.meta_data['execution'])
         config_fname = "%s-config.json" % (prefix)
         local_path = path.join(local_dir, config_fname)
         with file_io.FileIO(local_path, 'w') as output:
             output.write(self.model.to_json())
-        backend.cloud_save(local_path=local_path, ftype='config', meta_data=self.meta_data)
+        backend.cloud_save(local_path=local_path,
+                           ftype='config', meta_data=self.meta_data)
 
         # weights
         weights_fname = "%s-weights.h5" % (prefix)
         local_path = path.join(local_dir, weights_fname)
         self.model.save_weights(local_path)
-        backend.cloud_save(local_path=local_path, ftype='weights', meta_data=self.meta_data)
+        backend.cloud_save(local_path=local_path,
+                           ftype='weights', meta_data=self.meta_data)
         return
 
     def _compute_avg_accuracy(self, logs):
@@ -122,7 +133,7 @@ class TunerCallback(keras.callbacks.Callback):
         returns
             logs: epoch_end logs with additional metrics
         """
-        #Adding combined accuracy metrics for multi-output if needed
+        # Adding combined accuracy metrics for multi-output if needed
         num_acc_metrics = 0
         num_val_acc_metrics = 0
         for k in logs.keys():
@@ -144,31 +155,32 @@ class TunerCallback(keras.callbacks.Callback):
                         total_acc += v
             logs['avg_accuracy'] = round(total_acc / float(num_acc_metrics), 4)
             if num_val_acc_metrics:
-                logs['val_avg_accuracy'] = round(total_val_acc / float(num_val_acc_metrics), 4)
+                logs['val_avg_accuracy'] = round(
+                    total_val_acc / float(num_val_acc_metrics), 4)
         return logs
 
-
     def _log(self):
-        # If not enough time has passed since the last upload, skip it. However,
-        # don't skip it if it's the last write we make about this training.
+        # If not enough time has passed since the last upload, skip it.
+        # However don't skip it if it's the last write we do for this instance.
         if (time.time() - self.last_write) < self.log_interval:
             if not self.training_complete:
                 return
 
         ts = time.time()
-        results  = self.info
+        results = self.info
 
-        #ETA
         elapsed_time = ts - self.start_ts
-        num_epochs = len(self.history)
-        
-        
+        num_epochs = len(self.history['loss'])
+
         results['num_epochs'] = num_epochs
-        results['time_per_epoch'] = int(elapsed_time / float(max(num_epochs, 1)))
-        results['eta'] = (self.meta_data['tuner']['max_epochs'] - num_epochs) * results['time_per_epoch']
+        results['time_per_epoch'] = int(
+            elapsed_time / float(max(num_epochs, 1)))
 
+        # ETA
+        results['eta'] = (self.meta_data['tuner']['max_epochs'] - num_epochs)
+        results['eta'] *= results['time_per_epoch']
 
-        #epoch data must be aggregated
+        # Epoch data must be aggregated
         current_epoch_metrics = {}
         current_epoch_key_metrics = {}
         for k, values in self.current_epoch_history.items():
@@ -188,11 +200,12 @@ class TunerCallback(keras.callbacks.Callback):
         results['num_epochs'] = num_epochs
         results['training_complete'] = self.training_complete
         results['meta_data'] = self.meta_data
-
-        fname = '%s-%s-%s-%s-execution.json' % (self.meta_data['project'], self.meta_data['architecture'], self.meta_data['instance'], self.meta_data['execution'])
+        fname = '%s-%s-%s-%s-execution.json' % (
+            self.meta_data['project'], self.meta_data['architecture'], self.meta_data['instance'], self.meta_data['execution'])
         local_path = path.join(self.meta_data['server']['local_dir'], fname)
         with file_io.FileIO(local_path, 'w') as outfile:
             outfile.write(json.dumps(results))
 
-        backend.cloud_save(local_path=local_path, ftype='execution', meta_data=self.meta_data )
+        backend.cloud_save(local_path=local_path,
+                           ftype='execution', meta_data=self.meta_data)
         self.last_write = time.time()

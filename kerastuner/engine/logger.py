@@ -1,9 +1,15 @@
 "Logging functions to ensure unified output accross tuners"
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from termcolor import cprint
 
 SETTING_COLORS = ['green', 'cyan']
 
 
+
+# TODO need to refactor to make it part of python logging system
 class Logger():
  
     def __init__(self, hypertuner):
@@ -29,25 +35,27 @@ class Logger():
         cprint(msg, 'yellow')
         self.setting("num params: %s" % instance.model_size)
 
-    #TODO refactor to move the message out
+    # TODO refactor to move the message out
     def done(self):
         msg = "Hypertuning complete - result in %s" % self.hypertuner.meta_data['server']['local_dir']
         cprint(msg, 'green')
-    
-
+ 
     def setting(self, msg):
         color = SETTING_COLORS[0]
         cprint('|- %s' % msg, color)
 
     def info(self, msg):
         self.print_msg('INFO', msg, 'cyan')
-  
+
     def error(self, msg):
         self.print_msg('ERROR', msg, 'red')
-    
+
     def warning(self, msg):
-        self.print_msg('ERROR', msg, 'yellow')
-   
+        self.print_msg('Warning', msg, 'yellow')
+    
+    def highlight(self, msg):
+        self.print_msg('', msg, 'green')
+
     def print_msg(self, lvl, msg, color):
         s = "[%s] %s" % (lvl, msg)
         cprint(s, color)
