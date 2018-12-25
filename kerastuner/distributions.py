@@ -3,10 +3,19 @@ from numpy import random, linspace
 hyper_parameters = {}
 
 
-def clear_hyperparameters():
+def clear_hyper_parameters():
     "clear the hyperparmeter stack"
     global hyper_parameters
     hyper_parameters = {}
+
+
+def get_hyper_parameters():
+    """Get hyper_parmeters config
+    returns
+        dict: hyper_parameters dict
+    """
+    global hyper_parameters
+    return hyper_parameters
 
 
 def __record_parameter(name, value, param_type,  space_size, group):
@@ -23,7 +32,11 @@ def __record_parameter(name, value, param_type,  space_size, group):
     if k in hyper_parameters:
         msg = "duplicate name/group for distribution:%s" % k
         raise ValueError(msg)
-    hyper_parameters[k] = {"value": "%s" % value, "type": param_type, "group":group, "space_size": space_size}
+    hyper_parameters[k] = {"value": "%s" % value, 
+                           "type": param_type,
+                           "group": group,
+                           "space_size": space_size}
+
 
 def Fixed(name, value, group="default"):
     """Return a fixed selected value
@@ -49,6 +62,7 @@ def Boolean(name, group="default"):
     value = random.choice([True, False])
     __record_parameter(name, value, "Boolean", 2, group)
     return value
+
 
 def Choice(name, selection, group="default"):
     """Return a random value from an explicit list of choice.
@@ -95,7 +109,8 @@ def Linear(name, start, stop, num_buckets, precision=0, group='default'):
         start (int/float): lower bound of the range
         stop (int/float): upper bound of the range
         divider (int): into how many buckets should the range being divided in
-        precision (int): For float range. Round the result rounded to the nth decimal if needed. 0 means not rounded
+        precision (int): For float range. Round the result rounded to the
+                         nth decimal if needed. 0 means not rounded
     Returns:
         an element of the range
     """

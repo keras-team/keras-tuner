@@ -39,8 +39,6 @@ def model_fn():
   model.compile(optimizer=optimizer, loss=LOSS, metrics=['accuracy'])
   return model
 
-mdl = model_fn()
-mdl.summary()
 # which metrics to track across the runs and display
 METRIC_TO_REPORT = [('loss', 'min'), ('val_loss', 'min'), ('acc', 'max'), ('val_acc', 'max')]
 hypermodel = RandomSearch(model_fn, epoch_budget=90, max_epochs=10, dry_run=DRY_RUN, project="kerastuner-demo", architecture="MLP", info={'model_type':'MLP'}, metrics=METRIC_TO_REPORT)
