@@ -9,7 +9,7 @@ import sys
 import json
 import os
 from termcolor import cprint
-import farmhash
+import hashlib
 from tabulate import tabulate
 import socket
 from tqdm import tqdm
@@ -38,7 +38,8 @@ class HyperTuner(object):
             project (str): name of the project the architecture belongs to.
 
         Notes:
-            All architecture meta data are stored into the self.meta_data field as they are only used for recording
+            All architecture meta data are stored into the self.meta_data 
+            field as they are only used for recording
         """
 
         # log
@@ -47,17 +48,14 @@ class HyperTuner(object):
         self.epoch_budget = kwargs.get('epoch_budget', 3713)
         self.max_epochs = kwargs.get('max_epochs', 50)
         self.min_epochs = kwargs.get('min_epochs', 3)
-        self.num_executions = kwargs.get(
-            'num_executions', 1)  # how many executions
+        self.num_executions = kwargs.get('num_executions', 1)
         self.dry_run = kwargs.get('dry_run', False)
         self.debug = kwargs.get('debug', False)
         self.max_fail_streak = kwargs.get('max_fail_streak', 20)
         self.num_gpu = kwargs.get('num_gpu', 0)
         self.batch_size = kwargs.get('batch_size', 32)
         self.max_params = kwargs.get('max_params', 100000000)
-
-        self.display_model = kwargs.get(
-            'display_model', '')  # which models to display
+        self.display_model = kwargs.get('display_model', '')
 
         # instances management
         self.instances = {}  # All the models we trained
@@ -65,9 +63,9 @@ class HyperTuner(object):
         self.current_instance_idx = -1  # track the current instance trained
         self.num_generated_models = 0  # overall number of model generated
         self.num_invalid_models = 0  # how many models didn't work
-        self.num_mdl_previously_trained = 0  # how many models were already trained
+        self.num_mdl_previously_trained = 0  # how many models already trained
         self.num_collisions = 0  # how many time we regenerated the same model
-        self.num_over_sized_models = 0  # how many models had a param counts > max_params
+        self.num_over_sized_models = 0  # num models with params> max_params
 
         self.model_fn = model_fn
         self.callback_fn = kwargs.get('callback_generator', None)
@@ -77,7 +75,7 @@ class HyperTuner(object):
         self.tuner_name = 'default'
 
         # recap
-        self.log.section("Key paramss")
+        self.log.section("Key params")
         self.log.setting("Num GPU: %s" % self.num_gpu)
         self.log.setting("Model Max params: %.1fM" %
                          (self.max_params / 1000000.0))
@@ -151,10 +149,10 @@ class HyperTuner(object):
                         "[Error] Invalid metric direction for: %s - metric format is (metric_name, direction). direction is min or max - Ignoring" % tm, 'red')
                     continue
                 self.key_metrics.append(tm)
-            else:
-                # sensible default
-                self.key_metrics = [
-                    ('loss', 'min'), ('val_loss', 'min'), ('acc', 'max'), ('val_acc', 'max')]
+        else:
+            # sensible default
+            self.key_metrics = [('loss', 'min'), ('val_loss', 'min'),
+                                ('acc', 'max'), ('val_acc', 'max')]
 
         # initializing key metrics
         self.stats = {}
@@ -376,8 +374,9 @@ class HyperTuner(object):
         return self.instances.get(idx, None)
 
     def __compute_model_id(self, model):
-        # remove the 0x
-        return hex(farmhash.hash64(str(model.get_config())))[2:]
+        "compute model hash"
+        s = str(model.get_config())
+        return hashlib.sha256(s.encode('utf-8')).hexdigest()[:32]
 
     def statistics(self):
         # compute overall statistics

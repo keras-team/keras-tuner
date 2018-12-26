@@ -3,13 +3,15 @@
 # pip release : python setup.py sdist upload -r google
 # pip install -i "https://$1:$2@pypi-dot-protect-research.appspot.com/pypi kerastuner"
 
-
 from setuptools import find_packages
 from setuptools import setup
+import kerastuner
+
+version = kerastuner.__version__
 
 setup(
     name="Kerastuner",
-    version="0.6.18",
+    version=version,
     description="Hypertuner for Keras",
     author='Elie Bursztein',
     author_email='elieb@google.com',
@@ -17,12 +19,10 @@ setup(
     license='Apache License 2.0',
     install_requires=[
         "attrs",
-        "cprint",
         "numpy",
         "tabulate",
         "termcolor",
-        "tqdm",
-        "pyfarmhash",
+        "tqdm"
     ],
-    packages=find_packages(),
+    packages=find_packages()
 )
