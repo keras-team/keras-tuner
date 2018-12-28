@@ -20,6 +20,7 @@ setup(
     install_requires=[
         "attrs",
         "numpy",
+        "pathlib",
         "tabulate",
         "termcolor",
         "tqdm"
