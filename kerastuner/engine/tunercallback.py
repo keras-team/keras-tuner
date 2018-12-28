@@ -76,9 +76,9 @@ class TunerCallback(keras.callbacks.Callback):
                     update = True
 
             if update:
-                cprint("[INFO] Saving model %s %s from %s to %s" % (
-                    k, word, round(self.cpt_cur_val, 4), 
-                    round(v, 4)), 'yellow')
+                cprint("\nSaving improved model %s %s from %s to %s" % (
+                    k, word, round(self.cpt_cur_val, 4),
+                    round(v, 4)), 'green')
                 
                 self.cpt_cur_val = v
                 self._save_model()
@@ -155,8 +155,8 @@ class TunerCallback(keras.callbacks.Callback):
                         total_acc += v
             logs['avg_accuracy'] = round(total_acc / float(num_acc_metrics), 4)
             if num_val_acc_metrics:
-                logs['val_avg_accuracy'] = round(
-                    total_val_acc / float(num_val_acc_metrics), 4)
+                logs['val_avg_accuracy'] = round(total_val_acc /
+                                                 float(num_val_acc_metrics), 4)
         return logs
 
     def _log(self):
