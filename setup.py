@@ -1,13 +1,10 @@
 """Setup script."""
-
-# pip release : python setup.py sdist upload -r google
-# pip install -i "https://$1:$2@pypi-dot-protect-research.appspot.com/pypi kerastuner"
-
 from setuptools import find_packages
 from setuptools import setup
 import kerastuner
+import time
 
-version = kerastuner.__version__
+version = kerastuner.__version__ + str(int(time.time()))
 
 setup(
     name="Kerastuner",
