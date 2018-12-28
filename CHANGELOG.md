@@ -2,7 +2,9 @@
 
 Major KerasTuner changes by version
 
-## v0.6
+## v0.6: Engine stablization
+
+The focus of this set of release is to have a robust engine that works seamlessly and we can build upon
 
 - Upon restarting the tuner -- already existing instances are loaded to prevent retraining them
 - Added avg_accuracy metric computation in callback to allows checkpointing on accuracy for multi-output
@@ -14,11 +16,15 @@ Major KerasTuner changes by version
 
 ### Extras
 
+- simplified demo
 - Switched from keras to tf.keras
-- Switched xxhash to farmhash
+- Switched xxhash to hashlib due to dependencies issues (rare)
+- Added traceback via verbose for model debug
 
 ### Major bugs fixes
 
+- Default metrics not set properly
+- gs:// schema unsupported crashed the tuner
 - Num epochs is properly tracked
 - History is now serializable
 - Callback overflows
