@@ -138,8 +138,13 @@ for i, k in enumerate(sorted(info['key_metrics'])):
 # hyper_parameters
 if args.hyper_parameters:
     for hp in sorted(info['hyper_parameters'].keys()):
-        s = colored(info['hyper_parameters'][hp]['group'] + '\n', HYPERPARAM_COLOR)
-        s += colored(info['hyper_parameters'][hp]['name'], HYPERPARAM_COLOR)
+        
+        # only show group if meaningful
+        group = info['hyper_parameters'][hp]['group']
+        if group == 'default':
+            group = ''
+        g = colored(group + '\n', HYPERPARAM_COLOR)
+        s = g + colored(info['hyper_parameters'][hp]['name'], HYPERPARAM_COLOR)
         headers.append(s)
 
 if args.direction.lower() == "asc":
@@ -149,7 +154,7 @@ else:
 
 
 rows = sorted(rows, key=operator.itemgetter(1),
-               reverse=reverse)[:args.num_models]
+              reverse=reverse)[:args.num_models]
 
 table = []
 table.append(headers)
