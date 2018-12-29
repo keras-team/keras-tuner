@@ -1,10 +1,13 @@
 """Setup script."""
+from __future__ import absolute_import
+
 from setuptools import find_packages
 from setuptools import setup
-import kerastuner
 import time
 
-version = kerastuner.__version__ + str(int(time.time()))
+version = 0.7.0
+stub = str(int(time.time()))  # Used to have increased version automagically
+version = version + '.' + stub
 
 setup(
     name="Kerastuner",
