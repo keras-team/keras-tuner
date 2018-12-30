@@ -254,7 +254,6 @@ class TunerCallback(keras.callbacks.Callback):
         # tuner metrics
         tuner_data = []
         md = self.meta_data['tuner']
-        print(md)
         metrics = ['trained_models', 'collisions', 'invalid_models', 'over_size_models']
         for k in metrics:
             tuner_data.append([k.replace('_', ' '), md[k]])
