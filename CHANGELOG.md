@@ -2,9 +2,29 @@
 
 Major KerasTuner changes by version
 
+## V0.7: Ecosystem integration
+
+The focus of these releases is to make kerastuner works well with other and make it easy to operate
+
+### Major features
+
+- New cross-platform display subsystem that produce nice and colorful output
+
+### Extras
+
+- Moved statistics reporting to callback and revamped it to look better and use new display system
+- Reduced the amount of boilerplate code needed to write a tuner by shifting burden to the scheduler and callback
+
+### Noteworthy bugfixes
+
+- setup.py now works in developper mode (issue #41)
+
+
 ## v0.6: Engine stablization
 
 The focus of this set of release is to have a robust engine that works seamlessly and we can build upon
+
+### Major features
 
 - Upon restarting the tuner -- already existing instances are loaded to prevent retraining them
 - Added avg_accuracy metric computation in callback to allows checkpointing on accuracy for multi-output
@@ -21,7 +41,7 @@ The focus of this set of release is to have a robust engine that works seamlessl
 - Switched xxhash to hashlib due to dependencies issues (rare)
 - Added traceback via verbose for model debug
 
-### Major bugs fixes
+### Noteworthy bugfixes
 
 - Default metrics not set properly
 - gs:// schema unsupported crashed the tuner

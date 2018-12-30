@@ -46,8 +46,10 @@ class HyperTuner(object):
         self.log = Logger(self)
 
         self.epoch_budget = kwargs.get('epoch_budget', 3713)
+        self.remaining_budget = self.epoch_budget
         self.max_epochs = kwargs.get('max_epochs', 50)
         self.min_epochs = kwargs.get('min_epochs', 3)
+
         self.num_executions = kwargs.get('num_executions', 1)
         self.dry_run = kwargs.get('dry_run', False)
         self.debug = kwargs.get('debug', False)
@@ -69,7 +71,7 @@ class HyperTuner(object):
 
         self.model_fn = model_fn
         self.callback_fn = kwargs.get('callback_generator', None)
-        self.ts = int(time.time())
+        self.start_time = int(time.time())
         self.keras_function = 'fit'
         self.info = kwargs.get('info', {})  # additional info provided by users
         self.tuner_name = 'default'
@@ -118,11 +120,17 @@ class HyperTuner(object):
 
         self.meta_data['tuner'] = {
             "name": self.tuner_name,
+            "start_time": self.start_time,
+            
             "epoch_budget": self.epoch_budget,
+            "remaining_budget": self.remaining_budget,
             "min_epochs": self.min_epochs,
             "max_epochs": self.max_epochs,
             "max_params": self.max_params,
+
+            "trained_models": self.num_generated_models,
             "collisions": self.num_collisions,
+            "invalid_models": self.num_invalid_models,
             "over_size_models": self.num_over_sized_models,
             "checkpoint": self.checkpoint
         }
@@ -154,13 +162,17 @@ class HyperTuner(object):
             self.key_metrics = [('loss', 'min'), ('val_loss', 'min'),
                                 ('acc', 'max'), ('val_acc', 'max')]
 
-        # initializing key metrics
-        self.stats = {}
+        # initializing stats
+        self.stats = {
+            'best': {},
+            'latest': {}
+        }
         for km in self.key_metrics:
             if km[self.METRIC_DIRECTION] == 'min':
-                self.stats[km[self.METRIC_NAME]] = sys.maxsize
+                self.stats['best'][km[self.METRIC_NAME]] = sys.maxsize
             else:
-                self.stats[km[self.METRIC_NAME]] = -1
+                self.stats['best'][km[self.METRIC_NAME]] = -1
+        self.meta_data['statistics'] = self.stats
 
         # output control
         if self.display_model not in ['', 'base', 'multi-gpu', 'both']:
@@ -220,7 +232,7 @@ class HyperTuner(object):
         # param by param
         self.log.section("Hyper-params search space by params")
         for name, data in hyper_parameters.items():
-            row = [data['group'], name, data['space_size']]
+            row = [data['group'], data['name'], data['space_size']]
             table.append(row)
             group_size[data['group']] *= data['space_size']
             total_size *= data['space_size']
@@ -251,10 +263,9 @@ class HyperTuner(object):
             "instance_trained_notification": kwargs.get("instance_trained_notification", False),
         }
 
-        config_fname = '%s-%s-meta_data.json' % (
-            self.meta_data['project'], self.meta_data['architecture'])
-        local_path = os.path.join(
-            self.meta_data['server']['local_dir'], config_fname)
+        fname = '%s-%s-meta_data.json' % (self.meta_data['project'],
+                                          self.meta_data['architecture'])                             
+        local_path = os.path.join(self.meta_data['server']['local_dir'], fname)
         with file_io.FileIO(local_path, 'w') as output:
             output.write(json.dumps(self.meta_data))
         backend.cloud_save(local_path=local_path,
@@ -294,9 +305,11 @@ class HyperTuner(object):
             try:
                 model = self.model_fn()
             except:
+                
                 if self.debug:
                     import traceback
                     traceback.print_exc()
+                
                 self.num_invalid_models += 1
                 self.log.warning("invalid model %s/%s" %
                                  (self.num_invalid_models,
@@ -327,15 +340,14 @@ class HyperTuner(object):
                     return None
                 continue
             hyper_parameters = get_hyper_parameters()
+            self._update_metadata()
             instance = Instance(idx, model, hyper_parameters, self.meta_data, self.num_gpu, self.batch_size,
                                 self.display_model, self.key_metrics, self.keras_function, self.checkpoint, self.callback_fn)
             num_params = instance.compute_model_size()
             if num_params > self.max_params:
                 over_sized_streak += 1
                 self.num_over_sized_models += 1
-                self.meta_data['tuner']['over_sized_model'] = self.num_over_sized_models
-                cprint("[WARN] Oversized model: %s parameters-- skipping" %
-                       (num_params), 'yellow')
+                self.log.warning("Oversized model: %s parameters-- skipping" % (num_params))
                 if over_sized_streak >= self.max_fail_streak:
                     return None
                 continue
@@ -344,31 +356,44 @@ class HyperTuner(object):
 
         self.instances[idx] = instance
         self.current_instance_idx = idx
+        self.log.new_instance(instance, self.num_generated_models, 
+                              self.remaining_budget)
         return self.instances[idx]
 
     def record_results(self, idx=None):
         """Record instance results
         Args:
-          idx (str): index of the instance. By default use the lastest instance for convenience.
+          idx (str): index of the instance. (default last trained)
         """
 
         if not idx:
             instance = self.instances[self.current_instance_idx]
         else:
             instance = self.instances[idx]
-        results = instance.record_results()
 
+        results = instance.record_results()
+        
         # compute overall statistics
+        latest_results = {}
+        best_results = {}
         for km in self.key_metrics:
             metric_name = km[self.METRIC_NAME]
             if metric_name in results['key_metrics']:
-                current_best = self.stats[metric_name]
+                current_best = self.stats['best'][metric_name]
                 res_val = results['key_metrics'][metric_name]
+                latest_results[metric_name] = res_val
                 if km[self.METRIC_DIRECTION] == 'min':
-                    best = min(current_best, res_val)
+                    best_results[metric_name] = min(current_best, res_val)
                 else:
-                    best = max(current_best, res_val)
-                self.stats[metric_name] = best
+                    best_results[metric_name] = max(current_best, res_val)
+
+        # updating
+        self.stats['best'] = best_results
+        self.stats['latest'] = latest_results
+        self.meta_data['statistics'] = self.stats
+
+    def done(self):
+        self.log.done()
 
     def get_model_by_id(self, idx):
         return self.instances.get(idx, None)
@@ -382,18 +407,12 @@ class HyperTuner(object):
         # compute overall statistics
         print("")
         self.log.section("Models stats")
-        latest_instance_results = self.instances[self.current_instance_idx].results
         report = [['Metric', 'Best mdl', 'Last mdl']]
         for km in self.key_metrics:
             metric_name = km[self.METRIC_NAME]
-            if 'key_metrics' in latest_instance_results and metric_name in latest_instance_results['key_metrics']:
-                current_best = self.stats[metric_name]
-                res_val = latest_instance_results['key_metrics'][metric_name]
-                if km[self.METRIC_DIRECTION] == 'min':
-                    best = min(current_best, res_val)
-                else:
-                    best = max(current_best, res_val)
-                report.append([metric_name, best, res_val])
+            best = self.stats['best'][metric_name]
+            latest = self.stats['latest'][metric_name]
+            report.append([metric_name, best, latest])
         cprint(tabulate(report, headers="firstrow"), 'green')
         print("")
 
@@ -410,6 +429,17 @@ class HyperTuner(object):
 
         print("")
         #print("Skipped models:\t%s" % self.skipped_models)
+
+    def _update_metadata(self):
+        "update metadata with latest hypertuner state"
+
+        md = self.meta_data['tuner']
+        md['remaining_budget'] = self.remaining_budget
+        # stats are updated at instance selection not training end
+        md['trained_models'] = self.num_generated_models
+        md['collisions'] = self.num_collisions
+        md['invalid_models'] = self.num_invalid_models
+        md['over_size_models'] = self.num_over_sized_models
 
     @abstractmethod
     def hypertune(self, x, y, **kwargs):

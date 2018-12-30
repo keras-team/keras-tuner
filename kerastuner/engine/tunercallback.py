@@ -1,3 +1,8 @@
+"Callback"
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from tensorflow import keras
 import time
 import sys
@@ -9,6 +14,7 @@ import numpy as np
 from tensorflow.python.lib.io import file_io  # allows to write to GCP or local
 
 from . import backend
+from .display import cprint, colorize, print_combined_table, print_table
 
 
 class TunerCallback(keras.callbacks.Callback):
@@ -20,10 +26,9 @@ class TunerCallback(keras.callbacks.Callback):
         log_interval: interval of time in second between the execution stats are written on disk
         """
         self.info = info
-        self.key_metrics = []
-        for k in key_metrics:
-            self.key_metrics.append(k[0])
-
+        self.key_metrics = {} 
+        for km in key_metrics:
+            self.key_metrics[km[0]] = km[1]
         self.meta_data = meta_data
         self.start_ts = int(time.time())
         self.last_write = time.time()
@@ -33,6 +38,7 @@ class TunerCallback(keras.callbacks.Callback):
         self.history_key_metrics = defaultdict(list)
         self.log_interval = log_interval
         self.training_complete = False
+        self.stats = {}  # track stats per epoch
 
         self.checkpoint = checkpoint
         if checkpoint['enable']:
@@ -45,6 +51,14 @@ class TunerCallback(keras.callbacks.Callback):
         return
 
     def on_train_end(self, logs={}):
+        
+        # statistics update
+        num_epochs = len(self.history['loss'])
+        self.meta_data['tuner']['remaining_budget'] -= num_epochs
+        
+        # statistics display
+        self._display_statistics()
+        
         self.training_complete = True
         self._log()
         return
@@ -59,11 +73,20 @@ class TunerCallback(keras.callbacks.Callback):
 
         # for multi-points compute average accuracy
         logs = self._compute_avg_accuracy(logs)
+        
+        # metric update
         for k, v in logs.items():
+
             # must cast v to float for serialization
             self.history[k].append(float(v))
             if k in self.key_metrics:
                 self.history_key_metrics[k].append(float(v))
+
+                # update current model performance stats
+                if self.key_metrics[k] == 'min':
+                    self.stats[k] = min(self.history_key_metrics[k])
+                else:
+                    self.stats[k] = max(self.history_key_metrics[k])
 
             # checkpointing model if needed
             update = False
@@ -209,3 +232,33 @@ class TunerCallback(keras.callbacks.Callback):
         backend.cloud_save(local_path=local_path,
                            ftype='execution', meta_data=self.meta_data)
         self.last_write = time.time()
+
+    def _display_statistics(self):
+        """ Report statistics at training end
+        """
+        stats_data = [['Metric', 'Best model', 'Last model']]
+        stats = self.meta_data['statistics']
+        # update latest metrics based of callback tracking
+        stats['latest'] = self.stats
+        for metric_name in stats['best'].keys():     
+            best = round(stats['best'][metric_name], 4)
+            last = round(stats['latest'][metric_name], 4)
+
+            # colorize improvement
+            if ((self.key_metrics[metric_name] == 'min' and last <= best) or
+               (self.key_metrics[metric_name] == 'max' and last >= best)):
+                last = colorize(last, 'green')
+
+            stats_data.append([metric_name, best, last])
+
+        # tuner metrics
+        tuner_data = []
+        md = self.meta_data['tuner']
+        print(md)
+        metrics = ['trained_models', 'collisions', 'invalid_models', 'over_size_models']
+        for k in metrics:
+            tuner_data.append([k.replace('_', ' '), md[k]])
+        
+        # display both on the same line
+        print_combined_table([stats_data, tuner_data])
+

@@ -32,25 +32,22 @@ class RandomSearch(HyperTuner):
         self.set_tuner_name('RandomSearch')  # used in result meta_data
 
     def hypertune(self, x, y, **kwargs):
-        remaining_budget = self.epoch_budget
-        num_instances = 0
-        while remaining_budget >= self.max_epochs:
+        while self.remaining_budget >= self.max_epochs:
             instance = self.get_random_instance()
             if not instance:
                 # not instances left time to wrap-up
-                self.statistics()
                 break
-            num_instances += 1
-            self.log.new_instance(instance, num_instances, remaining_budget)
+
             for cur_execution in range(self.num_executions):
-                cprint("|- execution: %s/%s" %
-                       (cur_execution + 1, self.num_executions), 'cyan')
+                cprint("|- execution: %s/%s" % (cur_execution + 1,
+                                                self.num_executions), 'cyan')
                 if self.dry_run:
-                    remaining_budget -= self.max_epochs
+                    self.remaining_budget -= self.max_epochs
                 else:
                     kwargs['epochs'] = self.max_epochs
                     history = instance.fit(x, y, **kwargs)
-                    remaining_budget -= len(history.history['loss'])
+                    self.remaining_budget -= len(history.history['loss'])
+                    # TODO move the duty to record results to the scheduler
                     self.record_results()
-            self.statistics()
-        self.log.done()
+        
+        self.done()

@@ -6,13 +6,13 @@ import os
 from termcolor import cprint, colored
 from pathlib import Path
 from collections import defaultdict
-#from tabulate import tabulate
 import operator
 from terminaltables import SingleTable
 
 MAIN_METRIC_COLOR = 'magenta'
 METRICS_COLOR = 'cyan'
-HYPERPARAM_COLOR = 'green' 
+HYPERPARAM_COLOR = 'green'
+
 
 def parse_args():
     "Parse cmdline options"
@@ -120,7 +120,9 @@ for fname in results_filenames:
 
     row = [info['meta_data']['instance'], v] + row
     rows.append(row)
-
+if not len(rows):
+    cprint("No models found - wrong dir (-i) or project (-p)?", 'red')
+    quit()
 # headers
 mdl = colored(' \n', 'white') + colored('model idx', 'white')
 mm = colored(" \n", 'white') + colored(args.metric, MAIN_METRIC_COLOR)

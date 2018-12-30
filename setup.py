@@ -21,9 +21,11 @@ setup(
         "attrs",
         "numpy",
         "pathlib",
-        "tabulate",
-        "termcolor",
-        "tqdm"
+        "tabulate",  # to be removed
+        "terminaltables",
+        "termcolor",  # to be removed
+        "colored",
+        "tqdm",
     ],
     packages=find_packages()
 )
