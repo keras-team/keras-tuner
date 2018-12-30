@@ -58,6 +58,31 @@ def subsection(text):
         cprint(section, 'magenta', brightness='dim')
 
 
+def setting(text, ident=0, idx=0, display=True):
+    """ print setting
+    
+    Args:
+        text (str): setting key:value as string
+        ident (int, optional): Defaults to 0. Space indentation
+        idx (int, optional): Defaults to 0. index of setting to rotate color.
+        display (bool, optional): Defaults to True. Display or return settings
+    
+    Returns:
+        str: setting value if display=False, None otherwise 
+    """
+
+    s = ' ' * ident
+    s += '|-' + text
+    if idx % 2:
+        color = 'cyan'
+    else:
+        color = 'blue'
+
+    if display:
+        cprint(s, color)
+    else:
+        return colorize(s + '\n', color)
+
 def highlight(text):
     if ipython:
         text = '<span style="font-size:14px">' + text + '</span>'
@@ -65,6 +90,46 @@ def highlight(text):
     else:
         cprint(text, 'green')
 
+# Charts
+
+def print_bar_chart(val, max_val, title=None, left='', right='', 
+                    color='green', length=80):
+
+    bar = make_bar_chart(val, max_val, title=title, left=left, right=right,
+                         color=color, length=length)
+    display(bar)
+
+
+def make_bar_chart(val, max_val, title=None, left='', right='', 
+                   color='green', length=80):
+    full_block = '█'
+    empty_block = '░'
+    half_block = '▒'
+
+    # building the bar
+    bar = ''
+    num_full = length * val/float(max_val)
+    bar += full_block * int(num_full)
+    if not (num_full).is_integer():
+        bar += half_block
+    bar += empty_block * (length - len(bar))
+    
+    # colorize
+    bar = colorize(bar, color)
+
+    # adding left/right text if needed
+    row = []
+    if left:
+        row.append(left)
+    row.append(bar)
+    if right:
+        row.append(right)
+
+    st = SingleTable([row], title)
+    st.inner_column_border = False
+    return st.table
+
+# Low level function
 
 def cprint(text, color, bg_color=None, brightness='normal'):
     """ Print given piece of text with color
@@ -96,10 +161,12 @@ def colorize(text, color, bg_color=None, brightness='normal'):
     """
 
     if color not in colors and not ipython:
-        raise ValueError("Forground color invalid:" + color)
+        msg = "Foreground color invalid:%s" % color
+        raise ValueError(msg)
 
     if bg_color and bg_color not in colors and not ipython:
-        raise ValueError("Backgroun color invalid:" + bg_color)
+        "Background color invalid:%s" % bg_color
+        raise ValueError(msg)
 
     if brightness not in brightness and not ipython:
         raise ValueError("Brightness invalid:" + brightness)
@@ -137,11 +204,11 @@ def print_table(rows, title=None):
         rows (list(list)): data to display as list of lists.
         title (str, optional): Defaults to None. Table title
     """
-    display(get_table(rows, title))
+    display(make_table(rows, title))
 
 
-def get_table(rows, title=None):
-    """ get data as a nicely formated ascii table
+def make_table(rows, title=None):
+    """ Format list as a pretty ascii table
     Args:
         rows (list(list)): data to display as list of lists.
         title (str, optional): Defaults to None. Table title
@@ -159,7 +226,7 @@ def get_table(rows, title=None):
     return table
 
 
-def get_combined_table(array_rows):
+def make_combined_table(array_rows):
     """ Build a table of tables
 
     Args:
@@ -193,7 +260,7 @@ def get_combined_table(array_rows):
     else:
         tables = []
         for rows in array_rows:
-            tables.append(get_table(rows))
+            tables.append(make_table(rows))
         combined_table = SingleTable([tables])
         combined_table.outer_border = False
         combined_table.inner_column_border = False
@@ -206,5 +273,5 @@ def print_combined_table(array_rows):
     Args:
         array_rows (list(list)): Array of tables rows to combine
     """
-    table = get_combined_table(array_rows)
+    table = make_combined_table(array_rows)
     display(table)

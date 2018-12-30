@@ -21,7 +21,7 @@ from .display import colorize, print_combined_table, section, highlight
 class TunerCallback(keras.callbacks.Callback):
     "Monitoring callback"
 
-    def __init__(self, info, key_metrics, meta_data, checkpoint, log_interval=5):
+    def __init__(self, info, key_metrics, meta_data, checkpoint, log_interval=2):
         """
         Args:
         log_interval: interval of time in second between the execution stats are written on disk
@@ -199,7 +199,14 @@ class TunerCallback(keras.callbacks.Callback):
         # copy existing meta_data
         status = copy(self.meta_data) 
         
-        # ETA
+        elapsed_time = int(ts - self.meta_data['tuner']['start_time'])
+        epochs = status['tuner']['epoch_budget'] - status['tuner']['remaining_budget']
+        time_per_epoch = elapsed_time / max(epochs, 1)
+        eta = status['tuner']['remaining_budget'] * time_per_epoch
+        status['tuner']['eta'] = eta
+
+        # Current model
+        # model eta
         elapsed_time = int(ts - self.start_ts)
         epochs = len(self.history['loss'])
         time_per_epoch = elapsed_time / max(epochs, 1)
@@ -211,7 +218,8 @@ class TunerCallback(keras.callbacks.Callback):
             'time_per_epoch': time_per_epoch,
             'eta': eta
         }
-        status["current_model"] = current_model,
+
+        status["current_model"] = current_model
 
 
         # write on disk

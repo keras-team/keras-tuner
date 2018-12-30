@@ -45,3 +45,36 @@ def __get_model_memory_usage(model, batch_size):
     # print("train count ", trainable_count, "mem per instance", 
     # total_memory, "gbytes ", gbytes)
     return gbytes, trainable_count
+
+import platform
+from distutils import spawn
+from subprocess import Popen, PIPE
+
+
+if platform.system() == "Windows":
+    # If the platform is Windows and nvidia-smi 
+    # could not be found from the environment path, 
+    # try to find it from system drive with default installation path
+    nvidia_smi = spawn.find_executable('nvidia-smi')
+    if nvidia_smi is None:
+        nvidia_smi = "%s\\Program Files\\NVIDIA Corporation\\NVSMI\\nvidia-smi.exe" % os.environ['systemdrive']
+else:
+    nvidia_smi = "nvidia-smi"
+
+def get_gpu_usage():
+    if not nvidia_smi:
+        return []
+    try:
+        p = Popen([nvidia_smi,"--query-gpu=index,utilization.gpu,memory.used,memory.total,name,temperature.gpu", "--format=csv,noheader,nounits"], stdout=PIPE)
+        stdout, stderror = p.communicate()
+    except:
+        return []
+    info = stdout.decode('UTF-8')
+    gpus = []
+    for l in info.split('\n'):
+        if ',' not in l:
+            continue
+        l = l.strip().split(',')
+
+        gpus.append(l)
+    return gpus
