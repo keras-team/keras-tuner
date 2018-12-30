@@ -8,11 +8,13 @@ The focus of these releases is to make kerastuner works well with other and make
 
 ### Major features
 
+- Tuner report status in json file every 5 seconds to make it easy to track progress with tool and remotely
+- Output adapts when run in colab/jupyter notebooks to use HTML for better readability
 - New cross-platform display subsystem that produce nice and colorful output
 
 ### Extras
 
-- Moved statistics reporting to callback and revamped it to look better and use new display system
+- Moved statistics reporting to callback and revamped it to look better and use new display/table system
 - Reduced the amount of boilerplate code needed to write a tuner by shifting burden to the scheduler and callback
 
 ### Noteworthy bugfixes

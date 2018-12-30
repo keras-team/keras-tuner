@@ -10,7 +10,7 @@ import json
 import os
 from termcolor import cprint
 import hashlib
-from tabulate import tabulate
+
 import socket
 from tqdm import tqdm
 from pathlib import Path
@@ -20,6 +20,7 @@ import tensorflow as tf
 import tensorflow.keras.backend as K
 import gc
 
+from .display import print_table, section, highlight, subsection
 from . import backend
 from .instance import Instance
 from .logger import Logger
@@ -230,23 +231,23 @@ class HyperTuner(object):
         table = [['Group', 'Param', 'Space size']]
 
         # param by param
-        self.log.section("Hyper-params search space by params")
         for name, data in hyper_parameters.items():
             row = [data['group'], data['name'], data['space_size']]
             table.append(row)
             group_size[data['group']] *= data['space_size']
             total_size *= data['space_size']
-        self.log.text(tabulate(table, headers="firstrow", tablefmt="grid"))
 
         # by group
-        self.log.section("Hyper-params search space by group")
         group_table = [['Group', 'Size']]
         for g, v in group_size.items():
             group_table.append([g, v])
-        self.log.text(
-            tabulate(group_table, headers="firstrow", tablefmt="grid"))
-
-        self.log.highlight("Total search space:%s" % total_size)
+        
+        section("Hyper-parmeters search space")
+        subsection("Search space by parameters group")
+        print_table(group_table)
+        subsection("Search space for each parameters")
+        print_table(table)
+        highlight("Total search space:%s" % total_size)
 
     def backend(self, username, **kwargs):
         """Setup backend configuration
@@ -402,33 +403,6 @@ class HyperTuner(object):
         "compute model hash"
         s = str(model.get_config())
         return hashlib.sha256(s.encode('utf-8')).hexdigest()[:32]
-
-    def statistics(self):
-        # compute overall statistics
-        print("")
-        self.log.section("Models stats")
-        report = [['Metric', 'Best mdl', 'Last mdl']]
-        for km in self.key_metrics:
-            metric_name = km[self.METRIC_NAME]
-            best = self.stats['best'][metric_name]
-            latest = self.stats['latest'][metric_name]
-            report.append([metric_name, best, latest])
-        cprint(tabulate(report, headers="firstrow"), 'green')
-        print("")
-
-        self.log.section("Generation stats")
-        self.log.setting("Generated:\t\t%s" % (self.num_generated_models))
-        self.log.setting("Invalid:\t\t%s (%.1f%%)" % (self.num_invalid_models,
-                                                      (self.num_invalid_models / float(self.num_generated_models)) * 100))
-        self.log.setting("Oversized:\t\t%s (%.1f%%)" % (self.num_over_sized_models,
-                                                        (self.num_over_sized_models / float(self.num_generated_models)) * 100))
-        self.log.setting("Collisions:\t\t%s (%.1f%%)" % (
-            self.num_collisions, (self.num_collisions / float(self.num_generated_models)) * 100))
-        self.log.setting("Prev. trained:\t%s (%.1f%%)" % (self.num_mdl_previously_trained,
-                                                          (self.num_mdl_previously_trained / float(self.num_generated_models)) * 100))
-
-        print("")
-        #print("Skipped models:\t%s" % self.skipped_models)
 
     def _update_metadata(self):
         "update metadata with latest hypertuner state"

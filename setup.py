@@ -24,7 +24,7 @@ setup(
         "tabulate",  # to be removed
         "terminaltables",
         "termcolor",  # to be removed
-        "colored",
+        "colorama",
         "tqdm",
     ],
     packages=find_packages()

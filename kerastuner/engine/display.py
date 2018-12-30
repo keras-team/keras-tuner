@@ -1,14 +1,26 @@
 "display utilities"
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
-from colorama import init, Fore, Back, Style
 from terminaltables import SingleTable
+from tabulate import tabulate
+from colorama import init, Fore, Back, Style
+init()  # colorama init
 
-#colorama init
-init()
+# Check if we are in ipython/colab
+try:
+    get_ipython().__class__.__name__
+    from IPython.display import HTML
+    ipython = True
+except NameError:
+    ipython = False
+    display = print
 
 FG = 0
 BG = 1
 
+# TODO: create a set of HTML color to allows richer display in colab 
 colors = {
     'black': [Fore.BLACK, Back.BLACK],
     'red': [Fore.RED, Back.RED],
@@ -27,6 +39,33 @@ styles = {
     "reset": Style.RESET_ALL
 }
 
+# shorthand functions
+def section(text):
+    if ipython:
+        section = '<h1 style="font-size:18px">' + text + '</h1>'
+        cprint(section, '#4527A0')
+    else:
+        section = '[' + text + ']'
+        cprint(section, 'yellow')
+
+
+def subsection(text):
+    if ipython:
+        section = '<h2 style="font-size:16px">' + text + '</h2>'
+        cprint(section, '#7E57C2')
+    else:
+        section = '> ' + text + ''
+        cprint(section, 'magenta', brightness='dim')
+
+
+def highlight(text):
+    if ipython:
+        text = '<span style="font-size:14px">' + text + '</span>'
+        cprint(text, '#64DD17')
+    else:
+        cprint(text, 'green')
+
+
 def cprint(text, color, bg_color=None, brightness='normal'):
     """ Print given piece of text with color
     Args:
@@ -35,7 +74,13 @@ def cprint(text, color, bg_color=None, brightness='normal'):
         bg_color (str, optional): Defaults to None. background color.
         brightness (str, optional): Defaults to normal. Text brightness.
     """
-    print(colorize(text, color, bg_color, brightness))
+
+    text = colorize(text, color, bg_color, brightness)
+
+    # HTMLify if needed
+    if ipython and isinstance(text, str):
+        text = HTML(text)
+    display(text)
 
 
 def colorize(text, color, bg_color=None, brightness='normal'):
@@ -50,42 +95,49 @@ def colorize(text, color, bg_color=None, brightness='normal'):
         str: colorized text
     """
 
-    if color not in colors:
+    if color not in colors and not ipython:
         raise ValueError("Forground color invalid:" + color)
 
-    if bg_color and bg_color not in colors:
+    if bg_color and bg_color not in colors and not ipython:
         raise ValueError("Backgroun color invalid:" + bg_color)
 
-    if brightness not in brightness:
+    if brightness not in brightness and not ipython:
         raise ValueError("Brightness invalid:" + brightness)
 
-    # foreground color
-    text = colors[color][FG] + str(text)
+    text = str(text)  # in case user pass a float/int
 
+    # foreground color
+    if ipython:
+        text = text.replace('\n', '<br>')
+        h = '<span style="color:%s">' % color
+        text = h + text
+    else:
+        text = colors[color][FG] + text
     # background if needed
-    if bg_color:
+    if bg_color and not ipython:
         text = colors[bg_color][BG] + text
 
     # brightness if neeed
-    if brightness != 'normal':
+    if brightness != 'normal' and not ipython:
         text = styles[brightness] + text
 
     # reset
-    text = text + styles['reset']
+    if ipython:
+        text = text + '</span>'
+    else:
+        text = text + styles['reset']
 
     return text
 
 
 # TABLE 
-
-
 def print_table(rows, title=None):
     """ Print data as a nicely formated ascii table
     Args:
         rows (list(list)): data to display as list of lists.
         title (str, optional): Defaults to None. Table title
     """
-    print(get_table(rows, title))
+    display(get_table(rows, title))
 
 
 def get_table(rows, title=None):
@@ -96,8 +148,15 @@ def get_table(rows, title=None):
     Returns:
         str: string representing table
     """
-    table = SingleTable(rows, title)
-    return table.table
+    if ipython:
+        headers = rows[0]
+        body = rows[1:]
+        table = tabulate(body, headers, tablefmt="html")
+        table = HTML(table)
+    else:
+        st = SingleTable(rows, title)
+        table = st.table
+    return table
 
 
 def get_combined_table(array_rows):
@@ -109,13 +168,36 @@ def get_combined_table(array_rows):
         str: string representing table
     """
 
-    tables = []
-    for rows in array_rows:
-        tables.append(get_table(rows))
-    combined_table = SingleTable([tables])
-    combined_table.outer_border = False
-    combined_table.inner_column_border = False
-    return combined_table.table
+    if ipython:
+        # compute the size for each col
+        col_size = str(int(100 / len(array_rows)) - 5) + '%'
+        gtc = [col_size] * len(array_rows)
+        table = """
+        <style>
+            .wrapper {
+                display: grid;
+                grid-template-columns: %s;
+                grid-gap: 10px;
+            }
+        </style>
+        <div  class="wrapper">
+        """ % (" ".join(gtc))
+        for rows in array_rows:
+            table += '<div>'
+            headers = rows[0]
+            body = rows[1:]
+            table += tabulate(body, headers, tablefmt="html")
+            table += '</div>'
+        table += "</div>"
+        return HTML(table)
+    else:
+        tables = []
+        for rows in array_rows:
+            tables.append(get_table(rows))
+        combined_table = SingleTable([tables])
+        combined_table.outer_border = False
+        combined_table.inner_column_border = False
+        return combined_table.table
 
 
 def print_combined_table(array_rows):
@@ -125,4 +207,4 @@ def print_combined_table(array_rows):
         array_rows (list(list)): Array of tables rows to combine
     """
     table = get_combined_table(array_rows)
-    print(table)
+    display(table)
