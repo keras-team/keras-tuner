@@ -23,7 +23,7 @@ def __compute_batch_size(model, memory, max_size):
 def __get_model_memory_usage(model, batch_size):
     "comput the memory usage for a given model and batch "
     import numpy as np
-    from keras import backend as K
+    from tensorflow.keras import backend as K
 
     shapes_mem_count = 0
     for l in model.layers:
