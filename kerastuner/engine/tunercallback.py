@@ -70,9 +70,11 @@ class TunerCallback(keras.callbacks.Callback):
         " clearing metric data at epoch end"
         self.current_epoch_history = defaultdict(list)
         self.current_epoch_key_metrics = defaultdict(list)
+        self.epoch_start_ts = time.time()
         return
 
     def on_epoch_end(self, epoch, logs={}):
+        logs["epoch_duration"] = time.time() - self.epoch_start_ts
 
         # for multi-points compute average accuracy
         logs = self._compute_avg_accuracy(logs)
