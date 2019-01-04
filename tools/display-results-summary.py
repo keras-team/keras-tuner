@@ -18,25 +18,28 @@ def parse_args():
     "Parse cmdline options"
     parser = argparse.ArgumentParser(
         description='KerasTuners results to Bigquery table files')
-    
+
     parser.add_argument('--input_dir', '-i', type=str,
                         default='results/', help='Directory containing \
                         tuner results')
-    
+
     parser.add_argument('--project', '-p', type=str,
                         help='Restrict result collection to a given project')
-    
+
     parser.add_argument('--num_models', '-n', type=int,
                         default=10, help='Num models to display')
-    
+
     parser.add_argument('--metric', '-m', type=str,
                         default='val_loss', help='Metrics to sort by')
-    
+
     parser.add_argument('--direction', '-d', type=str,
                         default='asc', help='Sort model in asc or desc order')
 
     parser.add_argument('--hyper_parameters', '--hyper', type=bool,
                         default=True, help='Display hyperparameters values')
+
+    parser.add_argument('--display_architecture', '-a', type=bool,
+                        default=False, help='Display architecture name')
 
     parser.add_argument('--extra_fields', '-e', type=str,
                         help='list of extra fields to display. \
@@ -100,8 +103,15 @@ for fname in results_filenames:
     if extra_fields:
         for f in extra_fields:
             ks = f[1]
+            if ks[0] not in info:
+                raise ValueError("Unknown extra field: %s - valid fields:\n  %s" % (
+                    ks[0], " ".join(info.keys())))
+
             v = info[ks[0]]
             for k in ks[1:]:
+                if k not in v:
+                    raise ValueError("Unknown extra field: %s.%s - valid fields:\n  %s" % (
+                        ks[0], k,  " ".join(v.keys())))
                 v = v[k]
             row.append(v)
 
@@ -110,7 +120,7 @@ for fname in results_filenames:
             # ensure requested metric is the first one displayed
             v = colored(round(info['key_metrics'][k], 4), MAIN_METRIC_COLOR)
         else:
-            row.append(colored(round(info['key_metrics'][k], 4), 
+            row.append(colored(round(info['key_metrics'][k], 4),
                                METRICS_COLOR))
 
     if args.hyper_parameters:
@@ -118,7 +128,12 @@ for fname in results_filenames:
             row.append(colored(info['hyper_parameters'][hp]['value'],
                                HYPERPARAM_COLOR))
 
-    row = [info['meta_data']['instance'], v] + row
+    instance = info['meta_data']['instance']
+    if args.display_architecture:
+        instance = info['meta_data']['architecture'] + ":" + instance
+
+    row = [instance, v] + row
+
     rows.append(row)
 if not len(rows):
     cprint("No models found - wrong dir (-i) or project (-p)?", 'red')
@@ -135,12 +150,13 @@ if extra_fields:
 # metrics
 for i, k in enumerate(sorted(info['key_metrics'])):
     if k != args.metric:
-        headers.append(colored("\n", METRICS_COLOR) + colored(k, METRICS_COLOR))
+        headers.append(colored("\n", METRICS_COLOR) +
+                       colored(k, METRICS_COLOR))
 
 # hyper_parameters
 if args.hyper_parameters:
     for hp in sorted(info['hyper_parameters'].keys()):
-        
+
         # only show group if meaningful
         group = info['hyper_parameters'][hp]['group']
         if group == 'default':
