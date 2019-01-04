@@ -123,10 +123,12 @@ for info in infos:
                 v = v[k]
             row.append(v)
 
+    sort_value = None
     for k in sorted(info['key_metrics']):
         if k == args.metric:
             # ensure requested metric is the first one displayed
-            v = colored(round(info['key_metrics'][k], 4), MAIN_METRIC_COLOR)
+            sort_value = info['key_metrics'][k]
+            v = colored(round(sort_value, 4), MAIN_METRIC_COLOR)
         else:
             row.append(colored(round(info['key_metrics'][k], 4),
                                METRICS_COLOR))
@@ -145,9 +147,9 @@ for info in infos:
     if args.display_architecture:
         instance = info['meta_data']['architecture'] + ":" + instance
 
-    row = [instance, v] + row
-
+    row = [sort_value, instance, v] + row
     rows.append(row)
+
 if not len(rows):
     cprint("No models found - wrong dir (-i) or project (-p)?", 'red')
     quit()
@@ -185,8 +187,12 @@ else:
     reverse = True
 
 
-rows = sorted(rows, key=lambda x: float(x[1]),
+rows = sorted(rows, key=lambda x: float(x[0]),
               reverse=reverse)
+
+# Drop the sort metric value that we temporarily appended
+# to make sorting possible.
+rows = [row[1:] for row in rows]
 if args.num_models > 0:
     rows = rows[:min(args.num_models, len(rows))]
 
