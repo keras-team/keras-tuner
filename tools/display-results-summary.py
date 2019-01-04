@@ -70,7 +70,6 @@ def parse_extra_fields(s):
         else:
             keys = [f]
         fields.append([keys[-1], keys])
-    print(fields)
     return fields
 
 
@@ -82,11 +81,20 @@ results_filenames = list(input_dir.glob("*-results.json"))
 pb = tqdm(total=len(results_filenames),
           desc="Parsing results files", unit='file')
 
-hyper_parameters = defaultdict(int)
 
 rows = []
+
+hyper_parameters = set([])
+infos = []
+# Do an initial pass to collect all of the hyperparameters.
 for fname in results_filenames:
     info = json.loads(open(str(fname)).read())
+    for p in info['hyper_parameters'].keys():
+        hyper_parameters.add(p)
+    infos.append(info)
+hyper_parameters = sorted(list(hyper_parameters))
+
+for info in infos:
     project_name = info['meta_data']['project']
     # filtering if needed
     if args.project and args.project != project_name:
@@ -124,9 +132,14 @@ for fname in results_filenames:
                                METRICS_COLOR))
 
     if args.hyper_parameters:
-        for hp in sorted(info['hyper_parameters'].keys()):
-            row.append(colored(info['hyper_parameters'][hp]['value'],
-                               HYPERPARAM_COLOR))
+        print(info["hyper_parameters"].keys())
+        for hp in hyper_parameters:
+            v = info["hyper_parameters"].get(hp, None)
+            if v:
+                v = v["value"]
+            else:
+                v = ""
+            row.append(colored(v, HYPERPARAM_COLOR))
 
     instance = info['meta_data']['instance']
     if args.display_architecture:
@@ -155,14 +168,15 @@ for i, k in enumerate(sorted(info['key_metrics'])):
 
 # hyper_parameters
 if args.hyper_parameters:
-    for hp in sorted(info['hyper_parameters'].keys()):
-
+    for hp in hyper_parameters:
         # only show group if meaningful
-        group = info['hyper_parameters'][hp]['group']
+
+        group, name = hp.split(":", 2)
+
         if group == 'default':
             group = ''
         g = colored(group + '\n', HYPERPARAM_COLOR)
-        s = g + colored(info['hyper_parameters'][hp]['name'], HYPERPARAM_COLOR)
+        s = g + colored(name, HYPERPARAM_COLOR)
         headers.append(s)
 
 if args.direction.lower() == "asc":
@@ -171,8 +185,10 @@ else:
     reverse = True
 
 
-rows = sorted(rows, key=operator.itemgetter(1),
-              reverse=reverse)[:args.num_models]
+rows = sorted(rows, key=lambda x: float(x[1]),
+              reverse=reverse)
+if args.num_models > 0:
+    rows = rows[:min(args.num_models, len(rows))]
 
 table = []
 table.append(headers)
