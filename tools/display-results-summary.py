@@ -128,13 +128,12 @@ for info in infos:
         if k == args.metric:
             # ensure requested metric is the first one displayed
             sort_value = info['key_metrics'][k]
-            v = colored(round(sort_value, 4), MAIN_METRIC_COLOR)
+            main_metric = colored(round(sort_value, 4), MAIN_METRIC_COLOR)
         else:
             row.append(colored(round(info['key_metrics'][k], 4),
                                METRICS_COLOR))
 
     if args.hyper_parameters:
-        print(info["hyper_parameters"].keys())
         for hp in hyper_parameters:
             v = info["hyper_parameters"].get(hp, None)
             if v:
@@ -147,7 +146,7 @@ for info in infos:
     if args.display_architecture:
         instance = info['meta_data']['architecture'] + ":" + instance
 
-    row = [sort_value, instance, v] + row
+    row = [sort_value, instance, main_metric] + row
     rows.append(row)
 
 if not len(rows):
