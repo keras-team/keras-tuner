@@ -18,7 +18,9 @@ setup(
     url='https://fixme',
     license='Apache License 2.0',
     install_requires=[
+        "art",
         "attrs",
+        "etaprogress",
         "numpy",
         "pathlib",
         "tabulate",  # to be removed
