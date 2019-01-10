@@ -97,7 +97,7 @@ def display_status(status):
                ]
 
         smi = get_gpu_usage()
-        gpus = [['GPU', 'CPU', 'Mem', 'Temp']]
+        gpus = [['GPU', 'Usages', 'Mem', 'Temp']]
         for g in smi:
             cpu = "%s%%" % g[1]
             mem = "%s/%sM" % (g[2].strip(), g[3].strip())
