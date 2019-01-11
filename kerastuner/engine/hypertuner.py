@@ -39,7 +39,7 @@ class HyperTuner(object):
             project (str): name of the project the architecture belongs to.
 
         Notes:
-            All architecture meta data are stored into the self.meta_data 
+            All architecture meta data are stored into the self.meta_data
             field as they are only used for recording
         """
 
@@ -122,7 +122,7 @@ class HyperTuner(object):
         self.meta_data['tuner'] = {
             "name": self.tuner_name,
             "start_time": self.start_time,
-            
+
             "epoch_budget": self.epoch_budget,
             "remaining_budget": self.remaining_budget,
             "min_epochs": self.min_epochs,
@@ -219,7 +219,7 @@ class HyperTuner(object):
         # Calling the model function to get a set of params
         self.model_fn()
         hyper_parameters = get_hyper_parameters()
-        
+
         # if no hyper_params returning
         if len(hyper_parameters) == 0:
             self.log.info("No hyper-parameters")
@@ -241,7 +241,7 @@ class HyperTuner(object):
         group_table = [['Group', 'Size']]
         for g, v in group_size.items():
             group_table.append([g, v])
-        
+
         section("Hyper-parmeters search space")
         subsection("Search space by parameters group")
         print_table(group_table)
@@ -249,23 +249,25 @@ class HyperTuner(object):
         print_table(table)
         highlight("Total search space:%s" % total_size)
 
-    def backend(self, username, **kwargs):
+    def backend(self, api_key, **kwargs):
         """Setup backend configuration
 
-          Args
-            info (dict): free form dictionary of information supplied by the user about the hypertuning. MUST be JSON serializable.
+          Args:
+            api_key (str): The backend API access token.
+            kwargs (dict): Optional. Contains the key "url", pointing to the
+              base url of the backend.
         """
 
         self.meta_data['backend'] = {
-            "username": username,
-            "url": kwargs.get('url', 'gs://keras-tuner.appspot.com/'),
+            "api_key": api_key,
+            "url": kwargs.get('url', 'https://us-central1-keras-tuner.cloudfunctions.net/api'),
             "crash_notification": kwargs.get("crash_notification", False),
             "tuning_completion_notification": kwargs.get("tuning_completion_notification", False),
             "instance_trained_notification": kwargs.get("instance_trained_notification", False),
         }
 
         fname = '%s-%s-meta_data.json' % (self.meta_data['project'],
-                                          self.meta_data['architecture'])                             
+                                          self.meta_data['architecture'])
         local_path = os.path.join(self.meta_data['server']['local_dir'], fname)
         with file_io.FileIO(local_path, 'w') as output:
             output.write(json.dumps(self.meta_data))
@@ -282,7 +284,7 @@ class HyperTuner(object):
         self.hypertune(x, y, **kwargs)
 
     def _clear_tf_graph(self):
-        """ Clear the content of the TF graph to ensure 
+        """ Clear the content of the TF graph to ensure
             we have a valid model is in memory
         """
         K.clear_session()
@@ -306,11 +308,11 @@ class HyperTuner(object):
             try:
                 model = self.model_fn()
             except:
-                
+
                 if self.debug:
                     import traceback
                     traceback.print_exc()
-                
+
                 self.num_invalid_models += 1
                 self.log.warning("invalid model %s/%s" %
                                  (self.num_invalid_models,
@@ -357,7 +359,7 @@ class HyperTuner(object):
 
         self.instances[idx] = instance
         self.current_instance_idx = idx
-        self.log.new_instance(instance, self.num_generated_models, 
+        self.log.new_instance(instance, self.num_generated_models,
                               self.remaining_budget)
         return self.instances[idx]
 
@@ -373,7 +375,7 @@ class HyperTuner(object):
             instance = self.instances[idx]
 
         results = instance.record_results()
-        
+
         # compute overall statistics
         latest_results = {}
         best_results = {}
