@@ -9,6 +9,7 @@ from os import path
 from termcolor import cprint
 
 
+
 def url_join(*parts):
     """Joins a base url with one or more path segments.
 
@@ -16,10 +17,21 @@ def url_join(*parts):
     in https://example.com/a/b/update. Removing the trailing slash from
     the first argument will yield the same output.
 
-    Parts:
-      parts (list): the URL parts to join.
+    Args:
+        parts (list): the URL parts to join.
+
+    Returns:
+        str: A url.
     """
     return "/".join(map(lambda fragment: fragment.rstrip('/'), parts))
+
+
+def check_access(meta_data):
+    url = url_join(meta_data['backend']['url'], 'v1/check_access')
+    response = requests.post(
+        url,
+        headers={'X-AUTH': meta_data['backend']['api_key']})
+    return response.ok
 
 
 def cloud_save(local_path, ftype, meta_data):
@@ -30,6 +42,7 @@ def cloud_save(local_path, ftype, meta_data):
         ftype (str): type of file saved -- results, weights, executions, config.
         meta_data (dict): tuning meta data information
     """
+    # FIXME: add rate limiting (5sec by default).
     # If the user did not enable this feature, skip this code.
     if 'backend' not in meta_data:
         return
@@ -60,6 +73,5 @@ def cloud_save(local_path, ftype, meta_data):
       else:
         print ('Warning! Backend upload failed. Backend replied: %s' %
             response.text)
-
 
 
