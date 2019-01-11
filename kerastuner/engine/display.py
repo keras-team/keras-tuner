@@ -5,7 +5,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from terminaltables import SingleTable
+from terminaltables import SingleTable, AsciiTable
 from tabulate import tabulate
 from colorama import init, Fore, Back, Style
 init()  # colorama init
@@ -22,7 +22,7 @@ except NameError:
 FG = 0
 BG = 1
 
-# TODO: create a set of HTML color to allows richer display in colab 
+# TODO: create a set of HTML color to allows richer display in colab
 colors = {
     'black': [Fore.BLACK, Back.BLACK],
     'red': [Fore.RED, Back.RED],
@@ -42,6 +42,8 @@ styles = {
 }
 
 # shorthand functions
+
+
 def section(text):
     if ipython:
         section = '<h1 style="font-size:18px">' + text + '</h1>'
@@ -62,15 +64,15 @@ def subsection(text):
 
 def setting(text, ident=0, idx=0, display=True):
     """ print setting
-    
+
     Args:
         text (str): setting key:value as string
         ident (int, optional): Defaults to 0. Space indentation
         idx (int, optional): Defaults to 0. index of setting to rotate color.
         display (bool, optional): Defaults to True. Display or return settings
-    
+
     Returns:
-        str: setting value if display=False, None otherwise 
+        str: setting value if display=False, None otherwise
     """
 
     s = ' ' * ident
@@ -85,6 +87,7 @@ def setting(text, ident=0, idx=0, display=True):
     else:
         return colorize(s + '\n', color)
 
+
 def highlight(text):
     if ipython:
         text = '<span style="font-size:14px">' + text + '</span>'
@@ -94,7 +97,8 @@ def highlight(text):
 
 # Charts
 
-def print_bar_chart(val, max_val, title=None, left='', right='', 
+
+def print_bar_chart(val, max_val, title=None, left='', right='',
                     color='green', length=80):
 
     bar = make_bar_chart(val, max_val, title=title, left=left, right=right,
@@ -102,7 +106,7 @@ def print_bar_chart(val, max_val, title=None, left='', right='',
     display(bar)
 
 
-def make_bar_chart(val, max_val, title=None, left='', right='', 
+def make_bar_chart(val, max_val, title=None, left='', right='',
                    color='green', length=80):
     full_block = '█'
     empty_block = '░'
@@ -115,7 +119,7 @@ def make_bar_chart(val, max_val, title=None, left='', right='',
     if not (num_full).is_integer():
         bar += half_block
     bar += empty_block * (length - len(bar))
-    
+
     # colorize
     bar = colorize(bar, color)
 
@@ -132,6 +136,7 @@ def make_bar_chart(val, max_val, title=None, left='', right='',
     return st.table
 
 # Low level function
+
 
 def cprint(text, color, bg_color=None, brightness='normal'):
     """ Print given piece of text with color
@@ -199,7 +204,7 @@ def colorize(text, color, bg_color=None, brightness='normal'):
     return text
 
 
-# TABLE 
+# TABLE
 def print_table(rows, title=None):
     """ Print data as a nicely formated ascii table
     Args:
@@ -223,7 +228,7 @@ def make_table(rows, title=None):
         table = tabulate(body, headers, tablefmt="html")
         table = HTML(table)
     else:
-        st = SingleTable(rows, title)
+        st = AsciiTable(rows, title)
         table = st.table
     return table
 
@@ -263,7 +268,7 @@ def make_combined_table(array_rows):
         tables = []
         for rows in array_rows:
             tables.append(make_table(rows))
-        combined_table = SingleTable([tables])
+        combined_table = AsciiTable([tables])
         combined_table.outer_border = False
         combined_table.inner_column_border = False
         return combined_table.table

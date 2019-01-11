@@ -9,8 +9,8 @@ from kerastuner.distributions import Range, Choice, Boolean, Fixed
 from kerastuner.tuners import RandomSearch
 
 # Random data tp feed our model to show how easy it is to use KerasTuner
-x_train = np.random.random((1000, 20))
-y_train = np.random.randint(2, size=(1000, 1))
+x_train = np.random.random((10000, 20))
+y_train = np.random.randint(2, size=(10000, 1))
 
 # use https://fixme to track results
 api_key = "fixme"
@@ -22,7 +22,8 @@ def model_fn():
 
     # Hidden layer
     L2_UNITS = Range('dims', 16, 32, 2, group="hidden_layers")
-    L2_ACTIVATION = Choice('activation', ['relu', 'tanh'], group="hidden_layers")
+    L2_ACTIVATION = Choice(
+        'activation', ['relu', 'tanh'], group="hidden_layers")
     L2_OPTIONAL = Boolean('2nd hidden layer', group="hidden_layers")
 
     # Last layer
@@ -44,6 +45,6 @@ def model_fn():
 
 
 # train 5 models over 3 epochs
-hypermodel = RandomSearch(model_fn, epoch_budget=15, max_epochs=3)
+hypermodel = RandomSearch(model_fn, epoch_budget=15000, max_epochs=3000)
 hypermodel.summary()
 hypermodel.search(x_train, y_train, validation_split=0.01)

@@ -1,9 +1,11 @@
+#import asciichartpy
 import sys
 import os
 import argparse
+import math
+import numpy as np
 import json
 import platform
-from pathlib import Path
 from kerastuner.engine.display import make_bar_chart, make_combined_table
 from kerastuner.engine.display import colorize, setting, cprint, make_table
 import time
@@ -18,7 +20,9 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Kerastuner status monitor')
     parser.add_argument('--input_dir', '-i', type=str, default='results/',
                         help='Directory containing tuner results')
-    parser.add_argument('--refresh_rate', '-r', type=int, default=2, 
+    parser.add_argument('--graphs', '-g', type=str, default='loss',
+                        help='Comma separated list of key metrics to graph.')
+    parser.add_argument('--refresh_rate', '-r', type=int, default=2,
                         help='Refresh rate in second')
     args = parser.parse_args()
     if not os.path.exists(args.input_dir):
@@ -29,7 +33,7 @@ def parse_args():
 
 
 def read_status(dir):
-    fname = Path(dir) / 'status.json'
+    fname = os.path.join(dir, 'status.json')
     status = json.loads(open(fname).read())
     return status
 
@@ -37,18 +41,24 @@ def read_status(dir):
 def bar(total, done, eta, title, color):
     lside = 'Epochs %s/%s' % (done, total)
     rside = 'ETA:%s' % eta_letters(eta, shortest=False)
-    
-    return make_bar_chart(done, total, color=color, 
-                          title=title, left=lside.ljust(15), 
+
+    return make_bar_chart(done, total, color=color,
+                          title=title, left=lside.ljust(15),
                           right=rside.rjust(16))
+
 
 def clear():
     if platform.system() == 'Windows':
-        os.system('cls') # on windows
+        os.system('cls')  # on windows
     else:
-        os.system('clear') # on linux / os x
+        os.system('clear')  # on linux / os x
+
+
+LAST_EPOCH_COUNT = -1
+
 
 def display_status(status):
+    global LAST_EPOCH_COUNT
     display = colorize(text2art('kerastuner status'), 'magenta')
     #display += colorize(art, 'magenta')
     display += '\n'
@@ -58,16 +68,23 @@ def display_status(status):
     done = total - status['tuner']['remaining_budget']
     eta = status['tuner']['eta']
     display += bar(total, done, eta, 'Tuning progress', 'green')
-    
+
     # Model eta
     display += '\n'
     total = status['tuner']['max_epochs']
     done = status['current_model']['epochs']
+
+    if done != LAST_EPOCH_COUNT:
+        refresh = True
+        LAST_EPOCH_COUNT = done
+    else:
+        refresh = False
+
     eta = status['current_model']['eta']
     display += bar(total, done, eta, 'Current model progress', 'blue')
 
-    display += '\n'    
-    metrics = [['metric', 'best model', 'current model']] 
+    display += '\n'
+    metrics = [['metric', 'best model', 'current model']]
     for k in status['statistics']['best'].keys():
         best = status['statistics']['best'][k]
         if best == -1 or best == sys.maxsize:
@@ -80,33 +97,55 @@ def display_status(status):
         if current == best:
             current = colorize(current, 'cyan')
         metrics.append([k, best, current])
-    
+
         #tuner_data = [['Error', 'count']]
         md = status['tuner']
         stats = [['statistics', 'count']]
-        fields = ['trained_models', 'collisions', 'invalid_models', 'over_size_models']
+        fields = ['trained_models', 'collisions',
+                  'invalid_models', 'over_size_models']
         for k in fields:
             stats.append([k.replace('_', ' '), md[k]])
 
         info = [
-                ['info', ' '],
-                ['project', status['project']],
-                ['architecture', status['architecture']],
-                ['tuner', status['tuner']['name']],
-                ['Num GPU', status['server']['num_gpu']]
-               ]
+            ['info', ' '],
+            ['project', status['project']],
+            ['architecture', status['architecture']],
+            ['tuner', status['tuner']['name']],
+            ['Num GPU', status['server']['num_used_gpu']]
+        ]
 
         smi = get_gpu_usage()
-        gpus = [['GPU', 'Usages', 'Mem', 'Temp']]
+        gpus = [['GPU', 'Usage', 'Mem', 'Temp']]
         for g in smi:
-            cpu = "%s%%" % g[1]
-            mem = "%s/%sM" % (g[2].strip(), g[3].strip())
-            temp = "%sC" % (g[5])
-            gpus.append([g[0], cpu, mem, temp])
-    display += make_combined_table([stats, metrics, gpus])
+            idx = g["index"]
+            name = g["name"]
+            usage = "%s%%" % g["utilization.gpu"]
+            mem = "%s/%sM" % (g["memory.used"], g["memory.total"])
+            temp = "%sC" % (g["temperature.gpu"])
+            gpus.append(["%s : %s" % (name, idx), usage, mem, temp])
+    display += make_combined_table([stats, metrics, gpus]) + "\n"
+
+
+
+    # for metric in sorted(status['epoch_metrics'].keys()):
+
+    #     display += make_table([["% 40s% 40s" % (metric, "")]]) + "\n"
+    #     epoch_metrics = status['epoch_metrics'][metric]
+
+    #     if len(epoch_metrics) > 32:
+
+    #         epoch_metrics = epoch_metrics[-32:]
+    #     display += asciichartpy.plot(epoch_metrics, cfg={
+    #         "minimum": min(epoch_metrics),
+    #         "maximum": max(epoch_metrics),
+    #         "height": 8,
+    #     }) + "\n"
 
     # update the display at once
-    print(display)
+    if refresh:
+        clear()
+        print(display)
+
 
 args = parse_args()
 
@@ -114,8 +153,9 @@ while 1:
     try:
         status = read_status(args.input_dir)
     except:
-        clear()
+        import traceback
+        traceback.print_exc()
         time.sleep(1)
-    clear()
+
     display_status(status)
     time.sleep(args.refresh_rate)

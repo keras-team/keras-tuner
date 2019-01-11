@@ -26,11 +26,13 @@ from .instance import Instance
 from .logger import Logger
 from ..distributions import get_hyper_parameters, clear_hyper_parameters
 
+from ..utils import get_gpu_usage
+
 
 class HyperTuner(object):
     """Abstract hypertuner class."""
 
-    def __init__(self, model_fn, **kwargs):
+    def __init__(self, model_fn, tuner_name, **kwargs):
         """
         Args:
             max_params (int): Maximum number of parameters a model can have - anything above will be discarded
@@ -39,7 +41,7 @@ class HyperTuner(object):
             project (str): name of the project the architecture belongs to.
 
         Notes:
-            All architecture meta data are stored into the self.meta_data 
+            All architecture meta data are stored into the self.meta_data
             field as they are only used for recording
         """
 
@@ -75,11 +77,17 @@ class HyperTuner(object):
         self.start_time = int(time.time())
         self.keras_function = 'fit'
         self.info = kwargs.get('info', {})  # additional info provided by users
-        self.tuner_name = 'default'
+        self.tuner_name = tuner_name
+
+        self.gpu_info = get_gpu_usage()
+        self.available_gpu = len(self.gpu_info)
+        if not self.num_gpu and self.available_gpu:
+            self.num_gpu = 1
 
         # recap
         self.log.section("Key params")
-        self.log.setting("Num GPU: %s" % self.num_gpu)
+        self.log.setting("GPUs Used: %d / %d" %
+                         (self.num_gpu, self.available_gpu))
         self.log.setting("Model Max params: %.1fM" %
                          (self.max_params / 1000000.0))
 
@@ -116,13 +124,15 @@ class HyperTuner(object):
         self.meta_data['server'] = {
             "local_dir": kwargs.get('local_dir', 'results/'),
             "hostname": socket.gethostname(),
-            "num_gpu": self.num_gpu,
+            "num_used_gpu": self.num_gpu,
+            "num_available_gpu": self.available_gpu,
+            "gpu_info": self.gpu_info
         }
 
         self.meta_data['tuner'] = {
             "name": self.tuner_name,
             "start_time": self.start_time,
-            
+
             "epoch_budget": self.epoch_budget,
             "remaining_budget": self.remaining_budget,
             "min_epochs": self.min_epochs,
@@ -219,7 +229,7 @@ class HyperTuner(object):
         # Calling the model function to get a set of params
         self.model_fn()
         hyper_parameters = get_hyper_parameters()
-        
+
         # if no hyper_params returning
         if len(hyper_parameters) == 0:
             self.log.info("No hyper-parameters")
@@ -241,7 +251,7 @@ class HyperTuner(object):
         group_table = [['Group', 'Size']]
         for g, v in group_size.items():
             group_table.append([g, v])
-        
+
         section("Hyper-parmeters search space")
         subsection("Search space by parameters group")
         print_table(group_table)
@@ -265,7 +275,7 @@ class HyperTuner(object):
         }
 
         fname = '%s-%s-meta_data.json' % (self.meta_data['project'],
-                                          self.meta_data['architecture'])                             
+                                          self.meta_data['architecture'])
         local_path = os.path.join(self.meta_data['server']['local_dir'], fname)
         with file_io.FileIO(local_path, 'w') as output:
             output.write(json.dumps(self.meta_data))
@@ -282,7 +292,7 @@ class HyperTuner(object):
         self.hypertune(x, y, **kwargs)
 
     def _clear_tf_graph(self):
-        """ Clear the content of the TF graph to ensure 
+        """ Clear the content of the TF graph to ensure
             we have a valid model is in memory
         """
         K.clear_session()
@@ -306,11 +316,11 @@ class HyperTuner(object):
             try:
                 model = self.model_fn()
             except:
-                
+
                 if self.debug:
                     import traceback
                     traceback.print_exc()
-                
+
                 self.num_invalid_models += 1
                 self.log.warning("invalid model %s/%s" %
                                  (self.num_invalid_models,
@@ -348,7 +358,8 @@ class HyperTuner(object):
             if num_params > self.max_params:
                 over_sized_streak += 1
                 self.num_over_sized_models += 1
-                self.log.warning("Oversized model: %s parameters-- skipping" % (num_params))
+                self.log.warning(
+                    "Oversized model: %s parameters-- skipping" % (num_params))
                 if over_sized_streak >= self.max_fail_streak:
                     return None
                 continue
@@ -357,7 +368,7 @@ class HyperTuner(object):
 
         self.instances[idx] = instance
         self.current_instance_idx = idx
-        self.log.new_instance(instance, self.num_generated_models, 
+        self.log.new_instance(instance, self.num_generated_models,
                               self.remaining_budget)
         return self.instances[idx]
 
@@ -373,7 +384,7 @@ class HyperTuner(object):
             instance = self.instances[idx]
 
         results = instance.record_results()
-        
+
         # compute overall statistics
         latest_results = {}
         best_results = {}

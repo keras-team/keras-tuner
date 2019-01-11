@@ -28,8 +28,7 @@ class RandomSearch(HyperTuner):
         """
 
         # Do the super last -- it uses the variable setup by the tuner
-        super(RandomSearch, self).__init__(model_fn, **kwargs)
-        self.set_tuner_name('RandomSearch')  # used in result meta_data
+        super(RandomSearch, self).__init__(model_fn, 'RandomSearch', **kwargs)
 
     def hypertune(self, x, y, **kwargs):
         while self.remaining_budget >= self.max_epochs:
@@ -49,5 +48,5 @@ class RandomSearch(HyperTuner):
                     self.remaining_budget -= len(history.history['loss'])
                     # TODO move the duty to record results to the scheduler
                     self.record_results()
-        
+
         self.done()

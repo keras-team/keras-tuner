@@ -1,3 +1,8 @@
+import platform
+from subprocess import Popen, PIPE
+from distutils import spawn
+
+
 def compute_max_batch_size(model, gpu_mem, max_size=8000):
     """Compute the largest batch size possible
       max_size (int): maximum batch size. 8k seems the limit based of https://research.fb.com/publications/accurate-large-minibatch-sgd-training-imagenet-in-1-hour/
@@ -42,18 +47,14 @@ def __get_model_memory_usage(model, batch_size):
     total_memory = 4.0*batch_size * \
         (shapes_mem_count + trainable_count + non_trainable_count)
     gbytes = np.round(total_memory / (1024.0 ** 3), 3)
-    # print("train count ", trainable_count, "mem per instance", 
+    # print("train count ", trainable_count, "mem per instance",
     # total_memory, "gbytes ", gbytes)
     return gbytes, trainable_count
 
-import platform
-from distutils import spawn
-from subprocess import Popen, PIPE
-
 
 if platform.system() == "Windows":
-    # If the platform is Windows and nvidia-smi 
-    # could not be found from the environment path, 
+    # If the platform is Windows and nvidia-smi
+    # could not be found from the environment path,
     # try to find it from system drive with default installation path
     nvidia_smi = spawn.find_executable('nvidia-smi')
     if nvidia_smi is None:
@@ -61,11 +62,17 @@ if platform.system() == "Windows":
 else:
     nvidia_smi = "nvidia-smi"
 
+
 def get_gpu_usage():
     if not nvidia_smi:
         return []
+
+    properties = [
+        "index", "utilization.gpu", "memory.used", "memory.total", "name", "temperature.gpu"]
+    query = ','.join(properties)
     try:
-        p = Popen([nvidia_smi,"--query-gpu=index,utilization.gpu,memory.used,memory.total,name,temperature.gpu", "--format=csv,noheader,nounits"], stdout=PIPE)
+        p = Popen([nvidia_smi, "--query-gpu=%s" %
+                   query, "--format=csv,noheader,nounits"], stdout=PIPE)
         stdout, stderror = p.communicate()
     except:
         return []
@@ -75,6 +82,9 @@ def get_gpu_usage():
         if ',' not in l:
             continue
         l = l.strip().split(',')
+        gpu_info = {}
+        for idx, property in enumerate(properties):
+            gpu_info[property] = l[idx].strip()
+        gpus.append(gpu_info)
 
-        gpus.append(l)
     return gpus
