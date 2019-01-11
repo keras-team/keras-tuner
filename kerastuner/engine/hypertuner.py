@@ -259,16 +259,18 @@ class HyperTuner(object):
         print_table(table)
         highlight("Total search space:%s" % total_size)
 
-    def backend(self, username, **kwargs):
+    def backend(self, api_key, **kwargs):
         """Setup backend configuration
 
-          Args
-            info (dict): free form dictionary of information supplied by the user about the hypertuning. MUST be JSON serializable.
+          Args:
+            api_key (str): The backend API access token.
+            kwargs (dict): Optional. Contains the key "url", pointing to the
+              base url of the backend.
         """
 
         self.meta_data['backend'] = {
-            "username": username,
-            "url": kwargs.get('url', 'gs://keras-tuner.appspot.com/'),
+            "api_key": api_key,
+            "url": kwargs.get('url', 'https://us-central1-keras-tuner.cloudfunctions.net/api'),
             "crash_notification": kwargs.get("crash_notification", False),
             "tuning_completion_notification": kwargs.get("tuning_completion_notification", False),
             "instance_trained_notification": kwargs.get("instance_trained_notification", False),

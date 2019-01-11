@@ -6,7 +6,7 @@ from setuptools import setup
 import time
 
 version = "0.7.0"
-stub = str(int(time.time()))  # Used to have increased version automagically
+stub = str(int(time.time()))  # Used to increase version automagically.
 version = version + '.' + stub
 
 setup(
@@ -29,6 +29,7 @@ setup(
         "termcolor",  # to be removed
         "colorama",
         "tqdm",
+        "requests"
     ],
     packages=find_packages()
 )
