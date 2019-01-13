@@ -8,19 +8,22 @@ The focus of these releases is to make kerastuner works well with other and make
 
 ### Major features
 
+- `kerastuner-status` utility allows to monitor training in commandline
+- `kerastuner-summary` utility allows to display results overview in commandline 
 - Tuner report status in json file every 5 seconds to make it easy to track progress with tool and remotely
-- Output adapts when run in colab/jupyter notebooks to use HTML for better readability
-- New cross-platform display subsystem that produce nice and colorful output
 
 ### Extras
 
 - Moved statistics reporting to callback and revamped it to look better and use new display/table system
 - Reduced the amount of boilerplate code needed to write a tuner by shifting burden to the scheduler and callback
+- Output adapts when run in colab/jupyter notebooks to use HTML for better readability
+- New cross-platform display subsystem that produce nice and colorful output
+- GPU usage is now reported to allows better training monitoring
 
 ### Noteworthy bugfixes
 
 - setup.py now works in developper mode (issue #41)
-
+- utilities now use setuptools proprerly to offers cross-platform executable
 
 ## v0.6: Engine stablization
 
