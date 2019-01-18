@@ -176,9 +176,11 @@ class HyperTuner(object):
         # initializing stats
         self.stats = {
             'best': {},
-            'latest': {}
+            'latest': {},
+            'direction': {}
         }
         for km in self.key_metrics:
+            self.stats['direction'][km[self.METRIC_NAME]]  = km[self.METRIC_DIRECTION]
             if km[self.METRIC_DIRECTION] == 'min':
                 self.stats['best'][km[self.METRIC_NAME]] = sys.maxsize
             else:
