@@ -11,6 +11,7 @@ The focus of these releases is to make kerastuner works well with other and make
 - `kerastuner-status` utility allows to monitor training in commandline
 - `kerastuner-summary` utility allows to display results overview in commandline 
 - Tuner report status in json file every 5 seconds to make it easy to track progress with tool and remotely
+- System information including CPU usage, GPU usage, memory usage, disk space is now reported
 
 ### Extras
 
@@ -18,7 +19,6 @@ The focus of these releases is to make kerastuner works well with other and make
 - Reduced the amount of boilerplate code needed to write a tuner by shifting burden to the scheduler and callback
 - Output adapts when run in colab/jupyter notebooks to use HTML for better readability
 - New cross-platform display subsystem that produce nice and colorful output
-- GPU usage is now reported to allows better training monitoring
 
 ### Noteworthy bugfixes
 

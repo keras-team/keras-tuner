@@ -5,7 +5,7 @@ from setuptools import find_packages
 from setuptools import setup
 import time
 
-version = "0.7"
+version = "0.7.1"
 stub = str(int(time.time()))  # Used to increase version automagically.
 version = version + '.' + stub
 
@@ -28,12 +28,13 @@ setup(
         "etaprogress",
         "numpy",
         "pathlib",
-        "tabulate",  # to be removed
+        "tabulate",
         "terminaltables",
-        "termcolor",  # to be removed
+        "termcolor",
         "colorama",
         "tqdm",
-        "requests"
+        "requests",
+        "psutil"
     ],
     packages=find_packages()
 )
