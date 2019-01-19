@@ -46,17 +46,20 @@ class System():
         """Get CPU usage statistics"""
 
         # NOTE: use interval=None to make it non-blocking
-        freq = psutil.cpu_freq()
         cpu = {
             "name": self.cpu_name,
             "core_count": self.cpu_core_count,
             "usage": psutil.cpu_percent(interval=None),
-            "frequency": {
-                "unit": 'MHZ',
-                "current": freq.current,
-                "max": freq.max
-            }
         }
+
+        freq = psutil.cpu_freq()
+        if freq:
+            cpu["frequency"] = {
+                        "unit": 'MHZ',
+                        "current": freq.current,
+                        "max": freq.max
+                    }
+
         return cpu
 
     def _get_disk_usage(self):
