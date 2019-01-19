@@ -14,13 +14,18 @@ class System():
     def __init__(self):
 
         # compute static information once
-        self.tf_can_use_gpu = tf.test.is_gpu_available() # before get_software
         self.nvidia_smi = self._find_nvidia_smi()
         self.cpu_core_count = psutil.cpu_count()
         self.partitions = psutil.disk_partitions()
-        self.software = self._get_software()
         self.hostname = platform.node()
         self.cpu_name = platform.processor()
+
+        # additional GPU info
+        self.tf_can_use_gpu = tf.test.is_gpu_available() # before get_software
+        self._get_gpu_usage() # to get gpu driver info > before get software
+
+        # keep it last
+        self.software = self._get_software()
 
 
     def get_status(self):
@@ -94,7 +99,8 @@ class System():
             "os": {
                 "name": platform.system(),
                 "version": platform.version(),
-            }
+            },
+            "gpu_driver": self.gpu_driver_version
         }
         return packages
 
@@ -141,7 +147,7 @@ class System():
                         "memory.used": "used",
                         "memory.total": "total",
                         "driver_version": "driver",
-                        #"cuda_version": "cuda",
+                        # "cuda_version": "cuda", # doesn't exist
                         "name": "name",
                         "temperature.gpu": "value",
                         "uuid": "uuid"
@@ -169,6 +175,8 @@ class System():
                     gpu_info['memory'][metric_name] = value
                 elif "temperature" in metric:
                     gpu_info['temperature'][metric_name] = value
+                elif "driver" in metric:
+                    self.gpu_driver_version = value
                 else:
                     gpu_info[metric_name] = value
             gpus.append(gpu_info)
