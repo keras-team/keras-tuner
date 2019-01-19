@@ -10,14 +10,13 @@ from termcolor import cprint
 from collections import defaultdict
 from os import path
 import json
-import numpy as np
 from tensorflow.python.lib.io import file_io  # allows to write to GCP or local
 from copy import copy
 
 from . import backend
 from .display import colorize, print_combined_table, section, highlight
 
-from kerastuner.utils import get_gpu_usage
+from kerastuner.system import System
 
 
 class TunerCallback(keras.callbacks.Callback):
@@ -43,6 +42,7 @@ class TunerCallback(keras.callbacks.Callback):
         self.log_interval = log_interval
         self.last_write = int(time.time())
         self.training_complete = False
+        self.system = System()  # computer stats
 
         self.stats = {}  # track stats per epoch
 
@@ -113,7 +113,7 @@ class TunerCallback(keras.callbacks.Callback):
 
         # update statistics
         self.meta_data['tuner']['remaining_budget'] -= 1
-        self.meta_data['statistics']['latest'] = self.stats        
+        self.meta_data['statistics']['latest'] = self.stats
 
         # report status
         self._report_status()
@@ -229,9 +229,7 @@ class TunerCallback(keras.callbacks.Callback):
 
         status["batch_metrics"] = self.current_epoch_key_metrics
         status["epoch_metrics"] = self.history_key_metrics
-
-
-        status["server"]["gpu_info"] = get_gpu_usage()
+        status["server"].update(self.system.get_status())
 
         # write on disk
         local_dir = self.meta_data['server']['local_dir']
@@ -240,57 +238,6 @@ class TunerCallback(keras.callbacks.Callback):
             outfile.write(json.dumps(status))
 
         # update write time
-        self.last_write = time.time()
-
-    def _log(self):
-        # TODO delete when not needed anymore
-        # If not enough time has passed since the last upload, skip it.
-        # However don't skip it if it's the last write we do for this instance.
-        if (time.time() - self.last_write) < self.log_interval:
-            if not self.training_complete:
-                return
-
-        results = self.info
-        ts = time.time()
-        elapsed_time = ts - self.start_ts
-        num_epochs = len(self.history['loss'])
-
-        results['num_epochs'] = num_epochs
-        results['time_per_epoch'] = int(
-            elapsed_time / float(max(num_epochs, 1)))
-
-        # ETA
-        results['eta'] = (self.meta_data['tuner']['max_epochs'] - num_epochs)
-        results['eta'] *= results['time_per_epoch']
-
-        # Epoch data must be aggregated
-        current_epoch_metrics = {}
-        current_epoch_key_metrics = {}
-        for k, values in self.current_epoch_history.items():
-            if k in ['batch', 'size']:
-                continue
-            avg = float(np.average(values))
-            current_epoch_metrics[k] = avg
-            if k in self.current_epoch_key_metrics:
-                current_epoch_key_metrics[k] = avg
-        if 'size' in self.current_epoch_history and len(self.current_epoch_history['size']):
-            results['batch_size'] = self.current_epoch_history['size'][0]
-        results['current_epoch_metrics'] = current_epoch_metrics
-        results['current_epoch_key_metrics'] = current_epoch_key_metrics
-
-        results['history'] = self.history
-        results['ts'] = {"start": self.start_ts, "stop": int(time.time())}
-        results['num_epochs'] = num_epochs
-        results['training_complete'] = self.training_complete
-        results['meta_data'] = self.meta_data
-        fname = '%s-%s-%s-%s-execution.json' % (
-            self.meta_data['project'], self.meta_data['architecture'], self.meta_data['instance'], self.meta_data['execution'])
-        local_path = path.join(self.meta_data['server']['local_dir'], fname)
-        with file_io.FileIO(local_path, 'w') as outfile:
-            outfile.write(json.dumps(results))
-
-        backend.cloud_save(local_path=local_path,
-                           ftype='execution', meta_data=self.meta_data)
         self.last_write = time.time()
 
     def _display_statistics(self):

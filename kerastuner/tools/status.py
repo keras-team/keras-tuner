@@ -13,7 +13,7 @@ from time import gmtime, strftime
 from art import text2art
 from etaprogress.components.eta_conversions import eta_letters
 
-from kerastuner.utils import get_gpu_usage
+from kerastuner.system import System
 
 
 def parse_args():
@@ -58,7 +58,7 @@ def clear():
 LAST_EPOCH_COUNT = -1
 
 
-def display_status(status):
+def display_status(status, system):
     global LAST_EPOCH_COUNT
     display = colorize(text2art('kerastuner status'), 'magenta')
     #display += colorize(art, 'magenta')
@@ -115,14 +115,14 @@ def display_status(status):
             ['Num GPU', status['server']['num_used_gpu']]
         ]
 
-        smi = get_gpu_usage()
+        system_info = System.get_status()
         gpus = [['GPU', 'Usage', 'Mem', 'Temp']]
-        for g in smi:
+        for g in system_info['gpu']:
             idx = g["index"]
             name = g["name"]
             usage = "%s%%" % g["utilization.gpu"]
-            mem = "%s/%sM" % (g["memory.used"], g["memory.total"])
-            temp = "%sC" % (g["temperature.gpu"])
+            mem = "%s/%sM" % (g["memory"]['used'], g["memory"]["total"])
+            temp = "%sC" % (g["temperature"])
             gpus.append(["%s : %s" % (name, idx), usage, mem, temp])
     display += make_combined_table([stats, metrics, gpus]) + "\n"
 
@@ -149,7 +149,7 @@ def display_status(status):
 
 def status(debug=0):
     args = parse_args()
-
+    system = System()  # system monitoring
     while 1:
         try:
             status = read_status(args.input_dir)
@@ -160,7 +160,7 @@ def status(debug=0):
                 quit()
             time.sleep(1)
 
-        display_status(status)
+        display_status(status, system)
         time.sleep(args.refresh_rate)
 
 

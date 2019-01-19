@@ -63,28 +63,4 @@ else:
     nvidia_smi = "nvidia-smi"
 
 
-def get_gpu_usage():
-    if not nvidia_smi:
-        return []
 
-    properties = [
-        "index", "utilization.gpu", "memory.used", "memory.total", "name", "temperature.gpu"]
-    query = ','.join(properties)
-    try:
-        p = Popen([nvidia_smi, "--query-gpu=%s" %
-                   query, "--format=csv,noheader,nounits"], stdout=PIPE)
-        stdout, stderror = p.communicate()
-    except:
-        return []
-    info = stdout.decode('UTF-8')
-    gpus = []
-    for l in info.split('\n'):
-        if ',' not in l:
-            continue
-        l = l.strip().split(',')
-        gpu_info = {}
-        for idx, property in enumerate(properties):
-            gpu_info[property] = l[idx].strip()
-        gpus.append(gpu_info)
-
-    return gpus

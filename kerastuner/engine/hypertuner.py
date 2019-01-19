@@ -25,8 +25,7 @@ from . import backend
 from .instance import Instance
 from .logger import Logger
 from ..distributions import get_hyper_parameters, clear_hyper_parameters
-
-from ..utils import get_gpu_usage
+from ..system import System
 
 
 class HyperTuner(object):
@@ -79,9 +78,10 @@ class HyperTuner(object):
         self.info = kwargs.get('info', {})  # additional info provided by users
         self.tuner_name = tuner_name
 
-        self.gpu_info = get_gpu_usage()
-        self.available_gpu = len(self.gpu_info)
+        self.system = System()
+        self.available_gpu = len(self.system.get_status()['gpu'])
         if not self.num_gpu and self.available_gpu:
+            # !FIXME test if tensorflow-gpu is used or just tensorflow
             self.num_gpu = 1
 
         # recap
@@ -123,11 +123,11 @@ class HyperTuner(object):
 
         self.meta_data['server'] = {
             "local_dir": kwargs.get('local_dir', 'results/'),
-            "hostname": socket.gethostname(),
             "num_used_gpu": self.num_gpu,
             "num_available_gpu": self.available_gpu,
-            "gpu_info": self.gpu_info
         }
+
+        self.meta_data['server'].update(self.system.get_status())
 
         self.meta_data['tuner'] = {
             "name": self.tuner_name,
