@@ -19,6 +19,7 @@ The focus of these releases is to make kerastuner works well with other and make
 - Reduced the amount of boilerplate code needed to write a tuner by shifting burden to the scheduler and callback
 - Output adapts when run in colab/jupyter notebooks to use HTML for better readability
 - New cross-platform display subsystem that produce nice and colorful output
+- Kerastuner warm  user if tensorflow is not using GPU and GPU are available
 
 ### Noteworthy bugfixes
 

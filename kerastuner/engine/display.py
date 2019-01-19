@@ -44,6 +44,25 @@ styles = {
 # shorthand functions
 
 
+def warning(text, display=1):
+    """ display a warning
+
+    Args:
+        text (str): warning message
+        display (bool, optional): Defaults to True. Display or return settings
+
+    Returns:
+        str: setting value if display=False, None otherwise
+    """
+    color = 'yellow'
+    s = "[Warning] %s" % text
+    
+    if display:
+        cprint(s, color)
+    else:
+        return colorize(s + '\n', color)
+
+
 def section(text):
     if ipython:
         section = '<h1 style="font-size:18px">' + text + '</h1>'
@@ -62,7 +81,7 @@ def subsection(text):
         cprint(section, 'magenta', brightness='dim')
 
 
-def setting(text, ident=0, idx=0, display=True):
+def setting(text, ident=1, idx=0, display=True):
     """ print setting
 
     Args:
@@ -74,7 +93,6 @@ def setting(text, ident=0, idx=0, display=True):
     Returns:
         str: setting value if display=False, None otherwise
     """
-
     s = ' ' * ident
     s += '|-' + text
     if idx % 2:

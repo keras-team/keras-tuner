@@ -26,6 +26,7 @@ from .instance import Instance
 from .logger import Logger
 from ..distributions import get_hyper_parameters, clear_hyper_parameters
 from ..system import System
+from .display import section, setting, warning
 
 
 class HyperTuner(object):
@@ -77,20 +78,8 @@ class HyperTuner(object):
         self.keras_function = 'fit'
         self.info = kwargs.get('info', {})  # additional info provided by users
         self.tuner_name = tuner_name
-
         self.system = System()
-        self.available_gpu = len(self.system.get_status()['gpu'])
-        if not self.num_gpu and self.available_gpu:
-            # !FIXME test if tensorflow-gpu is used or just tensorflow
-            self.num_gpu = 1
-
-        # recap
-        self.log.section("Key params")
-        self.log.setting("GPUs Used: %d / %d" %
-                         (self.num_gpu, self.available_gpu))
-        self.log.setting("Model Max params: %.1fM" %
-                         (self.max_params / 1000000.0))
-
+        
         # model checkpointing
         self.checkpoint = {
             "enable": kwargs.get('checkpoint_models', True),
@@ -123,11 +112,15 @@ class HyperTuner(object):
 
         self.meta_data['server'] = {
             "local_dir": kwargs.get('local_dir', 'results/'),
-            "num_used_gpu": self.num_gpu,
-            "num_available_gpu": self.available_gpu,
         }
-
         self.meta_data['server'].update(self.system.get_status())
+        if not self.num_gpu and self.meta_data['server']['available_gpu']:
+            # marking gpu 1 as used if TF support gpu
+            if self.meta_data['server']['software']['tensorflow_use_gpu']:
+                self.num_gpu = 1
+            else:
+                warning("GPU detected but tensorflow is not compiled to use it")
+        self.meta_data['server']['num_gpu'] = self.num_gpu
 
         self.meta_data['tuner'] = {
             "name": self.tuner_name,
@@ -198,17 +191,20 @@ class HyperTuner(object):
         else:
             # check for models already trained
             self._load_previously_trained_instances(**kwargs)
-        cprint("|- Saving results in %s" %
-               self.meta_data['server']['local_dir'], 'cyan')  # fixme use logger
+
 
         # make sure TF session is configured correctly
         cfg = tf.ConfigProto()
         cfg.gpu_options.allow_growth = True
         K.set_session(tf.Session(config=cfg))
 
-    def set_tuner_name(self, name):
-        self.tuner_name = name
-        self.log.tuner_name(self.tuner_name)
+        # recap
+        section("Key parameters")
+        available_gpu = self.meta_data['server']['available_gpu']
+        setting("GPUs Used: %d / %d" % (self.num_gpu, available_gpu), idx=0)
+        setting("Model Max params: %.1fM" % (self.max_params / 1000000.0), idx=1)
+        setting("Saving results in %s" % self.meta_data['server']['local_dir'],
+                idx=2)
 
     def _load_previously_trained_instances(self, **kwargs):
         "Checking for existing models"

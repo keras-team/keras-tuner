@@ -6,6 +6,7 @@ from subprocess import Popen, PIPE
 from distutils import spawn
 from time import time
 import tensorflow as tf
+from tensorflow.python.platform import build_info
 import kerastuner as kt
 
 class System():
@@ -13,12 +14,14 @@ class System():
     def __init__(self):
 
         # compute static information once
+        self.tf_can_use_gpu = tf.test.is_gpu_available() # before get_software
         self.nvidia_smi = self._find_nvidia_smi()
         self.cpu_core_count = psutil.cpu_count()
         self.partitions = psutil.disk_partitions()
         self.software = self._get_software()
         self.hostname = platform.node()
         self.cpu_name = platform.processor()
+
 
     def get_status(self):
         """
@@ -36,6 +39,9 @@ class System():
         status['disk'] = self._get_disk_usage()
         status['software'] = self.software
         status['hostname'] = self.hostname
+        status["available_gpu"] = len(status['gpu'])
+
+
         return status
 
     def _get_hostname(self):
@@ -83,6 +89,7 @@ class System():
         packages = {
             "kerastuner": kt.__version__,
             "tensorflow": tf.__version__,
+            "tensorflow_use_gpu": self.tf_can_use_gpu,
             "python": platform.python_version(),
             "os": {
                 "name": platform.system(),
@@ -134,8 +141,10 @@ class System():
                         "memory.used": "used",
                         "memory.total": "total",
                         "driver_version": "driver",
+                        #"cuda_version": "cuda",
                         "name": "name",
-                        "temperature.gpu": "value"
+                        "temperature.gpu": "value",
+                        "uuid": "uuid"
                     }
         metrics_list = sorted(metrics.keys())  # deterministic ordered list
         query = ','.join(metrics_list)
