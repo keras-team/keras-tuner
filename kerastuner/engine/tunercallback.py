@@ -62,7 +62,8 @@ class TunerCallback(keras.callbacks.Callback):
         self.meta_data['statistics']['latest'] = self.stats
 
         # statistics display
-        self._display_statistics()
+        # Uncomment when https://demilitarized.org/scaaml/research/issues/6 is fixed
+        #self._display_statistics()
 
         self.training_complete = True
         self._report_status()
