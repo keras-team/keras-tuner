@@ -35,8 +35,8 @@ def clean_value(value):
         return clean_result(value)
     if isinstance(value, list):
         cleaned_v = []
-        for x in v:
-            cleaned_v.append(clean_value(v))
+        for x in value:
+            cleaned_v.append(clean_value(x))
         return cleaned_v
     else:
         return value
@@ -44,7 +44,7 @@ def clean_value(value):
 def clean_result(results):
     clean = {}
     for k, v in results.items():
-        k = k.replace(" ", "_")
+        k = k.replace(" ", "_").replace(':', '_')
         v = clean_value(v)
         clean[k] = v
     return clean
