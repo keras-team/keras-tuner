@@ -3,35 +3,93 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import time
 import requests
 import json
 from os import path
 from termcolor import cprint
+from .display import warning, highlight
 
+class Backend():
 
+    def __init__(self, url, api_key, notifications):
+        self.base_url = url
+        self.api_key = api_key
+        self.notfications = notifications
+        self.authorized = self._check_access()
+        self.log_interval = 5 # fixme expose to the user with a min
+        self.last_update = -1
 
-def url_join(*parts):
-    """Joins a base url with one or more path segments.
+        if self.authorized:
+            highlight("Cloud service configure: go to https://.. to track your results in realtime")
+        else:
+            warning("Invalid API key for cloud service -- check parameters")
+    
+    def _check_access(self):
+        "Check if backend configuration is working"
+        url = self._url_join(self.base_url, 'v1/check_access')
+        response = requests.post(
+            url,
+            headers={'X-AUTH': self.api_key})
+        return response.ok
 
-    This joins https://example.com/a/b/ with 'update', resulting
-    in https://example.com/a/b/update. Removing the trailing slash from
-    the first argument will yield the same output.
+    def _url_join(self, *parts):
+        """Joins a base url with one or more path segments.
 
-    Args:
-        parts (list): the URL parts to join.
+        This joins https://example.com/a/b/ with 'update', resulting
+        in https://example.com/a/b/update. Removing the trailing slash from
+        the first argument will yield the same output.
 
-    Returns:
-        str: A url.
-    """
-    return "/".join(map(lambda fragment: fragment.rstrip('/'), parts))
+        Args:
+            parts (list): the URL parts to join.
 
+        Returns:
+            str: A url.
+        """
+        return "/".join(map(lambda fragment: fragment.rstrip('/'), parts))
 
-def check_access(meta_data):
-    url = url_join(meta_data['backend']['url'], 'v1/check_access')
-    response = requests.post(
-        url,
-        headers={'X-AUTH': meta_data['backend']['api_key']})
-    return response.ok
+    
+    def send_status(self, status):
+        "send tuner status for realtime tracking"
+        
+        ts = time.time()
+        if ts - self.last_update > self.log_interval:
+            self._send("status", status)
+            self.last_update = ts
+
+    
+    def _send(self, info_type, info):
+        """Send data to the cloud service
+        
+        Args:
+            info_type (str): type of information sent
+            info (dict): the data to send
+        """
+
+        # skip if API key don't work or service down
+        if not self.authorized:
+            return
+
+        url = self._url_join(self.base_url, 'v1/update')
+        response = requests.post(
+          url,
+          headers={'X-AUTH': self.api_key},
+          json={
+            'type': info_type,
+            'data': info
+          })
+        
+        if not response.ok:
+            try:
+                response_json = response.json()
+            except json.decoder.JSONDecodeError:
+                warning("Cloud service down -- data not uploaded")
+
+            if response_json['status'] == 'Unauthorized':
+                self.authorized = False
+                warning('Invalid backend API key.')
+            else:
+                warning('Warning! Cloud service upload failed: %s' % response.text)
 
 
 def cloud_save(local_path, ftype, meta_data):
@@ -42,36 +100,5 @@ def cloud_save(local_path, ftype, meta_data):
         ftype (str): type of file saved -- results, weights, executions, config.
         meta_data (dict): tuning meta data information
     """
-    # FIXME: add rate limiting (5sec by default).
-    # If the user did not enable this feature, skip this code.
-    if 'backend' not in meta_data:
-        return
-    # The backend only processes json-encoded files.
-    if not ".json" in local_path:
-        return
-    # Uploads the file.
-    url = url_join(meta_data['backend']['url'], 'v1/update')
-    with open(local_path) as local_file:
-      response = requests.post(
-          url,
-          headers={'X-AUTH': meta_data['backend']['api_key']},
-          json={
-            'type': ftype,
-            'metadata': meta_data,
-            'data': json.loads(local_file.read())
-          })
-    if not response.ok:
-      try:
-        response_json = response.json()
-        print ( response_json )
-      except json.decoder.JSONDecodeError:
-        raise Exception('Invalid backend URL: %s. Backend replied: %s' % (
-            url,
-            response.text))
-      if response_json['status'] == 'Unauthorized':
-        raise Exception('Invalid backend API key.')
-      else:
-        print ('Warning! Backend upload failed. Backend replied: %s' %
-            response.text)
 
-
+    return

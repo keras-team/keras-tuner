@@ -18,7 +18,8 @@ from . import backend
 class Instance(object):
     """Model instance class."""
 
-    def __init__(self, idx, model, hyper_parameters, meta_data, num_gpu, batch_size, display_model, key_metrics, keras_function, checkpoint, callback_fn):
+    def __init__(self, idx, model, hyper_parameters, meta_data, num_gpu, batch_size, 
+                display_model, key_metrics, keras_function, checkpoint, callback_fn, backend):
         self.ts = int(time.time())
         self.training_size = -1
         self.model = model
@@ -42,6 +43,7 @@ class Instance(object):
         self.key_metrics = key_metrics
         self.keras_function = keras_function
         self.callback_fn = callback_fn
+        self.backend =backend
 
     def __get_instance_info(self):
         """Return a dictionary of the model parameters
@@ -106,7 +108,7 @@ class Instance(object):
                                       self.num_gpu, display_model, display_info,
                                       instance_info, self.key_metrics,
                                       self.keras_function, self.checkpoint,
-                                      self.callback_fn)
+                                      self.callback_fn, self.backend)
         self.executions.append(execution)
         return execution
 

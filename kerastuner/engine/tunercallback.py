@@ -22,7 +22,7 @@ from kerastuner.system import System
 class TunerCallback(keras.callbacks.Callback):
     "Monitoring callback"
 
-    def __init__(self, info, key_metrics, meta_data, checkpoint, log_interval=2):
+    def __init__(self, info, key_metrics, meta_data, checkpoint, backend, log_interval=2):
         """
         Args:
         log_interval: interval of time in second between the execution stats are written on disk
@@ -43,6 +43,7 @@ class TunerCallback(keras.callbacks.Callback):
         self.last_write = int(time.time())
         self.training_complete = False
         self.system = System()  # computer stats
+        self.backend = backend
 
         self.stats = {}  # track stats per epoch
 
@@ -60,10 +61,6 @@ class TunerCallback(keras.callbacks.Callback):
 
         # statistics update
         self.meta_data['statistics']['latest'] = self.stats
-
-        # statistics display
-        # Uncomment when https://demilitarized.org/scaaml/research/issues/6 is fixed
-        #self._display_statistics()
 
         self.training_complete = True
         self._report_status()
@@ -158,8 +155,9 @@ class TunerCallback(keras.callbacks.Callback):
         weights_fname = "%s-weights.h5" % (prefix)
         local_path = path.join(local_dir, weights_fname)
         self.model.save_weights(local_path)
-        backend.cloud_save(local_path=local_path,
-                           ftype='weights', meta_data=self.meta_data)
+        # ! don't save weight to the service, instead implment a GS save
+        # backend.cloud_save(local_path=local_path,
+                           #ftype='weights', meta_data=self.meta_data)
         return
 
     def _compute_avg_accuracy(self, logs):
@@ -237,6 +235,9 @@ class TunerCallback(keras.callbacks.Callback):
         fname = path.join(local_dir, 'status.json')
         with file_io.FileIO(fname, 'w') as outfile:
             outfile.write(json.dumps(status))
+
+        # send status to the cloud service
+        self.backend.send_status(status)
 
         # update write time
         self.last_write = time.time()

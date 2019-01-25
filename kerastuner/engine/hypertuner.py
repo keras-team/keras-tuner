@@ -21,7 +21,7 @@ import tensorflow.keras.backend as K
 import gc
 
 from .display import print_table, section, highlight, subsection
-from . import backend
+from .backend import Backend
 from .instance import Instance
 from .logger import Logger
 from ..distributions import get_hyper_parameters, clear_hyper_parameters
@@ -198,6 +198,8 @@ class HyperTuner(object):
         cfg.gpu_options.allow_growth = True
         K.set_session(tf.Session(config=cfg))
 
+        # FIXME: output metadata (move from backend call)
+
         # recap
         section("Key parameters")
         available_gpu = self.meta_data['server']['available_gpu']
@@ -260,27 +262,33 @@ class HyperTuner(object):
     def backend(self, api_key, **kwargs):
         """Setup backend configuration
 
-          Args:
-            api_key (str): The backend API access token.
-            kwargs (dict): Optional. Contains the key "url", pointing to the
-              base url of the backend.
+            Args:
+                api_key (str): The backend API access token.
+                kwargs (dict): Optional. Contains the key "url", pointing to the
+                base url of the backend.
+            Note: this is called by the user
         """
 
         self.meta_data['backend'] = {
             "api_key": api_key,
             "url": kwargs.get('url', 'https://us-central1-keras-tuner.cloudfunctions.net/api'),
-            "crash_notification": kwargs.get("crash_notification", False),
-            "tuning_completion_notification": kwargs.get("tuning_completion_notification", False),
-            "instance_trained_notification": kwargs.get("instance_trained_notification", False),
+            "notifications": {
+                "crash": kwargs.get("crash_notification", False),
+                "tuning_completion": kwargs.get("tuning_completion_notification", False),
+                "instance_completion": kwargs.get("instance_completion_notification", False)
+            }
         }
 
-        fname = '%s-%s-meta_data.json' % (self.meta_data['project'],
-                                          self.meta_data['architecture'])
-        local_path = os.path.join(self.meta_data['server']['local_dir'], fname)
-        with file_io.FileIO(local_path, 'w') as output:
-            output.write(json.dumps(self.meta_data))
-        backend.cloud_save(local_path=local_path,
-                           ftype='meta_data', meta_data=self.meta_data)
+        self.backend = Backend(**self.meta_data['backend'])
+
+        #! fixe this metadata should NOT BE tied to backend setup
+        #fname = '%s-%s-meta_data.json' % (self.meta_data['project'],
+        #                                  self.meta_data['architecture'])
+        #local_path = os.path.join(self.meta_data['server']['local_dir'], fname)
+        #with file_io.FileIO(local_path, 'w') as output:
+        #    output.write(json.dumps(self.meta_data))
+        #backend.cloud_save(local_path=local_path,
+        #                   ftype='meta_data', meta_data=self.meta_data)
 
     def search(self, x, y, **kwargs):
         self.keras_functionkera_function = 'fit'
@@ -353,7 +361,8 @@ class HyperTuner(object):
             hyper_parameters = get_hyper_parameters()
             self._update_metadata()
             instance = Instance(idx, model, hyper_parameters, self.meta_data, self.num_gpu, self.batch_size,
-                                self.display_model, self.key_metrics, self.keras_function, self.checkpoint, self.callback_fn)
+                                self.display_model, self.key_metrics, self.keras_function, self.checkpoint, 
+                                self.callback_fn, self.backend)
             num_params = instance.compute_model_size()
             if num_params > self.max_params:
                 over_sized_streak += 1

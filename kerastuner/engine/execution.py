@@ -14,7 +14,9 @@ from .tunercallback import TunerCallback
 class InstanceExecution(object):
     """Model Execution class. Each Model instance can be executed N time"""
 
-    def __init__(self, model, idx, meta_data, num_gpu, display_model, display_info, instance_info, key_metrics, keras_function, checkpoint, callback_fn):
+    def __init__(self, model, idx, meta_data, num_gpu, display_model, 
+                display_info, instance_info, key_metrics, keras_function, checkpoint, 
+                callback_fn, backend):
         self.ts = int(time.time())
         self.idx = idx
 
@@ -43,6 +45,7 @@ class InstanceExecution(object):
         self.key_metrics = key_metrics
         self.keras_function = keras_function
         self.callback_fn = callback_fn
+        self.backend = backend
 
         # reflected to the callback_fn which is a user function and therefore must be documented / decoupled
         self.execution_info = {}
@@ -70,7 +73,7 @@ class InstanceExecution(object):
         Note: This wrapper around Keras fit allows to handle multi-gpu support and use fit or fit_generator
         """
         tcb = TunerCallback(self.instance_info, self.key_metrics,
-                            self.meta_data, self.checkpoint)
+                            self.meta_data, self.checkpoint, self.backend)
         callbacks = kwargs.get('callbacks')
         if callbacks or self.callback_fn:
             callbacks = copy.deepcopy(callbacks)
