@@ -172,9 +172,9 @@ class System():
                 value = info[idx].strip()
                 metric_name = metrics[metric]
                 if "memory" in metric:
-                    gpu_info['memory'][metric_name] = value
+                    gpu_info['memory'][metric_name] = int(value)
                 elif "temperature" in metric:
-                    gpu_info['temperature'][metric_name] = value
+                    gpu_info['temperature'][metric_name] = int(value)
                 elif "driver" in metric:
                     self.gpu_driver_version = value
                 else:

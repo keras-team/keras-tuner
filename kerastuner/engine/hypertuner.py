@@ -20,6 +20,7 @@ import tensorflow as tf
 import tensorflow.keras.backend as K
 import gc
 
+from ..utils import max_model_size
 from .display import print_table, section, highlight, subsection
 from .backend import Backend
 from .instance import Instance
@@ -59,7 +60,6 @@ class HyperTuner(object):
         self.max_fail_streak = kwargs.get('max_fail_streak', 20)
         self.num_gpu = kwargs.get('num_gpu', 0)
         self.batch_size = kwargs.get('batch_size', 32)
-        self.max_params = kwargs.get('max_params', 100000000)
         self.display_model = kwargs.get('display_model', '')
 
         # instances management
@@ -80,6 +80,7 @@ class HyperTuner(object):
         self.tuner_name = tuner_name
         self.system = System()
         
+
         # model checkpointing
         self.checkpoint = {
             "enable": kwargs.get('checkpoint_models', True),
@@ -121,6 +122,22 @@ class HyperTuner(object):
             else:
                 warning("GPU detected but tensorflow is not compiled to use it")
         self.meta_data['server']['num_gpu'] = self.num_gpu
+
+
+        # max model size estimation
+        max_params = kwargs.get('max_params', 'auto')
+        if max_params == 'auto':  # compute max based of our estimate
+            if self.meta_data['server']['software']['tensorflow_use_gpu']:
+                total = self.meta_data['server']['gpu'][0]['memory']['total']
+                used = self.meta_data['server']['gpu'][0]['memory']['used']
+            else:
+                total = self.meta_data['server']['ram']['total']
+                used = self.meta_data['server']['used']['used']
+                
+            available = total - used
+            self.max_params = max_model_size(self.batch_size, available, self.num_gpu)
+        else:
+            self.max_params = max_params
 
         self.meta_data['tuner'] = {
             "name": self.tuner_name,
@@ -204,7 +221,7 @@ class HyperTuner(object):
         section("Key parameters")
         available_gpu = self.meta_data['server']['available_gpu']
         setting("GPUs Used: %d / %d" % (self.num_gpu, available_gpu), idx=0)
-        setting("Model Max params: %.1fM" % (self.max_params / 1000000.0), idx=1)
+        setting("Model max params: %.1fM" % (self.max_params / 1000000.0), idx=1)
         setting("Saving results in %s" % self.meta_data['server']['local_dir'],
                 idx=2)
 

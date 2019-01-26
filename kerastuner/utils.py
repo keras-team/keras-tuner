@@ -3,6 +3,22 @@ from subprocess import Popen, PIPE
 from distutils import spawn
 
 
+def max_model_size(batch_size, gpu_mem, num_gpu):
+    """Compute the maximum param size for model to avoid OOO
+    
+    Args:
+        batch_size (int): batch_size used
+        gpu_mem (int): GPU available memory in MB
+        num_gpu (int): Number of GPU used
+    """
+
+    available_memory = gpu_mem * 1024 * 1024 * num_gpu
+    available_memory -= 256 * 1024  # be conservative shave off a little memory
+    max_parameters  = available_memory / (batch_size * 4)
+    return max_parameters
+    
+
+
 def compute_max_batch_size(model, gpu_mem, max_size=8000):
     """Compute the largest batch size possible
       max_size (int): maximum batch size. 8k seems the limit based of https://research.fb.com/publications/accurate-large-minibatch-sgd-training-imagenet-in-1-hour/
