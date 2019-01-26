@@ -4,14 +4,12 @@ import numpy as np
 from os import path
 from collections import defaultdict
 from tensorflow.python.lib.io import file_io  # allows to write to GCP or local
-from termcolor import cprint
 from tensorflow.keras import backend as K
 import tensorflow as tf
 import gc
 import copy
 
 from .execution import InstanceExecution
-from .tunercallback import TunerCallback
 from . import backend
 
 

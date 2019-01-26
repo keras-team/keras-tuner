@@ -6,8 +6,8 @@ from subprocess import Popen, PIPE
 from distutils import spawn
 from time import time
 import tensorflow as tf
-from tensorflow.python.platform import build_info
 import kerastuner as kt
+
 
 class System():
 
@@ -21,8 +21,8 @@ class System():
         self.cpu_name = platform.processor()
 
         # additional GPU info
-        self.tf_can_use_gpu = tf.test.is_gpu_available() # before get_software
-        self._get_gpu_usage() # to get gpu driver info > before get software
+        self.tf_can_use_gpu = tf.test.is_gpu_available()  # before get_software
+        self._get_gpu_usage()  # to get gpu driver info > before get software
 
         # keep it last
         self.software = self._get_software()
@@ -45,8 +45,6 @@ class System():
         status['software'] = self.software
         status['hostname'] = self.hostname
         status["available_gpu"] = len(status['gpu'])
-
-
         return status
 
     def _get_hostname(self):

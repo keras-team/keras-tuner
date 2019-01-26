@@ -41,7 +41,25 @@ styles = {
     "reset": Style.RESET_ALL
 }
 
+
 # shorthand functions
+def info(text, display=1):
+    """ display a info
+
+    Args:
+        text (str): info message
+        display (bool, optional): Defaults to True. Display or return settings
+
+    Returns:
+        str: setting value if display=False, None otherwise
+    """
+    color = 'green'
+    s = "[Info] %s" % text
+
+    if display:
+        cprint(s, color)
+    else:
+        return colorize(s + '\n', color)
 
 
 def warning(text, display=1):
@@ -56,7 +74,7 @@ def warning(text, display=1):
     """
     color = 'yellow'
     s = "[Warning] %s" % text
-    
+
     if display:
         cprint(s, color)
     else:
@@ -108,10 +126,10 @@ def setting(text, ident=1, idx=0, display=True):
 
 def highlight(text):
     if ipython:
-        text = '<span style="font-size:14px">' + text + '</span>'
+        text = '<span style="font-size:14px"><b>' + text + '</b></span>'
         cprint(text, '#64DD17')
     else:
-        cprint(text, 'green')
+        cprint(text, 'green', brightness="bright")
 
 # Charts
 

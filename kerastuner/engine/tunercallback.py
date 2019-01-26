@@ -6,26 +6,25 @@ from __future__ import print_function
 from tensorflow import keras
 import time
 import sys
-from termcolor import cprint
 from collections import defaultdict
 from os import path
 import json
 from tensorflow.python.lib.io import file_io  # allows to write to GCP or local
 from copy import copy
 
-from . import backend
-from .display import colorize, print_combined_table, section, highlight
 
+from .display import colorize, print_combined_table, section, highlight
 from kerastuner.system import System
 
 
 class TunerCallback(keras.callbacks.Callback):
     "Monitoring callback"
 
-    def __init__(self, info, key_metrics, meta_data, checkpoint, backend, log_interval=2):
+    def __init__(self, info, key_metrics, meta_data, checkpoint, backend,
+                 log_interval=2):
         """
         Args:
-        log_interval: interval of time in second between the execution stats are written on disk
+        log_interval: interval between the execution stats are written on disk
         """
         self.info = info
         self.key_metrics = {}
@@ -148,8 +147,10 @@ class TunerCallback(keras.callbacks.Callback):
         local_path = path.join(local_dir, config_fname)
         with file_io.FileIO(local_path, 'w') as output:
             output.write(self.model.to_json())
-        backend.cloud_save(local_path=local_path,
-                           ftype='config', meta_data=self.meta_data)
+        # FIXME:refactor
+        if self.backend:
+            self.backend.cloud_save(local_path=local_path,
+                                    ftype='config', meta_data=self.meta_data)
 
         # weights
         weights_fname = "%s-weights.h5" % (prefix)
@@ -157,7 +158,7 @@ class TunerCallback(keras.callbacks.Callback):
         self.model.save_weights(local_path)
         # ! don't save weight to the service, instead implment a GS save
         # backend.cloud_save(local_path=local_path,
-                           #ftype='weights', meta_data=self.meta_data)
+        # ftype='weights', meta_data=self.meta_data)
         return
 
     def _compute_avg_accuracy(self, logs):
@@ -237,7 +238,8 @@ class TunerCallback(keras.callbacks.Callback):
             outfile.write(json.dumps(status))
 
         # send status to the cloud service
-        self.backend.send_status(status)
+        if self.backend:
+            self.backend.send_status(status)
 
         # update write time
         self.last_write = time.time()

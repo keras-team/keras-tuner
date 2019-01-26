@@ -79,7 +79,7 @@ class HyperTuner(object):
         self.info = kwargs.get('info', {})  # additional info provided by users
         self.tuner_name = tuner_name
         self.system = System()
-        
+        self.backend = None  # init in the backend() funct if used
 
         # model checkpointing
         self.checkpoint = {
@@ -98,7 +98,8 @@ class HyperTuner(object):
 
         if self.checkpoint['mode'] != 'min' and self.checkpoint['mode'] != 'max':
             raise Exception(
-                'checkpoint_mode must be either min or max - current value:', self.checkpoint['mode'])
+                'checkpoint_mode must be either min or max - current value:', 
+                self.checkpoint['mode'])
 
         if self.checkpoint['enable']:
             self.log.info("Model checkpoint enabled - metric:%s mode:%s" %
@@ -130,12 +131,14 @@ class HyperTuner(object):
             if self.meta_data['server']['software']['tensorflow_use_gpu']:
                 total = self.meta_data['server']['gpu'][0]['memory']['total']
                 used = self.meta_data['server']['gpu'][0]['memory']['used']
+                available = total - used
             else:
                 total = self.meta_data['server']['ram']['total']
                 used = self.meta_data['server']['used']['used']
-                
-            available = total - used
-            self.max_params = max_model_size(self.batch_size, available, self.num_gpu)
+                min(total - available, 10000000)  # cap CPU at 10M max
+            
+            self.max_params = max_model_size(self.batch_size, available, 
+                                             self.num_gpu)
         else:
             self.max_params = max_params
 
