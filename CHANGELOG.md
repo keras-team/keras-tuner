@@ -12,6 +12,7 @@ The focus of these releases is to make kerastuner works well with other and make
 - `kerastuner-summary` utility allows to display results overview in commandline 
 - Tuner report status in json file every 5 seconds to make it easy to track progress with tool and remotely
 - System information including CPU usage, GPU usage, memory usage, disk space is now reported
+- Model max parameters is now directly infered based from GPU available memory and batch_size
 
 ### Extras
 
