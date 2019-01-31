@@ -132,13 +132,14 @@ class HyperTuner(object):
                 total = self.meta_data['server']['gpu'][0]['memory']['total']
                 used = self.meta_data['server']['gpu'][0]['memory']['used']
                 available = total - used
+                self.max_params = max_model_size(self.batch_size, available, 
+                                                 self.num_gpu)
             else:
                 total = self.meta_data['server']['ram']['total']
-                used = self.meta_data['server']['used']['used']
-                min(total - available, 10000000)  # cap CPU at 10M max
-            
-            self.max_params = max_model_size(self.batch_size, available, 
-                                             self.num_gpu)
+                used = self.meta_data['server']['ram']['used']
+                available = total - used
+                max_params = max(max_model_size(self.batch_size, available, 1), 5000000)
+                self.max_params = max_params
         else:
             self.max_params = max_params
 

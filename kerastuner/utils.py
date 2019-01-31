@@ -3,19 +3,20 @@ from subprocess import Popen, PIPE
 from distutils import spawn
 
 
-def max_model_size(batch_size, gpu_mem, num_gpu):
+def max_model_size(batch_size, gpu_mem, num_gpu, mem_reserved=0.1):
     """Compute the maximum param size for model to avoid OOO
     
     Args:
         batch_size (int): batch_size used
         gpu_mem (int): GPU available memory in MB
         num_gpu (int): Number of GPU used
+        mem_reserved (float): fraction of memory that is set aside to let system not choke
     """
 
     available_memory = gpu_mem * 1024 * 1024 * num_gpu
-    available_memory -= 256 * 1024  # be conservative shave off a little memory
+    available_memory -= available_memory * mem_reserved  # be conservative shave off 10%
     max_parameters  = available_memory / (batch_size * 4)
-    return max_parameters
+    return int(max_parameters)
     
 
 
