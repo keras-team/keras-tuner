@@ -203,7 +203,9 @@ class TunerCallback(keras.callbacks.Callback):
 
         # copy existing meta_data
         status = copy(self.meta_data)
+        status['training_complete'] = self.training_complete
 
+        # hypertuning eta
         elapsed_time = int(ts - self.meta_data['tuner']['start_time'])
         epochs = status['tuner']['epoch_budget'] - \
             status['tuner']['remaining_budget']
@@ -211,13 +213,13 @@ class TunerCallback(keras.callbacks.Callback):
         eta = status['tuner']['remaining_budget'] * time_per_epoch
         status['tuner']['eta'] = eta
 
-        # Current model
-        # model eta
+        # Current model eta
         elapsed_time = int(ts - self.start_ts)
         epochs = len(self.history['loss'])
         time_per_epoch = elapsed_time / max(epochs, 1)
         eta = (self.meta_data['tuner']['max_epochs'] - epochs) * time_per_epoch
 
+        # model info
         current_model = {
             'elapsed_time': elapsed_time,
             'epochs': epochs,
