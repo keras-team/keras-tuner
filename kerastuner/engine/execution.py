@@ -14,9 +14,9 @@ from .tunercallback import TunerCallback
 class InstanceExecution(object):
     """Model Execution class. Each Model instance can be executed N time"""
 
-    def __init__(self, model, idx, meta_data, num_gpu, display_model, 
-                display_info, instance_info, key_metrics, keras_function, checkpoint, 
-                callback_fn, backend):
+    def __init__(self, model, idx, meta_data, num_gpu, display_model,
+                 display_info, instance_info, key_metrics, keras_function,
+                 checkpoint, callback_fn, backend):
         self.ts = int(time.time())
         self.idx = idx
 

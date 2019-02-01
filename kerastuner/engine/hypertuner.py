@@ -345,7 +345,6 @@ class HyperTuner(object):
             try:
                 model = self.model_fn()
             except:
-
                 if self.debug:
                     import traceback
                     traceback.print_exc()

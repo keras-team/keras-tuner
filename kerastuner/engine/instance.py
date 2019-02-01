@@ -16,12 +16,15 @@ from . import backend
 class Instance(object):
     """Model instance class."""
 
-    def __init__(self, idx, model, hyper_parameters, meta_data, num_gpu, batch_size, 
-                display_model, key_metrics, keras_function, checkpoint, callback_fn, backend):
+    def __init__(self, idx, model, hyper_parameters, meta_data, num_gpu,
+                 batch_size, display_model, key_metrics, keras_function,
+                 checkpoint, callback_fn, backend):
+    
         self.ts = int(time.time())
         self.training_size = -1
         self.model = model
         self.hyper_parameters = hyper_parameters
+        self.optimizer_config = model.optimizer.get_config()
 
         self.checkpoint = checkpoint
         self.idx = idx
@@ -31,7 +34,7 @@ class Instance(object):
         self.meta_data['instance'] = idx
 
         self.num_gpu = num_gpu
-        self.batch_size = batch_size  # we keep batch_size explicit to be able to record it
+        self.batch_size = batch_size
         self.display_model = display_model
         self.ts = int(time.time())
         self.executions = []
@@ -41,7 +44,7 @@ class Instance(object):
         self.key_metrics = key_metrics
         self.keras_function = keras_function
         self.callback_fn = callback_fn
-        self.backend =backend
+        self.backend = backend
 
     def __get_instance_info(self):
         """Return a dictionary of the model parameters
@@ -49,7 +52,7 @@ class Instance(object):
           Used both for the instance result file and the execution result file
         """
         info = {
-            "key_metrics": {},  # key metrics results dict. not key metrics definition
+            "key_metrics": {},  # key metrics results not metrics definition
             "ts": self.ts,
             "training_size": self.training_size,
             # FIXME: add validation split if needed
@@ -58,21 +61,25 @@ class Instance(object):
             "model": self.model.get_config(),
             "batch_size": self.batch_size,
             "model_size": int(self.model_size),
-            "hyper_parameters": self.hyper_parameters
+            "hyper_parameters": self.hyper_parameters,
+            "optimizer_config": self.optimizer_config
         }
         return info
 
     def compute_model_size(self):
         "comput the size of a given model"
-        return np.sum([K.count_params(p) for p in set(self.model.trainable_weights)])
+        params = [K.count_params(p) for p in set(self.model.trainable_weights)]
+        return np.sum(params)
 
     def fit(self, x, y, resume_execution=False, **kwargs):
         """Fit an execution of the model instance
         Args:
-          resume_execution (bool): Instead of creating a new execution, resume training the previous one. Default false.
+          resume_execution (bool): Instead of creating a new execution,
+          resume training the previous one. Default false.
         """
 
-        # in theory for batch training the function is __len__ should be implemented - we might need to test the type
+        # in theory for batch training the function is __len__ 
+        # should be implemented - we might need to test the type
         self.training_size = len(x)
 
         if kwargs.get('validation_data'):
@@ -80,7 +87,8 @@ class Instance(object):
 
         if resume_execution and len(self.executions):
             execution = self.executions[-1]
-            # FIXME: We need to reload the model as it is destroyed at that point (I think - to be checked)
+            # FIXME: We need to reload the model as it is destroyed
+            # at that point / need to be tested
             results = execution.fit(
                 x, y, initial_epoch=execution.num_epochs, **kwargs)
         else:
@@ -103,10 +111,11 @@ class Instance(object):
 
         instance_info = self.__get_instance_info()
         execution = InstanceExecution(self.model, self.idx, self.meta_data,
-                                      self.num_gpu, display_model, display_info,
-                                      instance_info, self.key_metrics,
-                                      self.keras_function, self.checkpoint,
-                                      self.callback_fn, self.backend)
+                                      self.num_gpu, display_model,
+                                      display_info, instance_info,
+                                      self.key_metrics, self.keras_function,
+                                      self.checkpoint, self.callback_fn,
+                                      self.backend)
         self.executions.append(execution)
         return execution
 
@@ -149,7 +158,6 @@ class Instance(object):
                 "loss_fn": execution.model.loss,
                 "loss_weigths": execution.model.loss_weights,
                 "meta_data": execution.meta_data,
-                "optimizer": execution.model.optimizer.get_config()
             }
             executions.append(execution_info)
 
@@ -172,22 +180,21 @@ class Instance(object):
                 }
         results['metrics'] = metrics
 
-        #cprint(results, 'cyan')
-
         # Usual metrics reported as top fields for their median values
         for tm in self.key_metrics:
             if tm[0] in metrics:
                 results['key_metrics'][tm[0]] = metrics[tm[0]][tm[1]]['median']
 
-        fname = '%s-%s-%s-results.json' % (
-            self.meta_data['project'], self.meta_data['architecture'], self.meta_data['instance'])
+        fname = '%s-%s-%s-results.json' % (self.meta_data['project'],
+                                           self.meta_data['architecture'],
+                                           self.meta_data['instance'])
         local_path = path.join(local_dir, fname)
         with file_io.FileIO(local_path, 'w') as outfile:
             outfile.write(json.dumps(results))
- 
+
         # cloud recording if needed
         backend.cloud_save(local_path=local_path, ftype='results',
                            meta_data=self.meta_data)
-        
+
         self.results = results
         return results
