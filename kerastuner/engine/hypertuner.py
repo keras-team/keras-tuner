@@ -311,11 +311,15 @@ class HyperTuner(object):
     def search(self, x, y, **kwargs):
         self.keras_functionkera_function = 'fit'
         self.hypertune(x, y, **kwargs)
+        if self.backend:
+          self.backend.quit()
 
     def search_generator(self, x, **kwargs):
         self.keras_function = 'fit_generator'
         y = None  # fit_generator don't use this so we put none to be able to have a single hypertune function
         self.hypertune(x, y, **kwargs)
+        if self.backend:
+          self.backend.quit()
 
     def _clear_tf_graph(self):
         """ Clear the content of the TF graph to ensure
