@@ -149,8 +149,7 @@ class TunerCallback(keras.callbacks.Callback):
             output.write(self.model.to_json())
         # FIXME:refactor
         if self.backend:
-            self.backend.cloud_save(local_path=local_path,
-                                    ftype='config', meta_data=self.meta_data)
+            self.backend.send_config(self.model.to_json())
 
         # weights
         weights_fname = "%s-weights.h5" % (prefix)

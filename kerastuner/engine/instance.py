@@ -19,7 +19,7 @@ class Instance(object):
     def __init__(self, idx, model, hyper_parameters, meta_data, num_gpu,
                  batch_size, display_model, key_metrics, keras_function,
                  checkpoint, callback_fn, backend):
-    
+
         self.ts = int(time.time())
         self.training_size = -1
         self.model = model
@@ -78,7 +78,7 @@ class Instance(object):
           resume training the previous one. Default false.
         """
 
-        # in theory for batch training the function is __len__ 
+        # in theory for batch training the function is __len__
         # should be implemented - we might need to test the type
         self.training_size = len(x)
 
@@ -193,8 +193,8 @@ class Instance(object):
             outfile.write(json.dumps(results))
 
         # cloud recording if needed
-        backend.cloud_save(local_path=local_path, ftype='results',
-                           meta_data=self.meta_data)
+        if self.backend:
+          self.backend.send_results(results)
 
         self.results = results
         return results

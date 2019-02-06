@@ -14,8 +14,7 @@ y_train = np.random.randint(2, size=(10000, 1))
 
 # You can use http://keras-tuner.appspot.com to track results on the web, and
 # get notifications. To do so, grab an API key on that site, and fill it here.
-api_key = ""
-
+api_key=''
 
 def model_fn():
     # Input layer
@@ -49,7 +48,7 @@ def model_fn():
 hypermodel = RandomSearch(model_fn, epoch_budget=15, max_epochs=3)
 hypermodel.summary()
 if api_key:
-  hypermodel.backend(
+  hypermodel.enable_cloud(
       api_key=api_key,
       # url='http://localhost:5000/api/'
     )

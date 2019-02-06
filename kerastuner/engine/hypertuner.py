@@ -98,7 +98,7 @@ class HyperTuner(object):
 
         if self.checkpoint['mode'] != 'min' and self.checkpoint['mode'] != 'max':
             raise Exception(
-                'checkpoint_mode must be either min or max - current value:', 
+                'checkpoint_mode must be either min or max - current value:',
                 self.checkpoint['mode'])
 
         if self.checkpoint['enable']:
@@ -132,7 +132,7 @@ class HyperTuner(object):
                 total = self.meta_data['server']['gpu'][0]['memory']['total']
                 used = self.meta_data['server']['gpu'][0]['memory']['used']
                 available = total - used
-                self.max_params = max_model_size(self.batch_size, available, 
+                self.max_params = max_model_size(self.batch_size, available,
                                                  self.num_gpu)
             else:
                 total = self.meta_data['server']['ram']['total']
@@ -280,7 +280,7 @@ class HyperTuner(object):
         print_table(table)
         highlight("Total search space:%s" % total_size)
 
-    def backend(self, api_key, **kwargs):
+    def enable_cloud(self, api_key, **kwargs):
         """Setup backend configuration
 
             Args:
@@ -289,18 +289,15 @@ class HyperTuner(object):
                 base url of the backend.
             Note: this is called by the user
         """
-
-        self.meta_data['backend'] = {
-            "api_key": api_key,
-            "url": kwargs.get('url', 'https://us-central1-keras-tuner.cloudfunctions.net/api'),
-            "notifications": {
+        self.backend = Backend(
+            api_key=api_key,
+            url=kwargs.get('url', 'https://us-central1-keras-tuner.cloudfunctions.net/api'),
+            notifications={
                 "crash": kwargs.get("crash_notification", False),
                 "tuning_completion": kwargs.get("tuning_completion_notification", False),
                 "instance_completion": kwargs.get("instance_completion_notification", False)
             }
-        }
-
-        self.backend = Backend(**self.meta_data['backend'])
+        )
 
         #! fixe this metadata should NOT BE tied to backend setup
         #fname = '%s-%s-meta_data.json' % (self.meta_data['project'],
@@ -381,7 +378,7 @@ class HyperTuner(object):
             hyper_parameters = get_hyper_parameters()
             self._update_metadata()
             instance = Instance(idx, model, hyper_parameters, self.meta_data, self.num_gpu, self.batch_size,
-                                self.display_model, self.key_metrics, self.keras_function, self.checkpoint, 
+                                self.display_model, self.key_metrics, self.keras_function, self.checkpoint,
                                 self.callback_fn, self.backend)
             num_params = instance.compute_model_size()
             if num_params > self.max_params:

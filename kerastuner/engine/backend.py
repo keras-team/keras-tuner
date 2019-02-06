@@ -47,14 +47,6 @@ class Backend():
         """
         return "/".join(map(lambda fragment: fragment.rstrip('/'), parts))
 
-    def send_status(self, status):
-        "send tuner status for realtime tracking"
-
-        ts = time.time()
-        if ts - self.last_update > self.log_interval:
-            self._send("status", status)
-            self.last_update = ts
-
     def _send(self, info_type, info):
         """Send data to the cloud service
 
@@ -62,7 +54,6 @@ class Backend():
             info_type (str): type of information sent
             info (dict): the data to send
         """
-
         # skip if API key don't work or service down
         if not self.authorized:
             return
@@ -89,14 +80,16 @@ class Backend():
                 warning('Warning! Cloud service upload failed: %s' %
                         response.text)
 
+    def send_status(self, status):
+        "send tuner status for realtime tracking"
 
-def cloud_save(local_path, ftype, meta_data):
-    """Stores file remotely to backend service
+        ts = time.time()
+        if ts - self.last_update > self.log_interval:
+            self._send("status", status)
+            self.last_update = ts
 
-    Args:
-        local_path (str): where the file is saved locally
-        ftype (str): type of file saved: results, weights, executions, config
-        meta_data (dict): tuning meta data information
-    """
+    def send_config(self, config):
+      self._send("config", config)
 
-    return
+    def send_results(self, results):
+      self._send("results", results)
