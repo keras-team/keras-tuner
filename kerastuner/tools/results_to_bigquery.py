@@ -44,6 +44,9 @@ def clean_value(value):
 def clean_result(results):
     clean = {}
     for k, v in results.items():
+        # Empty dicts cannot be imported in bigquery
+        if v == {}:
+            continue
         k = k.replace(" ", "_").replace(':', '_')
         v = clean_value(v)
         clean[k] = v
