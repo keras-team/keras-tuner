@@ -84,9 +84,8 @@ class Backend():
 
     def _send_nonblocking(self, info_type, info):
         if not self.authorized:
-            print('not')
             return
-        print('sending')
+
         url = self._url_join(self.base_url, 'v1/update')
         self.executor.submit(send_to_backend, url, self.api_key, info_type, info)
 

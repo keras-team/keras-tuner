@@ -11,8 +11,7 @@ from os import path
 import json
 from tensorflow.python.lib.io import file_io  # allows to write to GCP or local
 from copy import copy
-
-
+from multiprocessing.pool import ThreadPool
 from .display import colorize, print_combined_table, section, highlight
 from kerastuner.system import System
 
@@ -20,8 +19,14 @@ from kerastuner.system import System
 class TunerCallback(keras.callbacks.Callback):
     "Monitoring callback"
 
-    def __init__(self, info, key_metrics, meta_data, checkpoint, backend,
-                 log_interval=2):
+    def __init__(self,
+                 info,
+                 key_metrics,
+                 meta_data,
+                 checkpoint,
+                 backend,
+                 log_interval=2,
+                 num_threads=4):
         """
         Args:
         log_interval: interval between the execution stats are written on disk
@@ -45,6 +50,7 @@ class TunerCallback(keras.callbacks.Callback):
         self.backend = backend
 
         self.stats = {}  # track stats per epoch
+        self.thread_pool = ThreadPool(num_threads)
 
         self.checkpoint = checkpoint
         if checkpoint['enable']:
@@ -103,8 +109,8 @@ class TunerCallback(keras.callbacks.Callback):
                     update = True
 
             if update:
-                highlight("\nSaving improved model %s %s from %s to %s" % (
-                          k, word, round(self.cpt_cur_val, 4), round(v, 4)))
+                highlight("\nSaving improved model %s %s from %s to %s" %
+                          (k, word, round(self.cpt_cur_val, 4), round(v, 4)))
                 self.cpt_cur_val = v
                 self._save_model()
 
@@ -139,10 +145,9 @@ class TunerCallback(keras.callbacks.Callback):
         local_dir = self.meta_data['server']['local_dir']
 
         # config
-        prefix = '%s-%s-%s-%s' % (self.meta_data['project'],
-                                  self.meta_data['architecture'],
-                                  self.meta_data['instance'],
-                                  self.meta_data['execution'])
+        prefix = '%s-%s-%s-%s' % (
+            self.meta_data['project'], self.meta_data['architecture'],
+            self.meta_data['instance'], self.meta_data['execution'])
         config_fname = "%s-config.json" % (prefix)
         local_path = path.join(local_dir, config_fname)
         with file_io.FileIO(local_path, 'w') as output:
@@ -189,16 +194,22 @@ class TunerCallback(keras.callbacks.Callback):
                         total_acc += v
             logs['avg_accuracy'] = round(total_acc / float(num_acc_metrics), 4)
             if num_val_acc_metrics:
-                logs['val_avg_accuracy'] = round(total_val_acc /
-                                                 float(num_val_acc_metrics), 4)
+                logs['val_avg_accuracy'] = round(
+                    total_val_acc / float(num_val_acc_metrics), 4)
         return logs
 
     def _report_status(self):
-        "Report tuner status periodically"
         ts = time.time()
         delta = ts - self.last_write
         if delta < self.log_interval and not self.training_complete:
             return
+
+        self.thread_pool.apply_async(self._report_status_worker)
+
+    def _report_status_worker(self):
+        "Report tuner status periodically"
+
+        ts = time.time()
 
         # copy existing meta_data
         status = copy(self.meta_data)
@@ -256,7 +267,7 @@ class TunerCallback(keras.callbacks.Callback):
 
             # colorize improvement
             if ((self.key_metrics[metric_name] == 'min' and last <= best) or
-                    (self.key_metrics[metric_name] == 'max' and last >= best)):
+                (self.key_metrics[metric_name] == 'max' and last >= best)):
                 last = colorize(last, 'green')
 
             stats_data.append([metric_name, best, last])

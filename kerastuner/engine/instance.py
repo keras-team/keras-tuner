@@ -110,12 +110,10 @@ class Instance(object):
             display_model = self.display_model
 
         instance_info = self.__get_instance_info()
-        execution = InstanceExecution(self.model, self.idx, self.meta_data,
-                                      self.num_gpu, display_model,
-                                      display_info, instance_info,
-                                      self.key_metrics, self.keras_function,
-                                      self.checkpoint, self.callback_fn,
-                                      self.backend)
+        execution = InstanceExecution(
+            self.model, self.idx, self.meta_data, self.num_gpu, display_model,
+            display_info, instance_info, self.key_metrics, self.keras_function,
+            self.checkpoint, self.callback_fn, self.backend)
         self.executions.append(execution)
         return execution
 
@@ -151,12 +149,18 @@ class Instance(object):
                 exec_metrics[metric]['max'].append(
                     execution.metrics[metric]['max'])
 
+            try:
+                json.dumps(execution.model.loss)
+                reported_loss_fns = execution.model.loss
+            except:
+                reported_loss_fns = "CUSTOM"
+
             # execution data
             execution_info = {
                 "num_epochs": execution.num_epochs,
                 "history": execution.history,
-                "loss_fn": execution.model.loss,
-                "loss_weigths": execution.model.loss_weights,
+                "loss_fn": reported_loss_fns,
+                "loss_weights": execution.model.loss_weights,
                 "meta_data": execution.meta_data,
             }
             executions.append(execution_info)
@@ -194,7 +198,7 @@ class Instance(object):
 
         # cloud recording if needed
         if self.backend:
-          self.backend.send_results(results)
+            self.backend.send_results(results)
 
         self.results = results
         return results

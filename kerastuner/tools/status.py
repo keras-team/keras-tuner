@@ -18,12 +18,24 @@ from kerastuner.system import System
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Kerastuner status monitor')
-    parser.add_argument('--input_dir', '-i', type=str, default='results/',
-                        help='Directory containing tuner results')
-    parser.add_argument('--graphs', '-g', type=str, default='loss',
-                        help='Comma separated list of key metrics to graph.')
-    parser.add_argument('--refresh_rate', '-r', type=int, default=2,
-                        help='Refresh rate in second')
+    parser.add_argument(
+        '--input_dir',
+        '-i',
+        type=str,
+        default='results/',
+        help='Directory containing tuner results')
+    parser.add_argument(
+        '--graphs',
+        '-g',
+        type=str,
+        default='loss',
+        help='Comma separated list of key metrics to graph.')
+    parser.add_argument(
+        '--refresh_rate',
+        '-r',
+        type=int,
+        default=2,
+        help='Refresh rate in second')
     parser.add_argument('--debug', '-d', type=int, default=0)
     args = parser.parse_args()
     if not os.path.exists(args.input_dir):
@@ -43,9 +55,13 @@ def bar(total, done, eta, title, color):
     lside = 'Epochs %s/%s' % (done, total)
     rside = 'ETA:%s' % eta_letters(eta, shortest=False)
 
-    return make_bar_chart(done, total, color=color,
-                          title=title, left=lside.ljust(15),
-                          right=rside.rjust(16))
+    return make_bar_chart(
+        done,
+        total,
+        color=color,
+        title=title,
+        left=lside.ljust(15),
+        right=rside.rjust(16))
 
 
 def clear():
@@ -102,31 +118,29 @@ def display_status(status, system):
         #tuner_data = [['Error', 'count']]
         md = status['tuner']
         stats = [['statistics', 'count']]
-        fields = ['trained_models', 'collisions',
-                  'invalid_models', 'over_size_models']
+        fields = [
+            'trained_models', 'collisions', 'invalid_models',
+            'over_size_models'
+        ]
         for k in fields:
             stats.append([k.replace('_', ' '), md[k]])
 
-        info = [
-            ['info', ' '],
-            ['project', status['project']],
-            ['architecture', status['architecture']],
-            ['tuner', status['tuner']['name']],
-            ['Num GPU', status['server']['num_used_gpu']]
-        ]
+            info = [['info', ' '], ['project', status['project']],
+                    ['architecture', status['architecture']],
+                    ['tuner', status['tuner']['name']],
+                    ['Num GPU', status['server']['num_gpu']]]
 
-        system_info = System.get_status()
+        system_info = system.get_status()
         gpus = [['GPU', 'Usage', 'Mem', 'Temp']]
         for g in system_info['gpu']:
             idx = g["index"]
             name = g["name"]
-            usage = "%s%%" % g["utilization.gpu"]
+            usage = "%s%%" % g["usage"]
             mem = "%s/%sM" % (g["memory"]['used'], g["memory"]["total"])
-            temp = "%sC" % (g["temperature"])
+            temp = "%s%s" % (g["temperature"]["value"],
+                             g["temperature"]["unit"])
             gpus.append(["%s : %s" % (name, idx), usage, mem, temp])
     display += make_combined_table([stats, metrics, gpus]) + "\n"
-
-
 
     # for metric in sorted(status['epoch_metrics'].keys()):
 
@@ -146,6 +160,7 @@ def display_status(status, system):
     if refresh:
         clear()
         print(display)
+
 
 def status(debug=0):
     args = parse_args()
