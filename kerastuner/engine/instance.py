@@ -18,7 +18,7 @@ class Instance(object):
 
     def __init__(self, idx, model, hyper_parameters, meta_data, num_gpu,
                  batch_size, display_model, key_metrics, keras_function,
-                 checkpoint, callback_fn, backend):
+                 checkpoint, callback_fn, backend, display_hyper_parameters):
 
         self.ts = int(time.time())
         self.training_size = -1
@@ -45,6 +45,7 @@ class Instance(object):
         self.keras_function = keras_function
         self.callback_fn = callback_fn
         self.backend = backend
+        self.display_hyper_parameters = display_hyper_parameters
 
     def __get_instance_info(self):
         """Return a dictionary of the model parameters
@@ -104,16 +105,19 @@ class Instance(object):
         # ensure that info is only displayed once per iteration
         if num_executions > 0:
             display_model = None
+            display_hyper_parameters = None
             display_info = False
         else:
             display_info = True
+            display_hyper_parameters = self.display_hyper_parameters
             display_model = self.display_model
 
         instance_info = self.__get_instance_info()
         execution = InstanceExecution(
             self.model, self.idx, self.meta_data, self.num_gpu, display_model,
             display_info, instance_info, self.key_metrics, self.keras_function,
-            self.checkpoint, self.callback_fn, self.backend)
+            self.checkpoint, self.callback_fn, self.backend,
+            display_hyper_parameters)
         self.executions.append(execution)
         return execution
 

@@ -61,7 +61,8 @@ class HyperTuner(object):
         self.num_gpu = kwargs.get('num_gpu', 0)
         self.batch_size = kwargs.get('batch_size', 32)
         self.display_model = kwargs.get('display_model', '')
-
+        self.display_hyper_parameters = kwargs.get('display_hyper_parameters', False)
+        
         # instances management
         self.instances = {}  # All the models we trained
         self.previous_instances = {}  # instance previously trained
@@ -375,7 +376,7 @@ class HyperTuner(object):
                 self.num_collisions += 1
                 self.meta_data['tuner']['collisions'] = self.num_collisions
                 self.log.warning(
-                    "collision detect model %s already trained -- skipping" % (idx))
+                    "collision detected - model %s already trained -- skipping" % (idx))
                 if collision_streak >= self.max_fail_streak:
                     return None
                 continue
@@ -383,7 +384,7 @@ class HyperTuner(object):
             self._update_metadata()
             instance = Instance(idx, model, hyper_parameters, self.meta_data, self.num_gpu, self.batch_size,
                                 self.display_model, self.key_metrics, self.keras_function, self.checkpoint,
-                                self.callback_fn, self.backend)
+                                self.callback_fn, self.backend, self.display_hyper_parameters)
             num_params = instance.compute_model_size()
             if num_params > self.max_params:
                 over_sized_streak += 1
