@@ -8,11 +8,18 @@ from pathlib import Path
 from collections import defaultdict
 import operator
 from terminaltables import SingleTable
+from kerastuner.engine.display import print_table
 
 MAIN_METRIC_COLOR = 'magenta'
 METRICS_COLOR = 'cyan'
 HYPERPARAM_COLOR = 'green'
 
+
+def maybe_colored(value, color, colorize):
+  if colorize:
+    return colored(value, color)
+  else:
+    return value
 
 def parse_args():
     "Parse cmdline options"
@@ -35,11 +42,14 @@ def parse_args():
     parser.add_argument('--direction', '-d', type=str,
                         default='asc', help='Sort model in asc or desc order')
 
-    parser.add_argument('--hyper_parameters', '--hyper', type=bool,
+    parser.add_argument('--display_hyper_parameters', '--hyper', type=bool,
                         default=True, help='Display hyperparameters values')
 
     parser.add_argument('--display_architecture', '-a', type=bool,
                         default=False, help='Display architecture name')
+
+    parser.add_argument('--use_colors', '-c', type=bool,
+                        default=True, help='Use terminal colors.')
 
     parser.add_argument('--extra_fields', '-e', type=str,
                         help='list of extra fields to display. \
@@ -73,15 +83,20 @@ def parse_extra_fields(s):
     return fields
 
 
-def summary():
+def summary(input_dir,
+            project,
+            metric,
+            extra_fields,
+            display_architecture,
+            display_hyper_parameters,
+            direction="asc",
+            num_models=20,
+            use_colors=True):
     """
     Collect kerastuner results and output a summary
     """
 
-    args = parse_args()
-    extra_fields = parse_extra_fields(args.extra_fields)
-
-    input_dir = Path(args.input_dir)
+    input_dir = Path(input_dir)
     filenames = list(input_dir.glob("*-results.json"))
 
     rows = []
@@ -102,13 +117,13 @@ def summary():
     for info in infos:
         project_name = info['meta_data']['project']
         # filtering if needed
-        if args.project and args.project != project_name:
+        if project and project != project_name:
             continue
 
         row = []
 
-        if args.metric not in info['key_metrics']:
-            msg = "\nMetric %s not in results files -- " % args.metric
+        if metric not in info['key_metrics']:
+            msg = "\nMetric %s not in results files -- " % metric
             msg += "available metrics: %s" % ", ".join(info['key_metrics'].keys())
             cprint(msg, 'red')
             quit()
@@ -130,25 +145,25 @@ def summary():
 
         sort_value = None
         for k in sorted(info['key_metrics']):
-            if k == args.metric:
+            if k == metric:
                 # ensure requested metric is the first one displayed
                 sort_value = info['key_metrics'][k]
-                main_metric = colored(round(sort_value, 4), MAIN_METRIC_COLOR)
+                main_metric = maybe_colored(round(sort_value, 4), MAIN_METRIC_COLOR, use_colors)
             else:
-                row.append(colored(round(info['key_metrics'][k], 4),
-                                METRICS_COLOR))
+                row.append(maybe_colored(round(info['key_metrics'][k], 4),
+                                         METRICS_COLOR, use_colors))
 
-        if args.hyper_parameters:
+        if display_hyper_parameters:
             for hp in hyper_parameters:
                 v = info["hyper_parameters"].get(hp, None)
                 if v:
                     v = v["value"]
                 else:
                     v = ""
-                row.append(colored(v, HYPERPARAM_COLOR))
+                row.append(maybe_colored(v, HYPERPARAM_COLOR, use_colors))
 
         instance = info['meta_data']['instance']
-        if args.display_architecture:
+        if display_architecture:
             instance = info['meta_data']['architecture'] + ":" + instance
 
         row = [sort_value, instance, main_metric] + row
@@ -158,8 +173,10 @@ def summary():
         cprint("No models found - wrong dir (-i) or project (-p)?", 'red')
         quit()
     # headers
-    mdl = colored(' \n', 'white') + colored('model idx', 'white')
-    mm = colored(" \n", 'white') + colored(args.metric, MAIN_METRIC_COLOR)
+    mdl = maybe_colored(' \n', 'white', use_colors) + maybe_colored(
+        'model idx', 'white', use_colors)
+    mm = maybe_colored(" \n", 'white', use_colors) + maybe_colored(
+        metric, MAIN_METRIC_COLOR, use_colors)
     headers = [mdl, mm]
 
     if extra_fields:
@@ -168,12 +185,13 @@ def summary():
 
     # metrics
     for i, k in enumerate(sorted(info['key_metrics'])):
-        if k != args.metric:
-            headers.append(colored("\n", METRICS_COLOR) +
-                        colored(k, METRICS_COLOR))
+        if k != metric:
+            headers.append(
+                maybe_colored("\n", METRICS_COLOR, use_colors) +
+                maybe_colored(k, METRICS_COLOR, use_colors))
 
     # hyper_parameters
-    if args.hyper_parameters:
+    if display_hyper_parameters:
         for hp in hyper_parameters:
             # only show group if meaningful
 
@@ -181,11 +199,11 @@ def summary():
 
             if group == 'default':
                 group = ''
-            g = colored(group + '\n', HYPERPARAM_COLOR)
-            s = g + colored(name, HYPERPARAM_COLOR)
+            g = maybe_colored(group + '\n', HYPERPARAM_COLOR, use_colors)
+            s = g + maybe_colored(name, HYPERPARAM_COLOR, use_colors)
             headers.append(s)
 
-    if args.direction.lower() == "asc":
+    if direction.lower() == "asc":
         reverse = False
     else:
         reverse = True
@@ -197,18 +215,27 @@ def summary():
     # Drop the sort metric value that we temporarily appended
     # to make sorting possible.
     rows = [row[1:] for row in rows]
-    if args.num_models > 0:
-        rows = rows[:min(args.num_models, len(rows))]
+    if num_models > 0:
+        rows = rows[:min(num_models, len(rows))]
 
     table = []
     table.append(headers)
     for r in rows:
         table.append(r)
-    table_instance = SingleTable(table, '')
 
-    print("")
-    print(table_instance.table)
+    print_table(table)
 
 
 if __name__ == '__main__':
-    summary()
+    args = parse_args()
+    extra_fields = parse_extra_fields(args.extra_fields)
+
+    summary(args.input_dir,
+            args.project,
+            args.metric,
+            extra_fields,
+            args.display_architecture,
+            args.display_hyper_parameters,
+            args.direction,
+            args.num_models,
+            args.use_colors)
