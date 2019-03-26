@@ -111,7 +111,7 @@ def Linear(name, start, stop, num_buckets, precision=0, group='default'):
         name (str): name of the parameter
         start (int/float): lower bound of the range
         stop (int/float): upper bound of the range
-        divider (int): into how many buckets should the range being divided in
+        num_buckets (int): into how many buckets should the range being divided in
         precision (int): For float range. Round the result rounded to the
                          nth decimal if needed. 0 means not rounded
     Returns:
