@@ -1,3 +1,7 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import time
 import copy
 import numpy as np
@@ -9,14 +13,14 @@ from os import path
 from tensorflow.python.lib.io import file_io  # allows to write to GCP or local
 from . import backend
 from .tunercallback import TunerCallback
-from .display import print_table
+
 
 class InstanceExecution(object):
     """Model Execution class. Each Model instance can be executed N time"""
 
     def __init__(self, model, idx, meta_data, num_gpu, display_model,
                  display_info, instance_info, key_metrics, keras_function,
-                 checkpoint, callback_fn, backend, display_hyper_parameters):
+                 checkpoint, callback_fn, backend):
         self.ts = int(time.time())
         self.idx = idx
 
@@ -26,7 +30,6 @@ class InstanceExecution(object):
         self.num_epochs = -1
         self.num_gpu = num_gpu
         self.display_model = display_model
-        self.display_hyper_parameters = display_hyper_parameters
         self.display_info = display_info
         self.checkpoint = checkpoint
 
@@ -68,13 +71,6 @@ class InstanceExecution(object):
             self.model = model
             if (self.display_model == 'multi-gpu' or self.display_model == 'both') and self.display_info:
                 self.model.summary()
-
-        if self.display_hyper_parameters and self.display_info:            
-            table = [["Hyperparameter", "Value"]]
-            for k, v in self.instance_info["hyper_parameters"].items():
-                table.append([k, v["value"]])
-            print_table(table)
-            
 
     def fit(self, x, y, **kwargs):
         """Fit a given model 
@@ -122,7 +118,7 @@ class InstanceExecution(object):
             for value in values:
                 history[metric].append(float(value))
         self.history = history
- 
+
         self.num_epochs = len(self.history['loss'])
         self.ts = int(time.time())
 

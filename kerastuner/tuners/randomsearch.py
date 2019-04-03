@@ -1,6 +1,7 @@
 "Basic randomsearch tuner"
 from termcolor import cprint
 from ..engine import HyperTuner
+from kerastuner.abstractions.display import subsection
 
 
 class RandomSearch(HyperTuner):
@@ -38,8 +39,8 @@ class RandomSearch(HyperTuner):
                 break
 
             for cur_execution in range(self.num_executions):
-                cprint("|- execution: %s/%s" % (cur_execution + 1,
-                                                self.num_executions), 'cyan')
+                subsection("execution: %s/%s" % (cur_execution + 1,
+                                                 self.num_executions))
                 if self.dry_run:
                     self.remaining_budget -= self.max_epochs
                 else:

@@ -33,12 +33,12 @@ def __record_parameter(name, value, param_type,  space_size, group):
         msg = "duplicate name/group for distribution:%s" % k
         raise ValueError(msg)
     hyper_parameters[k] = {
-                            "name": name,
-                            "value": str(value),
-                            "type": param_type,
-                            "group": group,
-                            "space_size": space_size
-                        }
+        "name": name,
+        "value": str(value),
+        "type": param_type,
+        "group": group,
+        "space_size": space_size
+    }
 
 
 def Fixed(name, value, group="default"):

@@ -12,8 +12,8 @@ import json
 from tensorflow.python.lib.io import file_io  # allows to write to GCP or local
 from copy import copy
 from multiprocessing.pool import ThreadPool
-from .display import colorize, print_combined_table, section, highlight
-from kerastuner.system import System
+from kerastuner.abstractions.display import colorize, print_combined_table, section, highlight
+from kerastuner.abstractions.system import System
 
 
 class TunerCallback(keras.callbacks.Callback):
@@ -69,6 +69,7 @@ class TunerCallback(keras.callbacks.Callback):
 
         self.training_complete = True
         self._report_status()
+        self._display_statistics()
         return
 
     def on_epoch_begin(self, epoch, logs={}):
@@ -267,8 +268,8 @@ class TunerCallback(keras.callbacks.Callback):
 
             # colorize improvement
             if ((self.key_metrics[metric_name] == 'min' and last <= best) or
-                (self.key_metrics[metric_name] == 'max' and last >= best)):
-                last = colorize(last, 'green')
+                    (self.key_metrics[metric_name] == 'max' and last >= best)):
+                last = colorize(last, 'white', 'green', 'bright')
 
             stats_data.append([metric_name, best, last])
 

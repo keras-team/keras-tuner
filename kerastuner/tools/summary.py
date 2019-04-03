@@ -8,7 +8,7 @@ from pathlib import Path
 from collections import defaultdict
 import operator
 from terminaltables import SingleTable
-from kerastuner.engine.display import print_table
+from kerastuner.abstractions.display import print_table
 
 MAIN_METRIC_COLOR = 'magenta'
 METRICS_COLOR = 'cyan'

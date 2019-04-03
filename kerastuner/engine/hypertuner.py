@@ -1,33 +1,31 @@
 "Meta classs for hypertuner"
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
-from abc import abstractmethod
-import time
-import sys
+import gc
+import hashlib
 import json
 import os
-from termcolor import cprint
-import hashlib
-
 import socket
-from tqdm import tqdm
-from pathlib import Path
-from tensorflow.python.lib.io import file_io  # allows to write to GCP or local
+import sys
+import time
+from abc import abstractmethod
 from collections import defaultdict
+from pathlib import Path
+
 import tensorflow as tf
 import tensorflow.keras.backend as K
-import gc
+from tensorflow.python.lib.io import file_io  # allows to write to GCP or local
+from termcolor import cprint
+from tqdm import tqdm
 
-from ..utils import max_model_size
-from .display import print_table, section, highlight, subsection
+from kerastuner.abstractions.system import System
+from kerastuner.abstractions.display import highlight, print_table, section
+from kerastuner.abstractions.display import setting, subsection, warning, set_log
+from kerastuner.distributions import clear_hyper_parameters, get_hyper_parameters
+from kerastuner.utils import max_model_size
 from .backend import Backend
 from .instance import Instance
 from .logger import Logger
-from ..distributions import get_hyper_parameters, clear_hyper_parameters
-from ..system import System
-from .display import section, setting, warning
 
 
 class HyperTuner(object):
@@ -61,8 +59,7 @@ class HyperTuner(object):
         self.num_gpu = kwargs.get('num_gpu', 0)
         self.batch_size = kwargs.get('batch_size', 32)
         self.display_model = kwargs.get('display_model', '')
-        self.display_hyper_parameters = kwargs.get('display_hyper_parameters', False)
-        
+
         # instances management
         self.instances = {}  # All the models we trained
         self.previous_instances = {}  # instance previously trained
@@ -125,7 +122,6 @@ class HyperTuner(object):
                 warning("GPU detected but tensorflow is not compiled to use it")
         self.meta_data['server']['num_gpu'] = self.num_gpu
 
-
         # max model size estimation
         max_params = kwargs.get('max_params', 'auto')
         if max_params == 'auto':  # compute max based of our estimate
@@ -139,7 +135,8 @@ class HyperTuner(object):
                 total = self.meta_data['server']['ram']['total']
                 used = self.meta_data['server']['ram']['used']
                 available = total - used
-                max_params = max(max_model_size(self.batch_size, available, 1), 5000000)
+                max_params = max(max_model_size(
+                    self.batch_size, available, 1), 5000000)
                 self.max_params = max_params
         else:
             self.max_params = max_params
@@ -195,7 +192,8 @@ class HyperTuner(object):
             'direction': {}
         }
         for km in self.key_metrics:
-            self.stats['direction'][km[self.METRIC_NAME]]  = km[self.METRIC_DIRECTION]
+            self.stats['direction'][km[self.METRIC_NAME]
+                                    ] = km[self.METRIC_DIRECTION]
             if km[self.METRIC_DIRECTION] == 'min':
                 self.stats['best'][km[self.METRIC_NAME]] = sys.maxsize
             else:
@@ -214,6 +212,13 @@ class HyperTuner(object):
             # check for models already trained
             self._load_previously_trained_instances(**kwargs)
 
+        # Set the log
+        log_name = "%s_%s_%d.log" % (self.meta_data["project"],
+                                     self.meta_data["architecture"],
+                                     int(time.time()))
+        log_file = os.path.join(
+            self.meta_data['server']['local_dir'], log_name)
+        set_log(log_file)
 
         # make sure TF session is configured correctly
         cfg = tf.ConfigProto()
@@ -226,7 +231,8 @@ class HyperTuner(object):
         section("Key parameters")
         available_gpu = self.meta_data['server']['available_gpu']
         setting("GPUs Used: %d / %d" % (self.num_gpu, available_gpu), idx=0)
-        setting("Model max params: %.1fM" % (self.max_params / 1000000.0), idx=1)
+        setting("Model max params: %.1fM" %
+                (self.max_params / 1000000.0), idx=1)
         setting("Saving results in %s" % self.meta_data['server']['local_dir'],
                 idx=2)
 
@@ -292,7 +298,8 @@ class HyperTuner(object):
         """
         self.backend = Backend(
             api_key=api_key,
-            url=kwargs.get('url', 'https://us-central1-keras-tuner.cloudfunctions.net/api'),
+            url=kwargs.get(
+                'url', 'https://us-central1-keras-tuner.cloudfunctions.net/api'),
             notifications={
                 "crash": kwargs.get("crash_notification", False),
                 "tuning_completion": kwargs.get("tuning_completion_notification", False),
@@ -301,26 +308,26 @@ class HyperTuner(object):
         )
 
         #! fixe this metadata should NOT BE tied to backend setup
-        #fname = '%s-%s-meta_data.json' % (self.meta_data['project'],
+        # fname = '%s-%s-meta_data.json' % (self.meta_data['project'],
         #                                  self.meta_data['architecture'])
         #local_path = os.path.join(self.meta_data['server']['local_dir'], fname)
-        #with file_io.FileIO(local_path, 'w') as output:
+        # with file_io.FileIO(local_path, 'w') as output:
         #    output.write(json.dumps(self.meta_data))
-        #backend.cloud_save(local_path=local_path,
+        # backend.cloud_save(local_path=local_path,
         #                   ftype='meta_data', meta_data=self.meta_data)
 
     def search(self, x, y, **kwargs):
         self.keras_functionkera_function = 'fit'
         self.hypertune(x, y, **kwargs)
         if self.backend:
-          self.backend.quit()
+            self.backend.quit()
 
     def search_generator(self, x, **kwargs):
         self.keras_function = 'fit_generator'
         y = None  # fit_generator don't use this so we put none to be able to have a single hypertune function
         self.hypertune(x, y, **kwargs)
         if self.backend:
-          self.backend.quit()
+            self.backend.quit()
 
     def _clear_tf_graph(self):
         """ Clear the content of the TF graph to ensure
@@ -384,7 +391,7 @@ class HyperTuner(object):
             self._update_metadata()
             instance = Instance(idx, model, hyper_parameters, self.meta_data, self.num_gpu, self.batch_size,
                                 self.display_model, self.key_metrics, self.keras_function, self.checkpoint,
-                                self.callback_fn, self.backend, self.display_hyper_parameters)
+                                self.callback_fn, self.backend)
             num_params = instance.compute_model_size()
             if num_params > self.max_params:
                 over_sized_streak += 1
@@ -399,8 +406,18 @@ class HyperTuner(object):
 
         self.instances[idx] = instance
         self.current_instance_idx = idx
-        self.log.new_instance(instance, self.num_generated_models,
-                              self.remaining_budget)
+
+        section("New Instance")
+        setting("Remaining Budget: %d" % self.remaining_budget, idx=0)
+        setting("Num Instances Trained: %d" % self.num_generated_models, idx=1)
+        setting("Model size: %d" % num_params, idx=2)
+
+        subsection("Instance Hyperparameters")
+        table = [["Hyperparameter", "Value"]]
+        for k, v in hyper_parameters.items():
+            table.append([k, v["value"]])
+        print_table(table, indent=2)
+
         return self.instances[idx]
 
     def record_results(self, idx=None):

@@ -7,7 +7,7 @@ import concurrent.futures
 import time
 import requests
 import json
-from .display import warning, info
+from kerastuner.abstractions.display import warning, info
 
 
 def send_to_backend(url, api_key, info_type, info):
