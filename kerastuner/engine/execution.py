@@ -95,7 +95,7 @@ class InstanceExecution(object):
             callbacks.append(tcb)
         else:
             callbacks = [tcb]
-        # print(callbacks)
+
         kwargs['callbacks'] = callbacks
 
         if self.keras_function == 'fit':

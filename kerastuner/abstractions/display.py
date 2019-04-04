@@ -15,12 +15,23 @@ init()  # colorama init
 
 # Check if we are in ipython/colab
 try:
-    get_ipython().__class__.__name__
-    from IPython.display import HTML
-    IS_IPYTHON = True
+    class_name = get_ipython().__class__.__name__
+    if "Terminal" in class_name:
+        IS_NOTEBOOK = False
+    else:
+        IS_NOTEBOOK = True
+
 except NameError:
-    IS_IPYTHON = False
+    IS_NOTEBOOK = False
+
+
+if IS_NOTEBOOK:
+    from tqdm import tqdm_notebook as tqdm
+    from IPython.display import HTML
+else:
+    from tqdm import tqdm
     display = print
+
 
 FG = 0
 BG = 1
@@ -56,7 +67,7 @@ def set_log(filename):
 
 
 def write_log(text):
-    if LOG and not IS_IPYTHON:
+    if LOG and not IS_NOTEBOOK:
         LOG.write(text + "\n")
 
 
@@ -101,8 +112,29 @@ def warning(text, render=1):
         return colorize(s + '\n', color)
 
 
+def fatal(text, render=1):
+    """ display a fatal error, and die
+
+    Args:
+        text (str): fatal message
+        render (bool, optional): Defaults to True. render or return settings
+
+    Returns:
+        str: setting value if render=False, None otherwise
+    """
+    color = 'white'
+    bgcolor = 'red'
+    s = "[FATAL] %s" % text
+
+    write_log(s)
+    if render:
+        cprint(s, color, bgcolor)
+    else:
+        return colorize(s + '\n', color, bgcolor)        
+
+
 def section(text):
-    if IS_IPYTHON:
+    if IS_NOTEBOOK:
         section = '<h1 style="font-size:18px">' + text + '</h1>'
         cprint(section, '#4527A0')
     else:
@@ -112,7 +144,7 @@ def section(text):
 
 
 def subsection(text):
-    if IS_IPYTHON:
+    if IS_NOTEBOOK:
         section = '<h2 style="font-size:16px">' + text + '</h2>'
         cprint(section, '#7E57C2')
     else:
@@ -148,7 +180,7 @@ def setting(text, ident=1, idx=0, render=True):
 
 
 def highlight(text):
-    if IS_IPYTHON:
+    if IS_NOTEBOOK:
         text = '<span style="font-size:14px"><b>' + text + '</b></span>'
         cprint(text, '#64DD17')
     else:
@@ -210,7 +242,7 @@ def cprint(text, color, bg_color=None, brightness='normal'):
     text = colorize(text, color, bg_color, brightness)
 
     # HTMLify if needed
-    if IS_IPYTHON and isinstance(text, str):
+    if IS_NOTEBOOK and isinstance(text, str):
         text = HTML(text)
     display(text)
 
@@ -227,36 +259,36 @@ def colorize(text, color, bg_color=None, brightness='normal'):
         str: colorized text
     """
 
-    if color not in colors and not IS_IPYTHON:
+    if color not in colors and not IS_NOTEBOOK:
         msg = "Foreground color invalid:%s" % color
         raise ValueError(msg)
 
-    if bg_color and bg_color not in colors and not IS_IPYTHON:
+    if bg_color and bg_color not in colors and not IS_NOTEBOOK:
         "Background color invalid:%s" % bg_color
         raise ValueError(msg)
 
-    if brightness not in brightness and not IS_IPYTHON:
+    if brightness not in brightness and not IS_NOTEBOOK:
         raise ValueError("Brightness invalid:" + brightness)
 
     text = str(text)  # in case user pass a float/int
 
     # foreground color
-    if IS_IPYTHON:
+    if IS_NOTEBOOK:
         text = text.replace('\n', '<br>')
         h = '<span style="color:%s">' % color
         text = h + text
     else:
         text = colors[color][FG] + text
     # background if needed
-    if bg_color and not IS_IPYTHON:
+    if bg_color and not IS_NOTEBOOK:
         text = colors[bg_color][BG] + text
 
     # brightness if neeed
-    if brightness != 'normal' and not IS_IPYTHON:
+    if brightness != 'normal' and not IS_NOTEBOOK:
         text = styles[brightness] + text
 
     # reset
-    if IS_IPYTHON:
+    if IS_NOTEBOOK:
         text = text + '</span>'
     else:
         text = text + styles['reset']
@@ -273,7 +305,7 @@ def print_table(rows, title=None, indent=0):
     """
     table = make_table(rows, title)
 
-    if indent:
+    if indent and not IS_NOTEBOOK:
         indent = " " * indent
         out = []
         for line in table.split("\n"):
@@ -292,7 +324,7 @@ def make_table(rows, title=None):
     Returns:
         str: string representing table
     """
-    if IS_IPYTHON:
+    if IS_NOTEBOOK:
         headers = rows[0]
         body = rows[1:]
         table = tabulate(body, headers, tablefmt="html")
@@ -312,7 +344,7 @@ def make_combined_table(array_rows):
         str: string representing table
     """
 
-    if IS_IPYTHON:
+    if IS_NOTEBOOK:
         # compute the size for each col
         col_size = str(int(100 / len(array_rows)) - 5) + '%'
         gtc = [col_size] * len(array_rows)
@@ -353,3 +385,13 @@ def print_combined_table(array_rows):
     table = make_combined_table(array_rows)
     write_log(table)
     display(table)
+
+
+def get_progress_bar(*args, **kwargs):
+    """ Returns a new tqdm progress bar appropriate for the current display.
+
+    Returns:
+        tqdm progress bar.
+    """
+
+    return tqdm(*args, **kwargs)

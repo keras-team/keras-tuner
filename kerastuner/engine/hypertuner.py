@@ -16,13 +16,14 @@ import tensorflow as tf
 import tensorflow.keras.backend as K
 from tensorflow.python.lib.io import file_io  # allows to write to GCP or local
 from termcolor import cprint
-from tqdm import tqdm
 
 from kerastuner.abstractions.system import System
 from kerastuner.abstractions.display import highlight, print_table, section
 from kerastuner.abstractions.display import setting, subsection, warning, set_log
+from kerastuner.abstractions.display import get_progress_bar
 from kerastuner.distributions import clear_hyper_parameters, get_hyper_parameters
 from kerastuner.utils import max_model_size
+from kerastuner.tools.summary import summary as result_summary
 from .backend import Backend
 from .instance import Instance
 from .logger import Logger
@@ -240,7 +241,7 @@ class HyperTuner(object):
         "Checking for existing models"
         result_path = Path(kwargs.get('local_dir', 'results/'))
         filenames = list(result_path.glob('*-results.json'))
-        for filename in tqdm(filenames, unit='model', desc='Finding previously trained models'):
+        for filename in get_progress_bar(filenames, unit='model', desc='Finding previously trained models'):
             data = json.loads(open(str(filename)).read())
 
             # Narrow down to matching project and architecture
@@ -317,13 +318,15 @@ class HyperTuner(object):
         #                   ftype='meta_data', meta_data=self.meta_data)
 
     def search(self, x, y, **kwargs):
-        self.keras_functionkera_function = 'fit'
+        self.keras_function = 'fit'
+        kwargs["verbose"] = 0
         self.hypertune(x, y, **kwargs)
         if self.backend:
             self.backend.quit()
 
     def search_generator(self, x, **kwargs):
         self.keras_function = 'fit_generator'
+        kwargs["verbose"] = 0
         y = None  # fit_generator don't use this so we put none to be able to have a single hypertune function
         self.hypertune(x, y, **kwargs)
         if self.backend:
@@ -473,6 +476,25 @@ class HyperTuner(object):
         md['collisions'] = self.num_collisions
         md['invalid_models'] = self.num_invalid_models
         md['over_size_models'] = self.num_over_sized_models
+
+    def display_result_summary(self):
+        if self.key_metrics:
+            if self.key_metrics[0][1] == "min":
+                sort_dir = "desc"
+            else:
+                sort_dir = "asc"
+
+            metric = self.key_metrics[0][0]
+        else:
+            metric = "loss"
+            sort_dir = "desc"
+
+        result_summary(
+            self.meta_data["server"]["local_dir"],
+            self.meta_data["project"],
+            metric,
+            direction=sort_dir
+        )
 
     @abstractmethod
     def hypertune(self, x, y, **kwargs):

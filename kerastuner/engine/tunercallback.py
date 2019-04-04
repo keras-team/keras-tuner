@@ -12,8 +12,11 @@ import json
 from tensorflow.python.lib.io import file_io  # allows to write to GCP or local
 from copy import copy
 from multiprocessing.pool import ThreadPool
-from kerastuner.abstractions.display import colorize, print_combined_table, section, highlight
+from kerastuner.abstractions.display import colorize, print_combined_table
+from kerastuner.abstractions.display import section, highlight, fatal, write_log
 from kerastuner.abstractions.system import System
+from kerastuner.abstractions.display import get_progress_bar
+import numpy as np
 
 
 class TunerCallback(keras.callbacks.Callback):
@@ -26,7 +29,8 @@ class TunerCallback(keras.callbacks.Callback):
                  checkpoint,
                  backend,
                  log_interval=2,
-                 num_threads=4):
+                 num_threads=4,
+                 use_fancy_bar=True):
         """
         Args:
         log_interval: interval between the execution stats are written on disk
@@ -41,6 +45,7 @@ class TunerCallback(keras.callbacks.Callback):
         self.current_epoch_key_metrics = defaultdict(list)
         self.history = defaultdict(list)
         self.history_key_metrics = defaultdict(list)
+        self.metrics = defaultdict(list)
 
         self.start_ts = int(time.time())
         self.log_interval = log_interval
@@ -52,7 +57,16 @@ class TunerCallback(keras.callbacks.Callback):
         self.stats = {}  # track stats per epoch
         self.thread_pool = ThreadPool(num_threads)
 
+        # Fancy progress bar
+        self.use_fancy_bar = use_fancy_bar
+        self.pbar = None
+        self.last_pbar_update = time.time()
+        self.system_status = self.system.get_status()
+
+        self.num_steps = int(
+            np.floor(self.info["training_size"] / self.info["batch_size"]))
         self.checkpoint = checkpoint
+        self.checkpoint_metric_exists = False
         if checkpoint['enable']:
             if checkpoint['mode'] == "max":
                 self.cpt_cur_val = -sys.maxsize - 1
@@ -77,9 +91,16 @@ class TunerCallback(keras.callbacks.Callback):
         self.current_epoch_history = defaultdict(list)
         self.current_epoch_key_metrics = defaultdict(list)
         self.epoch_start_ts = time.time()
-        return
+        if self.use_fancy_bar:
+            self.pbar = get_progress_bar(
+                desc="", unit=" steps", total=self.num_steps)
+            self.pbar.update(1)
 
     def on_epoch_end(self, epoch, logs={}):
+        if self.use_fancy_bar:
+            self.pbar.update(1)
+            self.pbar.close()
+
         logs["epoch_duration"] = time.time() - self.epoch_start_ts
 
         # for multi-points compute average accuracy
@@ -100,20 +121,26 @@ class TunerCallback(keras.callbacks.Callback):
                     self.stats[k] = max(self.history_key_metrics[k])
 
             # checkpointing model if needed
-            update = False
+            checkpoint_model = False
             if k == self.checkpoint['metric'] and self.checkpoint['enable']:
+                self.checkpoint_metric_exists = True
                 if self.checkpoint['mode'] == "min" and v < self.cpt_cur_val:
                     word = "decreased"
-                    update = True
+                    checkpoint_model = True
                 elif self.checkpoint['mode'] == "max" and v > self.cpt_cur_val:
                     word = "increased"
-                    update = True
+                    checkpoint_model = True
 
-            if update:
-                highlight("\nSaving improved model %s %s from %s to %s" %
-                          (k, word, round(self.cpt_cur_val, 4), round(v, 4)))
+            if checkpoint_model:
+                write_log("[INFO] Saving improved model %s %s from %s to %s" % (
+                    k, word, round(self.cpt_cur_val, 4), round(v, 4)))
+
                 self.cpt_cur_val = v
                 self._save_model()
+
+        if not self.checkpoint_metric_exists and self.checkpoint['enable']:
+            fatal("Checkpoint metric '%s' does not exist." %
+                  self.checkpoint['metric'])
 
         # update statistics
         self.meta_data['tuner']['remaining_budget'] -= 1
@@ -127,14 +154,49 @@ class TunerCallback(keras.callbacks.Callback):
         return
 
     def on_batch_end(self, batch, logs={}):
+
         for k, v in logs.items():
+
+            self.metrics[k].append(v)
             v = float(v)
             self.current_epoch_history[k].append(v)
             if k in self.key_metrics:
                 self.current_epoch_key_metrics[k].append(v)
 
         self._report_status()
+
+        if self.use_fancy_bar:
+            self._update_fancy_bar()
         return
+
+    def _update_fancy_bar(self):
+        self.pbar.update(1)
+
+        # Throttle updates to reduce screen flicker.
+        if time.time() - self.last_pbar_update < 0.1:
+            return
+        self.last_pbar_update = time.time()
+
+        current_epoch = len(self.history['loss']) + 1
+        total_epochs = self.meta_data['tuner']['max_epochs']
+
+        display_metrics = {}
+        for metric_name, values in self.metrics.items():
+            if metric_name == "batch" or metric_name == "size":
+                continue
+            display_metrics[metric_name] = "%.4f" % np.average(values)
+
+        desc = ""
+        desc += "[CPU: %3s%%]" % int(self.system_status["cpu"]["usage"])
+
+        gpu_usages = [float(gpu["usage"]) for gpu in self.system_status['gpu']]
+        gpu_usage = int(np.average(gpu_usages))
+        desc += "[GPU: %s%%]" % gpu_usage
+
+        desc += " Epoch: %d/%d" % (current_epoch, total_epochs)
+
+        self.pbar.set_description(desc)
+        self.pbar.set_postfix(display_metrics)
 
     def _save_model(self):
         """Save model
@@ -143,6 +205,8 @@ class TunerCallback(keras.callbacks.Callback):
             the model might be trained with multi-gpu
             which use a different architecture
         """
+        # FIXME - move this to an async write
+
         local_dir = self.meta_data['server']['local_dir']
 
         # config
@@ -242,7 +306,9 @@ class TunerCallback(keras.callbacks.Callback):
 
         status["batch_metrics"] = self.current_epoch_key_metrics
         status["epoch_metrics"] = self.history_key_metrics
-        status["server"].update(self.system.get_status())
+
+        self.system_status = self.system.get_status()
+        status["server"].update(self.system_status)
 
         # write on disk
         local_dir = self.meta_data['server']['local_dir']

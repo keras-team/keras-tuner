@@ -1,6 +1,5 @@
 "Display best models in terminal"
 import argparse
-from tqdm import tqdm
 import json
 import os
 from termcolor import cprint, colored
@@ -8,7 +7,7 @@ from pathlib import Path
 from collections import defaultdict
 import operator
 from terminaltables import SingleTable
-from kerastuner.abstractions.display import print_table
+from kerastuner.abstractions.display import print_table, get_progress_bar
 
 MAIN_METRIC_COLOR = 'magenta'
 METRICS_COLOR = 'cyan'
@@ -16,10 +15,11 @@ HYPERPARAM_COLOR = 'green'
 
 
 def maybe_colored(value, color, colorize):
-  if colorize:
-    return colored(value, color)
-  else:
-    return value
+    if colorize:
+        return colored(value, color)
+    else:
+        return value
+
 
 def parse_args():
     "Parse cmdline options"
@@ -86,9 +86,9 @@ def parse_extra_fields(s):
 def summary(input_dir,
             project,
             metric,
-            extra_fields,
-            display_architecture,
-            display_hyper_parameters,
+            extra_fields=[],
+            display_architecture=False,
+            display_hyper_parameters=True,
             direction="asc",
             num_models=20,
             use_colors=True):
@@ -103,7 +103,8 @@ def summary(input_dir,
     hyper_parameters = set([])
     infos = []
     # Do an initial pass to collect all of the hyperparameters.
-    pb = tqdm(total=len(filenames), desc="Parsing results", unit='files')
+    pb = get_progress_bar(total=len(filenames),
+                          desc="Parsing results", unit='files')
     for fname in filenames:
         info = json.loads(open(str(fname)).read())
         for p in info['hyper_parameters'].keys():
@@ -124,7 +125,8 @@ def summary(input_dir,
 
         if metric not in info['key_metrics']:
             msg = "\nMetric %s not in results files -- " % metric
-            msg += "available metrics: %s" % ", ".join(info['key_metrics'].keys())
+            msg += "available metrics: %s" % ", ".join(
+                info['key_metrics'].keys())
             cprint(msg, 'red')
             quit()
 
@@ -148,7 +150,8 @@ def summary(input_dir,
             if k == metric:
                 # ensure requested metric is the first one displayed
                 sort_value = info['key_metrics'][k]
-                main_metric = maybe_colored(round(sort_value, 4), MAIN_METRIC_COLOR, use_colors)
+                main_metric = maybe_colored(
+                    round(sort_value, 4), MAIN_METRIC_COLOR, use_colors)
             else:
                 row.append(maybe_colored(round(info['key_metrics'][k], 4),
                                          METRICS_COLOR, use_colors))
@@ -208,9 +211,8 @@ def summary(input_dir,
     else:
         reverse = True
 
-
     rows = sorted(rows, key=lambda x: float(x[0]),
-                reverse=reverse)
+                  reverse=reverse)
 
     # Drop the sort metric value that we temporarily appended
     # to make sorting possible.

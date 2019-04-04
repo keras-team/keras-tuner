@@ -113,7 +113,8 @@ class Instance(object):
         execution = InstanceExecution(
             self.model, self.idx, self.meta_data, self.num_gpu, display_model,
             display_info, instance_info, self.key_metrics, self.keras_function,
-            self.checkpoint, self.callback_fn, self.backend)
+            self.checkpoint, self.callback_fn, self.backend,
+)
         self.executions.append(execution)
         return execution
 
