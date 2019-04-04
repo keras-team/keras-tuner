@@ -90,7 +90,7 @@ def summary(input_dir,
             display_architecture=False,
             display_hyper_parameters=True,
             direction="asc",
-            num_models=20,
+            num_models=10,
             use_colors=True):
     """
     Collect kerastuner results and output a summary

@@ -4,4 +4,5 @@ numpy
 tabulate
 termcolor
 tqdm
-pyfarmhash
+terminaltables
+pathlib

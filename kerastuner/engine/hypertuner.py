@@ -477,23 +477,12 @@ class HyperTuner(object):
         md['invalid_models'] = self.num_invalid_models
         md['over_size_models'] = self.num_over_sized_models
 
-    def display_result_summary(self):
-        if self.key_metrics:
-            if self.key_metrics[0][1] == "min":
-                sort_dir = "desc"
-            else:
-                sort_dir = "asc"
-
-            metric = self.key_metrics[0][0]
-        else:
-            metric = "loss"
-            sort_dir = "desc"
-
+    def display_result_summary(self, metric='loss', direction='asc'):
         result_summary(
             self.meta_data["server"]["local_dir"],
             self.meta_data["project"],
             metric,
-            direction=sort_dir
+            direction=direction
         )
 
     @abstractmethod
