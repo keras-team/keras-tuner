@@ -187,11 +187,13 @@ class TunerCallback(keras.callbacks.Callback):
             display_metrics[metric_name] = "%.4f" % np.average(values)
 
         desc = ""
-        desc += "[CPU: %3s%%]" % int(self.system_status["cpu"]["usage"])
 
-        gpu_usages = [float(gpu["usage"]) for gpu in self.system_status['gpu']]
-        gpu_usage = int(np.average(gpu_usages))
-        desc += "[GPU: %s%%]" % gpu_usage
+        if self.meta_data['server']['num_gpu'] >= 1:
+            gpu_usages = [float(gpu["usage"]) for gpu in self.system_status['gpu']]
+            gpu_usage = int(np.average(gpu_usages))
+            desc += "[GPU: %s%%]" % gpu_usage
+
+        desc += "[CPU: %3s%%]" % int(self.system_status["cpu"]["usage"])
 
         desc += " Epoch: %d/%d" % (current_epoch, total_epochs)
 

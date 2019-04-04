@@ -10,7 +10,6 @@ from kerastuner.abstractions.display import make_bar_chart, make_combined_table
 from kerastuner.abstractions.display import colorize, setting, cprint, make_table
 import time
 from time import gmtime, strftime
-from art import text2art
 from etaprogress.components.eta_conversions import eta_letters
 
 from kerastuner.abstractions.system import System
@@ -76,7 +75,8 @@ LAST_EPOCH_COUNT = -1
 
 def display_status(status, system):
     global LAST_EPOCH_COUNT
-    display = colorize(text2art('kerastuner status'), 'magenta')
+    # FIXME better ASCII art
+    display = colorize('kerastuner status', 'magenta')
     #display += colorize(art, 'magenta')
     display += '\n'
     # Tuner eta
