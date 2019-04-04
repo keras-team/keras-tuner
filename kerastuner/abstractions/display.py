@@ -330,7 +330,7 @@ def make_table(rows, title=None):
         table = tabulate(body, headers, tablefmt="html")
         table = HTML(table)
     else:
-        st = AsciiTable(rows, title)
+        st = SingleTable(rows, title)
         table = st.table
     return table
 

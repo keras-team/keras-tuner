@@ -6,19 +6,10 @@ from termcolor import cprint, colored
 from pathlib import Path
 from collections import defaultdict
 import operator
-from terminaltables import SingleTable
+import numpy as np
+
 from kerastuner.abstractions.display import print_table, get_progress_bar
-
-MAIN_METRIC_COLOR = 'magenta'
-METRICS_COLOR = 'cyan'
-HYPERPARAM_COLOR = 'green'
-
-
-def maybe_colored(value, color, colorize):
-    if colorize:
-        return colored(value, color)
-    else:
-        return value
+from kerastuner.abstractions.display import section, subsection, fatal
 
 
 def parse_args():
@@ -37,16 +28,13 @@ def parse_args():
                         default=10, help='Num models to display')
 
     parser.add_argument('--metric', '-m', type=str,
-                        default='val_loss', help='Metrics to sort by')
+                        default='loss', help='Metrics to sort by')
 
     parser.add_argument('--direction', '-d', type=str,
                         default='asc', help='Sort model in asc or desc order')
 
     parser.add_argument('--display_hyper_parameters', '--hyper', type=bool,
                         default=True, help='Display hyperparameters values')
-
-    parser.add_argument('--display_architecture', '-a', type=bool,
-                        default=False, help='Display architecture name')
 
     parser.add_argument('--use_colors', '-c', type=bool,
                         default=True, help='Use terminal colors.')
@@ -83,11 +71,69 @@ def parse_extra_fields(s):
     return fields
 
 
+def display_hp(hyper_parameters, model_indices):
+    """
+    Display hyper parameters values for the top models
+ 
+    Args:
+        hyper_parameters (defaultdict(list)): hyper-params values
+        model_indices (list): list of model indices to display
+    """
+
+    hyper_groups = defaultdict(list)
+    for hp in hyper_parameters.keys():
+        grp, _ = hp.split(':')
+        hyper_groups[grp].append(hp)
+
+    # go
+    headers = ['hyperparam']
+    headers += ["model %s" % x for x in range(len(model_indices))]
+    rows = [headers]
+    for grp in sorted(hyper_groups.keys()):
+        row = [grp] + [""] * len(model_indices)
+        rows.append(row)
+        for hp in sorted(hyper_groups[grp]):
+            row = ["|-" + hp.split(":")[1]]
+            for idx in model_indices:
+                row.append(hyper_parameters[hp][idx])
+            rows.append(row)
+    print_table(rows)
+
+
+def display_metrics(metrics, main_metric, direction, num_models):
+    "Display results as table"
+    # compute the models indices to display and their order
+    indices = np.argsort(metrics[main_metric])
+    if direction == 'desc':
+        indices = sorted(indices, reverse=True)
+    indices = indices[:num_models]
+
+    rows = []
+    headers = ['metric'] + ["model %s" % x for x in range(num_models)]
+    rows.append(headers)
+    # main field first
+    row = [main_metric]
+    for idx in indices:
+        row.append(metrics[main_metric][idx])
+    rows.append(row)
+
+    # other fields
+    for field in sorted(list(metrics.keys())):
+        if field == main_metric:
+            continue
+        row = [field]
+        for idx in indices:
+            row.append(metrics[field][idx])
+        rows.append(row)
+
+    print_table(rows)
+    return indices
+
+
 def summary(input_dir,
             project,
-            metric,
+            main_metric,
             extra_fields=[],
-            display_architecture=False,
             display_hyper_parameters=True,
             direction="asc",
             num_models=10,
@@ -99,144 +145,85 @@ def summary(input_dir,
     input_dir = Path(input_dir)
     filenames = list(input_dir.glob("*-results.json"))
 
-    rows = []
-    hyper_parameters = set([])
-    infos = []
     # Do an initial pass to collect all of the hyperparameters.
-    pb = get_progress_bar(total=len(filenames),
-                          desc="Parsing results", unit='files')
+    pb = get_progress_bar(total=len(filenames), desc="Parsing results",
+                          unit='file')
+    infos = []
+    hyper_parameters_list = set()
     for fname in filenames:
         info = json.loads(open(str(fname)).read())
-        for p in info['hyper_parameters'].keys():
-            hyper_parameters.add(p)
         infos.append(info)
+        
+        # needed in case of conditional hyperparams
+        for h in info["hyper_parameters"].keys():
+            hyper_parameters_list.add(h)
+        
         pb.update()
     pb.close()
 
-    hyper_parameters = sorted(list(hyper_parameters))
-
+    # collect data as a transpose
+    hyper_parameters = defaultdict(list)
+    metrics = defaultdict(list)
     for info in infos:
-        project_name = info['meta_data']['project']
+
         # filtering if needed
+        project_name = info['meta_data']['project']
         if project and project != project_name:
             continue
 
-        row = []
-
-        if metric not in info['key_metrics']:
-            msg = "\nMetric %s not in results files -- " % metric
-            msg += "available metrics: %s" % ", ".join(
-                info['key_metrics'].keys())
-            cprint(msg, 'red')
-            quit()
+        if main_metric not in info['key_metrics']:
+            fatal("Metric %s not in results files -- available metrics: %s" % (
+                  main_metric, ", ".join(info['key_metrics'].keys())))
 
         if extra_fields:
             for f in extra_fields:
                 ks = f[1]
                 if ks[0] not in info:
-                    raise ValueError("Unknown extra field: %s - valid fields:\n  %s" % (
-                        ks[0], " ".join(info.keys())))
+                    fatal("Unknown extra field: %s - valid fields:%s" % (
+                          ks[0], " ".join(info.keys())))
 
                 v = info[ks[0]]
                 for k in ks[1:]:
                     if k not in v:
-                        raise ValueError("Unknown extra field: %s.%s - valid fields:\n  %s" % (
-                            ks[0], k,  " ".join(v.keys())))
+                        fatal("Unknown extra field: %s.%s - valid fields:%s" % (
+                          ks[0], k, " ".join(v.keys())))
                     v = v[k]
-                row.append(v)
+                # adding extra fields in metrics table
+                metrics[f] = v
 
-        sort_value = None
-        for k in sorted(info['key_metrics']):
-            if k == metric:
-                # ensure requested metric is the first one displayed
-                sort_value = info['key_metrics'][k]
-                main_metric = maybe_colored(
-                    round(sort_value, 4), MAIN_METRIC_COLOR, use_colors)
+        # collect metrics
+        for metric, value in info['key_metrics'].items():
+            metrics[metric].append(round(value, 4))
+
+        # collect hyper parameters
+        for hp in hyper_parameters_list:
+            v = info["hyper_parameters"].get(hp, None)
+            if v:
+                v = v["value"]
             else:
-                row.append(maybe_colored(round(info['key_metrics'][k], 4),
-                                         METRICS_COLOR, use_colors))
+                v = ""
+            hyper_parameters[hp].append(v)
 
-        if display_hyper_parameters:
-            for hp in hyper_parameters:
-                v = info["hyper_parameters"].get(hp, None)
-                if v:
-                    v = v["value"]
-                else:
-                    v = ""
-                row.append(maybe_colored(v, HYPERPARAM_COLOR, use_colors))
+    if not len(metrics[metric]):
+        fatal("No models found - wrong dir (-i) or project (-p)?")
 
-        instance = info['meta_data']['instance']
-        if display_architecture:
-            instance = info['meta_data']['architecture'] + ":" + instance
+    num_models = min(len(metrics[metric]), num_models)
+    section("Result summary")
+    subsection("Metrics")
+    mdl_indices = display_metrics(metrics, main_metric, direction, num_models)
 
-        row = [sort_value, instance, main_metric] + row
-        rows.append(row)
-
-    if not len(rows):
-        cprint("No models found - wrong dir (-i) or project (-p)?", 'red')
-        quit()
-    # headers
-    mdl = maybe_colored(' \n', 'white', use_colors) + maybe_colored(
-        'model idx', 'white', use_colors)
-    mm = maybe_colored(" \n", 'white', use_colors) + maybe_colored(
-        metric, MAIN_METRIC_COLOR, use_colors)
-    headers = [mdl, mm]
-
-    if extra_fields:
-        for f in extra_fields:
-            headers.append(f[0])
-
-    # metrics
-    for i, k in enumerate(sorted(info['key_metrics'])):
-        if k != metric:
-            headers.append(
-                maybe_colored("\n", METRICS_COLOR, use_colors) +
-                maybe_colored(k, METRICS_COLOR, use_colors))
-
-    # hyper_parameters
     if display_hyper_parameters:
-        for hp in hyper_parameters:
-            # only show group if meaningful
-
-            group, name = hp.split(":", 2)
-
-            if group == 'default':
-                group = ''
-            g = maybe_colored(group + '\n', HYPERPARAM_COLOR, use_colors)
-            s = g + maybe_colored(name, HYPERPARAM_COLOR, use_colors)
-            headers.append(s)
-
-    if direction.lower() == "asc":
-        reverse = False
-    else:
-        reverse = True
-
-    rows = sorted(rows, key=lambda x: float(x[0]),
-                  reverse=reverse)
-
-    # Drop the sort metric value that we temporarily appended
-    # to make sorting possible.
-    rows = [row[1:] for row in rows]
-    if num_models > 0:
-        rows = rows[:min(num_models, len(rows))]
-
-    table = []
-    table.append(headers)
-    for r in rows:
-        table.append(r)
-
-    print_table(table)
-
+        subsection("Hyper Parameters")
+        hp = sorted(hyper_parameters_list)[0]
+        display_hp(hyper_parameters, mdl_indices)
 
 if __name__ == '__main__':
     args = parse_args()
     extra_fields = parse_extra_fields(args.extra_fields)
-
     summary(args.input_dir,
             args.project,
             args.metric,
             extra_fields,
-            args.display_architecture,
             args.display_hyper_parameters,
             args.direction,
             args.num_models,
