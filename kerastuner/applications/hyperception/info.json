@@ -1,0 +1,15 @@
+{
+    "name": "hyperception",
+    "target": "images",
+    "description": "Hypertunable version of Xception",
+    "version": "0.0.0.1",
+    "reference": "http://comingsoon",
+    "authors": [
+        "Elie Bursztein",
+        "Francois Chollet",
+        "James Long",
+        "Luca Invernizzi"
+    ],
+    "contact": "kerastuner@google.com",
+    "comments": ""
+}

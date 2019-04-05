@@ -24,7 +24,6 @@ try:
 except NameError:
     IS_NOTEBOOK = False
 
-
 if IS_NOTEBOOK:
     from tqdm import tqdm_notebook as tqdm
     from IPython.display import HTML
