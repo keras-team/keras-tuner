@@ -79,8 +79,12 @@ class Instance(object):
         """
 
         # in theory for batch training the function is __len__
-        # should be implemented - we might need to test the type
-        self.training_size = len(x)
+        # should be implemented. However, for generator based training, __len__
+        # returns the number of batches, NOT the training size.
+        if isinstance(x, tf.keras.utils.Sequence):
+            self.training_size = (len(x) + 2) * self.batch_size
+        else:
+            self.training_size = len(x)
 
         if kwargs.get('validation_data'):
             self.validation_size = len(kwargs['validation_data'][1])
@@ -114,7 +118,7 @@ class Instance(object):
             self.model, self.idx, self.meta_data, self.num_gpu, display_model,
             display_info, instance_info, self.key_metrics, self.keras_function,
             self.checkpoint, self.callback_fn, self.backend,
-)
+        )
         self.executions.append(execution)
         return execution
 
