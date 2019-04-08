@@ -31,19 +31,19 @@ def default_hparams(input_shape, num_classes):
 
     hp["kernel_size"] = (kernel_size, kernel_size)
     hp["initial_strides"] = (2, 2)
-    hp["activation"] = "relu"
-    #Choice("activation", ["relu", "selu"], group="general")
+    hp["activation"] = Choice("activation", ["relu", "selu"], group="general")
 
     hp["optimizer"] = Choice(
         "optimizer", ["adam", "rmsprop", "sgd"], "general")
 
     if hp["optimizer"] == "sgd":
         hp["learning_rate"] = Linear(
-            "learning_rate", start=.03, stop=.05, num_buckets=10, group="general")
+            "learning_rate", start=.03, stop=.05, num_buckets=5, group="general")
         hp["learning_rate_decay"] = Linear(
             "learning_rate_decay", start=.9, stop=.95, num_buckets=5, group="general")
         hp["momentum"] = Linear("momentum", start=.8, stop=.95,
                                 num_buckets=6, group="general")
+
     elif hp["optimizer"] == "rmsprop":
         hp["learning_rate"] = Choice(
             "learning_rate", [.001, .0001, .00001], group="general")
@@ -63,11 +63,11 @@ def default_hparams(input_shape, num_classes):
 
     # seprarable block > not an exact match to the paper
     hp["sep_num_filters"] = Range(
-        "num_filters", 128, 768, 64, group="entry_flow")
+        "num_filters", 128, 768, 128, group="entry_flow")
 
     # [Middle Flow]
     hp["num_residual_blocks"] = Range(
-        "num_residual_blocks", 1, 8, group="middle_flow")
+        "num_residual_blocks", 2, 8, group="middle_flow")
 
     # [Exit Flow]
     hp["dense_merge_type"] = Choice(
@@ -76,7 +76,7 @@ def default_hparams(input_shape, num_classes):
         "dense_layers", 1, 3, group="exit_flow")
 
     hp["dropout_rate"] = Linear(
-        "dropout", start=0.0, stop=0.3, num_buckets=4, group="exit_flow")
+        "dropout", start=0.0, stop=0.5, num_buckets=6, precision=1, group="exit_flow")
     hp["dense_use_bn"] = Choice(
         "batch_normalization", [True, False], "exit_flow")
 

@@ -5,7 +5,7 @@ from setuptools import find_packages
 from setuptools import setup
 import time
 
-version = "0.8.0"
+version = "0.8.1"
 stub = str(int(time.time()))  # Used to increase version automagically.
 version = version + '.' + stub
 
