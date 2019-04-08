@@ -1,6 +1,8 @@
 from kerastuner.engine.distributions import Distributions
 from kerastuner.abstractions.display import fatal
-from numpy import random, linspace, logspace
+import random
+from numpy import linspace, logspace
+
 
 
 class RandomDistributions(Distributions):
@@ -28,9 +30,9 @@ class RandomDistributions(Distributions):
             name (str): name of the parameter
             group (str): Optional logical grouping of the parameters
         Returns:
-            a boolean
+            an Boolean
         """
-        value = random.choice([True, False])
+        value = random.choice([False, True])
         self._record_current_hyperparameters(name, value, group)
         return value
 

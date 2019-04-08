@@ -1,5 +1,5 @@
 "common distributions test functions"
-
+import json
 
 # hyperparamters handling
 def record_hyperparameters_test(distributions):
@@ -11,6 +11,11 @@ def record_hyperparameters_test(distributions):
     assert hp_curr[k]['name'] == 'test'
     assert hp_curr[k]['group'] == 'a'
     assert hp_curr[k]['value'] == 42
+
+
+# serializable
+def json_serialize_test(config):
+    json.dumps(config)
 
 
 # Fixed

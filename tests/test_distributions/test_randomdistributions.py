@@ -1,14 +1,14 @@
 from collections import defaultdict
 
 from kerastuner.distributions import RandomDistributions
-from .common import record_hyperparameters_test
+from .common import record_hyperparameters_test, json_serialize_test
 from .common import fixed_correctness_test, bool_correctness_test
 from .common import choice_correctness_test, range_type_correctness_test
 from .common import linear_correctness_test, logarithmic_correctness_test
 
 # number of elements to draw - sample_size < 1000 cause flakiness
 SAMPLE_SIZE = 10000
-
+rand = RandomDistributions()
 
 # Hyperparameters
 def test_record_hyperparameters():
@@ -20,9 +20,17 @@ def test_fixed_correctness():
     fixed_correctness_test(RandomDistributions())
 
 
+def test_fixed_serialize():
+    json_serialize_test(rand.Fixed('rand', 1))
+
+
 # Boolean
 def test_bool_correctness():
     bool_correctness_test(RandomDistributions())
+
+
+def test_bool_serialize():
+    json_serialize_test(rand.Boolean('bool'))
 
 
 def test_bool_randomness():
@@ -38,6 +46,16 @@ def test_bool_randomness():
 # Choice
 def choice_range_correctness():
     choice_correctness_test(RandomDistributions())
+
+
+def test_choice_serialize():
+    tests = [
+        rand.Choice('choice', [1, 2, 3]),
+        rand.Choice('choice', [1.0, 2.0, 3.0]),
+        rand.Choice('choice', ['a', 'b', 'c']),
+    ]
+    for test in tests:
+        json_serialize_test(test)
 
 
 def test_choice_randomness():

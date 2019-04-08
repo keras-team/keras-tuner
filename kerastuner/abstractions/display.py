@@ -81,7 +81,7 @@ def info(text, render=1):
     Returns:
         str: setting value if display=False, None otherwise
     """
-    color = 'green'
+    color = 'blue'
     s = "[Info] %s" % text
 
     write_log(s)
@@ -135,6 +135,7 @@ def fatal(text, render=True, raise_exception=True):
             raise ValueError(s)
         return colorize(s + '\n', color, bgcolor)
 
+
 def section(text):
     if IS_NOTEBOOK:
         section = '<h1 style="font-size:18px">' + text + '</h1>'
@@ -170,9 +171,9 @@ def setting(text, ident=1, idx=0, render=True):
     s = ' ' * ident
     s += '|-' + text
     if idx % 2:
-        color = 'cyan'
-    else:
         color = 'blue'
+    else:
+        color = 'cyan'
 
     write_log(s)
     if render:

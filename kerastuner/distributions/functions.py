@@ -1,6 +1,5 @@
 from kerastuner.distributions import DummyDistributions
-
-DISTRIBUTIONS = DummyDistributions()  # global distrubution object
+from kerastuner import config
 
 
 def Fixed(name, value, group="default"):
@@ -12,7 +11,7 @@ def Fixed(name, value, group="default"):
     Returns:
         value
     """
-    return DISTRIBUTIONS.Fixed(name, value, group)
+    return config.DISTRIBUTIONS.Fixed(name, value, group)
 
 
 def Boolean(name, group="default"):
@@ -23,7 +22,7 @@ def Boolean(name, group="default"):
     Returns:
         an boolean
     """
-    return DISTRIBUTIONS.Boolean(name, group)
+    return config.DISTRIBUTIONS.Boolean(name, group)
 
 
 def Choice(name, selection, group="default"):
@@ -35,7 +34,7 @@ def Choice(name, selection, group="default"):
     Returns:
         an element of the list provided
     """
-    return DISTRIBUTIONS.Choice(name, selection, group)
+    return config.DISTRIBUTIONS.Choice(name, selection, group)
 
 
 def Range(name, start, stop, increment=1, group='default'):
@@ -48,7 +47,7 @@ def Range(name, start, stop, increment=1, group='default'):
     Returns:
         an element of the range
     """
-    return DISTRIBUTIONS.Range(name, start, stop, increment, group)
+    return config.DISTRIBUTIONS.Range(name, start, stop, increment, group)
 
 
 def Linear(name, start, stop, num_buckets, precision=0, group='default'):
@@ -63,8 +62,8 @@ def Linear(name, start, stop, num_buckets, precision=0, group='default'):
     Returns:
         an element of the range
     """
-    return DISTRIBUTIONS.Linear(name, start, stop, num_buckets,
-                                precision, group)
+    return config.DISTRIBUTIONS.Linear(name, start, stop, num_buckets,
+                                       precision, group)
 
 
 def Logarithmic(name, start, stop, num_buckets, precision=0, group='default'):
@@ -79,5 +78,5 @@ def Logarithmic(name, start, stop, num_buckets, precision=0, group='default'):
     Returns:
         an element of the range
     """
-    return DISTRIBUTIONS.Logarithmic(name, start, stop, num_buckets,
-                                     precision, group)
+    return config.DISTRIBUTIONS.Logarithmic(name, start, stop, num_buckets,
+                                            precision, group)

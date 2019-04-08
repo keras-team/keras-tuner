@@ -1,5 +1,5 @@
 from abc import abstractmethod
-
+import numpy as np
 
 class Distributions(object):
     """Distributions abstract class"""
@@ -97,6 +97,7 @@ class Distributions(object):
             value: value of the hyperparameter
             group (str): which logical group this parameters belongs to
         """
+
         hparam = {
             "name": name,
             "value": value,
