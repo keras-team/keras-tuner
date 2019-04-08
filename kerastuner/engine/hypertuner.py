@@ -17,11 +17,13 @@ import tensorflow.keras.backend as K
 from tensorflow.python.lib.io import file_io  # allows to write to GCP or local
 from termcolor import cprint
 
+from kerastuner import config
+from kerastuner.distributions import DummyDistributions
 from kerastuner.abstractions.system import System
 from kerastuner.abstractions.display import highlight, print_table, section
-from kerastuner.abstractions.display import setting, subsection, warning, set_log
-from kerastuner.abstractions.display import get_progress_bar
-from kerastuner.distributions import clear_hyper_parameters, get_hyper_parameters
+from kerastuner.abstractions.display import setting, subsection
+from kerastuner.abstractions.display import warning, set_log
+from kerastuner.abstractions.display import get_progress_bar, colorize
 from kerastuner.utils import max_model_size
 from kerastuner.tools.summary import summary as result_summary
 from .backend import Backend
@@ -32,13 +34,12 @@ from .logger import Logger
 class HyperTuner(object):
     """Abstract hypertuner class."""
 
-    def __init__(self, model_fn, tuner_name, **kwargs):
-        """
+    def __init__(self, model_fn, tuner_name, distributions, **kwargs):
+        """ Hypertuner abstract class
         Args:
-            max_params (int): Maximum number of parameters a model can have - anything above will be discarded
-
-            architecture (str): name of the architecture that is being tuned.
-            project (str): name of the project the architecture belongs to.
+            model_fn (function): Function that return a Keras model
+            tuner_name (str): name of the tuner
+            distributions (Distributions): distributions object
 
         Notes:
             All architecture meta data are stored into the self.meta_data
@@ -79,6 +80,12 @@ class HyperTuner(object):
         self.tuner_name = tuner_name
         self.system = System()
         self.backend = None  # init in the backend() funct if used
+
+        # check the model and record hparam
+        self._eval_model_fn()
+        # set global distribution object to the one requested by tuner
+        # MUST be after _eval_model_fn()
+        config.DISTRIBUTIONS = distributions
 
         # model checkpointing
         self.checkpoint = {
@@ -250,43 +257,41 @@ class HyperTuner(object):
                 # storing previous instance results in memory in case the tuner needs them.
                 self.previous_instances[data['meta_data']['instance']] = data
 
+    def _eval_model_fn(self):
+        "perform various check and record hyperparam object"
+        self.model_fn()
+        hp = config.DISTRIBUTIONS.get_hyperparameters_config()
+        self.hyperparameters_config = hp
+        if len(self.hyperparameters_config) == 0:
+            warning("No hyperparameters used in model function. Are you sure?")
+
     def summary(self):
         "Print a summary of the hyperparams search"
-        # clean hyperparameters
-        clear_hyper_parameters()
-
-        # Calling the model function to get a set of params
-        self.model_fn()
-        hyper_parameters = get_hyper_parameters()
-
-        # if no hyper_params returning
-        if len(hyper_parameters) == 0:
-            self.log.info("No hyper-parameters")
-            return
-
+        section("Hyper-parmeters search space")
         # Compute the size of the hyperparam space by generating a model
-        group_size = defaultdict(lambda: 1)
         total_size = 1
-        table = [['Group', 'Param', 'Space size']]
-
-        # param by param
-        for name, data in hyper_parameters.items():
-            row = [data['group'], data['name'], data['space_size']]
-            table.append(row)
+        data_by_group = defaultdict(dict)
+        group_size = defaultdict(lambda: 1)
+        for data in self.hyperparameters_config.values():
+            data_by_group[data['group']][data['name']] = data['space_size']
             group_size[data['group']] *= data['space_size']
             total_size *= data['space_size']
 
-        # by group
-        group_table = [['Group', 'Size']]
-        for g, v in group_size.items():
-            group_table.append([g, v])
+        rows = [['group', 'param', 'space size']]
+        for idx, grp in enumerate(sorted(data_by_group.keys())):
+            if idx % 2:
+                color = 'green'
+            else:
+                color = 'cyan'
+            for param, size in data_by_group[grp].items():
+                rows.append([colorize(grp, color), colorize(param, color),
+                             colorize(size, color)])
+            #rows.append([grp, 'total', group_size[grp]])
+        rows.append(['', '', ''])
+        rows.append([colorize('total', 'yellow'), '',
+                     colorize(total_size, 'yellow')])
+        print_table(rows)
 
-        section("Hyper-parmeters search space")
-        subsection("Search space by parameters group")
-        print_table(group_table)
-        subsection("Search space for each parameters")
-        print_table(table)
-        highlight("Total search space:%s" % total_size)
 
     def enable_cloud(self, api_key, **kwargs):
         """Setup backend configuration
@@ -346,10 +351,6 @@ class HyperTuner(object):
         over_sized_streak = 0
 
         while 1:
-
-            # clear the hyperparmaters table between run
-            clear_hyper_parameters()
-
             # clean-up TF graph from previously stored (defunct) graph
             self._clear_tf_graph()
             self.num_generated_models += 1
@@ -390,9 +391,10 @@ class HyperTuner(object):
                 if collision_streak >= self.max_fail_streak:
                     return None
                 continue
-            hyper_parameters = get_hyper_parameters()
+            hparams = config.DISTRIBUTIONS.get_current_hyperparameters()
+            self.current_hyperparameters = hparams
             self._update_metadata()
-            instance = Instance(idx, model, hyper_parameters, self.meta_data, self.num_gpu, self.batch_size,
+            instance = Instance(idx, model, hparams, self.meta_data, self.num_gpu, self.batch_size,
                                 self.display_model, self.key_metrics, self.keras_function, self.checkpoint,
                                 self.callback_fn, self.backend)
             num_params = instance.compute_model_size()
@@ -417,7 +419,7 @@ class HyperTuner(object):
 
         subsection("Instance Hyperparameters")
         table = [["Hyperparameter", "Value"]]
-        for k, v in hyper_parameters.items():
+        for k, v in self.current_hyperparameters.items():
             table.append([k, v["value"]])
         print_table(table, indent=2)
 

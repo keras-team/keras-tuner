@@ -81,7 +81,7 @@ def info(text, render=1):
     Returns:
         str: setting value if display=False, None otherwise
     """
-    color = 'green'
+    color = 'blue'
     s = "[Info] %s" % text
 
     write_log(s)
@@ -111,13 +111,13 @@ def warning(text, render=1):
         return colorize(s + '\n', color)
 
 
-def fatal(text, render=1):
+def fatal(text, render=True, raise_exception=True):
     """ display a fatal error, and die
 
     Args:
         text (str): fatal message
         render (bool, optional): Defaults to True. render or return settings
-
+        raise_exception (bool, optional): Defaults to True. raise a ValueError?
     Returns:
         str: setting value if render=False, None otherwise
     """
@@ -128,8 +128,12 @@ def fatal(text, render=1):
     write_log(s)
     if render:
         cprint(s, color, bgcolor)
+        if raise_exception:
+            raise ValueError(s)
     else:
-        return colorize(s + '\n', color, bgcolor)        
+        if raise_exception:
+            raise ValueError(s)
+        return colorize(s + '\n', color, bgcolor)
 
 
 def section(text):
@@ -167,9 +171,9 @@ def setting(text, ident=1, idx=0, render=True):
     s = ' ' * ident
     s += '|-' + text
     if idx % 2:
-        color = 'cyan'
-    else:
         color = 'blue'
+    else:
+        color = 'cyan'
 
     write_log(s)
     if render:

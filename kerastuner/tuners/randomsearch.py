@@ -2,6 +2,7 @@
 from termcolor import cprint
 from ..engine import HyperTuner
 from kerastuner.abstractions.display import subsection
+from kerastuner.distributions import RandomDistributions
 
 
 class RandomSearch(HyperTuner):
@@ -29,7 +30,8 @@ class RandomSearch(HyperTuner):
         """
 
         # Do the super last -- it uses the variable setup by the tuner
-        super(RandomSearch, self).__init__(model_fn, 'RandomSearch', **kwargs)
+        super(RandomSearch, self).__init__(model_fn, 'RandomSearch',
+                                           RandomDistributions(), **kwargs)
 
     def hypertune(self, x, y, **kwargs):
         while self.remaining_budget >= self.max_epochs:
