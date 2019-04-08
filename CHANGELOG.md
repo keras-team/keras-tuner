@@ -2,6 +2,16 @@
 
 Major KerasTuner changes by version
 
+## V0.8: Framework complete
+
+### Major features
+
+- Distribution system complete overhaul: now distributions on the backend is
+object that can be subclassed by tuner developpers to create their own
+
+### Extra
+- access to system info and display have been moved to an abstraction layer
+
 ## V0.7: Ecosystem integration
 
 The focus of these releases is to make kerastuner works well with other and make it easy to operate
@@ -9,7 +19,7 @@ The focus of these releases is to make kerastuner works well with other and make
 ### Major features
 
 - `kerastuner-status` utility allows to monitor training in commandline
-- `kerastuner-summary` utility allows to display results overview in commandline 
+- `kerastuner-summary` utility allows to display results overview in commandline
 - Tuner report status in json file every 5 seconds to make it easy to track progress with tool and remotely
 - System information including CPU usage, GPU usage, memory usage, disk space is now reported
 - Model max parameters is now directly infered based from GPU available memory and batch_size
@@ -72,10 +82,10 @@ The focus of this set of release is to have a robust engine that works seamlessl
 
 - Add a configurable model over_size detection to avoid OOM errors when TF attempt to train model with too many parameters
 - Moved the cloud configuration to backend() function with notification configuration
-- Added additional statistics reporting: 
+- Added additional statistics reporting:
 
   - overall: epoch budget, epoch budget remaining, eta, hypertuner used
-  - per instance: eta, epoch remaining 
+  - per instance: eta, epoch remaining
 
 - Various bug fixes including GPU memory release which caused OOM crash
 

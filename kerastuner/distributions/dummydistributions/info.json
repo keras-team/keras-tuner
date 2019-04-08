@@ -1,0 +1,11 @@
+{
+    "name": "Dummy distributions",
+    "description": "Used at initialization time to check hyperspace and compute stats",
+    "version": "1.0",
+    "reference": "N/A",
+    "authors": [
+        "Elie Bursztein"
+    ],
+    "contact": "kerastuner@google.com",
+    "comments": ""
+}

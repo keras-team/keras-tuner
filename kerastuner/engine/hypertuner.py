@@ -17,11 +17,12 @@ import tensorflow.keras.backend as K
 from tensorflow.python.lib.io import file_io  # allows to write to GCP or local
 from termcolor import cprint
 
+from kerastuner.distributions.functions import DISTRIBUTIONS
 from kerastuner.abstractions.system import System
 from kerastuner.abstractions.display import highlight, print_table, section
-from kerastuner.abstractions.display import setting, subsection, warning, set_log
+from kerastuner.abstractions.display import setting, subsection
+from kerastuner.abstractions.display import warning, set_log
 from kerastuner.abstractions.display import get_progress_bar
-from kerastuner.distributions import clear_hyper_parameters, get_hyper_parameters
 from kerastuner.utils import max_model_size
 from kerastuner.tools.summary import summary as result_summary
 from .backend import Backend
@@ -32,13 +33,12 @@ from .logger import Logger
 class HyperTuner(object):
     """Abstract hypertuner class."""
 
-    def __init__(self, model_fn, tuner_name, **kwargs):
-        """
+    def __init__(self, model_fn, tuner_name, distributions, **kwargs):
+        """ Hypertuner abstract class
         Args:
-            max_params (int): Maximum number of parameters a model can have - anything above will be discarded
-
-            architecture (str): name of the architecture that is being tuned.
-            project (str): name of the project the architecture belongs to.
+            model_fn (function): Function that return a Keras model
+            tuner_name (str): name of the tuner
+            distributions (Distributions): distributions object
 
         Notes:
             All architecture meta data are stored into the self.meta_data
@@ -79,6 +79,11 @@ class HyperTuner(object):
         self.tuner_name = tuner_name
         self.system = System()
         self.backend = None  # init in the backend() funct if used
+
+        # set distributions
+        # FIXME: distribution juggling from Dummy to test to the one the tuner wants
+
+        DISTRIBUTIONS = distributions
 
         # model checkpointing
         self.checkpoint = {

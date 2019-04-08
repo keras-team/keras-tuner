@@ -1,0 +1,156 @@
+from kerastuner.engine.distributions import Distributions
+from kerastuner.abstractions.display import fatal
+
+
+class DummyDistributions(Distributions):
+    "Dummy distribution class used to record and test hyper parameters space"
+
+    def __init__(self):
+        # !DO NOT do a super -- this is the bootstrap class
+        self.hyperparameters_config = {}
+        self.current_hyperparameters = {}  # hparams of the current instance
+
+    def _record_hyperparameters(self, name, htype, space_size, start, stop,
+                                group):
+        """
+        Record a given hyperparameter
+
+        Args:
+            name (str): name of the hyperparameter
+            htype (str): type of hyperparameter
+            space_size (int): number of values the param can take
+            start: lower bound
+            stop: upper bound
+        """
+
+        key = self._get_key(name, group)
+
+        # check if we have a duplicate
+        if key in self.hyperparameters_config:
+            fatal("%s hyperparameter is declared twice" % key)
+
+        self.hyperparameters_config[key] = {
+            "name": name,
+            "group": group,
+            "type": htype,
+            "space_size": space_size,
+            "start": start,
+            "stop": stop
+        }
+
+    def Fixed(self, name, value, group="default"):
+        """Return a fixed selected value
+        Args:
+            name (str): name of the parameter
+            value: value of the parameter
+            group (str): Optional logical grouping of the parameters
+        Returns:
+            fixed value
+        """
+        self._record_hyperparameters(name, 'Fixed', 1, value, value, group)
+        return value
+
+    def Boolean(self, name, group="default"):
+        """Return a random Boolean value.
+        Args:
+            name (str): name of the parameter
+            group (str): Optional logical grouping of the parameters
+        Returns:
+            a boolean
+        """
+        self._record_hyperparameters(name, 'Boolean', 2, True, False, group)
+        return True
+
+    def Choice(self, name, selection, group="default"):
+        """Return a random value from an explicit list of choice.
+        Args:
+            name (str): name of the parameter
+            selection (list): list of explicit choices
+            group (str): Optional logical group name this parameter belongs to
+        Returns:
+            an element of the list provided
+        """
+        if not isinstance(selection, list):
+            fatal("list if choice must be a list []")
+
+        self._record_hyperparameters(name, 'Choice', len(selection),
+                                     selection[0], selection[-1], group)
+        return selection[0]
+
+    def Range(self, name, start, stop, increment=1, group='default'):
+        """Return a random value from a range.
+        Args:
+            name (str): name of the parameter
+            start (int/float): lower bound of the range
+            stop (int/float): upper bound of the range
+            increment (int/float): incremental step
+        Returns:
+            an element of the range
+        """
+        if not isinstance(start, int) or not isinstance(stop, int):
+            fatal("start, stop must be integers")
+        if not isinstance(increment, int):
+            fatal("increment must be an integer")
+        if stop <= start:
+            fatal("start value:%s larger than stop value:%s" % (start, stop))
+
+        rsize = stop - start
+        if rsize < increment:
+            fatal("increment: %s greater than range size:%s" % (increment,
+                                                                rsize))
+
+        my_range = range(start, stop, increment)
+        self._record_hyperparameters(name, 'Range', len(my_range),
+                                     start, stop, group)
+        return start
+
+    def Logarithmic(self, name, start, stop, num_buckets, precision=0,
+                    group='default'):
+        """Return a random value from a range which is logarithmically divided.
+        Args:
+            name (str): name of the parameter
+            start (int/float): lower bound of the range
+            stop (int/float): upper bound of the range
+            num_buckets (int): into how many buckets to divided the range in
+            precision (int): For float range. Round the result rounded to the
+                            nth decimal if needed. 0 means not rounded
+        Returns:
+            an element of the range
+        """
+        if not isinstance(start, float) and not isinstance(start, int):
+            fatal("start must be a float or an int")
+        if not isinstance(stop, float) and not isinstance(stop, int):
+            fatal("stop must be a float or an int")
+        if not isinstance(num_buckets, int):
+            fatal("num_bucket must be an integer")
+        if stop <= start:
+            fatal("start value:%s larger than stop value:%s" % (start, stop))
+
+        self._record_hyperparameters(name, 'Logarithmic', num_buckets, start,
+                                     stop, group)
+        return start
+
+    def Linear(self, name, start, stop, num_buckets, precision=0,
+               group='default'):
+        """Return a random value from a range which is linearly divided.
+        Args:
+            name (str): name of the parameter
+            start (int/float): lower bound of the range
+            stop (int/float): upper bound of the range
+            num_buckets (int): into how many buckets to divided the range in
+            precision (int): For float range. Round the result rounded to the
+                            nth decimal if needed. 0 means not rounded
+        Returns:
+            an element of the range
+        """
+        if not isinstance(start, float) and not isinstance(start, int):
+            fatal("start must be a float or an int")
+        if not isinstance(stop, float) and not isinstance(stop, int):
+            fatal("stop must be a float or an int")
+        if not isinstance(num_buckets, int):
+            fatal("num_bucket must be an integer")
+        if stop <= start:
+            fatal("start value:%s larger than stop value:%s" % (start, stop))
+        self._record_hyperparameters(name, 'Linear', num_buckets, start, stop,
+                                     group)
+        return start
