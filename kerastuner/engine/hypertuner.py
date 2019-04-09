@@ -20,6 +20,7 @@ from termcolor import cprint
 from kerastuner import config
 from kerastuner.distributions import DummyDistributions
 from kerastuner.abstractions.system import System
+from kerastuner.abstractions.io import create_directory
 from kerastuner.abstractions.display import highlight, print_table, section
 from kerastuner.abstractions.display import setting, subsection
 from kerastuner.abstractions.display import warning, set_log
@@ -120,7 +121,9 @@ class HyperTuner(object):
 
         self.meta_data['server'] = {
             "local_dir": kwargs.get('local_dir', 'results/'),
+            "tmp_dir": kwargs.get('tmp_dir', 'tmp/')
         }
+
         self.meta_data['server'].update(self.system.get_status())
         if not self.num_gpu and self.meta_data['server']['available_gpu']:
             # marking gpu 1 as used if TF support gpu
@@ -214,11 +217,10 @@ class HyperTuner(object):
                 'Invalid display_model value: can be either base, multi-gpu or both')
 
         # create local dir if needed
-        if not os.path.exists(self.meta_data['server']['local_dir']):
-            os.makedirs(self.meta_data['server']['local_dir'])
-        else:
-            # check for models already trained
-            self._load_previously_trained_instances(**kwargs)
+        create_directory(self.meta_data['server']['local_dir'])
+
+        # Load existing instances.
+        self._load_previously_trained_instances(**kwargs)
 
         # Set the log
         log_name = "%s_%s_%d.log" % (self.meta_data["project"],
@@ -268,6 +270,7 @@ class HyperTuner(object):
     def summary(self):
         "Print a summary of the hyperparams search"
         section("Hyper-parmeters search space")
+
         # Compute the size of the hyperparam space by generating a model
         total_size = 1
         data_by_group = defaultdict(dict)
@@ -277,21 +280,23 @@ class HyperTuner(object):
             group_size[data['group']] *= data['space_size']
             total_size *= data['space_size']
 
-        rows = [['group', 'param', 'space size']]
+        # Generate the table.
+        rows = [['param', 'space size']]
         for idx, grp in enumerate(sorted(data_by_group.keys())):
             if idx % 2:
-                color = 'green'
+                color = 'blue'
             else:
-                color = 'cyan'
-            for param, size in data_by_group[grp].items():
-                rows.append([colorize(grp, color), colorize(param, color),
-                             colorize(size, color)])
-            #rows.append([grp, 'total', group_size[grp]])
-        rows.append(['', '', ''])
-        rows.append([colorize('total', 'yellow'), '',
-                     colorize(total_size, 'yellow')])
-        print_table(rows)
+                color = 'black'
 
+            rows.append([colorize(grp, color), ''])
+            for param, size in data_by_group[grp].items():
+                rows.append([colorize("|-%s" % param, color),
+                             colorize(size, color)])
+
+        rows.append(['', ''])
+        rows.append([colorize('total', 'magenta'),
+                     colorize(total_size, 'magenta')])
+        print_table(rows)
 
     def enable_cloud(self, api_key, **kwargs):
         """Setup backend configuration
