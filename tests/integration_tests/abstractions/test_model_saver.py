@@ -177,8 +177,6 @@ def test_save_frozen(
     x, y = training_data
     orig_out = model.predict(x)
 
-    print("W", model.get_weights())
-
     model_saver.save_model(model, save_path, output_type="tf_frozen")
 
     K.clear_session()

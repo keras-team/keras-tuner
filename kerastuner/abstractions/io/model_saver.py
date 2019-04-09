@@ -141,8 +141,6 @@ class ModelSaver(object):
     def _save_tflite(self, path):
         savedmodel_path = path + "_savedmodel"
         self._save_savedmodel(savedmodel_path)
-        print(tf.contrib.lite.TFLiteConverter)
-        print(dir(tf.contrib.lite.TFLiteConverter))
         converter = tf.contrib.lite.TFLiteConverter.from_saved_model(
             savedmodel_path)
         converter.post_training_quantize = True
