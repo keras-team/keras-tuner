@@ -31,7 +31,7 @@ def parse_args():
                         default='loss', help='Metrics to sort by')
 
     parser.add_argument('--direction', '-d', type=str,
-                        default='asc', help='Sort model in asc or desc order')
+                        default='min', help='Metric direction {min/max}')
 
     parser.add_argument('--display_hyper_parameters', '--hyper', type=bool,
                         default=True, help='Display hyperparameters values')
@@ -104,7 +104,7 @@ def display_metrics(metrics, main_metric, direction, num_models):
     "Display results as table"
     # compute the models indices to display and their order
     indices = np.argsort(metrics[main_metric])
-    if direction == 'desc':
+    if direction == 'max':
         indices = sorted(indices, reverse=True)
     indices = indices[:num_models]
 
@@ -135,7 +135,7 @@ def summary(input_dir,
             main_metric,
             extra_fields=[],
             display_hyper_parameters=True,
-            direction="asc",
+            direction="min",
             num_models=10,
             use_colors=True):
     """

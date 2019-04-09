@@ -1,5 +1,6 @@
 # standard imports
 import numpy as np
+import os
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
@@ -8,13 +9,14 @@ from tensorflow.keras.optimizers import Adam
 from kerastuner.distributions import Range, Choice, Boolean, Fixed
 from kerastuner.tuners import RandomSearch
 
-# Random data tp feed our model to show how easy it is to use KerasTuner
+# Random data to feed the model to show how easy it is to use KerasTuner
 x_train = np.random.random((10000, 20))
 y_train = np.random.randint(2, size=(10000, 1))
 
 # You can use http://keras-tuner.appspot.com to track results on the web, and
 # get notifications. To do so, grab an API key on that site, and fill it here.
-api_key=''
+api_key = ''
+
 
 def model_fn():
     # Input layer
@@ -45,12 +47,21 @@ def model_fn():
 
 
 # train 5 models over 3 epochs
-hypermodel = RandomSearch(model_fn, epoch_budget=1, max_epochs=1)
+hypermodel = RandomSearch(model_fn, epoch_budget=15, max_epochs=3)
 hypermodel.summary()
 if api_key:
-  hypermodel.enable_cloud(
-      api_key=api_key,
-      # url='http://localhost:5000/api/'
+    hypermodel.enable_cloud(
+        api_key=api_key,
+        # url='http://localhost:5000/api/'
     )
-hypermodel.search(x_train, y_train, validation_split=0.01)
+#hypermodel.search(x_train, y_train, validation_split=0.01)
+
+# Show the best models, their hyperparameters, and the resulting metrics.
 hypermodel.display_result_summary()
+
+# Export the top 2 models, in tensorflow format.
+hypermodel.export_best_models(
+    metric="val_loss",
+    direction="asc",
+    output_type="tf_optimized",
+    num_models=2)

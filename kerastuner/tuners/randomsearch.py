@@ -35,7 +35,7 @@ class RandomSearch(HyperTuner):
 
     def hypertune(self, x, y, **kwargs):
         while self.remaining_budget >= self.max_epochs:
-            instance = self.get_random_instance()
+            instance = self.new_instance()
             if not instance:
                 # not instances left time to wrap-up
                 break

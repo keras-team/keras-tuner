@@ -1,16 +1,17 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
 
-import time
 import copy
+import time
+from os import path
+
 import numpy as np
-from termcolor import cprint
+import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Optimizer
-from os import path
 from tensorflow.python.lib.io import file_io  # allows to write to GCP or local
+from termcolor import cprint
+
 from . import backend
 from .tunercallback import TunerCallback
 
@@ -39,8 +40,10 @@ class InstanceExecution(object):
             self.model = Sequential.from_config(config)
         else:
             self.model = keras.Model.from_config(config)
-        optimizer_config = model.optimizer.get_config()
-        optimizer = model.optimizer.__class__.from_config(optimizer_config)
+
+        optimizer_config = tf.keras.optimizers.serialize(model.optimizer)
+        optimizer = tf.keras.optimizers.deserialize(optimizer_config)
+
         self.model.compile(optimizer=optimizer, loss=model.loss,
                            metrics=model.metrics, loss_weights=model.loss_weights)
 
@@ -63,7 +66,7 @@ class InstanceExecution(object):
         if (self.display_model == 'base' or self.display_model == 'both') and self.display_info:
             self.model.summary()
 
-        #FIXME compile the model on CPU > recommended to avoid OOO
+        # FIXME compile the model on CPU > recommended to avoid OOO
         if self.num_gpu > 1:
             model = keras.utils.multi_gpu_model(self.model, gpus=self.num_gpu)
             # WARNING: model.compile do NOT return a model

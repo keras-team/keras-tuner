@@ -3,7 +3,7 @@ import tensorflow as tf
 from tensorflow.keras import backend as K
 from tensorflow.keras.layers import Input, Concatenate, Dense
 from tensorflow.keras.models import Model, load_model, model_from_json
-from kerastuner.abstractions.io import model_saver, read_file
+from kerastuner.abstractions.io import save_model, read_file
 import numpy as np
 import os
 import pytest
@@ -21,7 +21,8 @@ def clear_session():
     K.clear_session()
 
 
-def _model():
+@pytest.fixture(scope="function")
+def model():
     i1 = Input(shape=(1,), dtype=tf.float32, name="i1")
     i2 = Input(shape=(1,), dtype=tf.float32, name="i2")
 
@@ -51,12 +52,8 @@ def _model():
     return model
 
 
-@pytest.fixture(scope="function")
-def model():
-    return _model()
-
-
-def _training_data():
+@pytest.fixture(scope="module")
+def training_data():
     return (
         {
             "i1": _TRAIN_ARR_1,
@@ -70,11 +67,7 @@ def _training_data():
 
 
 @pytest.fixture(scope="module")
-def training_data():
-    return _training_data()
-
-
-def _feed_dict():
+def feed_dict():
     return {
         "i1:0": np.expand_dims(_TRAIN_ARR_1, axis=-1),
         "i2:0": np.expand_dims(_TRAIN_ARR_2, axis=-1)
@@ -82,27 +75,19 @@ def _feed_dict():
 
 
 @pytest.fixture(scope="module")
-def feed_dict():
-    return _feed_dict()
-
-
-def _output_names():
+def output_names():
     return [
         "o1/BiasAdd:0",
         "o2/BiasAdd:0"
     ]
 
 
-@pytest.fixture(scope="module")
-def output_names():
-    return _output_names()
-
-
-def test_save_keras_h5(tmp_path, model, training_data):
+def test_save_keras_bundle(tmp_path, model, training_data):
     save_path = os.path.join(str(tmp_path), "model_output")
+    tmp_path = os.path.join(str(tmp_path), "model_output_tmp")
     x, y = training_data
 
-    model_saver.save_model(model, save_path, output_type="keras_h5")
+    save_model(model, save_path, tmp_path=tmp_path, output_type="keras_bundle")
 
     loaded = load_model(save_path)
 
@@ -114,9 +99,10 @@ def test_save_keras_h5(tmp_path, model, training_data):
 
 def test_save_keras(tmp_path, model, training_data):
     save_path = os.path.join(str(tmp_path), "model_output")
+    tmp_path = os.path.join(str(tmp_path), "model_output_tmp")
     x, y = training_data
 
-    model_saver.save_model(model, save_path, output_type="keras")
+    save_model(model, save_path, tmp_path=tmp_path, output_type="keras")
 
     config = read_file(save_path + "-config.json")
 
@@ -141,15 +127,11 @@ def test_save_tf(
         training_data,
         feed_dict,
         output_names):
-
     save_path = os.path.join(str(tmp_path), "model_output")
-
+    tmp_path = os.path.join(str(tmp_path), "model_output_tmp")
     x, y = training_data
 
-    model_saver.save_model(
-        model,
-        save_path,
-        output_type="tf")
+    save_model(model, save_path, tmp_path=tmp_path, output_type="tf")
 
     orig_out = model.predict(x)
 
@@ -171,22 +153,21 @@ def test_save_frozen(
         training_data,
         feed_dict,
         output_names):
-
     save_path = os.path.join(str(tmp_path), "model_output")
-
+    tmp_path = os.path.join(str(tmp_path), "model_output_tmp")
     x, y = training_data
+
     orig_out = model.predict(x)
 
-    model_saver.save_model(model, save_path, output_type="tf_frozen")
+    save_model(model, save_path, tmp_path=tmp_path, output_type="tf_frozen")
 
-    K.clear_session()
-
-    sess = tf.Session()
+    graph = tf.Graph()
+    sess = tf.Session(graph=graph)
     with sess.as_default() as default_sess:
         with sess.graph.as_default() as default_graph:
             graph_def = tf.GraphDef()
             graph_def.ParseFromString(read_file(save_path, "rb"))
-            tf.import_graph_def(graph_def, name='')
+            tf.import_graph_def(graph_def, name="", return_elements=None)
 
             loaded_out = sess.run(output_names, feed_dict=feed_dict)
 
@@ -205,16 +186,15 @@ def test_save_optimized(
     x, y = training_data
     orig_out = model.predict(x)
 
-    model_saver.save_model(model, save_path, output_type="tf_frozen")
+    save_model(model, save_path, tmp_path=tmp_path, output_type="tf_optimized")
 
-    K.clear_session()
-
-    sess = tf.Session()
+    graph = tf.Graph()
+    sess = tf.Session(graph=graph)
     with sess.as_default() as default_sess:
         with sess.graph.as_default() as default_graph:
             graph_def = tf.GraphDef()
             graph_def.ParseFromString(read_file(save_path, "rb"))
-            tf.import_graph_def(graph_def, name='')
+            tf.import_graph_def(graph_def, name="", return_elements=None)
 
             loaded_out = sess.run(output_names, feed_dict=feed_dict)
 
@@ -230,13 +210,11 @@ def test_save_tf_lite(
 
     save_path = os.path.join(str(tmp_path), "model_output")
 
-    model_saver.save_model(
-        model,
-        save_path,
-        output_type="tf_lite")
-
     x, y = training_data
     orig_out = model.predict(x)
+
+    save_model(model, save_path, tmp_path=tmp_path, output_type="tf_lite")
+
     with tf.Session().as_default() as sess:
         with tf.Graph().as_default() as _:
             interpreter = tf.contrib.lite.Interpreter(model_path=save_path)
@@ -260,8 +238,3 @@ def test_save_tf_lite(
 
                 assert np.allclose(orig_out[0][i], o1)
                 assert np.allclose(orig_out[1][i], o2)
-
-
-if __name__ == '__main__':
-    test_save_frozen("/tmp/foo/bar", _model(), _training_data(),
-                     _feed_dict(), _output_names())

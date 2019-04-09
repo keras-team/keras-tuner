@@ -108,7 +108,7 @@ class UltraBand(HyperTuner):
         kwargs['epochs'] = num_epochs
         if not self.dry_run:
           for _ in tqdm(range(num_models), desc='Generating models', unit='model'):
-            model_instances.append(self.get_random_instance())
+            model_instances.append(self.new_instance())
 
 
 

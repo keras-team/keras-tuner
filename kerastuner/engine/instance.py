@@ -1,16 +1,19 @@
-import time
-import json
-import numpy as np
-from os import path
-from collections import defaultdict
-from tensorflow.python.lib.io import file_io  # allows to write to GCP or local
-from tensorflow.keras import backend as K
-import tensorflow as tf
-import gc
 import copy
+import gc
+import json
+import time
+from collections import defaultdict
+from os import path
 
-from .execution import InstanceExecution
+import numpy as np
+import six
+import tensorflow as tf
+from tensorflow.keras import backend as K
+from tensorflow.python.lib.io import file_io  # allows to write to GCP or local
+
 from . import backend
+from .execution import InstanceExecution
+from kerastuner.abstractions.io import serialize_loss
 
 
 class Instance(object):
@@ -24,12 +27,13 @@ class Instance(object):
         self.training_size = -1
         self.model = model
         self.hyper_parameters = hyper_parameters
-        self.optimizer_config = model.optimizer.get_config()
+        self.optimizer_config = tf.keras.optimizers.serialize(model.optimizer)
+        self.loss_config = serialize_loss(model.loss)
 
         self.checkpoint = checkpoint
         self.idx = idx
 
-        # ensure meta data dopn't have side effect
+        # Ensure that changes to the meta data won't affect other instances.
         self.meta_data = copy.deepcopy(meta_data)
         self.meta_data['instance'] = idx
 
@@ -62,7 +66,8 @@ class Instance(object):
             "batch_size": self.batch_size,
             "model_size": int(self.model_size),
             "hyper_parameters": self.hyper_parameters,
-            "optimizer_config": self.optimizer_config
+            "optimizer_config": self.optimizer_config,
+            "loss_config": self.loss_config
         }
         return info
 
@@ -77,7 +82,6 @@ class Instance(object):
           resume_execution (bool): Instead of creating a new execution,
           resume training the previous one. Default false.
         """
-
         # in theory for batch training the function is __len__
         # should be implemented. However, for generator based training, __len__
         # returns the number of batches, NOT the training size.
@@ -86,8 +90,15 @@ class Instance(object):
         else:
             self.training_size = len(x)
 
+        # Determine the validation size for the various validation strategies.
         if kwargs.get('validation_data'):
             self.validation_size = len(kwargs['validation_data'][1])
+        elif kwargs.get('validation_split'):
+            validation_split = kwargs.get('validation_split')
+            self.validation_size = self.training_size * validation_split
+            self.training_size -= self.validation_size
+        else:
+            self.validation_size = 0
 
         if resume_execution and len(self.executions):
             execution = self.executions[-1]

@@ -1,6 +1,7 @@
 import os
 
 from tensorflow.gfile import Open, MakeDirs, Exists, DeleteRecursively, Glob
+from tensorflow.gfile import Remove, Copy
 
 
 def open_file(filename, mode):
@@ -26,16 +27,19 @@ def exists(path):
 
 
 def create_directory(path, remove_existing=False):
-
     # Create the directory if it doesn't exist.
     if not Exists(path):
         MakeDirs(path)
 
     # If it does exist, and remove_existing it specified, the directory will be
-    # removed if it already exists:
+    # removed and recreated.
     elif remove_existing:
         DeleteRecursively(path)
         MakeDirs(path)
+
+
+def rm(file):
+    return Remove(file)
 
 
 def glob(pattern):

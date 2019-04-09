@@ -20,16 +20,17 @@ from termcolor import cprint
 from kerastuner import config
 from kerastuner.distributions import DummyDistributions
 from kerastuner.abstractions.system import System
-from kerastuner.abstractions.io import create_directory
+from kerastuner.abstractions.io import create_directory, glob, read_file
+from kerastuner.abstractions.io import save_model, reload_model
+from kerastuner.abstractions.io import read_results, deserialize_loss
 from kerastuner.abstractions.display import highlight, print_table, section
 from kerastuner.abstractions.display import setting, subsection
-from kerastuner.abstractions.display import warning, set_log
+from kerastuner.abstractions.display import info, warning, fatal, set_log
 from kerastuner.abstractions.display import get_progress_bar, colorize
 from kerastuner.utils import max_model_size
 from kerastuner.tools.summary import summary as result_summary
 from .backend import Backend
 from .instance import Instance
-from .logger import Logger
 
 
 class HyperTuner(object):
@@ -46,10 +47,6 @@ class HyperTuner(object):
             All architecture meta data are stored into the self.meta_data
             field as they are only used for recording
         """
-
-        # log
-        self.log = Logger(self)
-
         self.epoch_budget = kwargs.get('epoch_budget', 3713)
         self.remaining_budget = self.epoch_budget
         self.max_epochs = kwargs.get('max_epochs', 50)
@@ -96,12 +93,12 @@ class HyperTuner(object):
         }
 
         if 'accuracy' in self.checkpoint['metric'] and self.checkpoint['mode'] == 'min':
-            self.log.warning("Potentially incorrect checkpoint configuration: %s %s  -- change checkpoint_mode to 'max'? "
-                             % (self.checkpoint['metric'], self.checkpoint['mode']))
+            warning("Potentially incorrect checkpoint configuration: %s %s  -- change checkpoint_mode to 'max'? "
+                    % (self.checkpoint['metric'], self.checkpoint['mode']))
 
         if 'loss' in self.checkpoint['metric'] and self.checkpoint['mode'] == 'max':
-            self.log.warning("Potentially incorrect checkpoint configuration: %s %s  -- change checkpoint_mode to 'max'? "
-                             % (self.checkpoint['metric'], self.checkpoint['mode']))
+            warning("Potentially incorrect checkpoint configuration: %s %s  -- change checkpoint_mode to 'max'? "
+                    % (self.checkpoint['metric'], self.checkpoint['mode']))
 
         if self.checkpoint['mode'] != 'min' and self.checkpoint['mode'] != 'max':
             raise Exception(
@@ -109,8 +106,8 @@ class HyperTuner(object):
                 self.checkpoint['mode'])
 
         if self.checkpoint['enable']:
-            self.log.info("Model checkpoint enabled - metric:%s mode:%s" %
-                          (self.checkpoint['metric'], self.checkpoint['mode']))
+            info("Model checkpoint enabled - metric:%s mode:%s" %
+                 (self.checkpoint['metric'], self.checkpoint['mode']))
 
         # Model meta data
         self.meta_data = {
@@ -121,6 +118,7 @@ class HyperTuner(object):
 
         self.meta_data['server'] = {
             "local_dir": kwargs.get('local_dir', 'results/'),
+            "export_dir": kwargs.get('local_dir', 'exports/'),
             "tmp_dir": kwargs.get('tmp_dir', 'tmp/')
         }
 
@@ -218,6 +216,10 @@ class HyperTuner(object):
 
         # create local dir if needed
         create_directory(self.meta_data['server']['local_dir'])
+        create_directory(self.meta_data['server']['tmp_dir'],
+                         remove_existing=True)
+        create_directory(self.meta_data['server']['export_dir'],
+                         remove_existing=True)
 
         # Load existing instances.
         self._load_previously_trained_instances(**kwargs)
@@ -321,7 +323,7 @@ class HyperTuner(object):
         #! fixe this metadata should NOT BE tied to backend setup
         # fname = '%s-%s-meta_data.json' % (self.meta_data['project'],
         #                                  self.meta_data['architecture'])
-        #local_path = os.path.join(self.meta_data['server']['local_dir'], fname)
+        # local_path = os.path.join(self.meta_data['server']['local_dir'], fname)
         # with file_io.FileIO(local_path, 'w') as output:
         #    output.write(json.dumps(self.meta_data))
         # backend.cloud_save(local_path=local_path,
@@ -349,8 +351,8 @@ class HyperTuner(object):
         K.clear_session()
         gc.collect()
 
-    def get_random_instance(self):
-        "Return a never seen before random model instance"
+    def new_instance(self):
+        "Return a never seen before model instance"
         fail_streak = 0
         collision_streak = 0
         over_sized_streak = 0
@@ -368,9 +370,9 @@ class HyperTuner(object):
                     traceback.print_exc()
 
                 self.num_invalid_models += 1
-                self.log.warning("invalid model %s/%s" %
-                                 (self.num_invalid_models,
-                                  self.max_fail_streak))
+                warning("invalid model %s/%s" %
+                        (self.num_invalid_models,
+                         self.max_fail_streak))
 
                 if self.num_invalid_models >= self.max_fail_streak:
                     return None
@@ -378,12 +380,13 @@ class HyperTuner(object):
 
             # stop if the model_fn() return nothing
             if not model:
+                warning("No model returned from model_fn - stopping.")
                 return None
 
             idx = self.__compute_model_id(model)
 
             if idx in self.previous_instances:
-                self.log.info("model %s already trained -- skipping" % idx)
+                info("model %s already trained -- skipping" % idx)
                 self.num_mdl_previously_trained += 1
                 continue
 
@@ -391,8 +394,7 @@ class HyperTuner(object):
                 collision_streak += 1
                 self.num_collisions += 1
                 self.meta_data['tuner']['collisions'] = self.num_collisions
-                self.log.warning(
-                    "collision detected - model %s already trained -- skipping" % (idx))
+                warning("Collision for %s -- skipping" % (idx))
                 if collision_streak >= self.max_fail_streak:
                     return None
                 continue
@@ -406,7 +408,7 @@ class HyperTuner(object):
             if num_params > self.max_params:
                 over_sized_streak += 1
                 self.num_over_sized_models += 1
-                self.log.warning(
+                warning(
                     "Oversized model: %s parameters-- skipping" % (num_params))
                 if over_sized_streak >= self.max_fail_streak:
                     return None
@@ -462,8 +464,90 @@ class HyperTuner(object):
         self.stats['latest'] = latest_results
         self.meta_data['statistics'] = self.stats
 
+    def get_best_model(self, **kwargs):
+        resultset, models = self.get_best_model(num_models=1, **kwargs)
+        return models[0], ResultSet(resultset.results[0])
+
+    def get_best_models(
+            self, metric="loss", direction='min', num_models=1, compile=False):
+        # Glob/read the results metadata.
+        results_dir = self.meta_data["server"]["local_dir"]
+
+        result_set = read_results(results_dir).sorted_by_metric(
+            metric, direction).limit(num_models).results
+
+        models = []
+
+        for result in result_set:
+            config_file = os.path.join(results_dir, result["config_file"])
+            weights_file = os.path.join(results_dir, result["weights_file"])
+            results_file = os.path.join(results_dir, result["results_file"])
+
+            model = reload_model(config_file, weights_file,
+                                 results_file, compile=compile)
+            models.append(model)
+        return models, result_set
+
+    def export_best_model(self, **kwargs):
+        return self.export_best_models(num_models=1, **kwargs)
+
+    def export_best_models(
+            self, metric="loss",
+            direction='min',
+            output_type="keras",
+            num_models=1):
+        """ Exports the best model based on the specified metric, to the
+            results directory.
+
+            Args:
+                metric (str, optional): Defaults to "loss". The metric used to
+                     determine the best model.
+                direction (str, optional): Defaults to 'min'. The sort
+                    direction for the metric:
+                        'min' - for losses, and other metrics where smaller is
+                        better.
+                        'max' - for accuracy, and other metrics where
+                        larger is better.
+                output_type (str, optional): Defaults to "keras". What format
+                    of model to export:
+
+                    "keras" - Save as separate config (JSON) and weights (HDF5)
+                        files.
+                    "keras_bundle" - Saved in Keras's native format (HDF5), via
+                        save_model()
+                    "tf" - Saved in tensorflow's SavedModel format. See:
+                        https://www.tensorflow.org/alpha/guide/saved_model
+                    "tf_frozen" - A SavedModel, where the weights are stored
+                        in the model file itself, rather than a variables
+                        directory. See:
+                        https://www.tensorflow.org/guide/extend/model_files
+                    "tf_optimized" - A frozen SavedModel, which has
+                        additionally been transformed via tensorflow's graph
+                        transform library to remove training-specific nodes
+                        and operations.  See:
+                        https://github.com/tensorflow/tensorflow/tree/master/tensorflow/tools/graph_transforms
+                    "tf_lite" - A TF Lite model.
+        """
+        models, results = self.get_best_models(
+            metric=metric,
+            direction=direction,
+            num_models=num_models,
+            compile=False)
+        for idx, (model, result) in enumerate(zip(models, results)):
+            name = result["execution_prefix"]
+            export_path = os.path.join(
+                self.meta_data["server"]["export_dir"],
+                name)
+            tmp_path = os.path.join(
+                self.meta_data["server"]["tmp_dir"],
+                name)
+            info("Exporting top model (%d/%d) - %s" % (idx + 1, len(models), export_path))
+            save_model(model, export_path, tmp_path=tmp_path,
+                       output_type=output_type)
+
     def done(self):
-        self.log.done()
+        info("Hypertuning complete - results in %s" %
+             self.meta_data['server']['local_dir'])
 
     def get_model_by_id(self, idx):
         return self.instances.get(idx, None)
@@ -484,7 +568,7 @@ class HyperTuner(object):
         md['invalid_models'] = self.num_invalid_models
         md['over_size_models'] = self.num_over_sized_models
 
-    def display_result_summary(self, metric='loss', direction='asc'):
+    def display_result_summary(self, metric='loss', direction='min'):
         result_summary(
             self.meta_data["server"]["local_dir"],
             self.meta_data["project"],
