@@ -15,6 +15,7 @@ from multiprocessing.pool import ThreadPool
 from kerastuner.abstractions.display import colorize, print_combined_table
 from kerastuner.abstractions.display import section, highlight, fatal, write_log
 from kerastuner.abstractions.system import System
+from kerastuner.abstractions.io import save_model
 from kerastuner.abstractions.display import get_progress_bar
 import numpy as np
 
@@ -189,7 +190,8 @@ class TunerCallback(keras.callbacks.Callback):
         desc = ""
 
         if self.meta_data['server']['num_gpu'] >= 1:
-            gpu_usages = [float(gpu["usage"]) for gpu in self.system_status['gpu']]
+            gpu_usages = [float(gpu["usage"])
+                          for gpu in self.system_status['gpu']]
             gpu_usage = int(np.average(gpu_usages))
             desc += "[GPU: %s%%]" % gpu_usage
 
@@ -211,25 +213,19 @@ class TunerCallback(keras.callbacks.Callback):
 
         local_dir = self.meta_data['server']['local_dir']
 
-        # config
+        # Always write the config, even if we're not saving in Keras format.
         prefix = '%s-%s-%s-%s' % (
             self.meta_data['project'], self.meta_data['architecture'],
             self.meta_data['instance'], self.meta_data['execution'])
-        config_fname = "%s-config.json" % (prefix)
-        local_path = path.join(local_dir, config_fname)
-        with file_io.FileIO(local_path, 'w') as output:
-            output.write(self.model.to_json())
+
+        base_filename = path.join(local_dir, prefix)
+
+        save_model(self.model, base_filename, output_type="keras")
+
         # FIXME:refactor
         if self.backend:
             self.backend.send_config(self.model.to_json())
 
-        # weights
-        weights_fname = "%s-weights.h5" % (prefix)
-        local_path = path.join(local_dir, weights_fname)
-        self.model.save_weights(local_path)
-        # ! don't save weight to the service, instead implment a GS save
-        # backend.cloud_save(local_path=local_path,
-        # ftype='weights', meta_data=self.meta_data)
         return
 
     def _compute_avg_accuracy(self, logs):
