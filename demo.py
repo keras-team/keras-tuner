@@ -46,12 +46,11 @@ def model_fn():
 
 # train 5 models over 3 epochs
 hypermodel = RandomSearch(model_fn, epoch_budget=1, max_epochs=1)
-hypermodel.display_result_summary()
-
-
+hypermodel.summary()
 if api_key:
   hypermodel.enable_cloud(
       api_key=api_key,
       # url='http://localhost:5000/api/'
     )
 hypermodel.search(x_train, y_train, validation_split=0.01)
+hypermodel.display_result_summary()

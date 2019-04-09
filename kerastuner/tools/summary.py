@@ -204,7 +204,7 @@ def summary(input_dir,
                 v = ""
             hyper_parameters[hp].append(v)
 
-    if not len(metrics[metric]):
+    if not len(metrics):
         fatal("No models found - wrong dir (-i) or project (-p)?")
 
     num_models = min(len(metrics[metric]), num_models)
