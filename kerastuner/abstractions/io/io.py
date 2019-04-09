@@ -39,4 +39,4 @@ def create_directory(path, remove_existing=False):
 
 
 def glob(pattern):
-    return Glob(glob)
+    return Glob(pattern)
