@@ -14,7 +14,7 @@ class System():
     def __init__(self):
 
         # compute static information once
-        self.gpu_driver_version  = 'N/A'
+        self.gpu_driver_version = 'N/A'
         self.nvidia_smi = self._find_nvidia_smi()
         self.cpu_core_count = psutil.cpu_count()
         self.partitions = psutil.disk_partitions()
