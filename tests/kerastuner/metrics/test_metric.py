@@ -58,21 +58,21 @@ def test_history():
     assert mm.get_history() == [10, 8]
 
 
-def test_to_config():
+def test_to_dict():
     mm = Metric('conf_test', 'min')
     mm.update(8)
     mm.update(10)
-    conf = mm.to_config()
+    conf = mm.to_dict()
     assert conf['name'] == 'conf_test'
     assert conf['best_value'] == 8
     assert conf['last_value'] == 10
     assert conf['history'] == [8, 10]
 
 
-def test_to_config_to_json():
+def test_to_dict_to_json_to_dict():
     mm = Metric('min', 'min')
     mm.update(10)
     mm.update(8)
-    conf = mm.to_config()
+    conf = mm.to_dict()
     conf_json = json.loads(json.dumps(conf))
     assert conf_json == conf

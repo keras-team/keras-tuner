@@ -82,8 +82,8 @@ class Metric(object):
         """
         return self.history
 
-    def to_config(self):
-        """Get a serializable version of the metric"""
+    def to_dict(self):
+        """Get a serializable dict version of the metric"""
         return {
             "name": self.name,
             "best_value": self._get_best_value(),

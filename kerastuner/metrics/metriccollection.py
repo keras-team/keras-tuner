@@ -84,14 +84,14 @@ class MetricCollections(object):
             return metric.update(value)
         return False
 
-    def get_config(self):
+    def get_dict(self):
         """
-        Serializable representation of the metric collection
+        Serializable dict representation of the metric collection
         Returns:
-            list: collection of metric configs
+            list: collection of metric dict
         """
         metrics = self.get_metrics()
-        config = []
+        md = []
         for metric in metrics:
-            config.append(metric.to_config())
-        return config
+            md.append(metric.to_dict())
+        return md

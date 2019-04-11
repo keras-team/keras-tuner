@@ -64,7 +64,7 @@ def test_update():
     assert col.update('loss', 10)
 
 
-def test_get_config():
+def test_get_dict():
     col = MetricCollections()
     col.add('loss')
     col.add('acc')
@@ -74,16 +74,16 @@ def test_get_config():
     col.update('acc', 2)
     col.update('val_loss', 3)
 
-    config = col.get_config()
+    config = col.get_dict()
     assert config[0]['name'] == 'acc'
     assert config[1]['best_value'] == 1
     assert len(config) == 3
 
 
-def test_get_config_to_json():
+def test_get_dict_to_json():
     col = MetricCollections()
     col.add('loss')
     arr = np.asarray([0.1, 0.2], dtype=np.float32)
     col.update('loss', arr[0])
-    config = col.get_config()
+    config = col.get_dict()
     assert config == json.loads(json.dumps(config))
