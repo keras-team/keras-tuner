@@ -327,7 +327,7 @@ class HyperTuner(object):
         kwargs["verbose"] = 0
         self.hypertune(x, y, **kwargs)
         if self.backend:
-            self.backend.quit()
+            self.backend.complete()
 
     def search_generator(self, x, **kwargs):
         self.keras_function = 'fit_generator'
@@ -335,7 +335,7 @@ class HyperTuner(object):
         y = None  # fit_generator don't use this so we put none to be able to have a single hypertune function
         self.hypertune(x, y, **kwargs)
         if self.backend:
-            self.backend.quit()
+            self.backend.complete()
 
     def _clear_tf_graph(self):
         """ Clear the content of the TF graph to ensure

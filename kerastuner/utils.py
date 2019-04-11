@@ -5,7 +5,7 @@ from distutils import spawn
 
 def max_model_size(batch_size, gpu_mem, num_gpu, mem_reserved=0.1):
     """Compute the maximum param size for model to avoid OOO
-    
+
     Args:
         batch_size (int): batch_size used
         gpu_mem (int): GPU available memory in MB
@@ -17,7 +17,7 @@ def max_model_size(batch_size, gpu_mem, num_gpu, mem_reserved=0.1):
     available_memory -= available_memory * mem_reserved  # be conservative shave off 10%
     max_parameters  = available_memory / (batch_size * 4)
     return int(max_parameters)
-    
+
 
 
 def compute_max_batch_size(model, gpu_mem, max_size=8000):
@@ -78,6 +78,3 @@ if platform.system() == "Windows":
         nvidia_smi = "%s\\Program Files\\NVIDIA Corporation\\NVSMI\\nvidia-smi.exe" % os.environ['systemdrive']
 else:
     nvidia_smi = "nvidia-smi"
-
-
-

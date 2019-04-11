@@ -9,3 +9,5 @@ logs/
 Kerastuner.egg-info/
 results/
 tmp/
+.ipynb_checkpoints/
+tmp.py

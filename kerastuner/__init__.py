@@ -7,5 +7,5 @@ from kerastuner import engine
 from kerastuner import tuners
 from kerastuner import distributions
 from kerastuner import utils
-
-__version__ = '0.8.1'
+from kerastuner import metrics
+__version__ = '0.8.2'
