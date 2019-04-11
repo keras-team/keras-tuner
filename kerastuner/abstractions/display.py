@@ -250,6 +250,18 @@ def cprint(text, color, bg_color=None, brightness='normal'):
     display(text)
 
 
+def colorize_default(text):
+    """Colorize a given piece of text with the terminal default color
+    Args:
+        text (str): text to colorize
+    """
+    if IS_NOTEBOOK:
+        text = text + '</span>'
+    else:
+        text = text + styles['reset']
+    return text
+
+
 def colorize(text, color, bg_color=None, brightness='normal'):
     """ Colorize a given piece of text
     Args:
@@ -262,6 +274,12 @@ def colorize(text, color, bg_color=None, brightness='normal'):
         str: colorized text
     """
 
+    text = str(text)  # in case user pass a float/int
+
+    # we need a special case as term default color/bgcolor is unknown
+    if color == 'default':
+        return colorize_default(text)
+
     if color not in colors and not IS_NOTEBOOK:
         msg = "Foreground color invalid:%s" % color
         raise ValueError(msg)
@@ -272,8 +290,6 @@ def colorize(text, color, bg_color=None, brightness='normal'):
 
     if brightness not in brightness and not IS_NOTEBOOK:
         raise ValueError("Brightness invalid:" + brightness)
-
-    text = str(text)  # in case user pass a float/int
 
     # foreground color
     if IS_NOTEBOOK:

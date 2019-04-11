@@ -26,7 +26,8 @@ from kerastuner.abstractions.io import read_results, deserialize_loss
 from kerastuner.abstractions.display import highlight, print_table, section
 from kerastuner.abstractions.display import setting, subsection
 from kerastuner.abstractions.display import info, warning, fatal, set_log
-from kerastuner.abstractions.display import get_progress_bar, colorize
+from kerastuner.abstractions.display import get_progress_bar
+from kerastuner.abstractions.display import colorize, colorize_default
 from kerastuner.utils import max_model_size
 from kerastuner.tools.summary import summary as result_summary
 from .backend import Backend
@@ -288,7 +289,7 @@ class HyperTuner(object):
             if idx % 2:
                 color = 'blue'
             else:
-                color = 'black'
+                color = 'default'
 
             rows.append([colorize(grp, color), ''])
             for param, size in data_by_group[grp].items():
@@ -305,6 +306,7 @@ class HyperTuner(object):
 
             Args:
                 api_key (str): The backend API access token.
+                # FIXME: document this function better
                 kwargs (dict): Optional. Contains the key "url", pointing to the
                 base url of the backend.
             Note: this is called by the user
@@ -319,15 +321,6 @@ class HyperTuner(object):
                 "instance_completion": kwargs.get("instance_completion_notification", False)
             }
         )
-
-        #! fixe this metadata should NOT BE tied to backend setup
-        # fname = '%s-%s-meta_data.json' % (self.meta_data['project'],
-        #                                  self.meta_data['architecture'])
-        # local_path = os.path.join(self.meta_data['server']['local_dir'], fname)
-        # with file_io.FileIO(local_path, 'w') as output:
-        #    output.write(json.dumps(self.meta_data))
-        # backend.cloud_save(local_path=local_path,
-        #                   ftype='meta_data', meta_data=self.meta_data)
 
     def search(self, x, y, **kwargs):
         self.keras_function = 'fit'

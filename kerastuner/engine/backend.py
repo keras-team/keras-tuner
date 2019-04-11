@@ -52,7 +52,7 @@ class Backend():
         else:
             warning("Invalid cloud API key")
 
-    def quit(self):
+    def complete(self):
         """Makes sure that all cloud requests have been sent."""
         self.executor.shutdown(wait=True)
         # In case the user wants to do multiple hypertuning sessions,
