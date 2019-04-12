@@ -14,10 +14,11 @@ from pathlib import Path
 
 import tensorflow as tf
 import tensorflow.keras.backend as K
-from tensorflow.python.lib.io import file_io  # allows to write to GCP or local
 from termcolor import cprint
 
 from kerastuner import config
+from kerastuner.state import State  # track tuner state incl. results
+
 from kerastuner.distributions import DummyDistributions
 from kerastuner.abstractions.system import System
 from kerastuner.abstractions.io import create_directory, glob, read_file
@@ -48,6 +49,8 @@ class HyperTuner(object):
             All architecture meta data are stored into the self.meta_data
             field as they are only used for recording
         """
+
+        # users params
         self.epoch_budget = kwargs.get('epoch_budget', 3713)
         self.remaining_budget = self.epoch_budget
         self.max_epochs = kwargs.get('max_epochs', 50)
@@ -61,6 +64,25 @@ class HyperTuner(object):
         self.batch_size = kwargs.get('batch_size', 32)
         self.display_model = kwargs.get('display_model', '')
 
+        # state init
+        self.state = State()
+        self.state.init_hypertuner(tuner_name)
+        self.state.user_info = kwargs.get('info', {})  # additional user info
+        self.state.system = System()
+
+        # model checkpointing
+        self.state.init_checkpoint(
+            kwargs.get('checkpoint_models', True),
+            kwargs.get('checkpoint_metric', 'loss'),
+            kwargs.get('checkpoint_mode', 'min')
+        )
+
+        # check the model and record hparam
+        self._eval_model_fn()
+        # set global distribution object to the one requested by tuner
+        # MUST be after _eval_model_fn()
+        config.DISTRIBUTIONS = distributions
+
         # instances management
         self.instances = {}  # All the models we trained
         self.previous_instances = {}  # instance previously trained
@@ -71,44 +93,12 @@ class HyperTuner(object):
         self.num_collisions = 0  # how many time we regenerated the same model
         self.num_over_sized_models = 0  # num models with params> max_params
 
+        # execution management
         self.model_fn = model_fn
         self.callback_fn = kwargs.get('callback_generator', None)
-        self.start_time = int(time.time())
         self.keras_function = 'fit'
-        self.info = kwargs.get('info', {})  # additional info provided by users
-        self.tuner_name = tuner_name
-        self.system = System()
         self.backend = None  # init in the backend() funct if used
 
-        # check the model and record hparam
-        self._eval_model_fn()
-        # set global distribution object to the one requested by tuner
-        # MUST be after _eval_model_fn()
-        config.DISTRIBUTIONS = distributions
-
-        # model checkpointing
-        self.checkpoint = {
-            "enable": kwargs.get('checkpoint_models', True),
-            "metric": kwargs.get('checkpoint_metric', 'val_loss'),
-            "mode":  kwargs.get('checkpoint_mode', 'min'),
-        }
-
-        if 'accuracy' in self.checkpoint['metric'] and self.checkpoint['mode'] == 'min':
-            warning("Potentially incorrect checkpoint configuration: %s %s  -- change checkpoint_mode to 'max'? "
-                    % (self.checkpoint['metric'], self.checkpoint['mode']))
-
-        if 'loss' in self.checkpoint['metric'] and self.checkpoint['mode'] == 'max':
-            warning("Potentially incorrect checkpoint configuration: %s %s  -- change checkpoint_mode to 'max'? "
-                    % (self.checkpoint['metric'], self.checkpoint['mode']))
-
-        if self.checkpoint['mode'] != 'min' and self.checkpoint['mode'] != 'max':
-            raise Exception(
-                'checkpoint_mode must be either min or max - current value:',
-                self.checkpoint['mode'])
-
-        if self.checkpoint['enable']:
-            info("Model checkpoint enabled - metric:%s mode:%s" %
-                 (self.checkpoint['metric'], self.checkpoint['mode']))
 
         # Model meta data
         self.meta_data = {
