@@ -1,7 +1,7 @@
 from time import time
 
 
-class hypertunerState():
+class HypertunerState():
     "hold tuner state"
 
     def __init__(self, tuner_name):

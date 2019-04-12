@@ -68,12 +68,12 @@ class HyperTuner(object):
         self.state = State()
         self.state.init_hypertuner(tuner_name)
         self.state.user_info = kwargs.get('info', {})  # additional user info
-        self.state.system = System()
+        self.state.system = System() # FIXME:REFACTOR
 
         # model checkpointing
         self.state.init_checkpoint(
             kwargs.get('checkpoint_models', True),
-            kwargs.get('checkpoint_metric', 'loss'),
+            kwargs.get('checkpoint_monitor', 'loss'),
             kwargs.get('checkpoint_mode', 'min')
         )
 

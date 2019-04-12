@@ -1,4 +1,4 @@
-from kerastuner.abstractions import warning, fatal, info
+from kerastuner.abstractions.display import warning, fatal, info
 
 
 class CheckpointState(object):
@@ -7,13 +7,23 @@ class CheckpointState(object):
     def __init__(self, is_enabled, monitor, mode):
 
         self.is_enabled = is_enabled
-        self.monitor = monitor
-        self.mode = mode
 
         if not is_enabled:
             warning("models will not be saved are you sure?")
-            return
+            self.monitor = None
+            self.mode = None
+        else:
+            self.monitor = monitor
+            self.mode = mode
 
+        # errors
+        if mode not in ['min', 'max']:
+            fatal("checkpoint_mode must be either min or max -- typo?")
+
+        if not isinstance(monitor, str):
+            fatal("Invalid metric to monitor - expecting a string")
+
+        # warnings
         suggestion = None
         if 'acc' in monitor and mode == 'min':
             suggestion = "change checkpoint_mode to 'max'?"
@@ -22,8 +32,5 @@ class CheckpointState(object):
         if suggestion:
             warning("Incorrect checkpoint configuration: %s %s -- %s" % (
                     monitor, mode, suggestion))
-
-        if mode not in ['min', 'max']:
-            fatal("checkpoint_mode must be either min or max -- typo?")
 
         info("Model checkpoint enabled: monitoiring %s %s" % (mode, monitor))
