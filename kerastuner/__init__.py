@@ -8,5 +8,6 @@ from kerastuner import tuners
 from kerastuner import distributions
 from kerastuner import utils
 from kerastuner import metrics
+from kerastuner import states
 
 __version__ = '0.8.2'

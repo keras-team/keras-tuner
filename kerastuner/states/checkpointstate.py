@@ -1,10 +1,22 @@
+from .state import State
 from kerastuner.abstractions.display import warning, fatal, info
 
 
-class CheckpointState(object):
+class CheckpointState(State):
     "Model checkpoint state abstraction"
 
     def __init__(self, is_enabled, monitor, mode):
+        """
+        Model checkpointing state
+
+        Args:
+            is_enabled (bool): use checkpointing?
+            monitor (str): Metric to monitor
+            mode (str): which direction to optiomize for: {min|max}
+        """
+
+        # list attributes that should be exported
+        self.exportable_attributes = ['is_enabled', 'monitor', 'mode']
 
         self.is_enabled = is_enabled
 
@@ -34,3 +46,11 @@ class CheckpointState(object):
                     monitor, mode, suggestion))
 
         info("Model checkpoint enabled: monitoiring %s %s" % (mode, monitor))
+
+    def to_dict(self):
+        "return object as dictionnary"
+        return {
+            "monitor": self.monitor,
+            "mode": self.mode,
+            "is_enable": self.is_enabled
+        }

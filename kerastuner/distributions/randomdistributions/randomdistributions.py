@@ -4,7 +4,6 @@ import random
 from numpy import linspace, logspace
 
 
-
 class RandomDistributions(Distributions):
     "Random distributions"
 

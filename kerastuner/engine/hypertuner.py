@@ -17,10 +17,8 @@ import tensorflow.keras.backend as K
 from termcolor import cprint
 
 from kerastuner import config
-from kerastuner.state import State  # track tuner state incl. results
-
+from kerastuner.states import HypertunerState
 from kerastuner.distributions import DummyDistributions
-from kerastuner.abstractions.system import System
 from kerastuner.abstractions.io import create_directory, glob, read_file
 from kerastuner.abstractions.io import save_model, reload_model
 from kerastuner.abstractions.io import read_results, deserialize_loss
@@ -65,10 +63,7 @@ class HyperTuner(object):
         self.display_model = kwargs.get('display_model', '')
 
         # state init
-        self.state = State()
-        self.state.init_hypertuner(tuner_name)
-        self.state.user_info = kwargs.get('info', {})  # additional user info
-        self.state.system = System() # FIXME:REFACTOR
+        self.state = HypertunerState(tuner_name, kwargs.get('info', {}))
 
         # model checkpointing
         self.state.init_checkpoint(

@@ -1,5 +1,5 @@
 "Compute hardware statistics"
-
+import os
 import psutil
 import platform
 from subprocess import Popen, PIPE
@@ -28,7 +28,6 @@ class System():
         # keep it last
         self.software = self._get_software()
 
-
     def get_status(self):
         """
         Return various hardware counters
@@ -47,6 +46,17 @@ class System():
         status['hostname'] = self.hostname
         status["available_gpu"] = len(status['gpu'])
         return status
+
+    def to_dict(self):
+        """
+        Return various hardware counters as dict
+
+        implemented to have a consistent interface with State related classes
+
+        Returns:
+            dict: hardware counters
+        """
+        return self.get_status()
 
     def _get_hostname(self):
         """get system name"""
@@ -130,7 +140,7 @@ class System():
             # try to find it from system drive with default installation path
             nvidia_smi = spawn.find_executable('nvidia-smi')
             if nvidia_smi is None:
-                nvidia_smi = "%s\\Program Files\\NVIDIA Corporation\\NVSMI\\nvidia-smi.exe" % os.environ['systemdrive']
+                nvidia_smi = "%s\\Program Files\\NVIDIA Corporation\\NVSMI\\nvidia-smi.exe" % os.environ['systemdrive']  # nopep8
         else:
             nvidia_smi = "nvidia-smi"
         return nvidia_smi
@@ -156,7 +166,7 @@ class System():
         try:
             p = Popen([self.nvidia_smi, "--query-gpu=%s" % query,
                       "--format=csv,noheader,nounits"], stdout=PIPE)
-            stdout, stderror = p.communicate()
+            stdout, _ = p.communicate()
         except:
             return []
 

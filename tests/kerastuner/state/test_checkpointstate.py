@@ -1,5 +1,5 @@
 import pytest
-from kerastuner.state.checkpointstate import CheckpointState
+from kerastuner.states.checkpointstate import CheckpointState
 
 
 def test_valid_checkpoint():

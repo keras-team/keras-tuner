@@ -12,3 +12,4 @@ tmp/
 .ipynb_checkpoints/
 tmp.py
 kerastuner/engine_old/
+.coverage
