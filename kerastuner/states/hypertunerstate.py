@@ -50,10 +50,7 @@ class HypertunerState(State):
         self.system = System()
         self.checkpoint = DummyState()
         self.stats = HypertunerStatsState()
-
-    def init_checkpoint(self, is_enabled, monitor, mode):
-        "initialize checkpoint state"
-        self.checkpoint = CheckpointState(is_enabled, monitor, mode)
+        self.checkpoint = CheckpointState(**kwargs)
 
     def to_dict(self):
         res = {}
