@@ -1,5 +1,6 @@
 import pytest
 from kerastuner.states.checkpointstate import CheckpointState
+from common import is_serializable
 
 
 def test_valid_checkpoint():
@@ -7,6 +8,11 @@ def test_valid_checkpoint():
     assert cs.is_enabled
     assert cs.monitor == 'loss'
     assert cs.mode == 'min'
+
+
+def test_serializations():
+    cs = CheckpointState(True, 'loss', 'min')
+    is_serializable(cs)
 
 
 def test_disable_checkpoint():

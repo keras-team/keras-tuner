@@ -44,12 +44,11 @@ class HyperTuner(object):
             distributions (Distributions): distributions object
 
         Notes:
-            All architecture meta data are stored into the self.meta_data
-            field as they are only used for recording
+            All meta data and varialbles are stored into self.state
+            defined in states/hypertunerstate.py
         """
 
         # users params
-        self.epoch_budget = kwargs.get('epoch_budget', 3713)
         self.remaining_budget = self.epoch_budget
         self.max_epochs = kwargs.get('max_epochs', 50)
         self.min_epochs = kwargs.get('min_epochs', 3)
@@ -58,12 +57,18 @@ class HyperTuner(object):
         self.dry_run = kwargs.get('dry_run', False)
         self.debug = kwargs.get('debug', False)
         self.max_fail_streak = kwargs.get('max_fail_streak', 20)
-        self.num_gpu = kwargs.get('num_gpu', 0)
-        self.batch_size = kwargs.get('batch_size', 32)
+
         self.display_model = kwargs.get('display_model', '')
 
-        # state init
-        self.state = HypertunerState(tuner_name, kwargs.get('info', {}))
+        # hypertuner state init
+        self.state = HypertunerState(tuner_name, kwargs.get('info', {}),
+                                     kwargs.get('batch_size', 32),
+                                     kwargs.get('num_gpu', 0),
+
+                                     )
+        self.state.project = kwargs.get('project', 'default'),
+        self.state.architecture = kwargs.get('architecture',
+                                             str(self.state.start_time))
 
         # model checkpointing
         self.state.init_checkpoint(
@@ -73,33 +78,24 @@ class HyperTuner(object):
         )
 
         # check the model and record hparam
-        self._eval_model_fn()
+        self._check_and_store_model_fn(model_fn)
         # set global distribution object to the one requested by tuner
-        # MUST be after _eval_model_fn()
+        # !MUST be after _eval_model_fn()
         config.DISTRIBUTIONS = distributions
 
         # instances management
         self.instances = {}  # All the models we trained
         self.previous_instances = {}  # instance previously trained
         self.current_instance_idx = -1  # track the current instance trained
-        self.num_generated_models = 0  # overall number of model generated
-        self.num_invalid_models = 0  # how many models didn't work
-        self.num_mdl_previously_trained = 0  # how many models already trained
-        self.num_collisions = 0  # how many time we regenerated the same model
-        self.num_over_sized_models = 0  # num models with params> max_params
 
         # execution management
-        self.model_fn = model_fn
         self.callback_fn = kwargs.get('callback_generator', None)
-        self.keras_function = 'fit'
         self.backend = None  # init in the backend() funct if used
 
 
         # Model meta data
         self.meta_data = {
-            "architecture": kwargs.get('architecture', str(int(time.time()))),
-            "project": kwargs.get('project', 'default'),
-            "user_info": self.info
+
         }
 
         self.meta_data['server'] = {
@@ -247,9 +243,19 @@ class HyperTuner(object):
                 # storing previous instance results in memory in case the tuner needs them.
                 self.previous_instances[data['meta_data']['instance']] = data
 
-    def _eval_model_fn(self):
-        "perform various check and record hyperparam object"
-        self.model_fn()
+    def _check_and_store_model_fn(self, model_fn):
+        """
+        Check and store model_function and hyperparams
+
+        Args:
+            model_fn (function): user supplied funciton that return a model
+        """
+
+        # test and store model_fn
+        model_fn()
+        self.model_fn = model_fn
+
+        # record hparams
         hp = config.DISTRIBUTIONS.get_hyperparameters_config()
         self.hyperparameters_config = hp
         if len(self.hyperparameters_config) == 0:
