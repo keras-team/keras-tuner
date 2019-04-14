@@ -36,7 +36,7 @@ from .instance import Instance
 class HyperTuner(object):
     """Abstract hypertuner class."""
 
-    def __init__(self, model_fn, tuner_name, distributions, **kwargs):
+    def __init__(self, model_fn, hypertuner_name, distributions, **kwargs):
         """ Hypertuner abstract class
         Args:
             model_fn (function): Function that return a Keras model
@@ -61,11 +61,11 @@ class HyperTuner(object):
         self.display_model = kwargs.get('display_model', '')
 
         # hypertuner state init
-        self.state = HypertunerState(tuner_name, kwargs.get('info', {}),
-                                     kwargs.get('batch_size', 32),
-                                     kwargs.get('num_gpu', 0),
+        self.state = HypertunerState(hypertuner_name, **kwargs)
+        # kwargs.get('info', {}),
+        #                             kwargs.get('batch_size', 32),
+        #                             kwargs.get('num_gpu', 0),
 
-                                     )
         self.state.project = kwargs.get('project', 'default'),
         self.state.architecture = kwargs.get('architecture',
                                              str(self.state.start_time))

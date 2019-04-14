@@ -14,9 +14,7 @@ class CheckpointState(State):
             monitor (str): Metric to monitor
             mode (str): which direction to optiomize for: {min|max}
         """
-
-        # list attributes that should be exported
-        self.exportable_attributes = ['is_enabled', 'monitor', 'mode']
+        super(CheckpointState, self).__init__()
 
         self.is_enabled = is_enabled
 
@@ -24,9 +22,10 @@ class CheckpointState(State):
             warning("models will not be saved are you sure?")
             self.monitor = None
             self.mode = None
+            return
         else:
-            self.monitor = monitor
-            self.mode = mode
+            self.monitor = self._register('monitor', 'loss')
+            self.mode = self._register('mode', 'min')
 
         # errors
         if mode not in ['min', 'max']:

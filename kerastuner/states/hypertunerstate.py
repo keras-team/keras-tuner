@@ -11,16 +11,15 @@ from .checkpointstate import CheckpointState
 from .hypertunerstatsstate import HypertunerStatsState
 
 
-
 class HypertunerState(State):
     "Track hypertuner state"
 
-    def __init__(self, name, **kwargs):
+    def __init__(self, hypertuner_name, **kwargs):
         """
         [summary]
 
         Args:
-            name (str): hypertuner_name
+            hypertuner_name (str): hypertuner name.
 
             epoch_budget(int): defaults to 100. how many epochs to hypertune
             for
@@ -35,22 +34,20 @@ class HypertunerState(State):
 
         """
 
-        self.epoch_budget = kwargs.get('epoch_budget', 100)
-        self._check_type('epoch_budget', self.epoch_budget, int)
+        super(HypertunerState, self).__init__(**kwargs)
+
+        # user params
+        self.epoch_budget = self._register('epoch_budget', 100, True)
+        self.max_epochs = self._register('max_epochs', 10, True)
+        self.user_info = self._register('user_info', {})
+
+        # system parameters
+        self.name = hypertuner_name
+        self.start_time = int(time())
         self.remaining_budget = self.epoch_budget
 
-        self.max_epochs = kwargs.get('max_epochs', 10)
-        self._check_type('max_epochs', self.max_epochs, int)
-
-        self.user_info = kwargs.get('user_info', {})
-        self._check_type('user_info', self.user_info, dict)
-
-
-        self.name = name
-        self.system = System()
-        self.start_time = int(time())
-
         # sub-states
+        self.system = System()
         self.checkpoint = DummyState()
         self.stats = HypertunerStatsState()
 
@@ -61,11 +58,12 @@ class HypertunerState(State):
     def to_dict(self):
         res = {}
 
-        # collect base attributes values
-        attrs = ['name', 'epoch_budget', 'remaining_budget', 'max_epochs',
+        # collect user params
+        for name in self.user_parameters:
+            res[name] = getattr(self, name)
 
-                 'user_info',
-                 'start_time']
+        # collect programtically defined params
+        attrs = ['name', 'start_time', 'remaining_budget']
         for attr in attrs:
             res[attr] = getattr(self, attr)
 
@@ -74,8 +72,3 @@ class HypertunerState(State):
         res['checkpoint'] = self.checkpoint.to_dict()
         res['system'] = self.system.to_dict()
         return res
-
-    def _check_type(self, name, obj, expected_type):
-        if not isinstance(obj, expected_type):
-            fatal('Invalid type for %s -- expected:%s, got:%s' %
-                  (name, expected_type, type(obj)))
