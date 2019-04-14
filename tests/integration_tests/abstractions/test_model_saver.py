@@ -208,6 +208,12 @@ def test_save_tf_lite(
         feed_dict,
         output_names):
 
+    ver, sub_version, _ = tf.__version__.split('.')
+    # there are bugs with saving as tf.lite in early version
+    # see: https://github.com/tensorflow/tensorflow/issues/17349
+    if int(ver) == 1 and int(sub_version) < 13:
+        return
+
     save_path = os.path.join(str(tmp_path), "model_output")
 
     x, y = training_data
