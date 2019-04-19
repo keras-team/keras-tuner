@@ -13,7 +13,7 @@ class State(object):
         self.kwargs = kwargs
 
     @abstractmethod
-    def to_dict(self):
+    def to_config(self):
         "return state as an object"
 
     def _register(self, name, default_value, to_report=False):
@@ -31,8 +31,10 @@ class State(object):
 
         value = self.kwargs.get(name, default_value)
         if not isinstance(value, type(default_value)):
+            print(value)
+            print(default_value)
             fatal('Invalid type for %s -- expected:%s, got:%s' %
-                  (name, type(default_value), type(default_value)))
+                  (name, type(default_value), type(value)))
         self.user_parameters.append(name)
         if to_report:
             self.to_report.append(name)

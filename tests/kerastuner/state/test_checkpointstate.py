@@ -2,6 +2,7 @@ import pytest
 from kerastuner.states.checkpointstate import CheckpointState
 from .common import is_serializable
 
+
 @pytest.fixture
 def params():
     return {

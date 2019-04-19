@@ -13,11 +13,11 @@ from collections import defaultdict
 from pathlib import Path
 
 import tensorflow as tf
-import tensorflow.keras.backend as K
+import tensorflow.keras.backend as K  # pylint: disable=import-error
 from termcolor import cprint
 
 from kerastuner import config
-from kerastuner.states import HypertunerState
+from kerastuner.states import TunerState
 from kerastuner.distributions import DummyDistributions
 from kerastuner.abstractions.io import create_directory, glob, read_file
 from kerastuner.abstractions.io import save_model, reload_model
@@ -33,70 +33,40 @@ from .backend import Backend
 from .instance import Instance
 
 
-class HyperTuner(object):
+class Tuner(object):
     """Abstract hypertuner class."""
 
-    def __init__(self, model_fn, hypertuner_name, distributions, **kwargs):
-        """ Hypertuner abstract class
+    def __init__(self, model_fn, objective, name, distributions, **kwargs):
+        """ Tuner abstract class
+
         Args:
             model_fn (function): Function that return a Keras model
-            tuner_name (str): name of the tuner
+            name (str): name of the tuner
+            objective (Objective): Which objective the tuner optimize for
             distributions (Distributions): distributions object
 
         Notes:
             All meta data and varialbles are stored into self.state
-            defined in states/hypertunerstate.py
+            defined in ../states/tunerstate.py
         """
 
-        # users params
-        self.remaining_budget = self.epoch_budget
-        self.max_epochs = kwargs.get('max_epochs', 50)
-        self.min_epochs = kwargs.get('min_epochs', 3)
-
-        self.num_executions = kwargs.get('num_executions', 1)
-        self.dry_run = kwargs.get('dry_run', False)
-        self.debug = kwargs.get('debug', False)
-        self.max_fail_streak = kwargs.get('max_fail_streak', 20)
-
-        self.display_model = kwargs.get('display_model', '')
-
         # hypertuner state init
-        self.state = HypertunerState(hypertuner_name, **kwargs)
-        # kwargs.get('info', {}),
-        #                             kwargs.get('batch_size', 32),
-        #                             kwargs.get('num_gpu', 0),
+        self.state = TunerState(name, objective, **kwargs)
 
-        self.state.project = kwargs.get('project', 'default'),
-        self.state.architecture = kwargs.get('architecture',
-                                             str(self.state.start_time))
-
-        # model checkpointing
-        self.state.init_checkpoint(
-            kwargs.get('checkpoint_models', True),
-            kwargs.get('checkpoint_monitor', 'loss'),
-            kwargs.get('checkpoint_mode', 'min')
-        )
-
-        # check the model and record hparam
+        # validate the model and record its hparam
         self._check_and_store_model_fn(model_fn)
+
         # set global distribution object to the one requested by tuner
         # !MUST be after _eval_model_fn()
-        config.DISTRIBUTIONS = distributions
+        config._DISTRIBUTIONS = distributions
 
         # instances management
-        self.instances = {}  # All the models we trained
-        self.previous_instances = {}  # instance previously trained
-        self.current_instance_idx = -1  # track the current instance trained
+        self.max_fail_streak = 5  # how many failure before giving up
+        self.instances = {}  # Instances state we trained
+        self.current_instance_idx = -1  # idx of the last instance trained
 
         # execution management
-        self.callback_fn = kwargs.get('callback_generator', None)
         self.backend = None  # init in the backend() funct if used
-
-
-        # Model meta data
-        self.meta_data = {
-
-        }
 
         self.meta_data['server'] = {
             "local_dir": kwargs.get('local_dir', 'results/'),
@@ -191,17 +161,6 @@ class HyperTuner(object):
                 self.stats['best'][km[self.METRIC_NAME]] = -1
         self.meta_data['statistics'] = self.stats
 
-        # output control
-        if self.display_model not in ['', 'base', 'multi-gpu', 'both']:
-            raise Exception(
-                'Invalid display_model value: can be either base, multi-gpu or both')
-
-        # create local dir if needed
-        create_directory(self.meta_data['server']['local_dir'])
-        create_directory(self.meta_data['server']['tmp_dir'],
-                         remove_existing=True)
-        create_directory(self.meta_data['server']['export_dir'],
-                         remove_existing=True)
 
         # Load existing instances.
         self._load_previously_trained_instances(**kwargs)
@@ -245,7 +204,7 @@ class HyperTuner(object):
 
     def _check_and_store_model_fn(self, model_fn):
         """
-        Check and store model_function and hyperparams
+        Check and store model_function, hyperparams and metric info
 
         Args:
             model_fn (function): user supplied funciton that return a model
@@ -256,9 +215,9 @@ class HyperTuner(object):
         self.model_fn = model_fn
 
         # record hparams
-        hp = config.DISTRIBUTIONS.get_hyperparameters_config()
-        self.hyperparameters_config = hp
-        if len(self.hyperparameters_config) == 0:
+        hp = config._DISTRIBUTIONS.get_hyperparameters_config()
+        self.state.hyper_parameters = hp
+        if len(self.state.hyper_parameters) == 0:
             warning("No hyperparameters used in model function. Are you sure?")
 
     def summary(self):

@@ -1,11 +1,11 @@
 "Basic randomsearch tuner"
 from termcolor import cprint
-from ..engine import HyperTuner
+from ..engine import Tuner
 from kerastuner.abstractions.display import subsection
 from kerastuner.distributions import RandomDistributions
 
 
-class RandomSearch(HyperTuner):
+class RandomSearch(Tuner):
     "Basic hypertuner"
 
     def __init__(self, model_fn, **kwargs):

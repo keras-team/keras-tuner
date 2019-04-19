@@ -3,13 +3,12 @@ from __future__ import absolute_import
 from time import time
 
 from kerastuner.abstractions.display import fatal
-from kerastuner.abstractions.system import System
 
 from .state import State
 from .checkpointstate import CheckpointState
 
 
-class HypertunerStatsState(State):
+class TunerStatsState(State):
     "Track hypertuner statistics"
 
     def __init__(self):
@@ -20,7 +19,7 @@ class HypertunerStatsState(State):
         self.num_collisions = 0  # how many time we regenerated the same model
         self.num_over_sized_models = 0  # num models with params> max_params
 
-    def to_dict(self):
+    def to_config(self):
         return {
             'num_generated_models': self.num_generated_models,
             'num_invalid_models': self.num_invalid_models,

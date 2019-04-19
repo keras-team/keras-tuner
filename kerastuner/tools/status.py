@@ -12,7 +12,7 @@ import time
 from time import gmtime, strftime
 from etaprogress.components.eta_conversions import eta_letters
 
-from kerastuner.abstractions.system import System
+from kerastuner.abstractions.system import Host
 
 
 def parse_args():
@@ -164,7 +164,7 @@ def display_status(status, system):
 
 def status(debug=0):
     args = parse_args()
-    system = System()  # system monitoring
+    system = Host()  # system monitoring
     while 1:
         try:
             status = read_status(args.input_dir)

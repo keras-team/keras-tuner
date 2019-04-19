@@ -14,9 +14,9 @@ import numpy as np
 from math import log, ceil
 from tqdm import tqdm
 
-from ..engine import HyperTuner
+from ..engine import Tuner
 
-class UltraBand(HyperTuner):
+class UltraBand(Tuner):
   "UltraBand tuner"
 
   def __init__(self, model_fn, **kwargs):
@@ -42,7 +42,7 @@ class UltraBand(HyperTuner):
       dry_run (bool): do not train the model just run the pipeline. Default False
       max_fail_streak (int): number of failed model before giving up. Default 20
 
-    FIXME: 
+    FIXME:
      - Deal with early stop correctly
      - allows different halving ratio for epochs and models
      - allows differnet type of distribution
@@ -64,8 +64,8 @@ class UltraBand(HyperTuner):
       s2 = self.model_sequence[:i]
       self.band_costs.append(np.dot(self.epoch_sequence[:i], self.model_sequence[:i])) #Note: General form, sepecialize sequences have faster way
     self.loop_cost = np.sum(self.band_costs)
-    
-    self.num_loops = self.epoch_budget / float(self.loop_cost) 
+
+    self.num_loops = self.epoch_budget / float(self.loop_cost)
     self.num_bands = len(self.model_sequence)
     self.loop_left = self.num_loops
 
@@ -87,7 +87,7 @@ class UltraBand(HyperTuner):
   def search(self,x, y, **kwargs):
     while self.loop_left > 0:
       cprint('Budget:%s/%s - Loop %.2f/%.2f' % (self.epoch_budget_expensed, self.epoch_budget, self.loop_left, self.num_loops), 'blue')
-      
+
       #Last (fractional) loop
       if self.loop_left < 1:
         #Reduce the number of models for the last fractional loop
@@ -131,11 +131,11 @@ class UltraBand(HyperTuner):
           cost = num_models * num_epochs
           self.epoch_budget_expensed += cost
           band_total_cost += cost
-          
+
           # selecting best model
           band_models = self.__sort_models(model_instances, loss_values) #Bogus replace 2nd term with the loss array
           band_models = band_models[:num_models] # halve the m odels
-          
+
           #train
           cprint('|- Training %s models for an additional %s epochs' % (num_models, num_epochs), 'yellow')
           kwargs['epochs'] = num_epochs

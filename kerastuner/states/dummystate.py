@@ -8,5 +8,5 @@ class DummyState(State):
     def __init__(self):
         pass
 
-    def to_dict(self):
+    def to_config(self):
         return {}

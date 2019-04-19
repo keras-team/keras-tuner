@@ -44,7 +44,7 @@ class CheckpointState(State):
         info("Model checkpoint enabled: monitoiring %s %s" % (self.mode,
                                                               self.monitor))
 
-    def to_dict(self):
+    def to_config(self):
         "return object as dictionnary"
         return {
             "monitor": self.monitor,

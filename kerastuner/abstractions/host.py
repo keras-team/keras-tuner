@@ -1,5 +1,6 @@
 "Compute hardware statistics"
 import os
+from time import time
 import psutil
 import platform
 from subprocess import Popen, PIPE
@@ -9,9 +10,14 @@ import tensorflow as tf
 import kerastuner as kt
 
 
-class System():
+class Host():
 
     def __init__(self):
+
+        # caching
+        self.cached_status = None
+        self.cache_ts = None
+        self.cache_ttl = 3
 
         # compute static information once
         self.gpu_driver_version = 'N/A'
@@ -28,26 +34,32 @@ class System():
         # keep it last
         self.software = self._get_software()
 
-    def get_status(self):
+    def get_status(self, no_cach=False):
         """
         Return various hardware counters
+
+        Args:
+            no_cache (Bool): Defaults to True. Disable status cache
 
         Returns:
             dict: hardware counters
         """
-        status = {}
 
-        status['cpu'] = self._get_cpu_usage()
-        status['ram'] = self._get_memory_usage()
-        status['gpu'] = self._get_gpu_usage()
-        status['uptime'] = self._get_uptime()
-        status['disk'] = self._get_disk_usage()
-        status['software'] = self.software
-        status['hostname'] = self.hostname
-        status["available_gpu"] = len(status['gpu'])
-        return status
+        if not self.cached_status or time() - self.cache_ts > self.cache_ttl:
+            status = {}
+            status['cpu'] = self._get_cpu_usage()
+            status['ram'] = self._get_memory_usage()
+            status['gpu'] = self._get_gpu_usage()
+            status['uptime'] = self._get_uptime()
+            status['disk'] = self._get_disk_usage()
+            status['software'] = self.software
+            status['hostname'] = self.hostname
+            status["available_gpu"] = len(status['gpu'])
+            self.cached_status = status
+            self.cache_ts = time()
+        return self.cached_status
 
-    def to_dict(self):
+    def to_config(self):
         """
         Return various hardware counters as dict
 

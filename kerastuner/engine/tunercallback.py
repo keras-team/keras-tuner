@@ -14,7 +14,7 @@ from copy import copy
 from multiprocessing.pool import ThreadPool
 from kerastuner.abstractions.display import colorize, print_combined_table
 from kerastuner.abstractions.display import section, highlight, fatal, write_log
-from kerastuner.abstractions.system import System
+from kerastuner.abstractions.host import Host
 from kerastuner.abstractions.io import save_model
 from kerastuner.abstractions.display import get_progress_bar
 import numpy as np
@@ -52,7 +52,7 @@ class TunerCallback(keras.callbacks.Callback):
         self.log_interval = log_interval
         self.last_write = int(time.time())
         self.training_complete = False
-        self.system = System()  # computer stats
+        self.system = Host()  # computer stats
         self.backend = backend
 
         self.stats = {}  # track stats per epoch
