@@ -33,7 +33,7 @@ class RandomSearch(Tuner):
         super(RandomSearch, self).__init__(model_fn, 'RandomSearch',
                                            RandomDistributions(), **kwargs)
 
-    def hypertune(self, x, y, **kwargs):
+    def tune(self, x, y, **kwargs):
         while self.remaining_budget >= self.max_epochs:
             instance = self.new_instance()
             if not instance:

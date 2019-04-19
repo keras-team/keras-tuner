@@ -8,12 +8,12 @@ from __future__ import print_function
 from terminaltables import SingleTable, AsciiTable
 from tabulate import tabulate
 from colorama import init, Fore, Back, Style
-from tensorflow.python.lib.io import file_io  # allows to write to GCP or local
+from tensorflow.python.lib.io import file_io  # nopep8 pylint: disable=no-name-in-module
 
 init()  # colorama init
 
 
-# Check if we are in ipython/colab
+# Check if we are in a ipython/colab environement
 try:
     class_name = get_ipython().__class__.__name__
     if "Terminal" in class_name:
@@ -157,7 +157,7 @@ def subsection(text):
 
 
 def setting(text, ident=1, idx=0, render=True):
-    """ print setting
+    """ print a single setting
 
     Args:
         text (str): setting key:value as string
@@ -180,6 +180,25 @@ def setting(text, ident=1, idx=0, render=True):
         cprint(s, color)
     else:
         return colorize(s + '\n', color)
+
+
+def settings(mysettings, render=True):
+    """
+    Render a collection of settings
+
+    Args:
+        mysettings (dict): dictionnary of settings
+        render (bool, optional): Defaults to True. print?
+    """
+    s = ""
+    idx = 0
+    for name, value in mysettings.items():
+        txt = "%s:%s" % (name, value)
+        s += setting(txt, idx=idx, render=render)
+        idx += 1
+
+    if not render:
+        return s
 
 
 def highlight(text):

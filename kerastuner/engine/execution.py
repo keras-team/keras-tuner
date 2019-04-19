@@ -12,7 +12,6 @@ from tensorflow.keras.optimizers import Optimizer
 from tensorflow.python.lib.io import file_io  # allows to write to GCP or local
 from termcolor import cprint
 
-from . import backend
 from .tunercallback import TunerCallback
 
 
@@ -77,7 +76,7 @@ class InstanceExecution(object):
                 self.model.summary()
 
     def fit(self, x, y, **kwargs):
-        """Fit a given model 
+        """Fit a given model
         Note: This wrapper around Keras fit allows to handle multi-gpu support and use fit or fit_generator
         """
         tcb = TunerCallback(self.instance_info, self.key_metrics,

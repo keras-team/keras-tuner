@@ -27,9 +27,8 @@ from kerastuner.abstractions.display import setting, subsection
 from kerastuner.abstractions.display import info, warning, fatal, set_log
 from kerastuner.abstractions.display import get_progress_bar
 from kerastuner.abstractions.display import colorize, colorize_default
-from kerastuner.utils import max_model_size
 from kerastuner.tools.summary import summary as result_summary
-from .backend import Backend
+from .cloudservice import CloudService
 from .instance import Instance
 
 
@@ -52,6 +51,7 @@ class Tuner(object):
 
         # hypertuner state init
         self.state = TunerState(name, objective, **kwargs)
+        self.cloudservice = CloudService()
 
         # validate the model and record its hparam
         self._check_and_store_model_fn(model_fn)
@@ -64,60 +64,6 @@ class Tuner(object):
         self.max_fail_streak = 5  # how many failure before giving up
         self.instances = {}  # Instances state we trained
         self.current_instance_idx = -1  # idx of the last instance trained
-
-        # execution management
-        self.backend = None  # init in the backend() funct if used
-
-        self.meta_data['server'] = {
-            "local_dir": kwargs.get('local_dir', 'results/'),
-            "export_dir": kwargs.get('local_dir', 'exports/'),
-            "tmp_dir": kwargs.get('tmp_dir', 'tmp/')
-        }
-
-        self.meta_data['server'].update(self.system.get_status())
-        if not self.num_gpu and self.meta_data['server']['available_gpu']:
-            # marking gpu 1 as used if TF support gpu
-            if self.meta_data['server']['software']['tensorflow_use_gpu']:
-                self.num_gpu = 1
-            else:
-                warning("GPU detected but tensorflow is not compiled to use it")
-        self.meta_data['server']['num_gpu'] = self.num_gpu
-
-        # max model size estimation
-        max_params = kwargs.get('max_params', 'auto')
-        if max_params == 'auto':  # compute max based of our estimate
-            if self.meta_data['server']['software']['tensorflow_use_gpu']:
-                total = self.meta_data['server']['gpu'][0]['memory']['total']
-                used = self.meta_data['server']['gpu'][0]['memory']['used']
-                available = total - used
-                self.max_params = max_model_size(self.batch_size, available,
-                                                 self.num_gpu)
-            else:
-                total = self.meta_data['server']['ram']['total']
-                used = self.meta_data['server']['ram']['used']
-                available = total - used
-                max_params = max(max_model_size(
-                    self.batch_size, available, 1), 5000000)
-                self.max_params = max_params
-        else:
-            self.max_params = max_params
-
-        self.meta_data['tuner'] = {
-            "name": self.tuner_name,
-            "start_time": self.start_time,
-
-            "epoch_budget": self.epoch_budget,
-            "remaining_budget": self.remaining_budget,
-            "min_epochs": self.min_epochs,
-            "max_epochs": self.max_epochs,
-            "max_params": self.max_params,
-
-            "trained_models": self.num_generated_models,
-            "collisions": self.num_collisions,
-            "invalid_models": self.num_invalid_models,
-            "over_size_models": self.num_over_sized_models,
-            "checkpoint": self.checkpoint
-        }
 
         # metrics
         self.METRIC_NAME = 0
@@ -252,40 +198,30 @@ class Tuner(object):
         print_table(rows)
 
     def enable_cloud(self, api_key, **kwargs):
-        """Setup backend configuration
+        """Enable cloud service reporting
 
             Args:
                 api_key (str): The backend API access token.
-                # FIXME: document this function better
-                kwargs (dict): Optional. Contains the key "url", pointing to the
-                base url of the backend.
-            Note: this is called by the user
+
+            Note:
+                this is called by the user
         """
-        self.backend = Backend(
-            api_key=api_key,
-            url=kwargs.get(
-                'url', 'https://us-central1-keras-tuner.cloudfunctions.net/api'),
-            notifications={
-                "crash": kwargs.get("crash_notification", False),
-                "tuning_completion": kwargs.get("tuning_completion_notification", False),
-                "instance_completion": kwargs.get("instance_completion_notification", False)
-            }
-        )
+        self.cloudservice.enable(api_key)
 
     def search(self, x, y, **kwargs):
         self.keras_function = 'fit'
         kwargs["verbose"] = 0
-        self.hypertune(x, y, **kwargs)
-        if self.backend:
-            self.backend.complete()
+        self.tune(x, y, **kwargs)
+        if self.cloudservice.is_enable:
+            self.cloudservice.complete()
 
     def search_generator(self, x, **kwargs):
         self.keras_function = 'fit_generator'
         kwargs["verbose"] = 0
         y = None  # fit_generator don't use this so we put none to be able to have a single hypertune function
-        self.hypertune(x, y, **kwargs)
-        if self.backend:
-            self.backend.complete()
+        self.tune(x, y, **kwargs)
+        if self.cloudservice.is_enable:
+            self.cloudservice.complete()
 
     def _clear_tf_graph(self):
         """ Clear the content of the TF graph to ensure
@@ -520,5 +456,5 @@ class Tuner(object):
         )
 
     @abstractmethod
-    def hypertune(self, x, y, **kwargs):
+    def tune(self, x, y, **kwargs):
         "method called by the hypertuner to train an instance"

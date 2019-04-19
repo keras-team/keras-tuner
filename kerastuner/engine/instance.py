@@ -11,7 +11,6 @@ import tensorflow as tf
 from tensorflow.keras import backend as K
 from tensorflow.python.lib.io import file_io  # allows to write to GCP or local
 
-from . import backend
 from .execution import InstanceExecution
 from kerastuner.abstractions.io import serialize_loss
 

@@ -68,6 +68,7 @@ class TunerState(State):
         # execution
         self.num_executions = self._register('num_executions', 1, True)
         self.hyper_parameters = None  # set in Tuner._check_and_store_model_fn
+        self.max_parameters = self._register('max_parameters', 50000000)
 
         # debug
         self.dry_run = self._register('dry_run', False)
@@ -75,7 +76,7 @@ class TunerState(State):
         self.display_model = self._register('display_model', '')
 
         # sub-states
-        self.host = HostState()
+        self.host = HostState(**kwargs)
         self.checkpoint = DummyState()
         self.stats = TunerStatsState()
         self.checkpoint = CheckpointState(**kwargs)

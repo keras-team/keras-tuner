@@ -11,7 +11,7 @@ def Fixed(name, value, group="default"):
     Returns:
         value
     """
-    return config.DISTRIBUTIONS.Fixed(name, value, group)
+    return config._DISTRIBUTIONS.Fixed(name, value, group)
 
 
 def Boolean(name, group="default"):
@@ -22,7 +22,7 @@ def Boolean(name, group="default"):
     Returns:
         an boolean
     """
-    return config.DISTRIBUTIONS.Boolean(name, group)
+    return config._DISTRIBUTIONS.Boolean(name, group)
 
 
 def Choice(name, selection, group="default"):
@@ -34,7 +34,7 @@ def Choice(name, selection, group="default"):
     Returns:
         an element of the list provided
     """
-    return config.DISTRIBUTIONS.Choice(name, selection, group)
+    return config._DISTRIBUTIONS.Choice(name, selection, group)
 
 
 def Range(name, start, stop, increment=1, group='default'):
@@ -47,7 +47,7 @@ def Range(name, start, stop, increment=1, group='default'):
     Returns:
         an element of the range
     """
-    return config.DISTRIBUTIONS.Range(name, start, stop, increment, group)
+    return config._DISTRIBUTIONS.Range(name, start, stop, increment, group)
 
 
 def Linear(name, start, stop, num_buckets, precision=0, group='default'):
@@ -62,8 +62,8 @@ def Linear(name, start, stop, num_buckets, precision=0, group='default'):
     Returns:
         an element of the range
     """
-    return config.DISTRIBUTIONS.Linear(name, start, stop, num_buckets,
-                                       precision, group)
+    return config._DISTRIBUTIONS.Linear(name, start, stop, num_buckets,
+                                        precision, group)
 
 
 def Logarithmic(name, start, stop, num_buckets, precision=0, group='default'):
@@ -78,5 +78,5 @@ def Logarithmic(name, start, stop, num_buckets, precision=0, group='default'):
     Returns:
         an element of the range
     """
-    return config.DISTRIBUTIONS.Logarithmic(name, start, stop, num_buckets,
-                                            precision, group)
+    return config._DISTRIBUTIONS.Logarithmic(name, start, stop, num_buckets,
+                                             precision, group)
