@@ -160,19 +160,19 @@ def subsection(text):
         write_log(section)
 
 
-def display_setting(text, ident=1, idx=0, render=True):
+def display_setting(text, indent_level=1, idx=0, render=True):
     """ Print a single setting
 
     Args:
-        text (str): setting key:value as string
-        ident (int, optional): Number of space indentation. Defaults to 0.
+        text (str): Setting key:value as string
+        indent_level (int, optional): Num indentation space. Defaults to 0.
         idx (int, optional): Index of setting to rotate color. Defaults to 0.
         render (bool, optional): Render or return settings. Defaults to True.
 
     Returns:
         str: colorized settings.
     """
-    s = ' ' * ident
+    s = ' ' * indent_level
     s += '|-' + text
     if idx % 2:
         color = 'blue'
@@ -185,19 +185,22 @@ def display_setting(text, ident=1, idx=0, render=True):
     return colorize(s + '\n', color)
 
 
-def display_settings(mysettings, render=True):
+def display_settings(mysettings, indent_level=1, render=True):
     """
     Render a collection of settings
 
     Args:
-        mysettings (dict): dictionnary of settings
-        render (bool, optional): Defaults to True. print?
+        mysettings (dict): Dictionnary of settings
+        indent_level (int): Identation level. Defaults to 1.
+        render (bool, optional): Print? Defaults to True.
     """
     s = ""
     idx = 0
-    for name, value in mysettings.items():
-        txt = "%s:%s" % (name, value)
-        s += display_setting(txt, idx=idx, render=render)
+    for name in sorted(mysettings.keys()):
+        value = mysettings[name]
+        txt = "%s: %s" % (name, value)
+        s += display_setting(txt, idx=idx, indent_level=indent_level,
+                             render=render)
         idx += 1
     return s
 

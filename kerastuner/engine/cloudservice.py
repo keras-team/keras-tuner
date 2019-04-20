@@ -8,7 +8,8 @@ import time
 import requests
 import json
 from datetime import datetime
-from kerastuner.abstractions.display import warning, info, section, display_settings
+from kerastuner.abstractions.display import warning, info, section
+from kerastuner.abstractions.display import display_settings
 
 DISABLE = 'disable'
 AUTH_ERROR = 'authentication error'

@@ -1,5 +1,6 @@
 from .state import State
-from kerastuner.abstractions.display import warning, fatal, info
+from kerastuner.abstractions.display import warning, fatal, info, cprint
+from kerastuner.abstractions.display import subsection, display_settings
 
 
 class CheckpointState(State):
@@ -10,9 +11,16 @@ class CheckpointState(State):
         Model checkpointing state
 
         Args:
-            checkpoint_models (bool): Defaults to True. Use checkpointing?
-            monitor (str): Defaults to loss. Metric to monitor
-            mode (str): Defaults to min. Optimization direction: {min|max}
+            checkpoint_models (bool): Use checkpointing? Defaults to True.
+            monitor (str): Metric to monitor. Defaults to objective.
+            mode (str): Optimization direction: {min|max}.
+            Defaults to objective direction.
+
+        Attributes:
+            is_enable (bool): is checkpointing enable
+            monitor (str): which metric to checkpoint on?
+            mode (str): which direction the metric is going to
+
         """
         super(CheckpointState, self).__init__(**kwargs)
 
@@ -43,6 +51,16 @@ class CheckpointState(State):
 
         info("Model checkpoint enabled: monitoring %s %s" % (self.mode,
                                                              self.monitor))
+
+    def summary(self, extended=False):
+        subsection('Checkpoint summary')
+        if not self.is_enabled:
+            cprint('disabled', 'yellow')
+        else:
+            if extended:
+                display_settings(self.to_config())
+            else:
+                display_settings({'monitor': self.monitor, 'mode': self.mode})
 
     def to_config(self):
         "return object as dictionnary"

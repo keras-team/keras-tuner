@@ -1,6 +1,6 @@
 import json
 
-from kerastuner.abstractions.display import get_progress_bar
+from kerastuner.abstractions.display import get_progress_bar, info
 from kerastuner.abstractions.io import read_file, glob
 
 
@@ -64,5 +64,6 @@ class InstanceCollection(object):
                 if (data['tuner']['project'] == project or not project):
                     self._instances[data['instance']['idx']] = data
                     count += 1
+        info("%s previous instances reloaded" % count)
         return count
 

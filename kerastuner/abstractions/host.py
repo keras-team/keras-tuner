@@ -8,9 +8,16 @@ from distutils import spawn
 from time import time
 import tensorflow as tf
 import kerastuner as kt
+from .display import subsection, display_settings, display_setting
 
 
 class Host():
+    """Provide an abstract view of host data
+
+    Attributes:
+        cache_ttl (int): how long to cache host status
+
+    """
 
     def __init__(self):
 
@@ -58,6 +65,61 @@ class Host():
             self.cached_status = status
             self.cache_ts = time()
         return self.cached_status
+
+    def summary(self, extended=False):
+        """Display a summary of host state
+
+        Args:
+            extended (bool, optional): Display an extensive summary.
+            Defaults to False.
+        """
+        status = self.get_status()
+        subsection("Host info")
+        if not extended:
+            summary = {
+                "num gpu": len(status['gpu']),
+                "num cpu cores": status['cpu']['core_count'],
+                "Keras Tuner version": status['software']['kerastuner'],
+                "Tensorflow version": status['software']['tensorflow']
+            }
+            display_settings(summary)
+        else:
+            summary = {
+                "cache ttl": self.cache_ttl,
+                "hostname": self.hostname,
+                "uptime": status['uptime']
+            }
+            display_settings(summary)
+
+            # software
+            display_setting('software', idx=1)
+            display_settings(status['software'], indent_level=2)
+
+            # ram
+            s = "ram: %s/%s%s" % (status['ram']['used'], status['ram']['total'],  # nopep8
+                                  status['ram']['unit'])
+            display_setting(s, idx=2)
+
+            # disk
+            display_setting('disks', idx=3)
+            for idx, disk in enumerate(status['disk']):
+                s = "%s %s/%s %s" % (disk['name'], disk['used'],
+                                     disk['total'], disk['unit'])
+                display_setting(s, idx=idx, indent_level=2)
+
+            # cpu
+            display_setting('cpu')
+            display_settings(status['cpu'], indent_level=2)
+
+            # gpu
+            if len(status['gpu']) > 1:
+                display_setting('gpus')
+                indent = 3
+            else:
+                indent = 2
+            for gpu in status['gpu']:
+                display_setting('gpu', indent_level=indent - 1)
+                display_settings(gpu, indent_level=indent)
 
     def to_config(self):
         """

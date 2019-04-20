@@ -52,6 +52,7 @@ class Tuner(object):
 
         # hypertuner state init
         self.state = TunerState(name, objective, **kwargs)
+        self.stats = self.state.stats  # shorthand access
         self.cloudservice = CloudService()
 
         # validate the model and record its hparam
@@ -64,9 +65,12 @@ class Tuner(object):
         # instances management
         self.max_fail_streak = 5  # how many failure before giving up
         self.instances = InstanceCollection()
-        self.instances.load_from_dir(self.state.host.result_dir,
-                                     self.state.project,
-                                     self.state.architecture)
+
+        # previous models
+        count = self.instances.load_from_dir(self.state.host.result_dir,
+                                             self.state.project,
+                                             self.state.architecture)
+        self.stats.model_previously_trained = count
 
         # metrics
         # FIXME: fix importing metrics
@@ -102,9 +106,14 @@ class Tuner(object):
         if len(self.state.hyper_parameters) == 0:
             warning("No hyperparameters used in model function. Are you sure?")
 
-    def summary(self):
-        "Print a summary of the tuning"
-        self.state.summary()
+    def summary(self, extended=False):
+        """Print tuner summary
+
+        Args:
+            extended (bool, optional): Display extended summary.
+            Defaults to False.
+        """
+        self.state.summary(extended=extended)
 
     def enable_cloud(self, api_key, **kwargs):
         """Enable cloud service reporting
@@ -127,8 +136,8 @@ class Tuner(object):
     def search_generator(self, x, **kwargs):
         self.keras_function = 'fit_generator'
         kwargs["verbose"] = 0
-        y = None  # fit_generator don't use this so we put none to be able to have a single hypertune function
-        self.tune(x, y, **kwargs)
+        # fit_generator don't use y this so we use None instead
+        self.tune(x, None, **kwargs)
         if self.cloudservice.is_enable:
             self.cloudservice.complete()
 
@@ -141,45 +150,39 @@ class Tuner(object):
         while 1:
             # clean-up TF graph from previously stored (defunct) graph
             clear_tf_session()
-            self.num_generated_models += 1
+            self.stats.generated_models += 1
             fail_streak += 1
             try:
                 model = self.model_fn()
             except:
-                if self.debug:
-                    import traceback
+                if self.state.debug:
                     traceback.print_exc()
 
-                self.num_invalid_models += 1
-                warning("invalid model %s/%s" %
-                        (self.num_invalid_models,
-                         self.max_fail_streak))
+                self.stats.invalid_models += 1
+                warning("invalid model %s/%s" % (self.stats.invalid_models,
+                                                 self.max_fail_streak))
 
-                if self.num_invalid_models >= self.max_fail_streak:
+                if self.stats.invalid_models >= self.max_fail_streak:
+                    warning("too many consecutive failed model - stopping")
                     return None
                 continue
 
             # stop if the model_fn() return nothing
             if not model:
-                warning("No model returned from model_fn - stopping.")
+                warning("No model returned from model function - stopping.")
                 return None
 
+            # computing instance unique idx
             idx = self.__compute_model_id(model)
-
-            if idx in self.previous_instances:
-                info("model %s already trained -- skipping" % idx)
-                self.num_mdl_previously_trained += 1
-                continue
 
             if idx in self.instances:
                 collision_streak += 1
-                self.num_collisions += 1
-                self.meta_data['tuner']['collisions'] = self.num_collisions
+                self.stats.collisions += 1
                 warning("Collision for %s -- skipping" % (idx))
                 if collision_streak >= self.max_fail_streak:
                     return None
                 continue
-            hparams = config.DISTRIBUTIONS.get_current_hyperparameters()
+            hparams = config._DISTRIBUTIONS.get_current_hyperparameters()
             self.current_hyperparameters = hparams
             self._update_metadata()
             instance = Instance(idx, model, hparams, self.meta_data, self.num_gpu, self.batch_size,

@@ -3,7 +3,8 @@ from __future__ import absolute_import
 from .state import State
 
 from kerastuner.abstractions.host import Host
-from kerastuner.abstractions.display import fatal
+from kerastuner.abstractions.display import fatal, subsection
+from kerastuner.abstractions.display import display_settings
 from kerastuner.abstractions.io import create_directory
 from kerastuner import config
 
@@ -38,6 +39,17 @@ class HostState(State):
 
         # init _HOST
         config._Host = Host()
+
+    def summary(self, extended=False):
+        subsection('Directories')
+        settings = {
+            "results": self.result_dir,
+            "tmp": self.tmp_dir,
+            "export": self.export_dir
+        }
+        display_settings(settings)
+        if extended:
+            config._Host.summary(extended=extended)
 
     def to_config(self):
         res = {}

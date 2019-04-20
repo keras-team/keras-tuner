@@ -61,6 +61,7 @@ class TunerState(State):
         start_time (int): when tuning started
         remaining_budget (int): how many epoch are left
         hyper_parameters (dict): hyper parameters used
+        log_file (str): path to the log file
     """
 
     def __init__(self, name, objective, **kwargs):
@@ -77,7 +78,7 @@ class TunerState(State):
 
         # user info
         self.project = self._register('project', 'default')
-        self.architecture = self._register('architecture', str(time()))
+        self.architecture = self._register('architecture', str(int(time())))
         self.user_info = self._register('user_info', {})
 
         # execution
@@ -89,7 +90,7 @@ class TunerState(State):
         # debug
         self.dry_run = self._register('dry_run', False)
         self.debug = self._register('debug', False)
-        self.display_model = self._register('display_model', '')
+        self.display_model = self._register('display_model', False)
 
         # sub-states
         self.host = HostState(**kwargs)
@@ -99,8 +100,8 @@ class TunerState(State):
         # logfile
         log_name = "%s_%s_%d.log" % (self.project, self.architecture,
                                      self.start_time)
-        log_file = os.path.join(self.host.result_dir, log_name)
-        set_log(log_file)
+        self.log_file = os.path.join(self.host.result_dir, log_name)
+        set_log(self.log_file)
 
     def summary(self, extended=False):
         """Display a summary of the tuner state
@@ -109,16 +110,26 @@ class TunerState(State):
             extended (bool, optional):Display an extended summay.
             Defaults to False.
         """
+        if self.debug:
+            extended = True
         section('Tuner config')
-        subsection('Main parameters')
-        summary = {}
-        if not extended and not self.debug:
-            # collect parameters marked as to report
+        subsection('Tuning parameters')
+        summary = {'tuner': self.name}
+
+        if not extended:
             for attr in self.to_report:
                 summary[attr] = getattr(self, attr)
         else:
-            summary = self.to_config()
+            for attr in self.user_parameters:
+                if attr in ['user_info']:
+                    continue
+                summary[attr] = getattr(self, attr)
+            summary['log file'] = self.log_file
         display_settings(summary)
+
+        if len(self.user_info) and extended:
+            subsection('User info')
+            display_settings(self.user_info)
 
         self.checkpoint.summary(extended=extended)
         self.host.summary(extended=extended)

@@ -13,11 +13,11 @@ class TunerStatsState(State):
 
     def __init__(self):
 
-        self.num_generated_models = 0  # overall number of model generated
-        self.num_invalid_models = 0  # how many models didn't work
-        self.num_mdl_previously_trained = 0  # how many models already trained
-        self.num_collisions = 0  # how many time we regenerated the same model
-        self.num_over_sized_models = 0  # num models with params> max_params
+        self.generated_models = 0  # overall number of model generated
+        self.invalid_models = 0  # how many models didn't work
+        self.model_previously_trained = 0  # num models already trained
+        self.collisions = 0  # how many time we regenerated the same model
+        self.over_sized_models = 0  # num models with params> max_params
 
     def to_config(self):
         return {

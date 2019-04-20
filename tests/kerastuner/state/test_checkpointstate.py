@@ -42,3 +42,15 @@ def test_bad_monitor(params):
     params['checkpoint_monitor'] = {}
     with pytest.raises(ValueError):
         CheckpointState(**params)
+
+
+def test_summary(params, capsys):
+    cs = CheckpointState(**params)
+    cs.summary()
+    captured = capsys.readouterr()
+    to_test = [
+        "mode: min",
+        "monitor: loss"
+    ]
+    for s in to_test:
+        assert s in captured.out
