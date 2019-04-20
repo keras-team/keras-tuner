@@ -1,7 +1,8 @@
 import os
 
-from tensorflow.gfile import Open, MakeDirs, Exists, DeleteRecursively, Glob
-from tensorflow.gfile import Remove, Copy
+from tensorflow.gfile import Open, MakeDirs, Exists  # nopep8 pylint: disable=import-error
+from tensorflow.gfile import DeleteRecursively, Glob  # nopep8 pylint: disable=import-error
+from tensorflow.gfile import Remove, Copy  # nopep8 pylint: disable=import-error
 
 
 def open_file(filename, mode):

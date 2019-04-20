@@ -1,8 +1,8 @@
 import tensorflow as tf
 
-from tensorflow.keras import backend as K
-from tensorflow.keras.layers import Input, Concatenate, Dense
-from tensorflow.keras.models import Model, load_model, model_from_json
+from tensorflow.keras import backend as K  # nopep8 pylint: disable=import-error
+from tensorflow.keras.layers import Input, Concatenate, Dense  # nopep8 pylint: disable=import-error
+from tensorflow.keras.models import Model, load_model, model_from_json  # nopep8 pylint: disable=import-error
 from kerastuner.abstractions.io import save_model, read_file
 import numpy as np
 import os

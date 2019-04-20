@@ -1,8 +1,9 @@
 from __future__ import absolute_import
 
+import os
 from time import time
 
-from kerastuner.abstractions.display import fatal
+from kerastuner.abstractions.display import fatal, set_log, section, settings
 
 from .state import State
 from .dummystate import DummyState
@@ -20,32 +21,38 @@ class TunerState(State):
 
         objective (Objective): Which objective the tuner is optimizing for
 
-        epoch_budget (int): defaults to 100. how many epochs to hypertune
-        for
+        epoch_budget (int, optional): how many epochs to hypertune for.
+        Defaults to 100.
 
-        max_budget (int): defaults to 10. how many epochs to spend at most
-        on given model
+        max_budget (int, optional): how many epochs to spend at most on
+        a given model. Defaults to 10.
 
-        min_budget (int): defaults to 3. how many epochs to spend at least
-        on given model
+        min_budget (int, optional): how many epochs to spend at least on
+        a given model. Defaults to 3.
 
-        project (str):  defaults to 'default'. project the tuning belong to
+        project (str, optional): project the tuning belong to.
+        Defaults to 'default'.
 
-        architecture (str): default to timestamp. name of the architecture
-        tuned
+        architecture (str, optional): Name of the architecture tuned.
+        Default to timestamp.
 
-        user_info(dict): additional user supplied information that will be
-        recorded alongside training data
+        user_info(dict, optional): user supplied information that will be
+        recorded alongside training data. Defaults to {}.
 
-        num_executions(int): defaults to 1. number of execution per model
+        num_executions(int, optional):number of execution per model.
+        Defaults to 1.
 
-        dry_run(bool): defaults to False. Run the tuner without training
-        models
+        max_model_parameters (int, optional):maximum number of parameters
+        allowed for a model. Prevent OOO issue. Defaults to 2500000.
 
-        debug(bool): defaults to False. Display debug information if true
+        dry_run(bool, optional): Run the tuner without training models.
+        Defaults to False.
 
-        display_model(bool): defaults to False. Display model summary if
-        true
+        debug(bool, optional): Display debug information if true.
+        Defaults to False.
+
+        display_model(bool, optional):Display model summary if true.
+        Defaults to False.
     """
 
     def __init__(self, name, objective, **kwargs):
@@ -68,7 +75,8 @@ class TunerState(State):
         # execution
         self.num_executions = self._register('num_executions', 1, True)
         self.hyper_parameters = None  # set in Tuner._check_and_store_model_fn
-        self.max_parameters = self._register('max_parameters', 50000000)
+        self.max_parameters = self._register('max_model_parameters', 25000000,
+                                             True)
 
         # debug
         self.dry_run = self._register('dry_run', False)
@@ -77,9 +85,29 @@ class TunerState(State):
 
         # sub-states
         self.host = HostState(**kwargs)
-        self.checkpoint = DummyState()
         self.stats = TunerStatsState()
         self.checkpoint = CheckpointState(**kwargs)
+
+        # logfile
+        log_name = "%s_%s_%d.log" % (self.project, self.architecture,
+                                     self.start_time)
+        log_file = os.path.join(self.host.result_dir, log_name)
+        set_log(log_file)
+
+    def summary(self, extended=False):
+        summary = {}
+
+        if not extended and not self.debug:
+            # collect parameters marked as to report
+            for attr in self.to_report:
+                summary[attr] = getattr(self, attr)
+        else:
+            summary = self.to_config()
+
+        section('Tuner general config')
+        settings(summary)
+        self.checkpoint.summary()
+        self.host.summary()
 
     def to_config(self):
         res = {}

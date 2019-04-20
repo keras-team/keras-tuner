@@ -12,13 +12,7 @@ from abc import abstractmethod
 from collections import defaultdict
 from pathlib import Path
 
-import tensorflow as tf
-import tensorflow.keras.backend as K  # pylint: disable=import-error
-from termcolor import cprint
-
-from kerastuner import config
-from kerastuner.states import TunerState
-from kerastuner.distributions import DummyDistributions
+from kerastuner.abstractions.tf import clear_tf_session
 from kerastuner.abstractions.io import create_directory, glob, read_file
 from kerastuner.abstractions.io import save_model, reload_model
 from kerastuner.abstractions.io import read_results, deserialize_loss
@@ -28,8 +22,11 @@ from kerastuner.abstractions.display import info, warning, fatal, set_log
 from kerastuner.abstractions.display import get_progress_bar
 from kerastuner.abstractions.display import colorize, colorize_default
 from kerastuner.tools.summary import summary as result_summary
+from kerastuner import config
+from kerastuner.states import TunerState
 from .cloudservice import CloudService
 from .instance import Instance
+from .instancecollection import InstanceCollection
 
 
 class Tuner(object):
@@ -62,78 +59,15 @@ class Tuner(object):
 
         # instances management
         self.max_fail_streak = 5  # how many failure before giving up
-        self.instances = {}  # Instances state we trained
-        self.current_instance_idx = -1  # idx of the last instance trained
+        self.instances = InstanceCollection()
+        self.instances.load_from_dir(self.state.host.result_dir, self.project,
+                                     self.state.architecture)
 
         # metrics
-        self.METRIC_NAME = 0
-        self.METRIC_DIRECTION = 1
-        self.max_acc = -1
-        self.min_loss = sys.maxsize
-        self.max_val_acc = -1
-        self.min_val_loss = sys.maxsize
+        # FIXME: fix importing metrics
 
-        # including user metrics
-        user_metrics = kwargs.get('metrics')
-        if user_metrics:
-            self.key_metrics = []
-            for tm in user_metrics:
-                if not isinstance(tm, tuple):
-                    cprint(
-                        "[Error] Invalid metric format: %s (%s) - metric format is (metric_name, direction) e.g ('val_acc', 'max') - Ignoring" % (tm, type(tm)), 'red')
-                    continue
-                if tm[self.METRIC_DIRECTION] not in ['min', 'max']:
-                    cprint(
-                        "[Error] Invalid metric direction for: %s - metric format is (metric_name, direction). direction is min or max - Ignoring" % tm, 'red')
-                    continue
-                self.key_metrics.append(tm)
-        else:
-            # sensible default
-            self.key_metrics = [('loss', 'min'), ('val_loss', 'min'),
-                                ('acc', 'max'), ('val_acc', 'max')]
-
-        # initializing stats
-        self.stats = {
-            'best': {},
-            'latest': {},
-            'direction': {}
-        }
-        for km in self.key_metrics:
-            self.stats['direction'][km[self.METRIC_NAME]
-                                    ] = km[self.METRIC_DIRECTION]
-            if km[self.METRIC_DIRECTION] == 'min':
-                self.stats['best'][km[self.METRIC_NAME]] = sys.maxsize
-            else:
-                self.stats['best'][km[self.METRIC_NAME]] = -1
-        self.meta_data['statistics'] = self.stats
-
-
-        # Load existing instances.
-        self._load_previously_trained_instances(**kwargs)
-
-        # Set the log
-        log_name = "%s_%s_%d.log" % (self.meta_data["project"],
-                                     self.meta_data["architecture"],
-                                     int(time.time()))
-        log_file = os.path.join(
-            self.meta_data['server']['local_dir'], log_name)
-        set_log(log_file)
-
-        # make sure TF session is configured correctly
-        cfg = tf.ConfigProto()
-        cfg.gpu_options.allow_growth = True
-        K.set_session(tf.Session(config=cfg))
-
-        # FIXME: output metadata (move from backend call)
-
-        # recap
-        section("Key parameters")
-        available_gpu = self.meta_data['server']['available_gpu']
-        setting("GPUs Used: %d / %d" % (self.num_gpu, available_gpu), idx=0)
-        setting("Model max params: %.1fM" %
-                (self.max_params / 1000000.0), idx=1)
-        setting("Saving results in %s" % self.meta_data['server']['local_dir'],
-                idx=2)
+        # display config summary
+        self.state.summary()
 
     def _load_previously_trained_instances(self, **kwargs):
         "Checking for existing models"
@@ -156,8 +90,18 @@ class Tuner(object):
             model_fn (function): user supplied funciton that return a model
         """
 
+        if not model_fn:
+            fatal("Model function can't be empty")
+
         # test and store model_fn
-        model_fn()
+        try:
+            mdl = model_fn()
+        except:
+            fatal("Invalid model function")
+
+        # FIXME: check that the function do indeed return a valid model
+
+        # function is valid - recording it
         self.model_fn = model_fn
 
         # record hparams
@@ -223,13 +167,6 @@ class Tuner(object):
         if self.cloudservice.is_enable:
             self.cloudservice.complete()
 
-    def _clear_tf_graph(self):
-        """ Clear the content of the TF graph to ensure
-            we have a valid model is in memory
-        """
-        K.clear_session()
-        gc.collect()
-
     def new_instance(self):
         "Return a never seen before model instance"
         fail_streak = 0
@@ -238,7 +175,7 @@ class Tuner(object):
 
         while 1:
             # clean-up TF graph from previously stored (defunct) graph
-            self._clear_tf_graph()
+            clear_tf_session()
             self.num_generated_models += 1
             fail_streak += 1
             try:

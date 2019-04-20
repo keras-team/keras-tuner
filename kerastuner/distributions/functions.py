@@ -1,6 +1,9 @@
 from kerastuner.distributions import DummyDistributions
 from kerastuner import config
 
+# set dummydistribution as default to allows evaluation and analysis
+config._DISTRIBUTIONS = DummyDistributions()
+
 
 def Fixed(name, value, group="default"):
     """Return a fixed selected value

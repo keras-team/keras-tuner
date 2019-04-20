@@ -13,9 +13,12 @@ class HostState(State):
     Track underlying Host state
 
     Args:
-        result_dir (str): defaults to results/. Tuning results dir
-        tmp_dir (str): deaults to tmp/. Temporary dir. Wipped at tuning start
-        export_dir (str): defaults to export/. Export model dir
+        result_dir (str, optional): Tuning results dir. Defaults to results/.
+
+        tmp_dir (str, optional): Temporary dir. Wipped at tuning start.
+        Defaults to tmp/.
+
+        export_dir (str, optional): Export model dir. Defaults to export/.
     """
     def __init__(self, **kwargs):
         super(HostState, self).__init__(**kwargs)

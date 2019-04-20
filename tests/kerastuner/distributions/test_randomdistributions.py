@@ -10,6 +10,7 @@ from .common import linear_correctness_test, logarithmic_correctness_test
 SAMPLE_SIZE = 10000
 rand = RandomDistributions()
 
+
 # Hyperparameters
 def test_record_hyperparameters():
     record_hyperparameters_test(RandomDistributions())

@@ -35,14 +35,14 @@ class CheckpointState(State):
         suggestion = None
         if 'acc' in self.monitor and self.mode == 'min':
             suggestion = "change checkpoint_mode to 'max'?"
-        if 'loss' in self.monitor and self.mode == 'min':
+        if 'loss' in self.monitor and self.mode == 'max':
             suggestion = "change checkpoint_mode to 'min'?"
         if suggestion:
             warning("Incorrect checkpoint configuration: %s %s -- %s" % (
                     self.monitor, self.mode, suggestion))
 
-        info("Model checkpoint enabled: monitoiring %s %s" % (self.mode,
-                                                              self.monitor))
+        info("Model checkpoint enabled: monitoring %s %s" % (self.mode,
+                                                             self.monitor))
 
     def to_config(self):
         "return object as dictionnary"

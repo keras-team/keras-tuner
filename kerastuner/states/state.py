@@ -16,6 +16,10 @@ class State(object):
     def to_config(self):
         "return state as an object"
 
+    @abstractmethod
+    def summary(self, extended=False):
+        "display state status summary"
+
     def _register(self, name, default_value, to_report=False):
         """
         Register a user value and check its value type match what is expected

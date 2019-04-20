@@ -5,6 +5,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from kerastuner import config
 from terminaltables import SingleTable, AsciiTable
 from tabulate import tabulate
 from colorama import init, Fore, Back, Style
@@ -56,21 +57,17 @@ styles = {
 }
 
 
-LOG = None
-
-
 # Log functions
 def set_log(filename):
-    global LOG
-    LOG = file_io.FileIO(filename, 'w')
+    config._LOG = file_io.FileIO(filename, 'w')
 
 
 def write_log(text):
-    if LOG and not IS_NOTEBOOK:
-        LOG.write(text + "\n")
+    if config._LOG and not IS_NOTEBOOK:
+        config._LOG.write(text + "\n")
 
 
-# shorthand functions
+# Shorthand functions
 def info(text, render=1):
     """ display a info
 

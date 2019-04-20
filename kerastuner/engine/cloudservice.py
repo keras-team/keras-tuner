@@ -150,8 +150,8 @@ class CloudService():
     def send_results(self, results):
         self._send_nonblocking("results", results)
 
-    def report(self, extended=False):
-        "report service status"
+    def summary(self, extended=False):
+        "display cloud service status summary"
         human_time = datetime.utcfromtimestamp(self.last_update)
         human_time = human_time.strftime('%Y-%m-%dT%H:%M:%SZ')
 
