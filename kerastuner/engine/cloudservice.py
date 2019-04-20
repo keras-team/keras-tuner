@@ -8,7 +8,7 @@ import time
 import requests
 import json
 from datetime import datetime
-from kerastuner.abstractions.display import warning, info, section, settings
+from kerastuner.abstractions.display import warning, info, section, display_settings
 
 DISABLE = 'disable'
 AUTH_ERROR = 'authentication error'
@@ -160,7 +160,7 @@ class CloudService():
             "status": self.status,
             "last update": human_time
             }
-        settings(info)
+        display_settings(info)
 
     def to_config(self):
         # !DO NOT record API key

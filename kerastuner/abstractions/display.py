@@ -109,14 +109,14 @@ def warning(text, render=1):
 
 
 def fatal(text, render=True, raise_exception=True):
-    """ display a fatal error, and die
+    """ Display a fatal error, and die
 
     Args:
-        text (str): fatal message
-        render (bool, optional): Defaults to True. render or return settings
-        raise_exception (bool, optional): Defaults to True. raise a ValueError?
+        text (str): Fatal message
+        render (bool, optional): Render or return settings. Defaults to True.
+        raise_exception (bool, optional): Raise a ValueError. Defaults to True.
     Returns:
-        str: setting value if render=False, None otherwise
+        str: Formated fatal message
     """
     color = 'white'
     bgcolor = 'red'
@@ -127,13 +127,15 @@ def fatal(text, render=True, raise_exception=True):
         cprint(s, color, bgcolor)
         if raise_exception:
             raise ValueError(s)
-    else:
-        if raise_exception:
-            raise ValueError(s)
-        return colorize(s + '\n', color, bgcolor)
+    return colorize(s + '\n', color, bgcolor)
 
 
 def section(text):
+    """ Render a section
+
+    Args:
+        text (str): Section name
+    """
     if IS_NOTEBOOK:
         section = '<h1 style="font-size:18px">' + text + '</h1>'
         cprint(section, '#4527A0')
@@ -144,6 +146,11 @@ def section(text):
 
 
 def subsection(text):
+    """ Render a subsection.
+
+    Args:
+        text (str): Subsection name
+    """
     if IS_NOTEBOOK:
         section = '<h2 style="font-size:16px">' + text + '</h2>'
         cprint(section, '#7E57C2')
@@ -153,17 +160,17 @@ def subsection(text):
         write_log(section)
 
 
-def setting(text, ident=1, idx=0, render=True):
-    """ print a single setting
+def display_setting(text, ident=1, idx=0, render=True):
+    """ Print a single setting
 
     Args:
         text (str): setting key:value as string
-        ident (int, optional): Defaults to 0. Space indentation
-        idx (int, optional): Defaults to 0. index of setting to rotate color.
-        render (bool, optional): Defaults to True. render or return settings
+        ident (int, optional): Number of space indentation. Defaults to 0.
+        idx (int, optional): Index of setting to rotate color. Defaults to 0.
+        render (bool, optional): Render or return settings. Defaults to True.
 
     Returns:
-        str: setting value if render=False, None otherwise
+        str: colorized settings.
     """
     s = ' ' * ident
     s += '|-' + text
@@ -175,11 +182,10 @@ def setting(text, ident=1, idx=0, render=True):
     write_log(s)
     if render:
         cprint(s, color)
-    else:
-        return colorize(s + '\n', color)
+    return colorize(s + '\n', color)
 
 
-def settings(mysettings, render=True):
+def display_settings(mysettings, render=True):
     """
     Render a collection of settings
 
@@ -191,11 +197,9 @@ def settings(mysettings, render=True):
     idx = 0
     for name, value in mysettings.items():
         txt = "%s:%s" % (name, value)
-        s += setting(txt, idx=idx, render=render)
+        s += display_setting(txt, idx=idx, render=render)
         idx += 1
-
-    if not render:
-        return s
+    return s
 
 
 def highlight(text):

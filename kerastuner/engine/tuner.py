@@ -11,13 +11,17 @@ import time
 from abc import abstractmethod
 from collections import defaultdict
 from pathlib import Path
+import traceback
+
+# used to check if supplied model_fn is a valid model
+from tensorflow.keras.models import Model  # pylint: disable=import-error
 
 from kerastuner.abstractions.tf import clear_tf_session
 from kerastuner.abstractions.io import create_directory, glob, read_file
 from kerastuner.abstractions.io import save_model, reload_model
 from kerastuner.abstractions.io import read_results, deserialize_loss
 from kerastuner.abstractions.display import highlight, print_table, section
-from kerastuner.abstractions.display import setting, subsection
+from kerastuner.abstractions.display import display_setting, subsection
 from kerastuner.abstractions.display import info, warning, fatal, set_log
 from kerastuner.abstractions.display import get_progress_bar
 from kerastuner.abstractions.display import colorize, colorize_default
@@ -60,27 +64,12 @@ class Tuner(object):
         # instances management
         self.max_fail_streak = 5  # how many failure before giving up
         self.instances = InstanceCollection()
-        self.instances.load_from_dir(self.state.host.result_dir, self.project,
+        self.instances.load_from_dir(self.state.host.result_dir,
+                                     self.state.project,
                                      self.state.architecture)
 
         # metrics
         # FIXME: fix importing metrics
-
-        # display config summary
-        self.state.summary()
-
-    def _load_previously_trained_instances(self, **kwargs):
-        "Checking for existing models"
-        result_path = Path(kwargs.get('local_dir', 'results/'))
-        filenames = list(result_path.glob('*-results.json'))
-        for filename in get_progress_bar(filenames, unit='model', desc='Finding previously trained models'):
-            data = json.loads(open(str(filename)).read())
-
-            # Narrow down to matching project and architecture
-            if (data['meta_data']['architecture'] == self.meta_data['architecture']
-                    and data['meta_data']['project'] == self.meta_data['project']):
-                # storing previous instance results in memory in case the tuner needs them.
-                self.previous_instances[data['meta_data']['instance']] = data
 
     def _check_and_store_model_fn(self, model_fn):
         """
@@ -97,9 +86,12 @@ class Tuner(object):
         try:
             mdl = model_fn()
         except:
+            traceback.print_exc()
             fatal("Invalid model function")
 
-        # FIXME: check that the function do indeed return a valid model
+        if not isinstance(mdl, Model):
+            t = "tensorflow.keras.models.Model"
+            fatal("Invalid model function: Doesn't return a %s object" % t)
 
         # function is valid - recording it
         self.model_fn = model_fn
@@ -111,35 +103,8 @@ class Tuner(object):
             warning("No hyperparameters used in model function. Are you sure?")
 
     def summary(self):
-        "Print a summary of the hyperparams search"
-        section("Hyper-parmeters search space")
-
-        # Compute the size of the hyperparam space by generating a model
-        total_size = 1
-        data_by_group = defaultdict(dict)
-        group_size = defaultdict(lambda: 1)
-        for data in self.hyperparameters_config.values():
-            data_by_group[data['group']][data['name']] = data['space_size']
-            group_size[data['group']] *= data['space_size']
-            total_size *= data['space_size']
-
-        # Generate the table.
-        rows = [['param', 'space size']]
-        for idx, grp in enumerate(sorted(data_by_group.keys())):
-            if idx % 2:
-                color = 'blue'
-            else:
-                color = 'default'
-
-            rows.append([colorize(grp, color), ''])
-            for param, size in data_by_group[grp].items():
-                rows.append([colorize("|-%s" % param, color),
-                             colorize(size, color)])
-
-        rows.append(['', ''])
-        rows.append([colorize('total', 'magenta'),
-                     colorize(total_size, 'magenta')])
-        print_table(rows)
+        "Print a summary of the tuning"
+        self.state.summary()
 
     def enable_cloud(self, api_key, **kwargs):
         """Enable cloud service reporting
@@ -236,9 +201,9 @@ class Tuner(object):
         self.current_instance_idx = idx
 
         section("New Instance")
-        setting("Remaining Budget: %d" % self.remaining_budget, idx=0)
-        setting("Num Instances Trained: %d" % self.num_generated_models, idx=1)
-        setting("Model size: %d" % num_params, idx=2)
+        display_setting("Remaining Budget: %d" % self.remaining_budget, idx=0)
+        display_setting("Num Instances Trained: %d" % self.num_generated_models, idx=1)
+        display_setting("Model size: %d" % num_params, idx=2)
 
         subsection("Instance Hyperparameters")
         table = [["Hyperparameter", "Value"]]

@@ -55,6 +55,9 @@ class InstanceCollection(object):
                                       desc='Loading instances'):
 
             data = json.loads(read_file(str(fname)))
+
+            if 'tuner' not in 'data':
+                continue
             # Narrow down to matching project and architecture
             if (not architecture or
                     (data['tuner']['architecture'] == architecture)):

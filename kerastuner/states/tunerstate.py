@@ -2,8 +2,11 @@ from __future__ import absolute_import
 
 import os
 from time import time
+from collections import defaultdict
 
-from kerastuner.abstractions.display import fatal, set_log, section, settings
+from kerastuner.abstractions.display import fatal, set_log, section, subsection
+from kerastuner.abstractions.display import display_settings, colorize
+from kerastuner.abstractions.display import print_table
 
 from .state import State
 from .dummystate import DummyState
@@ -53,6 +56,11 @@ class TunerState(State):
 
         display_model(bool, optional):Display model summary if true.
         Defaults to False.
+
+    Attributes:
+        start_time (int): when tuning started
+        remaining_budget (int): how many epoch are left
+        hyper_parameters (dict): hyper parameters used
     """
 
     def __init__(self, name, objective, **kwargs):
@@ -75,8 +83,8 @@ class TunerState(State):
         # execution
         self.num_executions = self._register('num_executions', 1, True)
         self.hyper_parameters = None  # set in Tuner._check_and_store_model_fn
-        self.max_parameters = self._register('max_model_parameters', 25000000,
-                                             True)
+        self.max_model_parameters = self._register('max_model_parameters',
+                                                   25000000, True)
 
         # debug
         self.dry_run = self._register('dry_run', False)
@@ -95,19 +103,53 @@ class TunerState(State):
         set_log(log_file)
 
     def summary(self, extended=False):
-        summary = {}
+        """Display a summary of the tuner state
 
+        Args:
+            extended (bool, optional):Display an extended summay.
+            Defaults to False.
+        """
+        section('Tuner config')
+        subsection('Main parameters')
+        summary = {}
         if not extended and not self.debug:
             # collect parameters marked as to report
             for attr in self.to_report:
                 summary[attr] = getattr(self, attr)
         else:
             summary = self.to_config()
+        display_settings(summary)
 
-        section('Tuner general config')
-        settings(summary)
-        self.checkpoint.summary()
-        self.host.summary()
+        self.checkpoint.summary(extended=extended)
+        self.host.summary(extended=extended)
+
+        subsection("Hyper-parmeters search space")
+        # Compute the size of the hyperparam space by generating a model
+        total_size = 1
+        data_by_group = defaultdict(dict)
+        group_size = defaultdict(lambda: 1)
+        for data in self.hyper_parameters.values():
+            data_by_group[data['group']][data['name']] = data['space_size']
+            group_size[data['group']] *= data['space_size']
+            total_size *= data['space_size']
+
+        # Generate the table.
+        rows = [['param', 'space size']]
+        for idx, grp in enumerate(sorted(data_by_group.keys())):
+            if idx % 2:
+                color = 'blue'
+            else:
+                color = 'default'
+
+            rows.append([colorize(grp, color), ''])
+            for param, size in data_by_group[grp].items():
+                rows.append([colorize("|-%s" % param, color),
+                             colorize(size, color)])
+
+        rows.append(['', ''])
+        rows.append([colorize('total', 'magenta'),
+                     colorize(total_size, 'magenta')])
+        print_table(rows)
 
     def to_config(self):
         res = {}

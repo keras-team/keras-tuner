@@ -7,7 +7,7 @@ import numpy as np
 import json
 import platform
 from kerastuner.abstractions.display import make_bar_chart, make_combined_table
-from kerastuner.abstractions.display import colorize, setting, cprint, make_table
+from kerastuner.abstractions.display import colorize, display_setting, cprint, make_table
 import time
 from time import gmtime, strftime
 from etaprogress.components.eta_conversions import eta_letters
