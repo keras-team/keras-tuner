@@ -30,7 +30,7 @@ from kerastuner import config
 from kerastuner.states import TunerState
 from .cloudservice import CloudService
 from .instance import Instance
-from .instancecollection import InstanceCollection
+from kerastuner.collections import InstancesCollection
 
 
 class Tuner(object):
@@ -82,7 +82,7 @@ class Tuner(object):
 
         # instances management
         self.max_fail_streak = 5  # how many failure before giving up
-        self.instances = InstanceCollection()
+        self.instances = InstancesCollection()
 
         # previous models
         count = self.instances.load_from_dir(self.state.host.result_dir,

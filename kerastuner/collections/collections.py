@@ -1,40 +1,48 @@
 import json
 
-from kerastuner.abstractions.display import get_progress_bar, info
+from kerastuner.abstractions.display import get_progress_bar, info, warning
 from kerastuner.abstractions.io import read_file, glob
 
 
-class InstanceCollection(object):
+class Collection(object):
     """ Manage a collection of instance
 
-    Args:
-        path (str): where instances results are stored
-        project (str): id
+    Attributes:
+        _objects (dict): collection of objects
+        _last_insert_idx (str): id of the last inserted object
     """
 
     def __init__(self):
-        self._instances = {}  # collection of instance
-        self._last_instance_idx = None
+        self._objects = {}  # collection of instance
+        self._last_insert_idx = None
 
-    def add(self, idx, instance):
-        """Add instance to the collection
+    def add(self, idx, obj):
+        """Add object to the collection
 
         Args:
-            idx (str): Instance idx
-            instance (Instance): Instance object
+            idx (str): object index
+            obj (Object): Object to add
         """
-        self._instances[idx] = instance
-        self._last_instance_idx = idx
+        self._objects[idx] = obj
+        self._last_insert_idx = idx
 
     def get(self, idx):
-        "Return the instance associated with an idx"
-        if idx in self._instances:
-            return self._instances[idx]
+        """Return the object associated with a given id
+
+        Args:
+            idx (str): Object id
+
+        Returns:
+            Object: object associated if found or None
+        """
+        if idx in self._objects:
+            return self._objects[idx]
         else:
+            warning("%s not found" % idx)
             return None
 
     def get_last(self):
-        return self._instances[self._last_instance_idx]
+        return self._objects[self._last_insert_idx]
 
     def load_from_dir(self, path, project=None, architecture=None):
         """Load instance collection from disk or bucket
@@ -62,8 +70,7 @@ class InstanceCollection(object):
             if (not architecture or
                     (data['tuner']['architecture'] == architecture)):
                 if (data['tuner']['project'] == project or not project):
-                    self._instances[data['instance']['idx']] = data
+                    self._objects[data['instance']['idx']] = data
                     count += 1
         info("%s previous instances reloaded" % count)
         return count
-
