@@ -3,6 +3,7 @@ import numpy as np
 from collections import defaultdict
 
 from kerastuner.abstractions.display import print_table, subsection, colorize
+from kerastuner.abstractions.display import display_setting
 
 
 class Distributions(object):
@@ -150,6 +151,7 @@ class Distributions(object):
 
     def config_summary(self):
         subsection("Hyper-parmeters search space")
+        display_setting("distribution type: %s" % self.name)
         # Compute the size of the hyperparam space by generating a model
         total_size = 1
         data_by_group = defaultdict(dict)

@@ -18,18 +18,13 @@ from kerastuner.abstractions.io import serialize_loss
 class Instance(object):
     """Model instance class."""
 
-    def __init__(self, idx, model, hyper_parameters, meta_data, num_gpu,
-                 batch_size, display_model, key_metrics, keras_function,
-                 checkpoint, callback_fn, backend):
+    def __init__(self, idx, model, tuner_state, cloudservice):
 
         self.ts = int(time.time())
         self.training_size = -1
         self.model = model
-        self.hyper_parameters = hyper_parameters
         self.optimizer_config = tf.keras.optimizers.serialize(model.optimizer)
         self.loss_config = serialize_loss(model.loss)
-
-        self.checkpoint = checkpoint
         self.idx = idx
 
         # Ensure that changes to the meta data won't affect other instances.

@@ -58,9 +58,10 @@ class TunerState(State):
         Defaults to False.
 
     Attributes:
-        start_time (int): when tuning started
-        remaining_budget (int): how many epoch are left
-        log_file (str): path to the log file
+        start_time (int): When tuning started.
+        remaining_budget (int): How many epoch are left.
+        keras_function (str): Which keras function to use to train models.
+        log_file (str): Path to the log file.
     """
 
     def __init__(self, name, objective, **kwargs):
@@ -101,6 +102,8 @@ class TunerState(State):
         self.log_file = os.path.join(self.host.result_dir, log_name)
         set_log(self.log_file)
 
+        self.keras_function = 'unknown'
+
     def summary(self, extended=False):
         """Display a summary of the tuner state
 
@@ -140,7 +143,7 @@ class TunerState(State):
             res[name] = getattr(self, name)
 
         # collect programtically defined params
-        attrs = ['name', 'start_time', 'remaining_budget']
+        attrs = ['name', 'start_time', 'remaining_budget', 'keras_function']
         for attr in attrs:
             res[attr] = getattr(self, attr)
 
