@@ -60,7 +60,6 @@ class TunerState(State):
     Attributes:
         start_time (int): when tuning started
         remaining_budget (int): how many epoch are left
-        hyper_parameters (dict): hyper parameters used
         log_file (str): path to the log file
     """
 
@@ -83,7 +82,6 @@ class TunerState(State):
 
         # execution
         self.num_executions = self._register('num_executions', 1, True)
-        self.hyper_parameters = None  # set in Tuner._check_and_store_model_fn
         self.max_model_parameters = self._register('max_model_parameters',
                                                    25000000, True)
 
@@ -142,7 +140,7 @@ class TunerState(State):
             res[name] = getattr(self, name)
 
         # collect programtically defined params
-        attrs = ['name', 'start_time', 'remaining_budget', 'hyper_parameters']
+        attrs = ['name', 'start_time', 'remaining_budget']
         for attr in attrs:
             res[attr] = getattr(self, attr)
 
