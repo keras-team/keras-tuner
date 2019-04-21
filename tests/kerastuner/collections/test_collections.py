@@ -1,11 +1,20 @@
 import pytest
 from kerastuner.collections.collections import Collection
 
+
 @pytest.fixture
 def obj():
     return {
         'idx': '3713',
     }
+
+
+def test_len():
+    c = Collection()
+    c.add('a', 'a')
+    c.add('b', 'b')
+    c.add('c', 'c')
+    assert len(c) == 3
 
 
 def test_add_get(obj):

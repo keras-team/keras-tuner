@@ -1,6 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
-import copy
+from copy import deepcopy
 import time
 from os import path
 
@@ -10,30 +10,21 @@ from tensorflow import keras
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Optimizer
 from tensorflow.python.lib.io import file_io  # allows to write to GCP or local
-from termcolor import cprint
 
 from .tunercallback import TunerCallback
+from kerastuner.states import ExecutionState
 
-
-class InstanceExecution(object):
+class Execution(object):
     """Model Execution class. Each Model instance can be executed N time"""
 
-    def __init__(self, model, idx, meta_data, num_gpu, display_model,
-                 display_info, instance_info, key_metrics, keras_function,
-                 checkpoint, callback_fn, backend):
-        self.ts = int(time.time())
-        self.idx = idx
+    def __init__(self, model, instance_state, tuner_state, cloudservice):
 
-        self.meta_data = copy.deepcopy(meta_data)
-        self.meta_data['execution'] = self.ts
+        self.state = ExecutionState()
+        self.instance_state = instance_state
+        self.tuner_state = tuner_state
+        self.cloudservice = cloudservice
 
-        self.num_epochs = -1
-        self.num_gpu = num_gpu
-        self.display_model = display_model
-        self.display_info = display_info
-        self.checkpoint = checkpoint
-
-        # keep a separated model per instance
+        # Model recreaction
         config = model.get_config()
         if isinstance(model, Sequential):
             self.model = Sequential.from_config(config)
@@ -42,38 +33,8 @@ class InstanceExecution(object):
 
         optimizer_config = tf.keras.optimizers.serialize(model.optimizer)
         optimizer = tf.keras.optimizers.deserialize(optimizer_config)
-
-        self.model.compile(optimizer=optimizer, loss=model.loss,
-                           metrics=model.metrics, loss_weights=model.loss_weights)
-
-        self.model = model
-        self.instance_info = instance_info
-        self.key_metrics = key_metrics
-        self.keras_function = keras_function
-        self.callback_fn = callback_fn
-        self.backend = backend
-
-        # reflected to the callback_fn which is a user function and therefore must be documented / decoupled
-        self.execution_info = {}
-
-        for k in ['project', 'architecture', 'instance', 'execution']:
-            self.execution_info[k] = self.meta_data[k]
-
-        for k in ['training_size', 'validation_size', 'batch_size', 'model_size', 'hyper_parameters']:
-            self.execution_info[k] = self.instance_info[k]
-
-        if (self.display_model == 'base' or self.display_model == 'both') and self.display_info:
-            self.model.summary()
-
-        # FIXME compile the model on CPU > recommended to avoid OOO
-        if self.num_gpu > 1:
-            model = keras.utils.multi_gpu_model(self.model, gpus=self.num_gpu)
-            # WARNING: model.compile do NOT return a model
-            model.compile(optimizer=optimizer, loss=self.model.loss,
-                          metrics=self.model.metrics, loss_weights=self.model.loss_weights)
-            self.model = model
-            if (self.display_model == 'multi-gpu' or self.display_model == 'both') and self.display_info:
-                self.model.summary()
+        self.model.compile(optimizer=optimizer, metrics=model.metrics,
+                           loss=model.loss, loss_weights=model.loss_weights)
 
     def fit(self, x, y, **kwargs):
         """Fit a given model

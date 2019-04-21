@@ -3,9 +3,8 @@ import json
 import tensorflow as tf
 from copy import deepcopy
 
-from kerastuner import config
 from .state import State
-
+from kerastuner import config
 from kerastuner.abstractions.tf import compute_model_size
 from kerastuner.abstractions.io import serialize_loss
 from kerastuner.abstractions.display import print_table, section, subsection
@@ -15,6 +14,7 @@ from kerastuner.abstractions.display import display_setting, display_settings
 class InstanceState(State):
 
     def __init__(self, idx, model, hyper_parameters):
+        super(InstanceState, self).__init__()
         self.start_time = int(time.time())
         self.idx = idx
 

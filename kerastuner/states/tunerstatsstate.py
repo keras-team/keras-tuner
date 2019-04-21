@@ -1,18 +1,16 @@
 from __future__ import absolute_import
-
 from time import time
-
-from kerastuner.abstractions.display import fatal, subsection, display_settings
 
 from .state import State
 from .checkpointstate import CheckpointState
+from kerastuner.abstractions.display import fatal, subsection, display_settings
 
 
 class TunerStatsState(State):
     "Track hypertuner statistics"
 
     def __init__(self):
-
+        super(TunerStatsState, self).__init__()
         self.generated_instances = 0  # overall number of instances generated
         self.invalid_instances = 0  # how many models didn't work
         self.instances_previously_trained = 0  # num instance already trained

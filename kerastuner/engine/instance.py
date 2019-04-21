@@ -3,8 +3,11 @@ import time
 from collections import defaultdict
 from os import path
 import tensorflow as tf
-from kerastuner.states.instancestate import InstanceState
-from .execution import InstanceExecution
+
+from .execution import Execution
+from kerastuner.states import InstanceState
+from kerastuner.collections import ExecutionsCollection
+from kerastuner.abstractions.display import section, subsection
 
 
 class Instance(object):
@@ -15,12 +18,13 @@ class Instance(object):
         self.model = model
         self.tuner_state = tuner_state
         self.cloudservice = cloudservice
-        self.executions = []
+        self.executions = ExecutionsCollection()
 
         # init instance state
         self.state = InstanceState(idx, model, hparams)
 
     def summary(self, extended=False):
+        section("Instance summary")
         self.state.summary(extended=extended)
 
     def fit_resume(self, fixme):
@@ -33,8 +37,10 @@ class Instance(object):
         """Fit an execution of the model instance
         """
 
+        # collect batch_size from the fit function
         self.state.batch_size = kwargs.get('batch_size', 32)
 
+        # compute training_size and validation_size
         # in theory for batch training the function is __len__
         # should be implemented. However, for generator based training, __len__
         # returns the number of batches, NOT the training size.
@@ -54,9 +60,18 @@ class Instance(object):
         else:
             self.state.validation_size = 0
 
+        # tell the user we are training a new instance
+        if not len(self.executions):
+            section("Training new instance")
+            self.state.summary()
+            if self.tuner_state.display_model:
+                subsection("Model summary")
+                self.model.summary()
 
         # FIXME we need to return properly results
-        execution = self.__new_execution()
+        execution = Exception(self.model, self.state, self.tuner_state,
+                              self.cloudservice)
+        self.executions.add(len(self.executions), execution)
         results = execution.fit(x, y, **kwargs)
 
         # compute execution level metrics
@@ -65,26 +80,6 @@ class Instance(object):
 
         # FIXME compute results and probably update the result file here
         return self
-
-    def __new_execution(self):
-        num_executions = len(self.executions)
-
-        # ensure that info is only displayed once per iteration
-        if num_executions > 0:
-            display_model = None
-            display_info = False
-        else:
-            display_info = True
-            display_model = self.display_model
-
-        instance_info = self.__get_instance_info()
-        execution = InstanceExecution(
-            self.model, self.idx, self.meta_data, self.num_gpu, display_model,
-            display_info, instance_info, self.key_metrics, self.keras_function,
-            self.checkpoint, self.callback_fn, self.backend,
-        )
-        self.executions.append(execution)
-        return execution
 
     def record_results(self):
         """Record training results

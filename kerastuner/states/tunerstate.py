@@ -4,15 +4,14 @@ import os
 from time import time
 from collections import defaultdict
 
-from kerastuner.abstractions.display import fatal, set_log, section, subsection
-from kerastuner.abstractions.display import display_settings, colorize
-from kerastuner.abstractions.display import print_table
-
 from .state import State
 from .dummystate import DummyState
 from .checkpointstate import CheckpointState
 from .tunerstatsstate import TunerStatsState
 from .hoststate import HostState
+from kerastuner.abstractions.display import fatal, set_log, section, subsection
+from kerastuner.abstractions.display import display_settings, colorize
+from kerastuner.abstractions.display import print_table
 
 
 class TunerState(State):
@@ -113,7 +112,6 @@ class TunerState(State):
         """
         if self.debug:
             extended = True
-        section('Tuner config')
         subsection('Tuning parameters')
         summary = {'tuner': self.name}
 

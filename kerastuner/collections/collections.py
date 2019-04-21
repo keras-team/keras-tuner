@@ -16,6 +16,9 @@ class Collection(object):
         self._objects = {}  # collection of instance
         self._last_insert_idx = None
 
+    def __len__(self):
+        return len(self._objects)
+
     def add(self, idx, obj):
         """Add object to the collection
 

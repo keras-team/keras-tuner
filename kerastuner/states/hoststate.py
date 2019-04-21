@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 
 from .state import State
-
 from kerastuner.abstractions.host import Host
 from kerastuner.abstractions.display import fatal, subsection
 from kerastuner.abstractions.display import display_settings

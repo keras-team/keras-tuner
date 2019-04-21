@@ -92,6 +92,7 @@ class Tuner(object):
 
         # metrics
         # FIXME: fix importing metrics
+        info("Tuner initialized")
 
     def summary(self, extended=False):
         """Print tuner summary
@@ -100,6 +101,7 @@ class Tuner(object):
             extended (bool, optional): Display extended summary.
             Defaults to False.
         """
+        section('Tuner summary')
         self.state.summary(extended=extended)
         config._DISTRIBUTIONS.config_summary()
 
