@@ -20,6 +20,7 @@ class Instance(object):
         self.cloudservice = cloudservice
         self.executions = ExecutionsCollection()
 
+
         # init instance state
         self.state = InstanceState(idx, model, hparams)
 
@@ -27,13 +28,13 @@ class Instance(object):
         section("Instance summary")
         self.state.summary(extended=extended)
 
-    def fit_resume(self, fixme):
+    def resume_fit(self, fixme):
         """resume fiting an instance
         use execution id?
         """
         pass
 
-    def fit_new(self, x, y, **kwargs):
+    def fit(self, x, y, **kwargs):
         """Fit an execution of the model instance
         """
 
@@ -69,14 +70,14 @@ class Instance(object):
                 self.model.summary()
 
         # FIXME we need to return properly results
-        execution = Exception(self.model, self.state, self.tuner_state,
+        execution = Execution(self.model, self.state, self.tuner_state,
                               self.cloudservice)
-        self.executions.add(len(self.executions), execution)
-        results = execution.fit(x, y, **kwargs)
+        self.executions.add(execution.state.idx, execution)
+        execution.fit(x, y, **kwargs)
 
         # compute execution level metrics
         # FIXME can this be done in the in the execution fit instead of this?
-        execution.record_results(results)
+        # execution.record_results(results)
 
         # FIXME compute results and probably update the result file here
         return self

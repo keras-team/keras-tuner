@@ -60,7 +60,7 @@ def test_to_dict():
     mm = Metric('conf_test', 'min')
     mm.update(8)
     mm.update(10)
-    conf = mm.to_dict()
+    conf = mm.to_config()
     assert conf['name'] == 'conf_test'
     assert conf['best_value'] == 8
     assert conf['last_value'] == 10
@@ -71,6 +71,6 @@ def test_to_dict_to_json_to_dict():
     mm = Metric('min', 'min')
     mm.update(10)
     mm.update(8)
-    conf = mm.to_dict()
+    conf = mm.to_config()
     conf_json = json.loads(json.dumps(conf))
     assert conf_json == conf

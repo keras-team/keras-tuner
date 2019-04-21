@@ -47,21 +47,21 @@ def model_fn():
 
 
 # train 5 models over 3 epochs
-hypermodel = RandomSearch(model_fn, epoch_budget=15, max_epochs=3)
+hypermodel = RandomSearch(model_fn, 'loss', epoch_budget=15, max_epochs=3)
 hypermodel.summary()
 if api_key:
     hypermodel.enable_cloud(
         api_key=api_key,
         # url='http://localhost:5000/api/'
     )
-#hypermodel.search(x_train, y_train, validation_split=0.01)
+hypermodel.search(x_train, y_train, validation_split=0.01)
 
 # Show the best models, their hyperparameters, and the resulting metrics.
-hypermodel.display_result_summary()
+#hypermodel.display_result_summary()
 
 # Export the top 2 models, in tensorflow format.
-hypermodel.export_best_models(
-    metric="val_loss",
-    direction="asc",
-    output_type="tf_optimized",
-    num_models=2)
+#hypermodel.export_best_models(
+#    metric="val_loss",
+#    direction="asc",
+#    output_type="tf_optimized",
+#    num_models=2)

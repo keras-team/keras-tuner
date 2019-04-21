@@ -145,9 +145,6 @@ class CloudService():
             self._send_nonblocking("status", status)
             self.last_update = ts
 
-    def send_config(self, json_config):
-        self._send_nonblocking("config", json.loads(json_config))
-
     def send_results(self, results):
         self._send_nonblocking("results", results)
 

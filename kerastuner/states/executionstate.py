@@ -3,20 +3,36 @@ from __future__ import absolute_import
 from time import time
 
 from .state import State
+from kerastuner.collections import MetricsCollection
 from kerastuner.abstractions.display import fatal, subsection, display_settings
 
 
 class ExecutionState(State):
     "Instance Execution state"
 
-    def __init__(self):
+    def __init__(self, max_epochs):
         super(ExecutionState, self).__init__()
 
         self.start_time = int(time())
-        self.num_epoch = -1
+        self.idx = self.start_time
+        self.max_epochs = max_epochs
+        self.epochs = 0
+        self.eta = -1
+
+        # sub component
+        self.metrics = MetricsCollection()
 
     def to_config(self):
-        pass
+        self._compute_eta()
+        attrs = ['start_time', 'idx', 'epochs', 'eta']
+        config = self._config_from_attrs(attrs)
+        return config
 
     def summary(self, extended=False):
         pass
+
+    def _compute_eta(self):
+        "compute remaing time for current model"
+        elapsed_time = int(time()) - self.start_time
+        time_per_epoch = elapsed_time / max(self.epochs, 1)
+        self.eta = int(self.max_epochs * time_per_epoch)

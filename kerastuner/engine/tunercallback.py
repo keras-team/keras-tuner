@@ -102,50 +102,50 @@ class TunerCallback(keras.callbacks.Callback):
             self.pbar.update(1)
             self.pbar.close()
 
-        logs["epoch_duration"] = time.time() - self.epoch_start_ts
+        # logs["epoch_duration"] = time.time() - self.epoch_start_ts
 
         # for multi-points compute average accuracy
-        logs = self._compute_avg_accuracy(logs)
+        #logs = self._compute_avg_accuracy(logs)
 
-        # metric update
-        for k, v in logs.items():
+        # # metric update
+        # for k, v in logs.items():
 
-            # must cast v to float for serialization
-            self.history[k].append(float(v))
-            if k in self.key_metrics:
-                self.history_key_metrics[k].append(float(v))
+        #     # must cast v to float for serialization
+        #     self.history[k].append(float(v))
+        #     if k in self.key_metrics:
+        #         self.history_key_metrics[k].append(float(v))
 
-                # update current model performance stats
-                if self.key_metrics[k] == 'min':
-                    self.stats[k] = min(self.history_key_metrics[k])
-                else:
-                    self.stats[k] = max(self.history_key_metrics[k])
+        #         # update current model performance stats
+        #         if self.key_metrics[k] == 'min':
+        #             self.stats[k] = min(self.history_key_metrics[k])
+        #         else:
+        #             self.stats[k] = max(self.history_key_metrics[k])
 
-            # checkpointing model if needed
-            checkpoint_model = False
-            if k == self.checkpoint['metric'] and self.checkpoint['enable']:
-                self.checkpoint_metric_exists = True
-                if self.checkpoint['mode'] == "min" and v < self.cpt_cur_val:
-                    word = "decreased"
-                    checkpoint_model = True
-                elif self.checkpoint['mode'] == "max" and v > self.cpt_cur_val:
-                    word = "increased"
-                    checkpoint_model = True
+        #     # checkpointing model if needed
+        #     checkpoint_model = False
+        #     if k == self.checkpoint['metric'] and self.checkpoint['enable']:
+        #         self.checkpoint_metric_exists = True
+        #         if self.checkpoint['mode'] == "min" and v < self.cpt_cur_val:
+        #             word = "decreased"
+        #             checkpoint_model = True
+        #         elif self.checkpoint['mode'] == "max" and v > self.cpt_cur_val:
+        #             word = "increased"
+        #             checkpoint_model = True
 
-            if checkpoint_model:
-                write_log("[INFO] Saving improved model %s %s from %s to %s" % (
-                    k, word, round(self.cpt_cur_val, 4), round(v, 4)))
+        #     if checkpoint_model:
+        #         write_log("[INFO] Saving improved model %s %s from %s to %s" % (
+        #             k, word, round(self.cpt_cur_val, 4), round(v, 4)))
 
-                self.cpt_cur_val = v
-                self._save_model()
+        #         self.cpt_cur_val = v
+        #         self._save_model()
 
-        if not self.checkpoint_metric_exists and self.checkpoint['enable']:
-            fatal("Checkpoint metric '%s' does not exist." %
-                  self.checkpoint['metric'])
+        # if not self.checkpoint_metric_exists and self.checkpoint['enable']:
+        #     fatal("Checkpoint metric '%s' does not exist." %
+        #           self.checkpoint['metric'])
 
-        # update statistics
-        self.meta_data['tuner']['remaining_budget'] -= 1
-        self.meta_data['statistics']['latest'] = self.stats
+        # # update statistics
+        # self.meta_data['tuner']['remaining_budget'] -= 1
+        # self.meta_data['statistics']['latest'] = self.stats
 
         # report status
         self._report_status()
@@ -155,16 +155,15 @@ class TunerCallback(keras.callbacks.Callback):
         return
 
     def on_batch_end(self, batch, logs={}):
+        # for k, v in logs.items():
 
-        for k, v in logs.items():
+        #     self.metrics[k].append(v)
+        #     v = float(v)
+        #     self.current_epoch_history[k].append(v)
+        #     if k in self.key_metrics:
+        #         self.current_epoch_key_metrics[k].append(v)
 
-            self.metrics[k].append(v)
-            v = float(v)
-            self.current_epoch_history[k].append(v)
-            if k in self.key_metrics:
-                self.current_epoch_key_metrics[k].append(v)
-
-        self._report_status()
+        # self._report_status()
 
         if self.use_fancy_bar:
             self._update_fancy_bar()
@@ -202,124 +201,124 @@ class TunerCallback(keras.callbacks.Callback):
         self.pbar.set_description(desc)
         self.pbar.set_postfix(display_metrics)
 
-    def _save_model(self):
-        """Save model
+    # def _save_model(self):
+    #     """Save model
 
-            note: we save model and weights separately because
-            the model might be trained with multi-gpu
-            which use a different architecture
-        """
-        # FIXME - move this to an async write
+    #         note: we save model and weights separately because
+    #         the model might be trained with multi-gpu
+    #         which use a different architecture
+    #     """
+    #     # FIXME - move this to an async write
 
-        local_dir = self.meta_data['server']['local_dir']
+    #     local_dir = self.meta_data['server']['local_dir']
 
-        # Always write the config, even if we're not saving in Keras format.
-        prefix = '%s-%s-%s-%s' % (
-            self.meta_data['project'], self.meta_data['architecture'],
-            self.meta_data['instance'], self.meta_data['execution'])
+    #     # Always write the config, even if we're not saving in Keras format.
+    #     prefix = '%s-%s-%s-%s' % (
+    #         self.meta_data['project'], self.meta_data['architecture'],
+    #         self.meta_data['instance'], self.meta_data['execution'])
 
-        base_filename = path.join(local_dir, prefix)
+    #     base_filename = path.join(local_dir, prefix)
 
-        save_model(self.model, base_filename, output_type="keras")
+    #     save_model(self.model, base_filename, output_type="keras")
 
-        # FIXME:refactor
-        if self.backend:
-            self.backend.send_config(self.model.to_json())
+    #     # FIXME:refactor
+    #     if self.backend:
+    #         self.backend.send_config(self.model.to_json())
 
-        return
+    #     return
 
-    def _compute_avg_accuracy(self, logs):
-        """Compute average accuracy metrics for multi-points if needed
-        Args:
-            logs: epoch_end logs
-        returns
-            logs: epoch_end logs with additional metrics
-        """
-        # Adding combined accuracy metrics for multi-output if needed
-        num_acc_metrics = 0
-        num_val_acc_metrics = 0
-        for k in logs.keys():
-            if '_accuracy' in k:
-                if 'val_' in k:
-                    num_val_acc_metrics += 1
-                else:
-                    num_acc_metrics += 1
+    # def _compute_avg_accuracy(self, logs):
+    #     """Compute average accuracy metrics for multi-points if needed
+    #     Args:
+    #         logs: epoch_end logs
+    #     returns
+    #         logs: epoch_end logs with additional metrics
+    #     """
+    #     # Adding combined accuracy metrics for multi-output if needed
+    #     num_acc_metrics = 0
+    #     num_val_acc_metrics = 0
+    #     for k in logs.keys():
+    #         if '_accuracy' in k:
+    #             if 'val_' in k:
+    #                 num_val_acc_metrics += 1
+    #             else:
+    #                 num_acc_metrics += 1
 
-        # multi acc metric -> compute average one
-        if num_acc_metrics > 1:
-            total_acc = 0
-            total_val_acc = 0
-            for k, v in logs.items():
-                if '_accuracy' in k:
-                    if 'val_' in k:
-                        total_val_acc += v
-                    else:
-                        total_acc += v
-            logs['avg_accuracy'] = round(total_acc / float(num_acc_metrics), 4)
-            if num_val_acc_metrics:
-                logs['val_avg_accuracy'] = round(
-                    total_val_acc / float(num_val_acc_metrics), 4)
-        return logs
+    #     # multi acc metric -> compute average one
+    #     if num_acc_metrics > 1:
+    #         total_acc = 0
+    #         total_val_acc = 0
+    #         for k, v in logs.items():
+    #             if '_accuracy' in k:
+    #                 if 'val_' in k:
+    #                     total_val_acc += v
+    #                 else:
+    #                     total_acc += v
+    #         logs['avg_accuracy'] = round(total_acc / float(num_acc_metrics), 4)
+    #         if num_val_acc_metrics:
+    #             logs['val_avg_accuracy'] = round(
+    #                 total_val_acc / float(num_val_acc_metrics), 4)
+    #     return logs
 
-    def _report_status(self):
-        ts = time.time()
-        delta = ts - self.last_write
-        if delta < self.log_interval and not self.training_complete:
-            return
+    # def _report_status(self):
+    #     ts = time.time()
+    #     delta = ts - self.last_write
+    #     if delta < self.log_interval and not self.training_complete:
+    #         return
 
-        self.thread_pool.apply_async(self._report_status_worker)
+    #     self.thread_pool.apply_async(self._report_status_worker)
 
-    def _report_status_worker(self):
-        "Report tuner status periodically"
+    # def _report_status_worker(self):
+    #     "Report tuner status periodically"
 
-        ts = time.time()
+    #     ts = time.time()
 
-        # copy existing meta_data
-        status = copy(self.meta_data)
-        status['training_complete'] = self.training_complete
+    #     # copy existing meta_data
+    #     status = copy(self.meta_data)
+    #     status['training_complete'] = self.training_complete
 
-        # hypertuning eta
-        elapsed_time = int(ts - self.meta_data['tuner']['start_time'])
-        epochs = status['tuner']['epoch_budget'] - \
-            status['tuner']['remaining_budget']
-        time_per_epoch = elapsed_time / max(epochs, 1)
-        eta = status['tuner']['remaining_budget'] * time_per_epoch
-        status['tuner']['eta'] = eta
+    #     # hypertuning eta
+    #     elapsed_time = int(ts - self.meta_data['tuner']['start_time'])
+    #     epochs = status['tuner']['epoch_budget'] - \
+    #         status['tuner']['remaining_budget']
+    #     time_per_epoch = elapsed_time / max(epochs, 1)
+    #     eta = status['tuner']['remaining_budget'] * time_per_epoch
+    #     status['tuner']['eta'] = eta
 
-        # Current model eta
-        elapsed_time = int(ts - self.start_ts)
-        epochs = len(self.history['loss'])
-        time_per_epoch = elapsed_time / max(epochs, 1)
-        eta = (self.meta_data['tuner']['max_epochs'] - epochs) * time_per_epoch
+    #     # Current model eta
+    #     elapsed_time = int(ts - self.start_ts)
+    #     epochs = len(self.history['loss'])
+    #     time_per_epoch = elapsed_time / max(epochs, 1)
+    #     eta = (self.meta_data['tuner']['max_epochs'] - epochs) * time_per_epoch
 
-        # model info
-        current_model = {
-            'elapsed_time': elapsed_time,
-            'epochs': epochs,
-            'time_per_epoch': time_per_epoch,
-            'eta': eta
-        }
+    #     # model info
+    #     current_model = {
+    #         'elapsed_time': elapsed_time,
+    #         'epochs': epochs,
+    #         'time_per_epoch': time_per_epoch,
+    #         'eta': eta
+    #     }
 
-        status["current_model"] = current_model
+    #     status["current_model"] = current_model
 
-        status["batch_metrics"] = self.current_epoch_key_metrics
-        status["epoch_metrics"] = self.history_key_metrics
+    #     status["batch_metrics"] = self.current_epoch_key_metrics
+    #     status["epoch_metrics"] = self.history_key_metrics
 
-        self.system_status = self.system.get_status()
-        status["server"].update(self.system_status)
+    #     self.system_status = self.system.get_status()
+    #     status["server"].update(self.system_status)
 
-        # write on disk
-        local_dir = self.meta_data['server']['local_dir']
-        fname = path.join(local_dir, 'status.json')
-        with file_io.FileIO(fname, 'w') as outfile:
-            outfile.write(json.dumps(status))
+    #     # write on disk
+    #     local_dir = self.meta_data['server']['local_dir']
+    #     fname = path.join(local_dir, 'status.json')
+    #     with file_io.FileIO(fname, 'w') as outfile:
+    #         outfile.write(json.dumps(status))
 
-        # send status to the cloud service
-        if self.backend:
-            self.backend.send_status(status)
+    #     # send status to the cloud service
+    #     if self.backend:
+    #         self.backend.send_status(status)
 
-        # update write time
-        self.last_write = time.time()
+    #     # update write time
+    #     self.last_write = time.time()
 
     def _display_statistics(self):
         """ Report statistics at training end

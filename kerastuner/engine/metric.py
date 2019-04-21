@@ -78,12 +78,20 @@ class Metric(object):
         """
         return self.history
 
-    def to_dict(self):
+    def to_config(self):
         """Get a serializable dict version of the metric"""
         return {
             "name": self.name,
             "best_value": self.get_best_value(),
             "last_value": self.get_last_value(),
             "direction": self.direction,
-            "history": self.history
+            "history": self.history,
+            "is_objective": self.is_objective
         }
+
+    def from_config(self, config):
+        "Reload metric from config"
+        self.name = config['name']
+        self.direction = config['direction']
+        self.history = config['history']
+        self.is_objective = config['is_objective']

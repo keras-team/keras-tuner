@@ -21,7 +21,7 @@ class TunerState(State):
     Args:
         name (str): tuner name.
 
-        objective (Objective): Which objective the tuner is optimizing for
+        objective (str): Which objective the tuner is optimizing for
 
         epoch_budget (int, optional): how many epochs to hypertune for.
         Defaults to 100.
@@ -61,12 +61,14 @@ class TunerState(State):
         remaining_budget (int): How many epoch are left.
         keras_function (str): Which keras function to use to train models.
         log_file (str): Path to the log file.
+        eta (int): estimated time till training end
     """
 
     def __init__(self, name, objective, **kwargs):
         super(TunerState, self).__init__(**kwargs)
 
         self.name = name
+        self.objective = objective
         self.start_time = int(time())
 
         # budget
@@ -102,6 +104,7 @@ class TunerState(State):
         set_log(self.log_file)
 
         self.keras_function = 'unknown'
+        self.eta = -1
 
     def summary(self, extended=False):
         """Display a summary of the tuner state
@@ -134,7 +137,12 @@ class TunerState(State):
         self.host.summary(extended=extended)
 
     def to_config(self):
-        attrs = ['name', 'start_time', 'remaining_budget', 'keras_function']
+
+        # computing remaining time
+        self._compute_eta()
+
+        attrs = ['name', 'start_time', 'remaining_budget', 'keras_function',
+                 'eta']
         config = self._config_from_attrs(attrs)
 
         # collect user params
@@ -146,3 +154,10 @@ class TunerState(State):
         config['checkpoint'] = self.checkpoint.to_config()
         config['host'] = self.host.to_config()
         return config
+
+    def _compute_eta(self):
+        "computing tuner estimated completion time"
+        elapsed_time = int(time() - self.start_time)
+        epochs_left = self.epoch_budget - self.remaining_budget
+        time_per_epoch = elapsed_time / max(epochs_left, 1)
+        self.eta = int(self.remaining_budget * time_per_epoch)

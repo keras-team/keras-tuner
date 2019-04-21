@@ -47,6 +47,13 @@ class Collection(object):
             warning("%s not found" % idx)
             return None
 
+    def exist(self, idx):
+        "is a given idx part of the collection"
+        if idx in self._objects:
+            return True
+        else:
+            return False
+
     def update(self, idx, obj):
         "update a given object"
         self._objects[idx] = obj

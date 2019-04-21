@@ -164,7 +164,7 @@ class Tuner(object):
 
             # computing instance unique idx
             idx = self.__compute_model_id(model)
-            if idx in self.instances:
+            if self.instances.exist(idx):
                 collision_streak += 1
                 self.stats.collisions += 1
                 warning("Collision for %s -- skipping" % (idx))
@@ -191,8 +191,7 @@ class Tuner(object):
 
         # recording instance
         self.instances.add(idx, instance)
-
-        return self.instances[idx]
+        return instance
 
     def record_results(self, idx=None):
         """Record instance results
@@ -310,9 +309,6 @@ class Tuner(object):
     def done(self):
         info("Hypertuning complete - results in %s" %
              self.meta_data['server']['local_dir'])
-
-    def get_model_by_id(self, idx):
-        return self.instances.get(idx, None)
 
     def __compute_model_id(self, model):
         "compute model hash"

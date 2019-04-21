@@ -68,7 +68,7 @@ class MetricsCollection(Collection):
 
         names = sorted(self._objects.keys())
         # for each metric returns its serialized form
-        return [self._objects[name].to_dict() for name in names]
+        return [self._objects[name].to_config() for name in names]
 
     def to_dict(self):
         """ Serializable dict representation of the metric collection.
@@ -77,7 +77,7 @@ class MetricsCollection(Collection):
         """
         res = {}
         for name, metric in self._objects.items():
-            res[name] = metric.to_dict()
+            res[name] = metric.to_config()
         return res
 
     def set_objective(self, name):
