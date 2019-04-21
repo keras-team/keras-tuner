@@ -134,34 +134,6 @@ class TunerState(State):
         self.checkpoint.summary(extended=extended)
         self.host.summary(extended=extended)
 
-        subsection("Hyper-parmeters search space")
-        # Compute the size of the hyperparam space by generating a model
-        total_size = 1
-        data_by_group = defaultdict(dict)
-        group_size = defaultdict(lambda: 1)
-        for data in self.hyper_parameters.values():
-            data_by_group[data['group']][data['name']] = data['space_size']
-            group_size[data['group']] *= data['space_size']
-            total_size *= data['space_size']
-
-        # Generate the table.
-        rows = [['param', 'space size']]
-        for idx, grp in enumerate(sorted(data_by_group.keys())):
-            if idx % 2:
-                color = 'blue'
-            else:
-                color = 'default'
-
-            rows.append([colorize(grp, color), ''])
-            for param, size in data_by_group[grp].items():
-                rows.append([colorize("|-%s" % param, color),
-                             colorize(size, color)])
-
-        rows.append(['', ''])
-        rows.append([colorize('total', 'magenta'),
-                     colorize(total_size, 'magenta')])
-        print_table(rows)
-
     def to_config(self):
         res = {}
 

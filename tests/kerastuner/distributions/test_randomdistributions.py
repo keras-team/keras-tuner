@@ -8,17 +8,17 @@ from .common import linear_correctness_test, logarithmic_correctness_test
 
 # number of elements to draw - sample_size < 1000 cause flakiness
 SAMPLE_SIZE = 10000
-rand = RandomDistributions()
+rand = RandomDistributions({})
 
 
 # Hyperparameters
 def test_record_hyperparameters():
-    record_hyperparameters_test(RandomDistributions())
+    record_hyperparameters_test(RandomDistributions({}))
 
 
 # Fixed
 def test_fixed_correctness():
-    fixed_correctness_test(RandomDistributions())
+    fixed_correctness_test(RandomDistributions({}))
 
 
 def test_fixed_serialize():
@@ -27,7 +27,7 @@ def test_fixed_serialize():
 
 # Boolean
 def test_bool_correctness():
-    bool_correctness_test(RandomDistributions())
+    bool_correctness_test(RandomDistributions({}))
 
 
 def test_bool_serialize():
@@ -35,7 +35,7 @@ def test_bool_serialize():
 
 
 def test_bool_randomness():
-    distributions = RandomDistributions()
+    distributions = RandomDistributions({})
     res = defaultdict(int)
     for _ in range(SAMPLE_SIZE):
         x = distributions.Boolean("test")
@@ -46,7 +46,7 @@ def test_bool_randomness():
 
 # Choice
 def choice_range_correctness():
-    choice_correctness_test(RandomDistributions())
+    choice_correctness_test(RandomDistributions({}))
 
 
 def test_choice_serialize():
@@ -60,7 +60,7 @@ def test_choice_serialize():
 
 
 def test_choice_randomness():
-    distributions = RandomDistributions()
+    distributions = RandomDistributions({})
     res = defaultdict(int)
     for _ in range(SAMPLE_SIZE):
         x = distributions.Choice("test", ['a', 'b', 'c'])
@@ -71,11 +71,11 @@ def test_choice_randomness():
 
 # Range
 def range_range_correctness():
-    range_type_correctness_test(RandomDistributions())
+    range_type_correctness_test(RandomDistributions({}))
 
 
 def test_range_randomness():
-    distributions = RandomDistributions()
+    distributions = RandomDistributions({})
     res = defaultdict(int)
     for _ in range(SAMPLE_SIZE):
         x = distributions.Range("test", 1, 100)
@@ -86,11 +86,11 @@ def test_range_randomness():
 
 # Linear
 def test_linear_correctness():
-    linear_correctness_test(RandomDistributions())
+    linear_correctness_test(RandomDistributions({}))
 
 
 def test_linear_int_randomness():
-    distributions = RandomDistributions()
+    distributions = RandomDistributions({})
     res = defaultdict(int)
     num_buckets = 100
     for _ in range(SAMPLE_SIZE):
@@ -101,7 +101,7 @@ def test_linear_int_randomness():
 
 
 def test_linear_float_randomness():
-    distributions = RandomDistributions()
+    distributions = RandomDistributions({})
     res = defaultdict(int)
     num_buckets = 100
     for _ in range(SAMPLE_SIZE):
@@ -113,4 +113,4 @@ def test_linear_float_randomness():
 
 # Logarithmic
 def test_logarithmic_correctness():
-    logarithmic_correctness_test(RandomDistributions())
+    logarithmic_correctness_test(RandomDistributions({}))

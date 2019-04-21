@@ -1,11 +1,12 @@
 "common distributions test functions"
 import json
 
+
 # hyperparamters handling
 def record_hyperparameters_test(distributions):
     distributions.Fixed("test", 42, group='a')
     distributions.Boolean("test", group='b')
-    hp_curr = distributions.get_current_hyperparameters()
+    hp_curr = distributions.get_hyperparameters()
     assert len(hp_curr) == 2
     k = distributions._get_key('test', 'a')
     assert hp_curr[k]['name'] == 'test'

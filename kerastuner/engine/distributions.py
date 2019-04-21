@@ -1,15 +1,29 @@
 from abc import abstractmethod
 import numpy as np
+from collections import defaultdict
+
+from kerastuner.abstractions.display import print_table, subsection, colorize
 
 
 class Distributions(object):
-    """Distributions abstract class"""
+    """Distributions abstract class
+    Args:
+        name (str): name of the distribution
 
-    def __init__(self, name):
+        hyperparameters_config (dict): hyperparameters dict describing
+        the search space. Often refered as hparams. Generated using
+        DummyDistributions() in Tuner()
+
+    Attributes:
+        _hyperparameters_config (dict): hparams object describing search space
+        _hyperparameters (dict): current set of selected parameters
+
+    """
+
+    def __init__(self, name, hyperparameters_config):
         self.name = name
-        hyperparameters_config = {}
-        self.hyperparameters_config = hyperparameters_config
-        self.current_hyperparameters = {}  # hparams of the current instance
+        self._hyperparameters_config = hyperparameters_config
+        self._hyperparameters = {}  # hparams of the current instance
 
     @abstractmethod
     def Fixed(self, name, value, group="default"):
@@ -87,12 +101,21 @@ class Distributions(object):
         """
         pass
 
-    def get_current_hyperparameters(self):
-        "Return current concretize values"
-        return self.current_hyperparameters
+    # current hyperparameters related functions
+    def hyperparameters_summary(self):
+        "display current hyperparameters"
+        subsection("Hyperparameters")
+        table = [["Hyperparameter", "Value"]]
+        for k, v in self._hyperparameters.items():
+            table.append([k, v["value"]])
+        print_table(table, indent=2)
 
-    def _record_current_hyperparameters(self, name, value, group):
-        """ Record hyperparameters value
+    def get_hyperparameters(self):
+        "Return current hyperparameters config"
+        return self._hyperparameters
+
+    def _record_hyperparameter(self, name, value, group):
+        """ Record hyperparameter value
         Args:
             name (str): name of the hyperparameter
             value: value of the hyperparameter
@@ -105,7 +128,7 @@ class Distributions(object):
             "group": group
         }
         key = self._get_key(name, group)
-        self.current_hyperparameters[key] = hparam
+        self._hyperparameters[key] = hparam
 
     def _get_key(self, name, group):
         """ Generate hyperparameter dict key
@@ -123,12 +146,33 @@ class Distributions(object):
         returns
             dict: hyperparameters dict
         """
-        return self.hyperparameters_config
+        return self._hyperparameters_config
 
-    def set_hyperparameters_config(self, hyperparameters_config):
-        """Set hyperparameter config
+    def config_summary(self):
+        subsection("Hyper-parmeters search space")
+        # Compute the size of the hyperparam space by generating a model
+        total_size = 1
+        data_by_group = defaultdict(dict)
+        group_size = defaultdict(lambda: 1)
+        for data in self._hyperparameters.values():
+            data_by_group[data['group']][data['name']] = data['space_size']
+            group_size[data['group']] *= data['space_size']
+            total_size *= data['space_size']
 
-        Args:
-            hyperparameters_config (dict): dict containing the hyperparams conf
-        """
-        self.hyperparameters_config = hyperparameters_config
+        # Generate the table.
+        rows = [['param', 'space size']]
+        for idx, grp in enumerate(sorted(data_by_group.keys())):
+            if idx % 2:
+                color = 'blue'
+            else:
+                color = 'default'
+
+            rows.append([colorize(grp, color), ''])
+            for param, size in data_by_group[grp].items():
+                rows.append([colorize("|-%s" % param, color),
+                             colorize(size, color)])
+
+        rows.append(['', ''])
+        rows.append([colorize('total', 'magenta'),
+                     colorize(total_size, 'magenta')])
+        print_table(rows)

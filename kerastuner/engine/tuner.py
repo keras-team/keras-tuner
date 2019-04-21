@@ -21,11 +21,11 @@ from kerastuner.abstractions.io import create_directory, glob, read_file
 from kerastuner.abstractions.io import save_model, reload_model
 from kerastuner.abstractions.io import read_results, deserialize_loss
 from kerastuner.abstractions.display import highlight, print_table, section
-from kerastuner.abstractions.display import display_setting, subsection
+from kerastuner.abstractions.display import display_setting, display_settings
 from kerastuner.abstractions.display import info, warning, fatal, set_log
-from kerastuner.abstractions.display import get_progress_bar
+from kerastuner.abstractions.display import get_progress_bar, subsection
 from kerastuner.abstractions.display import colorize, colorize_default
-from kerastuner.tools.summary import summary as result_summary
+from kerastuner.tools.summary import summary as result_summary  # FIXME: name
 from kerastuner import config
 from kerastuner.states import TunerState
 from .cloudservice import CloudService
@@ -55,38 +55,9 @@ class Tuner(object):
         self.stats = self.state.stats  # shorthand access
         self.cloudservice = CloudService()
 
-        # validate the model and record its hparam
-        self._check_and_store_model_fn(model_fn)
-
-        # set global distribution object to the one requested by tuner
-        # !MUST be after _eval_model_fn()
-        config._DISTRIBUTIONS = distributions
-
-        # instances management
-        self.max_fail_streak = 5  # how many failure before giving up
-        self.instances = InstanceCollection()
-
-        # previous models
-        count = self.instances.load_from_dir(self.state.host.result_dir,
-                                             self.state.project,
-                                             self.state.architecture)
-        self.stats.model_previously_trained = count
-
-        # metrics
-        # FIXME: fix importing metrics
-
-    def _check_and_store_model_fn(self, model_fn):
-        """
-        Check and store model_function, hyperparams and metric info
-
-        Args:
-            model_fn (function): user supplied funciton that return a model
-        """
-
+        # check model function
         if not model_fn:
             fatal("Model function can't be empty")
-
-        # test and store model_fn
         try:
             mdl = model_fn()
         except:
@@ -100,11 +71,27 @@ class Tuner(object):
         # function is valid - recording it
         self.model_fn = model_fn
 
-        # record hparams
-        hp = config._DISTRIBUTIONS.get_hyperparameters_config()
-        self.state.hyper_parameters = hp
-        if len(self.state.hyper_parameters) == 0:
+        # Initializing distributions
+        hparams = config._DISTRIBUTIONS.get_hyperparameters_config()
+        if len(hparams) == 0:
             warning("No hyperparameters used in model function. Are you sure?")
+
+        # set global distribution object to the one requested by tuner
+        # !MUST be after _eval_model_fn()
+        config._DISTRIBUTIONS = distributions(hparams)
+
+        # instances management
+        self.max_fail_streak = 5  # how many failure before giving up
+        self.instances = InstanceCollection()
+
+        # previous models
+        count = self.instances.load_from_dir(self.state.host.result_dir,
+                                             self.state.project,
+                                             self.state.architecture)
+        self.stats.instances_previously_trained = count
+
+        # metrics
+        # FIXME: fix importing metrics
 
     def summary(self, extended=False):
         """Print tuner summary
@@ -114,6 +101,7 @@ class Tuner(object):
             Defaults to False.
         """
         self.state.summary(extended=extended)
+        config._DISTRIBUTIONS.config_summary()
 
     def enable_cloud(self, api_key, **kwargs):
         """Enable cloud service reporting
@@ -150,7 +138,7 @@ class Tuner(object):
         while 1:
             # clean-up TF graph from previously stored (defunct) graph
             clear_tf_session()
-            self.stats.generated_models += 1
+            self.stats.generated_instances += 1
             fail_streak += 1
             try:
                 model = self.model_fn()
@@ -158,11 +146,11 @@ class Tuner(object):
                 if self.state.debug:
                     traceback.print_exc()
 
-                self.stats.invalid_models += 1
-                warning("invalid model %s/%s" % (self.stats.invalid_models,
+                self.stats.invalid_instances += 1
+                warning("invalid model %s/%s" % (self.stats.invalid_instances,
                                                  self.max_fail_streak))
 
-                if self.stats.invalid_models >= self.max_fail_streak:
+                if self.stats.invalid_instances >= self.max_fail_streak:
                     warning("too many consecutive failed model - stopping")
                     return None
                 continue
@@ -174,7 +162,6 @@ class Tuner(object):
 
             # computing instance unique idx
             idx = self.__compute_model_id(model)
-
             if idx in self.instances:
                 collision_streak += 1
                 self.stats.collisions += 1
@@ -182,37 +169,33 @@ class Tuner(object):
                 if collision_streak >= self.max_fail_streak:
                     return None
                 continue
-            hparams = config._DISTRIBUTIONS.get_current_hyperparameters()
-            self.current_hyperparameters = hparams
-            self._update_metadata()
-            instance = Instance(idx, model, hparams, self.meta_data, self.num_gpu, self.batch_size,
-                                self.display_model, self.key_metrics, self.keras_function, self.checkpoint,
-                                self.callback_fn, self.backend)
-            num_params = instance.compute_model_size()
-            if num_params > self.max_params:
+
+            # creating instance
+            instance = Instance(idx, model, self.state, self.keras_function,
+                                self.backend)
+
+            # check size
+            nump = instance.compute_model_size()
+            if nump > self.state.max_model_parameters:
                 over_sized_streak += 1
-                self.num_over_sized_models += 1
-                warning(
-                    "Oversized model: %s parameters-- skipping" % (num_params))
+                self.stats.over_sized_models += 1
+                warning("Oversized model: %s parameters-- skipping" % (nump))
                 if over_sized_streak >= self.max_fail_streak:
+                    warning("too many consecutive failed model - stopping")
                     return None
                 continue
-
             break
 
-        self.instances[idx] = instance
-        self.current_instance_idx = idx
+        # recording instance
+        self.instances.add(idx, instance)
 
+        # display info
         section("New Instance")
-        display_setting("Remaining Budget: %d" % self.remaining_budget, idx=0)
-        display_setting("Num Instances Trained: %d" % self.num_generated_models, idx=1)
-        display_setting("Model size: %d" % num_params, idx=2)
-
-        subsection("Instance Hyperparameters")
-        table = [["Hyperparameter", "Value"]]
-        for k, v in self.current_hyperparameters.items():
-            table.append([k, v["value"]])
-        print_table(table, indent=2)
+        display_settings({
+            "remaining budget": self.state.remaining_budget,
+            "model_size": instance.compute_model_size()
+        })
+        config._DISTRIBUTIONS.current_hyperparameters_summary()
 
         return self.instances[idx]
 

@@ -7,8 +7,8 @@ class DummyDistributions(Distributions):
 
     def __init__(self):
         # !DO NOT do a super -- this is the bootstrap class
-        self.hyperparameters_config = {}
-        self.current_hyperparameters = {}  # hparams of the current instance
+        self._hyperparameters = {}
+        self._hyperparameters_config = {}
 
     def _record_hyperparameters(self, name, htype, space_size, start, stop,
                                 group):
@@ -26,10 +26,10 @@ class DummyDistributions(Distributions):
         key = self._get_key(name, group)
 
         # check if we have a duplicate
-        if key in self.hyperparameters_config:
+        if key in self._hyperparameters_config:
             fatal("%s hyperparameter is declared twice" % key)
 
-        self.hyperparameters_config[key] = {
+        self._hyperparameters_config[key] = {
             "name": name,
             "group": group,
             "type": htype,

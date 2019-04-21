@@ -5,11 +5,17 @@ from numpy import linspace, logspace
 
 
 class RandomDistributions(Distributions):
-    "Random distributions"
+    """Random distributions
 
-    def __init__(self):
-        self.hyperparameters_config = {}
-        super(RandomDistributions, self).__init__('RandomDistributions')
+    Args:
+        hyperparameters_config (dict): hyperparameters dict describing
+        the search space. Often refered as hparams. Generated using
+        DummyDistributions() in Tuner()
+    """
+
+    def __init__(self, hyperparameters_config):
+        super(RandomDistributions, self).__init__('RandomDistributions',
+                                                  hyperparameters_config)
 
     def Fixed(self, name, value, group="default"):
         """Return a fixed selected value
@@ -20,7 +26,7 @@ class RandomDistributions(Distributions):
         Returns:
             fixed value
         """
-        self._record_current_hyperparameters(name, value, group)
+        self._record_hyperparameter(name, value, group)
         return value
 
     def Boolean(self, name, group="default"):
@@ -32,7 +38,7 @@ class RandomDistributions(Distributions):
             an Boolean
         """
         value = random.choice([False, True])
-        self._record_current_hyperparameters(name, value, group)
+        self._record_hyperparameter(name, value, group)
         return value
 
     def Choice(self, name, selection, group="default"):
@@ -53,7 +59,7 @@ class RandomDistributions(Distributions):
             value = str(value)
         else:
             Exception('unknown type')
-        self._record_current_hyperparameters(name, value, group)
+        self._record_hyperparameter(name, value, group)
         return value
 
     def Range(self, name, start, stop, increment=1, group='default'):
@@ -68,7 +74,7 @@ class RandomDistributions(Distributions):
         """
         my_range = range(start, stop, increment)
         value = random.choice(my_range)
-        self._record_current_hyperparameters(name, value, group)
+        self._record_hyperparameter(name, value, group)
         return value
 
     def Logarithmic(self, name, start, stop, num_buckets, precision=0,
@@ -86,7 +92,7 @@ class RandomDistributions(Distributions):
         """
         my_range = logspace(start, stop, num_buckets)
         value = random.choice(my_range)
-        self._record_current_hyperparameters(name, value, group)
+        self._record_hyperparameter(name, value, group)
         return value
 
     def Linear(self, name, start, stop, num_buckets, precision=0,
@@ -106,5 +112,5 @@ class RandomDistributions(Distributions):
         value = random.choice(my_range)
         if precision:
             value = round(value, precision)
-        self._record_current_hyperparameters(name, value, group)
+        self._record_hyperparameter(name, value, group)
         return value
