@@ -5,33 +5,24 @@ from kerastuner.abstractions.display import fatal
 class Metric(object):
     "Training metric object"
 
-    def __init__(self, name, direction, keras_metric=None, is_stateful=True,
-                 display=True):
+    def __init__(self, name, direction):
         """ Initialize a metric object
 
         Args:
             name (str): metric name
             direction (str): metric direction. One of {'min', 'max'}
 
-            keras_metric: Defaults to None. Underlying keras metric, if None
-            use name as metric, otherwise use the passed object
-
-            is_stateful (bool, optional): Defaults to True. metric stateful?
-            display (bool, optional): Defaults to True. Display in summary?
+        Attributes:
+            history (list): metric history
+            is_objective (bool): is this metric the main tuning objectived.
+            Defaults to False.
         """
         self.name = name
         if direction not in ['min', 'max']:
             fatal('invalid direction. must be in {min, max}')
         self.direction = direction
-        self.is_stateful = is_stateful
-        self.display = display
         self.history = []
-
-        if not keras_metric:
-            self.keras_metric = name
-        else:
-            # FIXME: typecheck that is is a valid metric
-            self.keras_metric = keras_metric
+        self.is_objective = False
 
     def update(self, value):
         """ Update metric
@@ -43,7 +34,7 @@ class Metric(object):
         """
         # ensure standard python type for serialization purpose
         value = float(value)
-        best_value = self._get_best_value()
+        best_value = self.get_best_value()
         self.history.append(value)
 
         # if no best_value then current is best
@@ -67,12 +58,17 @@ class Metric(object):
             return None
 
     def get_best_value(self):
-        """Get metric best value
-
-        Returns:
-            dict: {mean, variance, max, min}
         """
-        return self._get_best_value()
+        Return the current best value
+        Returns:
+            float: best value
+        """
+        if self.direction == 'min' and len(self.history):
+            return min(self.history)
+        elif self.direction == 'max' and len(self.history):
+            return max(self.history)
+        else:
+            return None
 
     def get_history(self):
         """return the value history
@@ -86,23 +82,8 @@ class Metric(object):
         """Get a serializable dict version of the metric"""
         return {
             "name": self.name,
-            "best_value": self._get_best_value(),
+            "best_value": self.get_best_value(),
             "last_value": self.get_last_value(),
             "direction": self.direction,
-            "is_stateful": self.is_stateful,
-            "display": self.display,
             "history": self.history
         }
-
-    def _get_best_value(self):
-        """
-        Return the current best value
-        Returns:
-            float: best value
-        """
-        if self.direction == 'min' and len(self.history):
-            return min(self.history)
-        elif self.direction == 'max' and len(self.history):
-            return max(self.history)
-        else:
-            return None

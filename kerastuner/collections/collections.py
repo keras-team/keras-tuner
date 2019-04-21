@@ -1,4 +1,5 @@
 import json
+from abc import abstractmethod
 
 from kerastuner.abstractions.display import get_progress_bar, info, warning
 from kerastuner.abstractions.io import read_file, glob
@@ -26,6 +27,8 @@ class Collection(object):
             idx (str): object index
             obj (Object): Object to add
         """
+        if idx in self._objects:
+            warning('over ridding object %s - use update() instead?' % idx)
         self._objects[idx] = obj
         self._last_insert_idx = idx
 
@@ -44,36 +47,30 @@ class Collection(object):
             warning("%s not found" % idx)
             return None
 
+    def update(self, idx, obj):
+        "update a given object"
+        self._objects[idx] = obj
+
     def get_last(self):
+        "Returns the last inserted object"
         return self._objects[self._last_insert_idx]
 
-    def load_from_dir(self, path, project=None, architecture=None):
-        """Load instance collection from disk or bucket
+    def to_dict(self):
+        "Returns collection as a dict"
+        return self._objects
+
+    @abstractmethod
+    def to_config(self):
+        "return a serializable config"
+
+    def to_list(self, reverse=False):
+        """Returns collection as a list
 
         Args:
-            path (str): local path or bucket path where instance are stored
-            project (str, optional): Tuning project name. Defaults to None.
-            architecture (str, optional): Tuning architecture name.
-            Defaults to None.
+            reverse (bool, optional): Reverse order. Defaults to False.
 
         Returns:
-            [type]: [description]
+            list: list of objects sorted by their key
         """
-        count = 0
-        filenames = glob("%s*-results.json" % path)
-
-        for fname in get_progress_bar(filenames, unit='instance',
-                                      desc='Loading instances'):
-
-            data = json.loads(read_file(str(fname)))
-
-            if 'tuner' not in 'data':
-                continue
-            # Narrow down to matching project and architecture
-            if (not architecture or
-                    (data['tuner']['architecture'] == architecture)):
-                if (data['tuner']['project'] == project or not project):
-                    self._objects[data['instance']['idx']] = data
-                    count += 1
-        info("%s previous instances reloaded" % count)
-        return count
+        names = sorted(self._objects.keys(), reverse=reverse)
+        return [self._objects[name] for name in names]

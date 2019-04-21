@@ -6,23 +6,25 @@ from kerastuner.abstractions.io import read_file, glob
 
 
 class InstancesCollection(Collection):
-    """ Manage a collection of instance
-    """
+    "Manage a collection of instances"
 
     def __init__(self):
         super(InstancesCollection, self).__init__()
+
+    def to_config(self):
+        return self.to_dict()
 
     def load_from_dir(self, path, project=None, architecture=None):
         """Load instance collection from disk or bucket
 
         Args:
             path (str): local path or bucket path where instance are stored
-            project (str, optional): Tuning project name. Defaults to None.
-            architecture (str, optional): Tuning architecture name.
+            project (str, optional): tuning project name. Defaults to None.
+            architecture (str, optional): tuning architecture name.
             Defaults to None.
 
         Returns:
-            [type]: [description]
+            int: number of instances loaded
         """
         count = 0
         filenames = glob("%s*-results.json" % path)

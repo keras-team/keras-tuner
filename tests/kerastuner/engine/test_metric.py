@@ -1,14 +1,12 @@
 import pytest
 import json
-from kerastuner.metrics import Metric
+from kerastuner.engine.metric import Metric
 
 
 def test_metric_creation():
     metric = Metric('test', 'min')
     assert metric.name == 'test'
     assert metric.direction == 'min'
-    assert metric.display
-    assert metric.is_stateful
 
 
 def test_metric_invalid_direction():
