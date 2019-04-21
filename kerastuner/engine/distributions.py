@@ -103,14 +103,6 @@ class Distributions(object):
         pass
 
     # current hyperparameters related functions
-    def hyperparameters_summary(self):
-        "display current hyperparameters"
-        subsection("Hyperparameters")
-        table = [["Hyperparameter", "Value"]]
-        for k, v in self._hyperparameters.items():
-            table.append([k, v["value"]])
-        print_table(table, indent=2)
-
     def get_hyperparameters(self):
         "Return current hyperparameters config"
         return self._hyperparameters

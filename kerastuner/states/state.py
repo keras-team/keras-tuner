@@ -20,6 +20,20 @@ class State(object):
     def summary(self, extended=False):
         "display state status summary"
 
+    def _config_from_attrs(self, attrs):
+        """Build a config dict from a list of attributes
+
+        Args:
+            attrs (list): list of attributes to build the list from
+
+        Returns:
+            dict: generated config dict
+        """
+        config = {}
+        for attr in attrs:
+            config[attr] = getattr(self, attr)
+        return config
+
     def _register(self, name, default_value, to_report=False):
         """
         Register a user value and check its value type match what is expected

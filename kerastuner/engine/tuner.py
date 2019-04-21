@@ -16,7 +16,7 @@ import traceback
 # used to check if supplied model_fn is a valid model
 from tensorflow.keras.models import Model  # pylint: disable=import-error
 
-from kerastuner.abstractions.tf import clear_tf_session
+from kerastuner.abstractions.tf import clear_tf_session, compute_model_size
 from kerastuner.abstractions.io import create_directory, glob, read_file
 from kerastuner.abstractions.io import save_model, reload_model
 from kerastuner.abstractions.io import read_results, deserialize_loss
@@ -170,11 +170,8 @@ class Tuner(object):
                     return None
                 continue
 
-            # creating instance
-            instance = Instance(idx, model, self.state, self.cloudservice)
-
             # check size
-            nump = instance.compute_model_size()
+            nump = compute_model_size(model)
             if nump > self.state.max_model_parameters:
                 over_sized_streak += 1
                 self.stats.over_sized_models += 1
@@ -183,18 +180,15 @@ class Tuner(object):
                     warning("too many consecutive failed model - stopping")
                     return None
                 continue
+
+            # creating instance
+            hparams = config._DISTRIBUTIONS.get_hyperparameters()
+            instance = Instance(idx, model, hparams, self.state,
+                                self.cloudservice)
             break
 
         # recording instance
         self.instances.add(idx, instance)
-
-        # display info
-        section("New Instance")
-        display_settings({
-            "remaining budget": self.state.remaining_budget,
-            "model_size": instance.compute_model_size()
-        })
-        config._DISTRIBUTIONS.current_hyperparameters_summary()
 
         return self.instances[idx]
 

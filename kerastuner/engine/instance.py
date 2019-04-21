@@ -1,111 +1,70 @@
-import copy
-import gc
 import json
 import time
 from collections import defaultdict
 from os import path
-
-import numpy as np
-import six
 import tensorflow as tf
-from tensorflow.keras import backend as K
-from tensorflow.python.lib.io import file_io  # allows to write to GCP or local
-
+from kerastuner.states.instancestate import InstanceState
 from .execution import InstanceExecution
-from kerastuner.abstractions.io import serialize_loss
 
 
 class Instance(object):
     """Model instance class."""
 
-    def __init__(self, idx, model, tuner_state, cloudservice):
+    def __init__(self, idx, model, hparams, tuner_state, cloudservice):
 
-        self.ts = int(time.time())
-        self.training_size = -1
         self.model = model
-        self.optimizer_config = tf.keras.optimizers.serialize(model.optimizer)
-        self.loss_config = serialize_loss(model.loss)
-        self.idx = idx
-
-        # Ensure that changes to the meta data won't affect other instances.
-        self.meta_data = copy.deepcopy(meta_data)
-        self.meta_data['instance'] = idx
-
-        self.num_gpu = num_gpu
-        self.batch_size = batch_size
-        self.display_model = display_model
-        self.ts = int(time.time())
+        self.tuner_state = tuner_state
+        self.cloudservice = cloudservice
         self.executions = []
-        self.model_size = self.compute_model_size()
-        self.validation_size = 0
-        self.results = {}
-        self.key_metrics = key_metrics
-        self.keras_function = keras_function
-        self.callback_fn = callback_fn
-        self.backend = backend
 
-    def __get_instance_info(self):
-        """Return a dictionary of the model parameters
+        # init instance state
+        self.state = InstanceState(idx, model, hparams)
 
-          Used both for the instance result file and the execution result file
+    def summary(self, extended=False):
+        self.state.summary(extended=extended)
+
+    def fit_resume(self, fixme):
+        """resume fiting an instance
+        use execution id?
         """
-        info = {
-            "key_metrics": {},  # key metrics results not metrics definition
-            "ts": self.ts,
-            "training_size": self.training_size,
-            # FIXME: add validation split if needed
-            "validation_size": self.validation_size,
-            "num_executions": len(self.executions),
-            "model": self.model.get_config(),
-            "batch_size": self.batch_size,
-            "model_size": int(self.model_size),
-            "hyper_parameters": self.hyper_parameters,
-            "optimizer_config": self.optimizer_config,
-            "loss_config": self.loss_config
-        }
-        return info
+        pass
 
-    def compute_model_size(self):
-        "comput the size of a given model"
-        params = [K.count_params(p) for p in set(self.model.trainable_weights)]
-        return np.sum(params)
-
-    def fit(self, x, y, resume_execution=False, **kwargs):
+    def fit_new(self, x, y, **kwargs):
         """Fit an execution of the model instance
-        Args:
-          resume_execution (bool): Instead of creating a new execution,
-          resume training the previous one. Default false.
         """
+
+        self.state.batch_size = kwargs.get('batch_size', 32)
+
         # in theory for batch training the function is __len__
         # should be implemented. However, for generator based training, __len__
         # returns the number of batches, NOT the training size.
         if isinstance(x, tf.keras.utils.Sequence):
-            self.training_size = (len(x) + 2) * self.batch_size
+            self.state.training_size = (len(x) + 2) * self.state.batch_size
         else:
-            self.training_size = len(x)
+            self.state.training_size = len(x)
 
         # Determine the validation size for the various validation strategies.
         if kwargs.get('validation_data'):
-            self.validation_size = len(kwargs['validation_data'][1])
+            self.state.validation_size = len(kwargs['validation_data'][1])
         elif kwargs.get('validation_split'):
             validation_split = kwargs.get('validation_split')
-            self.validation_size = self.training_size * validation_split
-            self.training_size -= self.validation_size
+            val_size = self.state.training_size * validation_split
+            self.state.validation_size = val_size
+            self.state.training_size -= self.state.validation_size
         else:
-            self.validation_size = 0
+            self.state.validation_size = 0
 
-        if resume_execution and len(self.executions):
-            execution = self.executions[-1]
-            # FIXME: We need to reload the model as it is destroyed
-            # at that point / need to be tested
-            results = execution.fit(
-                x, y, initial_epoch=execution.num_epochs, **kwargs)
-        else:
-            execution = self.__new_execution()
-            results = execution.fit(x, y, **kwargs)
+
+        # FIXME we need to return properly results
+        execution = self.__new_execution()
+        results = execution.fit(x, y, **kwargs)
+
         # compute execution level metrics
+        # FIXME can this be done in the in the execution fit instead of this?
         execution.record_results(results)
-        return results
+
+        # FIXME compute results and probably update the result file here
+        return self
 
     def __new_execution(self):
         num_executions = len(self.executions)

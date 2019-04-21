@@ -136,19 +136,15 @@ class TunerState(State):
         self.host.summary(extended=extended)
 
     def to_config(self):
-        res = {}
+        attrs = ['name', 'start_time', 'remaining_budget', 'keras_function']
+        config = self._config_from_attrs(attrs)
 
         # collect user params
         for name in self.user_parameters:
-            res[name] = getattr(self, name)
-
-        # collect programtically defined params
-        attrs = ['name', 'start_time', 'remaining_budget', 'keras_function']
-        for attr in attrs:
-            res[attr] = getattr(self, attr)
+            config[name] = getattr(self, name)
 
         # collect sub components
-        res['stats'] = self.stats.to_config()
-        res['checkpoint'] = self.checkpoint.to_config()
-        res['host'] = self.host.to_config()
-        return res
+        config['stats'] = self.stats.to_config()
+        config['checkpoint'] = self.checkpoint.to_config()
+        config['host'] = self.host.to_config()
+        return config
