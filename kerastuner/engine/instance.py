@@ -47,6 +47,7 @@ class Instance(object):
         # should be implemented. However, for generator based training, __len__
         # returns the number of batches, NOT the training size.
         if isinstance(x, tf.keras.utils.Sequence):
+            # FIXME: the +2 seems weird but seemed to matter on some testing
             self.state.training_size = (len(x) + 2) * self.state.batch_size
         else:
             self.state.training_size = len(x)
@@ -61,6 +62,8 @@ class Instance(object):
             self.state.training_size -= self.state.validation_size
         else:
             self.state.validation_size = 0
+        self.state.validation_size = int(self.state.validation_size)
+        self.state.training_size = int(self.state.training_size)
 
         # init metrics if needed
         if not self.state.agg_metrics:
