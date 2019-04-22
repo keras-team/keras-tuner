@@ -69,6 +69,10 @@ class Instance(object):
             # model metrics
             for metric in self.model.metrics:
                 self.state.agg_metrics.add(metric)
+                if self.state.validation_size:
+                    # assume keras metric is printable - might be wrong
+                    val_metric = "val_%s" % metric
+                    self.state.agg_metrics.add(val_metric)
 
             # loss(es) - model.loss in {str, dict, list}
             if isinstance(self.model.loss, dict):
