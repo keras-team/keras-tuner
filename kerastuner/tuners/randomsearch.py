@@ -47,5 +47,3 @@ class RandomSearch(Tuner):
                 subsection("execution: %s/%s" % (cur_execution + 1,
                                                  self.state.num_executions))
                 history = instance.fit(x, y, **kwargs)
-
-        self.done()

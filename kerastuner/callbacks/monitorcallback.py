@@ -5,7 +5,7 @@ from multiprocessing.pool import ThreadPool
 from collections import defaultdict
 
 from .tunercallback import TunerCallback
-from kerastuner.abstractions.display import write_log, fatal
+from kerastuner.abstractions.display import write_log, fatal, info
 from kerastuner.abstractions.io import save_model, write_file
 
 
@@ -51,6 +51,8 @@ class MonitorCallback(TunerCallback):
         self._report_status(force=True)
         self._write_result_file()
         self._display_statistics()
+        if self.tuner_state.remaining_budget < 1:
+            self._tuning_complete()
 
     def _display_statistics(self):
         # FIXME: display statistics
@@ -83,6 +85,11 @@ class MonitorCallback(TunerCallback):
             return
         self.thread_pool.apply_async(self._report_status_worker)
         self.last_refresh = time()
+
+    def _tuning_complete(self):
+        "Final message when tuning (budget_remaining < 1) is complete"
+        info("Hypertuning complete - results in %s" %
+             self.tuner_state.host.result_dir)
 
     def _report_status_worker(self):
         "Report tuner status periodically"

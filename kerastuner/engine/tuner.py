@@ -306,10 +306,6 @@ class Tuner(object):
             save_model(model, export_path, tmp_path=tmp_path,
                        output_type=output_type)
 
-    def done(self):
-        info("Hypertuning complete - results in %s" %
-             self.state.host.result_dir)
-
     def __compute_model_id(self, model):
         "compute model hash"
         s = str(model.get_config())
