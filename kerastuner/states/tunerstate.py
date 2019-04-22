@@ -9,6 +9,7 @@ from .dummystate import DummyState
 from .checkpointstate import CheckpointState
 from .tunerstatsstate import TunerStatsState
 from .hoststate import HostState
+from kerastuner.collections import MetricsCollection
 from kerastuner.abstractions.display import fatal, set_log, section, subsection
 from kerastuner.abstractions.display import display_settings, colorize
 from kerastuner.abstractions.display import print_table
@@ -62,6 +63,9 @@ class TunerState(State):
         keras_function (str): Which keras function to use to train models.
         log_file (str): Path to the log file.
         eta (int): estimated time till training end
+
+        metrics (MetricsCollection): collection of metrics aggregated over all
+        instances
     """
 
     def __init__(self, name, objective, **kwargs):
@@ -96,6 +100,7 @@ class TunerState(State):
         self.host = HostState(**kwargs)
         self.stats = TunerStatsState()
         self.checkpoint = CheckpointState(**kwargs)
+        self.metrics = MetricsCollection()
 
         # logfile
         log_name = "%s_%s_%d.log" % (self.project, self.architecture,

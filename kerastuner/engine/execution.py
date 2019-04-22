@@ -16,12 +16,12 @@ from kerastuner.abstractions.display import fatal
 class Execution(object):
     """Model Execution class. Each Model instance can be executed N time"""
 
-    def __init__(self, model, instance_state, tuner_state, cloudservice):
-
+    def __init__(self, model, instance_state, tuner_state, metrics_config,
+                 cloudservice):
         self.instance_state = instance_state
         self.tuner_state = tuner_state
         self.cloudservice = cloudservice
-        self.state = ExecutionState(tuner_state.max_epochs)
+        self.state = ExecutionState(tuner_state.max_epochs, metrics_config)
 
         # Model recreaction
         config = model.get_config()
@@ -35,13 +35,6 @@ class Execution(object):
         self.model.compile(optimizer=optimizer, metrics=model.metrics,
                            loss=model.loss, loss_weights=model.loss_weights)
 
-        # metrics init
-        for metric in self.model.metrics:
-            self.state.metrics.add(metric)
-
-        # setting objective
-        self.state.metrics.set_objective(self.tuner_state.objective)
-
     def fit(self, x, y, **kwargs):
         """Fit a given model"""
 
@@ -50,7 +43,7 @@ class Execution(object):
             self.tuner_state.remaining_budget -= self.tuner_state.max_epochs
             return
         # creating the callback need to track training progress
-        monitorcallback = MonitorCallback(self, self.tuner_state,
+        monitorcallback = MonitorCallback(self.tuner_state,
                                           self.instance_state,
                                           self.state, self.cloudservice)
 

@@ -3,6 +3,14 @@ import json
 from kerastuner.engine.metric import Metric
 
 
+@pytest.fixture
+def mm():
+    mm = Metric('name', 'min')
+    mm.update(10)
+    mm.update(11)
+    return mm
+
+
 def test_metric_creation():
     metric = Metric('test', 'min')
     assert metric.name == 'test'
@@ -14,23 +22,19 @@ def test_metric_invalid_direction():
         Metric('test', 'invalid')
 
 
-def test_best_value():
-    mm = Metric('min', 'min')
-    mm.update(10)
-    mm.update(8)
-    assert mm.get_best_value() == 8
+def test_best_min_value(mm):
+    assert mm.get_best_value() == 10
 
+
+def test_best_max_value():
     mm = Metric('max', 'max')
     mm.update(10)
     mm.update(8)
     assert mm.get_best_value() == 10
 
 
-def test_last_value():
-    mm = Metric('min', 'min')
-    mm.update(10)
-    mm.update(8)
-    assert mm.get_last_value() == 8
+def test_last_value(mm):
+    assert mm.get_last_value() == 11
 
 
 def test_get_empty_last_value():
@@ -38,10 +42,12 @@ def test_get_empty_last_value():
     assert not mm.get_last_value()
 
 
-def test_update():
-    mm = Metric('min', 'min')
-    mm.update(10)
-    assert mm.update(8)
+def test_update_improve(mm):
+    assert mm.update(6)
+
+
+def test_update_dont_improve(mm):
+    assert not mm.update(3713)
 
 
 def test_single_update():
@@ -49,28 +55,29 @@ def test_single_update():
     assert mm.update(10)
 
 
-def test_history():
-    mm = Metric('min', 'min')
-    mm.update(10)
-    mm.update(8)
-    assert mm.get_history() == [10, 8]
+def test_history(mm):
+    assert mm.get_history() == [10.0, 11.0]
 
 
-def test_to_dict():
-    mm = Metric('conf_test', 'min')
-    mm.update(8)
-    mm.update(10)
+def test_to_dict(mm):
     conf = mm.to_config()
-    assert conf['name'] == 'conf_test'
-    assert conf['best_value'] == 8
-    assert conf['last_value'] == 10
-    assert conf['history'] == [8, 10]
+    assert conf['name'] == 'name'
+    assert conf['best_value'] == 10
+    assert conf['last_value'] == 11
+    assert conf['history'] == [10, 11]
 
 
-def test_to_dict_to_json_to_dict():
-    mm = Metric('min', 'min')
-    mm.update(10)
-    mm.update(8)
+def test_to_dict_to_json_to_dict(mm):
     conf = mm.to_config()
     conf_json = json.loads(json.dumps(conf))
     assert conf_json == conf
+
+
+def test_from_config_to_config(mm):
+    mm.is_objective = True
+    config = mm.to_config()
+    mm2 = Metric.from_config(config)
+    assert mm2.name == 'name'
+    assert mm2.direction == 'min'
+    assert mm2.get_history() == [10, 11]
+    assert mm2.is_objective

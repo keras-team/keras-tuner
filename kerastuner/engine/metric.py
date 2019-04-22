@@ -89,9 +89,10 @@ class Metric(object):
             "is_objective": self.is_objective
         }
 
-    def from_config(self, config):
+    @staticmethod
+    def from_config(config):
         "Reload metric from config"
-        self.name = config['name']
-        self.direction = config['direction']
-        self.history = config['history']
-        self.is_objective = config['is_objective']
+        metric = Metric(config['name'], config['direction'])
+        metric.history = config['history']
+        metric.is_objective = config['is_objective']
+        return metric

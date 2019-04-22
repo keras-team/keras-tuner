@@ -10,7 +10,7 @@ from kerastuner.abstractions.display import fatal, subsection, display_settings
 class ExecutionState(State):
     "Instance Execution state"
 
-    def __init__(self, max_epochs):
+    def __init__(self, max_epochs, metrics_config):
         super(ExecutionState, self).__init__()
 
         self.start_time = int(time())
@@ -20,7 +20,7 @@ class ExecutionState(State):
         self.eta = -1
 
         # sub component
-        self.metrics = MetricsCollection()
+        self.metrics = MetricsCollection.from_config(metrics_config)
 
     def to_config(self):
         self._compute_eta()

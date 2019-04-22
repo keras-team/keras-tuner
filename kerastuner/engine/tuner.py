@@ -118,7 +118,7 @@ class Tuner(object):
 
     def search(self, x, y, **kwargs):
         self.state.keras_function = 'fit'
-        kwargs["verbose"] = 0
+        #kwargs["verbose"] = 0
         self.tune(x, y, **kwargs)
         if self.cloudservice.is_enable:
             self.cloudservice.complete()
@@ -308,7 +308,7 @@ class Tuner(object):
 
     def done(self):
         info("Hypertuning complete - results in %s" %
-             self.meta_data['server']['local_dir'])
+             self.state.host.result_dir)
 
     def __compute_model_id(self, model):
         "compute model hash"

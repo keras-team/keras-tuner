@@ -46,8 +46,8 @@ def model_fn():
     return model
 
 
-# train 5 models over 3 epochs
-hypermodel = RandomSearch(model_fn, 'loss', epoch_budget=15, max_epochs=3)
+# train 3 models over 3 epochs
+hypermodel = RandomSearch(model_fn, 'loss', epoch_budget=3, max_epochs=3)
 hypermodel.summary()
 if api_key:
     hypermodel.enable_cloud(

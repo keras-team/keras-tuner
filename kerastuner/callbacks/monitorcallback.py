@@ -5,7 +5,7 @@ from multiprocessing.pool import ThreadPool
 from collections import defaultdict
 
 from .tunercallback import TunerCallback
-from kerastuner.abstractions.display import write_log
+from kerastuner.abstractions.display import write_log, fatal
 from kerastuner.abstractions.io import save_model, write_file
 
 
@@ -71,7 +71,7 @@ class MonitorCallback(TunerCallback):
         write_file(fname, status_json)
 
         # send status to the cloud service
-        if self.cloudservice.is_enabled:
+        if self.cloudservice.is_enable:
             self.cloudservice.send_status(status)
 
     def _report_status(self, force=False):
@@ -101,7 +101,7 @@ class MonitorCallback(TunerCallback):
     def _get_status(self):
         # FIXME update statistics here
         status = {
-            "write_time": int(time),
+            "update_time": int(time()),
             "tuner": self.tuner_state.to_config(),
             "instance": self.instance_state.to_config(),
             "execution": self.execution_state.to_config()

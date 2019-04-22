@@ -90,8 +90,8 @@ def test_to_dict(mc):
     mc.update('val_loss', 3)
 
     config = mc.to_dict()
-    assert config['acc']['name'] == 'acc'
-    assert config['acc']['best_value'] == 2
+    assert config['acc'].name == 'acc'
+    assert config['acc'].get_best_value() == 2
     assert len(config) == 3
 
 
@@ -125,3 +125,14 @@ def test_double_objective(mc):
     mc.set_objective('acc')
     with pytest.raises(ValueError):
         mc.set_objective('loss')
+
+
+def test_from_config_to_config(mc):
+    config = mc.to_config()
+    mc2 = MetricsCollection.from_config(config)
+    mcl = mc.to_list()
+    mc2l = mc2.to_list()
+
+    assert mc2._objective_name == mc._objective_name
+    for idx in range(len(mcl)):
+        assert mcl[idx].name == mc2l[idx].name

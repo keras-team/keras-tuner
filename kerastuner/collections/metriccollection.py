@@ -70,15 +70,15 @@ class MetricsCollection(Collection):
         # for each metric returns its serialized form
         return [self._objects[name].to_config() for name in names]
 
-    def to_dict(self):
-        """ Serializable dict representation of the metric collection.
-        Returns:
-            list: Collection of metric dict.
-        """
-        res = {}
-        for name, metric in self._objects.items():
-            res[name] = metric.to_config()
-        return res
+    @staticmethod
+    def from_config(config):
+        col = MetricsCollection()
+        for metric_config in config:
+            metric = Metric.from_config(metric_config)
+            col.add(metric)
+            if metric.is_objective:
+                col._objective_name = metric.name
+        return col
 
     def set_objective(self, name):
         "Mark a metric as tuning objective"

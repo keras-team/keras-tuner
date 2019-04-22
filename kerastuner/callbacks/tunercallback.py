@@ -4,7 +4,7 @@ from __future__ import print_function
 
 from time import time
 from multiprocessing.pool import ThreadPool
-
+from kerastuner.abstractions.display import write_log, fatal
 import tensorflow.keras as keras  # pylint: disable=import-error
 
 
@@ -12,7 +12,6 @@ class TunerCallback(keras.callbacks.Callback):
 
     def __init__(self, tuner_state, instance_state, execution_state,
                  cloudservice):
-
         self.tuner_state = tuner_state
         self.instance_state = instance_state
         self.execution_state = execution_state

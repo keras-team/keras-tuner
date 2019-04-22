@@ -5,9 +5,10 @@ from os import path
 import tensorflow as tf
 
 from .execution import Execution
+from .metric import Metric
 from kerastuner.states import InstanceState
-from kerastuner.collections import ExecutionsCollection
-from kerastuner.abstractions.display import section, subsection
+from kerastuner.collections import ExecutionsCollection, MetricsCollection
+from kerastuner.abstractions.display import section, subsection, fatal
 
 
 class Instance(object):
@@ -20,9 +21,9 @@ class Instance(object):
         self.cloudservice = cloudservice
         self.executions = ExecutionsCollection()
 
-
         # init instance state
         self.state = InstanceState(idx, model, hparams)
+        self.metrics_config = None  # metric config passed to each executions
 
     def summary(self, extended=False):
         section("Instance summary")
@@ -61,6 +62,31 @@ class Instance(object):
         else:
             self.state.validation_size = 0
 
+        # init metrics if needed
+        if not self.state.agg_metrics:
+            self.state.agg_metrics = MetricsCollection()
+
+            # model metrics
+            for metric in self.model.metrics:
+                self.state.agg_metrics.add(metric)
+
+            # loss(es) - model.loss in {str, dict, list}
+            if isinstance(self.model.loss, dict):
+                losses = list(losses.keys())
+            elif isinstance(self.model.loss, str):
+                losses = ['loss']  # single loss is always named loss
+            else:
+                losses = self.model.loss
+
+            for loss in losses:
+                self.state.agg_metrics.add(Metric(loss, 'min'))
+                if self.state.validation_size:
+                    self.state.agg_metrics.add(Metric('val_' + loss, 'min'))
+
+            # mark objective
+            self.state.agg_metrics.set_objective(self.tuner_state.objective)
+            self.metrics_config = self.state.agg_metrics.to_config()
+
         # tell the user we are training a new instance
         if not len(self.executions):
             section("Training new instance")
@@ -71,7 +97,7 @@ class Instance(object):
 
         # FIXME we need to return properly results
         execution = Execution(self.model, self.state, self.tuner_state,
-                              self.cloudservice)
+                              self.metrics_config, self.cloudservice)
         self.executions.add(execution.state.idx, execution)
         execution.fit(x, y, **kwargs)
 

@@ -37,11 +37,13 @@ def test_get_metric_invalid():
     ic = Collection()
     assert not ic.get('doesnotexist')
 
+
 def test_exist():
     ic = Collection()
     ic.add('a', 'a')
     assert ic.exist('a')
     assert not ic.exist('b')
+
 
 def test_update(obj):
     ic = Collection()

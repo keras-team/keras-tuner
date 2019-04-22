@@ -12,6 +12,7 @@ from kerastuner.abstractions.display import display_setting, display_settings
 
 
 class InstanceState(State):
+    # FIXME documentations
 
     def __init__(self, idx, model, hyper_parameters):
         super(InstanceState, self).__init__()
@@ -30,9 +31,7 @@ class InstanceState(State):
         self.loss_config = deepcopy(serialize_loss(model.loss))
         self.model_config = json.loads(model.to_json())
         self.hyper_parameters = deepcopy(hyper_parameters)
-
-        # results
-        self.results = {}
+        self.agg_metrics = None
 
     def summary(self, extended=False):
         section('Instance info')
