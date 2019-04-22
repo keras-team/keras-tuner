@@ -6,13 +6,12 @@ from collections import defaultdict
 
 from .state import State
 from .dummystate import DummyState
-from .checkpointstate import CheckpointState
 from .tunerstatsstate import TunerStatsState
 from .hoststate import HostState
 from kerastuner.collections import MetricsCollection
 from kerastuner.abstractions.display import fatal, set_log, section, subsection
 from kerastuner.abstractions.display import display_settings, colorize
-from kerastuner.abstractions.display import display_table
+from kerastuner.abstractions.display import display_table, warning
 
 
 class TunerState(State):
@@ -47,6 +46,9 @@ class TunerState(State):
 
         max_model_parameters (int, optional):maximum number of parameters
         allowed for a model. Prevent OOO issue. Defaults to 2500000.
+
+        monitor (str, optional): Which metric to monitor for model
+        checkpointing. Defaults to loss. Setting it to None disable it.
 
         dry_run(bool, optional): Run the tuner without training models.
         Defaults to False.
@@ -91,6 +93,13 @@ class TunerState(State):
         self.max_model_parameters = self._register('max_model_parameters',
                                                    25000000, True)
 
+        # checkpointing
+        self.monitor = self._register('monitor', 'loss', True)
+        if not self.monitor:
+            warning("models will not be saved are you sure?")
+        if self.monitor == 'loss':
+            warning("Checkpoint monitor set to loss - are you sure?")
+
         # debug
         self.dry_run = self._register('dry_run', False)
         self.debug = self._register('debug', False)
@@ -99,7 +108,6 @@ class TunerState(State):
         # sub-states
         self.host = HostState(**kwargs)
         self.stats = TunerStatsState()
-        self.checkpoint = CheckpointState(**kwargs)
         self.metrics = MetricsCollection()
 
         # logfile
@@ -138,7 +146,6 @@ class TunerState(State):
             subsection('User info')
             display_settings(self.user_info)
 
-        self.checkpoint.summary(extended=extended)
         self.host.summary(extended=extended)
 
     def to_config(self):
@@ -156,13 +163,15 @@ class TunerState(State):
 
         # collect sub components
         config['stats'] = self.stats.to_config()
-        config['checkpoint'] = self.checkpoint.to_config()
         config['host'] = self.host.to_config()
         return config
 
     def _compute_eta(self):
         "computing tuner estimated completion time"
-        elapsed_time = int(time() - self.start_time)
-        epochs_left = self.epoch_budget - self.remaining_budget
-        time_per_epoch = elapsed_time / max(epochs_left, 1)
-        self.eta = int(self.remaining_budget * time_per_epoch)
+
+        if self.remaining_budget < 1:
+            self.eta = 0
+        else:
+            elapsed_time = int(time() - self.start_time)
+            time_per_epoch = elapsed_time / self.remaining_budget
+            self.eta = int(self.remaining_budget * time_per_epoch)

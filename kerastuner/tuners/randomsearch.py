@@ -46,4 +46,4 @@ class RandomSearch(Tuner):
                 # FIXME: move this to the execution code
                 subsection("execution: %s/%s" % (cur_execution + 1,
                                                  self.state.num_executions))
-                history = instance.fit(x, y, **kwargs)
+                instance_state = instance.fit(x, y, **kwargs)  # nopep8 pylint: disable=unused-variable

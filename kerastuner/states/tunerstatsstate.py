@@ -2,7 +2,6 @@ from __future__ import absolute_import
 from time import time
 
 from .state import State
-from .checkpointstate import CheckpointState
 from kerastuner.abstractions.display import fatal, subsection, display_settings
 
 

@@ -30,9 +30,8 @@ class MonitorCallback(TunerCallback):
         # update metrics and checkpoint if needed
         for metric, value in logs.items():
             improved = self.execution_state.metrics.update(metric, value)
-            if self.tuner_state.checkpoint.is_enabled and improved:
-                if self.tuner_state.checkpoint.monitor == metric:
-                    self.thread_pool.apply_async(self._checkpoint_model)
+            if self.tuner_state.monitor == metric and improved:
+                self.thread_pool.apply_async(self._checkpoint_model)
 
         # reset epoch history
         self.epoch_history = defaultdict(list)
