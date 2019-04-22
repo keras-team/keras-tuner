@@ -26,9 +26,11 @@ class ExecutionState(State):
         self._compute_eta()
         attrs = ['start_time', 'idx', 'epochs', 'eta']
         config = self._config_from_attrs(attrs)
+        config['metrics'] = self.metrics.to_config()
         return config
 
     def summary(self, extended=False):
+        # FIXME: summary
         pass
 
     def _compute_eta(self):

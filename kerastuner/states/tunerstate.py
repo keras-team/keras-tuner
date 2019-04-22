@@ -47,8 +47,8 @@ class TunerState(State):
         max_model_parameters (int, optional):maximum number of parameters
         allowed for a model. Prevent OOO issue. Defaults to 2500000.
 
-        monitor (str, optional): Which metric to monitor for model
-        checkpointing. Defaults to loss. Setting it to None disable it.
+        checkpoint (Bool, optional): Checkpoint model. Setting it to false
+        disable it. Defaults to True
 
         dry_run(bool, optional): Run the tuner without training models.
         Defaults to False.
@@ -66,16 +66,23 @@ class TunerState(State):
         log_file (str): Path to the log file.
         eta (int): estimated time till training end
 
-        metrics (MetricsCollection): collection of metrics aggregated over all
-        instances
+        overall_metrics (MetricsCollection): collection of metrics aggregated
+        over all instances
+
+        best_instance_metrics (MetricsCollection): track the best instance
     """
 
     def __init__(self, name, objective, **kwargs):
         super(TunerState, self).__init__(**kwargs)
 
         self.name = name
-        self.objective = objective
         self.start_time = int(time())
+
+        # objective
+        self.objective = objective
+        if self.objective == 'loss':
+            warning("Objective set to loss - usually not the best objective\
+                    are you sure?")
 
         # budget
         self.epoch_budget = self._register('epoch_budget', 100, True)
@@ -94,11 +101,9 @@ class TunerState(State):
                                                    25000000, True)
 
         # checkpointing
-        self.monitor = self._register('monitor', 'loss', True)
-        if not self.monitor:
+        self.checkpoint = self._register('checkpoint', True)
+        if not self.checkpoint:
             warning("models will not be saved are you sure?")
-        if self.monitor == 'loss':
-            warning("Checkpoint monitor set to loss - are you sure?")
 
         # debug
         self.dry_run = self._register('dry_run', False)
@@ -108,7 +113,8 @@ class TunerState(State):
         # sub-states
         self.host = HostState(**kwargs)
         self.stats = TunerStatsState()
-        self.metrics = MetricsCollection()
+        self.overall_metrics = None  # set in Instance before 1st training
+        self.best_instance_metrics = None  # set in callback after 1st training
 
         # logfile
         log_name = "%s_%s_%d.log" % (self.project, self.architecture,

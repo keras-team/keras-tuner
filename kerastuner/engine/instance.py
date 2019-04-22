@@ -102,6 +102,10 @@ class Instance(object):
             self.state.agg_metrics.set_objective(self.tuner_state.objective)
             self.metrics_config = self.state.agg_metrics.to_config()
 
+            # init tuner global metric if needed -- this is first training
+            if not self.tuner_state.overall_metrics:
+                self.tuner_state.overall_metrics = MetricsCollection.from_config(self.metrics_config)  # nopep8
+
         # tell the user we are training a new instance
         if not len(self.executions):
             section("Training new instance")

@@ -5,6 +5,7 @@ from multiprocessing.pool import ThreadPool
 from collections import defaultdict
 
 from .tunercallback import TunerCallback
+from kerastuner.collections import MetricsCollection
 from kerastuner.abstractions.display import write_log, fatal, info
 from kerastuner.abstractions.io import save_model, write_file
 
@@ -30,7 +31,7 @@ class MonitorCallback(TunerCallback):
         # update metrics and checkpoint if needed
         for metric, value in logs.items():
             improved = self.execution_state.metrics.update(metric, value)
-            if self.tuner_state.monitor == metric and improved:
+            if self.tuner_state.objective == metric and improved:
                 self.thread_pool.apply_async(self._checkpoint_model)
 
         # reset epoch history
@@ -47,15 +48,36 @@ class MonitorCallback(TunerCallback):
 
     def on_train_end(self, logs={}):
         self.training_complete = True
+        self._end_training_statistics()
         self._report_status(force=True)
         self._write_result_file()
-        self._display_statistics()
+
         if self.tuner_state.remaining_budget < 1:
             self._tuning_complete()
 
-    def _display_statistics(self):
-        # FIXME: display statistics
-        pass
+    def _end_training_statistics(self):
+        """Compute and display end of training statistics
+
+        Notes:
+            update order matters must be instance then global
+        """
+
+        # update instance aggregate statistics by reporting the best value
+        for metric in self.execution_state.metrics.to_list():
+            self.instance_state.agg_metrics.update(metric.name,
+                                                   metric.get_best_value())
+
+        # update tuner overall objective metric
+        update_best_model = False
+        for metric in self.instance_state.agg_metrics.to_list():
+            improved = self.tuner_state.overall_metrics.update(metric.name, metric.get_best_value())  # nopep8
+            if metric.name == self.tuner_state.objective and improved:
+                update_best_model = True
+
+        # ! dont try to simplify - must be after all statistics are computed
+        if update_best_model or self.tuner_state.best_instance_metrics:
+            config = self.instance_state.agg_metrics.to_config()
+            self.tuner_state.best_instance_metrics = MetricsCollection.from_config(config)  # nopep8
 
     def _checkpoint_model(self):
         """Checkpoint model"""

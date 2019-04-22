@@ -1,4 +1,6 @@
 import sys
+import numpy as np
+
 from kerastuner.abstractions.display import fatal
 
 
@@ -49,6 +51,17 @@ class Metric(object):
 
         # not the best
         return False
+
+    def get_statistics(self):
+        "Return metric statistics"
+        return {
+            "min": float(np.min(self.history)),
+            "max": float(np.max(self.history)),
+            "mean": float(np.mean(self.history)),
+            "median": float(np.median(self.history)),
+            "variance": float(np.var(self.history)),
+            "stddev": float(np.std(self.history))
+        }
 
     def get_last_value(self):
         "Return metric current value"

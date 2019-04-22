@@ -46,7 +46,7 @@ def model_fn():
     return model
 
 
-# train 3 models over 3 epochs
+# train 2 models over 2 epochs
 hypermodel = RandomSearch(model_fn, 'loss', epoch_budget=4, max_epochs=2)
 hypermodel.summary()
 if api_key:
