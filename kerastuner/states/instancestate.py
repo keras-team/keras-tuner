@@ -7,7 +7,7 @@ from .state import State
 from kerastuner import config
 from kerastuner.abstractions.tf import compute_model_size
 from kerastuner.abstractions.io import serialize_loss
-from kerastuner.abstractions.display import print_table, section, subsection
+from kerastuner.abstractions.display import display_table, section, subsection
 from kerastuner.abstractions.display import display_setting, display_settings
 
 
@@ -50,7 +50,7 @@ class InstanceState(State):
         table = [["Hyperparameter", "Value"]]
         for k, v in self.hyper_parameters.items():
             table.append([k, v["value"]])
-        print_table(table, indent=2)
+        display_table(table, indent=2)
 
     def to_config(self):
         attrs = ['start_time', 'idx', 'training_size', 'validation_size',

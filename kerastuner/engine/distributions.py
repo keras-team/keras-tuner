@@ -2,7 +2,7 @@ from abc import abstractmethod
 import numpy as np
 from collections import defaultdict
 
-from kerastuner.abstractions.display import print_table, subsection, colorize
+from kerastuner.abstractions.display import display_table, subsection, colorize
 from kerastuner.abstractions.display import display_setting
 
 
@@ -169,4 +169,4 @@ class Distributions(object):
         rows.append(['', ''])
         rows.append([colorize('total', 'magenta'),
                      colorize(total_size, 'magenta')])
-        print_table(rows)
+        display_table(rows)

@@ -12,7 +12,7 @@ import json
 from tensorflow.python.lib.io import file_io  # allows to write to GCP or local
 from copy import copy
 from multiprocessing.pool import ThreadPool
-from kerastuner.abstractions.display import colorize, print_combined_table
+from kerastuner.abstractions.display import colorize, display_combined_table
 from kerastuner.abstractions.display import section, highlight, fatal, write_log
 from kerastuner.abstractions.host import Host
 from kerastuner.abstractions.io import save_model
@@ -346,4 +346,4 @@ class TunerCallback(keras.callbacks.Callback):
         # display both on the same line
         section("Statistics")
         highlight("Trained models: %s" % md['trained_models'])
-        print_combined_table([stats_data, tuner_data])
+        display_combined_table([stats_data, tuner_data])

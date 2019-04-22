@@ -12,7 +12,7 @@ from .hoststate import HostState
 from kerastuner.collections import MetricsCollection
 from kerastuner.abstractions.display import fatal, set_log, section, subsection
 from kerastuner.abstractions.display import display_settings, colorize
-from kerastuner.abstractions.display import print_table
+from kerastuner.abstractions.display import display_table
 
 
 class TunerState(State):

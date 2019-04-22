@@ -8,7 +8,7 @@ from collections import defaultdict
 import operator
 import numpy as np
 
-from kerastuner.abstractions.display import print_table, get_progress_bar
+from kerastuner.abstractions.display import display_table, get_progress_bar
 from kerastuner.abstractions.display import section, subsection, fatal
 
 
@@ -74,7 +74,7 @@ def parse_extra_fields(s):
 def display_hp(hyper_parameters, model_indices):
     """
     Display hyper parameters values for the top models
- 
+
     Args:
         hyper_parameters (defaultdict(list)): hyper-params values
         model_indices (list): list of model indices to display
@@ -97,7 +97,7 @@ def display_hp(hyper_parameters, model_indices):
             for idx in model_indices:
                 row.append(hyper_parameters[hp][idx])
             rows.append(row)
-    print_table(rows)
+    display_table(rows)
 
 
 def display_metrics(metrics, main_metric, direction, num_models):
@@ -126,7 +126,7 @@ def display_metrics(metrics, main_metric, direction, num_models):
             row.append(metrics[field][idx])
         rows.append(row)
 
-    print_table(rows)
+    display_table(rows)
     return indices
 
 
@@ -153,11 +153,11 @@ def summary(input_dir,
     for fname in filenames:
         info = json.loads(open(str(fname)).read())
         infos.append(info)
-        
+
         # needed in case of conditional hyperparams
         for h in info["hyper_parameters"].keys():
             hyper_parameters_list.add(h)
-        
+
         pb.update()
     pb.close()
 

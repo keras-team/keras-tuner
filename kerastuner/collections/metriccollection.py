@@ -13,6 +13,9 @@ _METRIC_DIRECTION = {
     'top_k_categorical_accuracy': 'max',
 }
 
+_METRIC_ALIAS = {
+    "acc": 'accuracy'
+}
 
 class MetricsCollection(Collection):
 
@@ -95,3 +98,11 @@ class MetricsCollection(Collection):
             warning("objective not set yet. returning None")
             return None
         return self._objects[self._objective_name]
+
+    def summary(self, extended=False):
+        rows = []
+        for m in self.to_list():
+            row = [
+                m.name,
+            ]
+        

@@ -20,7 +20,7 @@ from kerastuner.abstractions.tf import clear_tf_session, compute_model_size
 from kerastuner.abstractions.io import create_directory, glob, read_file
 from kerastuner.abstractions.io import save_model, reload_model
 from kerastuner.abstractions.io import read_results, deserialize_loss
-from kerastuner.abstractions.display import highlight, print_table, section
+from kerastuner.abstractions.display import highlight, display_table, section
 from kerastuner.abstractions.display import display_setting, display_settings
 from kerastuner.abstractions.display import info, warning, fatal, set_log
 from kerastuner.abstractions.display import get_progress_bar, subsection

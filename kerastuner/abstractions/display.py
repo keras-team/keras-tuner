@@ -216,8 +216,8 @@ def highlight(text):
 # Charts
 
 
-def print_bar_chart(val, max_val, title=None, left='', right='',
-                    color='green', length=80):
+def display_bar_chart(val, max_val, title=None, left='', right='',
+                      color='green', length=80):
 
     bar = make_bar_chart(val, max_val, title=title, left=left, right=right,
                          color=color, length=length)
@@ -339,7 +339,7 @@ def colorize(text, color, bg_color=None, brightness='normal'):
 
 
 # TABLE
-def print_table(rows, title=None, indent=0):
+def display_table(rows, title=None, indent=0):
     """ Print data as a nicely formated ascii table
     Args:
         rows (list(list)): data to display as list of lists.
@@ -418,7 +418,7 @@ def make_combined_table(array_rows):
         return combined_table.table
 
 
-def print_combined_table(array_rows):
+def display_combined_table(array_rows):
     """ Build a table of tables and print it
 
     Args:
