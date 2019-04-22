@@ -34,8 +34,6 @@ class InstanceState(State):
         self.agg_metrics = None
 
     def summary(self, extended=False):
-        section('Instance info')
-
         subsection('Training parameters')
         settings = {"idx": self.idx, "model size": self.model_size}
         if extended:

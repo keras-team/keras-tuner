@@ -35,8 +35,16 @@ class Instance(object):
         """
         pass
 
-    def fit(self, x, y, **kwargs):
+    def fit(self, x, y, epochs, **kwargs):
         """Fit an execution of the model instance
+
+        Args:
+            x (numpy array): Training data
+            y (numpy array): Label
+            epochs (int): Number of epochs to train the model.
+
+        Returns:
+            Instance: Instance object
         """
 
         # collect batch_size from the fit function
@@ -106,7 +114,7 @@ class Instance(object):
         execution = Execution(self.model, self.state, self.tuner_state,
                               self.metrics_config, self.cloudservice)
         self.executions.add(execution.state.idx, execution)
-        execution.fit(x, y, **kwargs)
+        execution.fit(x, y, epochs=epochs, **kwargs)
 
         # compute execution level metrics
         # FIXME can this be done in the in the execution fit instead of this?

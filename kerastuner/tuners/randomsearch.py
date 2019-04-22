@@ -34,6 +34,7 @@ class RandomSearch(Tuner):
                                            RandomDistributions, **kwargs)
 
     def tune(self, x, y, **kwargs):
+
         while self.state.remaining_budget:
             instance = self.new_instance()
 
@@ -46,4 +47,5 @@ class RandomSearch(Tuner):
                 # FIXME: move this to the execution code
                 subsection("execution: %s/%s" % (cur_execution + 1,
                                                  self.state.num_executions))
-                instance_state = instance.fit(x, y, **kwargs)  # nopep8 pylint: disable=unused-variable
+                epochs = self.state.max_epochs
+                instance_state = instance.fit(x, y, epochs, **kwargs)  # nopep8 pylint: disable=unused-variable
