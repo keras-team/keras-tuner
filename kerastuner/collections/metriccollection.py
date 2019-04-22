@@ -1,6 +1,6 @@
 from .collections import Collection
 from kerastuner.engine.metric import Metric
-from kerastuner.abstractions.display import warning, fatal
+from kerastuner.abstractions.display import warning, fatal, display_table
 
 _METRIC_DIRECTION = {
     'acc': 'max',
@@ -17,6 +17,7 @@ _METRIC_ALIAS = {
     "acc": 'accuracy'
 }
 
+
 class MetricsCollection(Collection):
 
     def __init__(self):
@@ -32,6 +33,8 @@ class MetricsCollection(Collection):
 
         if isinstance(metric, str):
             metric_name = metric
+            metric_name = self._replace_alias(metric_name)
+            # canonalize metric name (val_metric vs metric)
             no_val_name = metric_name.replace('val_', '')
             if no_val_name in _METRIC_DIRECTION:
                 direction = _METRIC_DIRECTION[no_val_name]
@@ -57,10 +60,18 @@ class MetricsCollection(Collection):
         Returns:
             bool: True if the metric improved, False otherwise.
         """
+        metric_name = self._replace_alias(metric_name)
         metric = self.get(metric_name)
         if metric:
             return metric.update(value)
         return False
+
+    def _replace_alias(self, metric_name):
+        "replace metric alias with their canonical name"
+        no_val_name = metric_name.replace('val_', '')
+        if no_val_name in _METRIC_ALIAS:
+            return metric_name.replace(no_val_name, _METRIC_ALIAS[no_val_name])
+        return metric_name
 
     def to_config(self):
         """Serializable list of metrics.
@@ -100,9 +111,12 @@ class MetricsCollection(Collection):
         return self._objects[self._objective_name]
 
     def summary(self, extended=False):
-        rows = []
+        rows = [['name', 'best', 'last']]
         for m in self.to_list():
             row = [
                 m.name,
+                m.get_best_value(),
+                m.get_last_value(),
             ]
-        
+            rows.append(row)
+        display_table(rows)
