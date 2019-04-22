@@ -67,7 +67,9 @@ class MonitorCallback(TunerCallback):
     def _write_result_file(self):
         status = self._get_status()
         status_json = json.dumps(status)
-        fname = path.join(self.tuner_state.host.result_dir, '-results.json')
+        prefix = self._get_filename_prefix()
+        # don't do a os.join as it is just appending a suffix
+        fname = prefix + '-results.json'
         write_file(fname, status_json)
 
         # send status to the cloud service
@@ -91,7 +93,7 @@ class MonitorCallback(TunerCallback):
         status_json = json.dumps(status)
 
         # write on disk
-        fname = path.join(self.tuner_state.host.result_dir, '-status.json')
+        fname = path.join(self.tuner_state.host.result_dir, 'status.json')
         write_file(fname, status_json)
 
         # send status to the cloud service
@@ -109,9 +111,9 @@ class MonitorCallback(TunerCallback):
         return status
 
     def _get_filename_prefix(self):
-        "create filename prefix based of the instance and execution trained"
+        "Build dir/filename prefix based of the instance and execution trained"
         prefix = '%s-%s-%s-%s' % (self.tuner_state.project,
                                   self.tuner_state.architecture,
                                   self.instance_state.idx,
                                   self.execution_state.idx)
-        return prefix
+        return path.join(self.tuner_state.host.result_dir, prefix)
