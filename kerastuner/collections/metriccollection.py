@@ -66,6 +66,12 @@ class MetricsCollection(Collection):
             return metric.update(value)
         return False
 
+    def get(self, metric_name):
+        metric_name = self._replace_alias(metric_name)
+        if metric_name in self._objects:
+            return self._objects[metric_name]
+        return None
+
     def _replace_alias(self, metric_name):
         "replace metric alias with their canonical name"
         no_val_name = metric_name.replace('val_', '')

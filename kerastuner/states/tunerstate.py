@@ -66,7 +66,7 @@ class TunerState(State):
         log_file (str): Path to the log file.
         eta (int): estimated time till training end
 
-        overall_metrics (MetricsCollection): collection of metrics aggregated
+        agg_metrics (MetricsCollection): collection of metrics aggregated
         over all instances
 
         best_instance_metrics (MetricsCollection): track the best instance
@@ -113,8 +113,10 @@ class TunerState(State):
         # sub-states
         self.host = HostState(**kwargs)
         self.stats = TunerStatsState()
-        self.overall_metrics = None  # set in Instance before 1st training
-        self.best_instance_metrics = None  # set in callback after 1st training
+        self.agg_metrics = None  # set in Instance before 1st training
+
+        # best instance tracking
+        self.best_instance_config = None  # set in callback after 1st training
 
         # logfile
         log_name = "%s_%s_%d.log" % (self.project, self.architecture,
@@ -170,6 +172,14 @@ class TunerState(State):
         # collect sub components
         config['stats'] = self.stats.to_config()
         config['host'] = self.host.to_config()
+        config['metrics'] = {}
+
+        if self.agg_metrics:
+            config['aggregate_metrics'] = self.agg_metrics.to_config()  # nopep8
+        else:
+            config['aggregate_metrics'] = []
+
+        config['best_instance'] = self.best_instance_config
         return config
 
     def _compute_eta(self):

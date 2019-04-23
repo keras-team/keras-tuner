@@ -54,6 +54,8 @@ class Metric(object):
 
     def get_statistics(self):
         "Return metric statistics"
+        if not len(self.history):
+            return {}
         return {
             "min": float(np.min(self.history)),
             "max": float(np.max(self.history)),
@@ -99,6 +101,7 @@ class Metric(object):
             "last_value": self.get_last_value(),
             "direction": self.direction,
             "history": self.history,
+            "statistics": self.get_statistics(),
             "is_objective": self.is_objective
         }
 

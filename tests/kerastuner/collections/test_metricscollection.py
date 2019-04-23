@@ -11,11 +11,11 @@ def mc():
 
 
 def test_metric_name_add(mc):
-    mc.add('acc')
-    metric = mc.get('acc')
+    mc.add('accuracy')
+    metric = mc.get('accuracy')
     assert isinstance(metric, Metric)
     assert metric.direction == 'max'
-    assert metric.name == 'acc'
+    assert metric.name == 'accuracy'
 
 
 def test_metric_obj_add(mc):
@@ -48,14 +48,14 @@ def test_duplicate_obj(mc):
 
 def test_get_metrics(mc):
     mc.add('loss')
-    mc.add('acc')
-    mc.add('val_acc')
+    mc.add('accuracy')
+    mc.add('val_accuracy')
     metrics = mc.to_list()
     assert len(metrics) == 3
     # ensure metrics are properly sorted
-    assert metrics[0].name == 'acc'
+    assert metrics[0].name == 'accuracy'
     assert metrics[1].name == 'loss'
-    assert metrics[2].name == 'val_acc'
+    assert metrics[2].name == 'val_accuracy'
 
 
 def test_update_min(mc):
@@ -70,28 +70,28 @@ def test_update_min(mc):
 
 
 def test_update_max(mc):
-    mc.add('acc')
+    mc.add('accuracy')
     # check if update tell us it improved
-    assert mc.update('acc', 10)
+    assert mc.update('accuracy', 10)
     # check if update tell us it didn't improve
-    assert mc.update('acc', 12)
-    mm = mc.get('acc')
+    assert mc.update('accuracy', 12)
+    mm = mc.get('accuracy')
     assert mm.get_best_value() == 12
     assert mm.get_last_value() == 12
 
 
 def test_to_dict(mc):
     mc.add('loss')
-    mc.add('acc')
-    mc.add('val_acc')
+    mc.add('accuracy')
+    mc.add('val_accuracy')
 
     mc.update('loss', 1)
-    mc.update('acc', 2)
+    mc.update('accuracy', 2)
     mc.update('val_loss', 3)
 
     config = mc.to_dict()
-    assert config['acc'].name == 'acc'
-    assert config['acc'].get_best_value() == 2
+    assert config['accuracy'].name == 'accuracy'
+    assert config['accuracy'].get_best_value() == 2
     assert len(config) == 3
 
 
@@ -103,14 +103,30 @@ def test_serialization(mc):
     assert config == json.loads(json.dumps(config))
 
 
+def test_alias(mc):
+    mc.add('acc')
+    mm = mc.get('acc')
+    assert mm.name == 'accuracy'
+
+
+def test_alias_update(mc):
+    mc.add('acc')
+    mc.update('acc', 14)
+    mc.update('acc', 12)
+    mm = mc.get('acc')
+    assert mm.history == [14, 12]
+    assert mm.get_best_value() == 14
+    assert mm.get_last_value() == 12
+
+
 def test_set_objective(mc):
     mc.add('loss')
-    mc.add('acc')
-    mc.add('val_acc')
-    mm = mc.get('acc')
+    mc.add('accuracy')
+    mc.add('val_accuracy')
+    mm = mc.get('accuracy')
     assert not mm.is_objective
-    mc.set_objective('acc')
-    mm = mc.get('acc')
+    mc.set_objective('accuracy')
+    mm = mc.get('accuracy')
     assert mm.is_objective
 
 
@@ -121,8 +137,8 @@ def test_set_invalid_objective(mc):
 
 def test_double_objective(mc):
     mc.add('loss')
-    mc.add('acc')
-    mc.set_objective('acc')
+    mc.add('accuracy')
+    mc.set_objective('accuracy')
     with pytest.raises(ValueError):
         mc.set_objective('loss')
 

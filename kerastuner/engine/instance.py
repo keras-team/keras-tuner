@@ -102,9 +102,9 @@ class Instance(object):
             self.state.agg_metrics.set_objective(self.tuner_state.objective)
             self.metrics_config = self.state.agg_metrics.to_config()
 
-            # init tuner global metric if needed -- this is first training
-            if not self.tuner_state.overall_metrics:
-                self.tuner_state.overall_metrics = MetricsCollection.from_config(self.metrics_config)  # nopep8
+            # init tuner global metric if needed (first training)
+            if not self.tuner_state.agg_metrics:
+                self.tuner_state.agg_metrics = MetricsCollection.from_config(self.metrics_config)  # nopep8
 
         # tell the user we are training a new instance
         if not len(self.executions):
@@ -119,6 +119,7 @@ class Instance(object):
                               self.metrics_config, self.cloudservice)
         self.executions.add(execution.state.idx, execution)
         execution.fit(x, y, epochs=epochs, **kwargs)
+        self.state.execution_trained += 1
 
         # compute execution level metrics
         # FIXME can this be done in the in the execution fit instead of this?

@@ -37,15 +37,10 @@ class RandomSearch(Tuner):
 
         while self.state.remaining_budget:
             instance = self.new_instance()
-
             # not instances left time to wrap-up
             if not instance:
                 break
 
             # train n executions for the given model
             for cur_execution in range(self.state.num_executions):
-                # FIXME: move this to the execution code
-                subsection("execution: %s/%s" % (cur_execution + 1,
-                                                 self.state.num_executions))
-                epochs = self.state.max_epochs
-                instance_state = instance.fit(x, y, epochs, **kwargs)  # nopep8 pylint: disable=unused-variable
+                instance_state = instance.fit(x, y, self.state.max_epochs, **kwargs)  # nopep8 pylint: disable=unused-variable

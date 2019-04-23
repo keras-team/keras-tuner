@@ -23,6 +23,8 @@ class InstanceState(State):
         self.training_size = -1
         self.validation_size = -1
         self.batch_size = -1
+        self.execution_trained = 0
+        self.execution_configs = []
 
         # model info
         # we use deepcopy to avoid mutation due to tuner that swap models
@@ -55,4 +57,7 @@ class InstanceState(State):
                  'batch_size', 'model_size', 'optimizer_config', 'loss_config',
                  'model_config', 'hyper_parameters']
         config = self._config_from_attrs(attrs)
+        config['executions'] = self.execution_configs
+        if self.agg_metrics:
+            config['aggregate_metrics'] = self.agg_metrics.to_config()
         return config
