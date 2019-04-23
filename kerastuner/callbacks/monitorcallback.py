@@ -4,6 +4,7 @@ from os import path
 from multiprocessing.pool import ThreadPool
 from collections import defaultdict
 
+from kerastuner import config
 from .tunercallback import TunerCallback
 from kerastuner.collections import MetricsCollection
 from kerastuner.abstractions.display import write_log, fatal, info, section
@@ -100,7 +101,8 @@ class MonitorCallback(TunerCallback):
         status = {
             "update_time": int(time()),
             "tuner": self.tuner_state.to_config(),
-            "instance": self.instance_state.to_config()
+            "instance": self.instance_state.to_config(),
+            "hparams": config._DISTRIBUTIONS.get_hyperparameters_config()
         }
         status_json = json.dumps(status)
         prefix = self._get_filename_prefix(with_execution_info=False)
@@ -117,7 +119,8 @@ class MonitorCallback(TunerCallback):
         delta = time() - self.last_refresh
         if delta < self.refresh_interval and not force:
             return
-        #self.thread_pool.apply_async(self._report_status_worker)
+        # FIXME: can we make it async?
+        # self.thread_pool.apply_async(self._report_status_worker)
         self._report_status_worker()
         self.last_refresh = time()
 
@@ -133,7 +136,8 @@ class MonitorCallback(TunerCallback):
             "update_time": int(time()),
             "tuner": self.tuner_state.to_config(),
             "instance": self.instance_state.to_config(),
-            "execution": self.execution_state.to_config()
+            "execution": self.execution_state.to_config(),
+            "hparams": config._DISTRIBUTIONS.get_hyperparameters_config()
         }
         # needed for cloudservice
         status['training_complete'] = self.training_complete

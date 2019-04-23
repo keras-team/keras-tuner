@@ -58,6 +58,7 @@ class InstanceState(State):
                  'model_config', 'hyper_parameters']
         config = self._config_from_attrs(attrs)
         config['executions'] = self.execution_configs
+        config['hyper_parameters'] = self.hyper_parameters
         if self.agg_metrics:
             config['aggregate_metrics'] = self.agg_metrics.to_config()
         return config
