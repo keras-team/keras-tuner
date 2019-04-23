@@ -82,7 +82,11 @@ class Instance(object):
                 self.state.agg_metrics.add(metric)
                 if self.state.validation_size:
                     # assume keras metric is printable - might be wrong
-                    val_metric = "val_%s" % metric
+                    if not isinstance(metric, str):
+                      metric_name = metric.name
+                    else:
+                      metric_name = metric
+                    val_metric = "val_%s" % metric_name
                     self.state.agg_metrics.add(val_metric)
 
             # loss(es) - model.loss in {str, dict, list}
@@ -96,7 +100,12 @@ class Instance(object):
             for loss in losses:
                 self.state.agg_metrics.add(Metric(loss, 'min'))
                 if self.state.validation_size:
-                    self.state.agg_metrics.add(Metric('val_' + loss, 'min'))
+                    if not isinstance(loss, str):
+                      loss_name = loss.name
+                    else:
+                      loss_name = loss
+                    val_loss = "val_%s" % loss_name
+                    self.state.agg_metrics.add(Metric(val_loss, 'min'))
 
             # mark objective
             self.state.agg_metrics.set_objective(self.tuner_state.objective)
