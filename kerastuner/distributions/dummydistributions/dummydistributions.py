@@ -1,4 +1,4 @@
-from kerastuner.engine.distributions import Distributions
+from ..distributions import Distributions
 from kerastuner.abstractions.display import fatal
 
 
