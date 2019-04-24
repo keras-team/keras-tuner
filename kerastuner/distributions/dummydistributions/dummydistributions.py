@@ -1,3 +1,5 @@
+import numpy as np
+
 from ..distributions import Distributions
 from kerastuner.abstractions.display import fatal
 
@@ -11,7 +13,7 @@ class DummyDistributions(Distributions):
         self._hyperparameters_config = {}
 
     def _record_hyperparameters(self, name, htype, space_size, start, stop,
-                                group):
+                                group, values):
         """
         Record a given hyperparameter
 
@@ -21,6 +23,7 @@ class DummyDistributions(Distributions):
             space_size (int): number of values the param can take
             start: lower bound
             stop: upper bound
+            values (list): list of potential values. Truncated to 100
         """
 
         key = self._get_key(name, group)
@@ -35,7 +38,8 @@ class DummyDistributions(Distributions):
             "type": htype,
             "space_size": space_size,
             "start": start,
-            "stop": stop
+            "stop": stop,
+            "values": values[:100]
         }
 
     def Fixed(self, name, value, group="default"):
@@ -47,7 +51,8 @@ class DummyDistributions(Distributions):
         Returns:
             fixed value
         """
-        self._record_hyperparameters(name, 'Fixed', 1, value, value, group)
+        self._record_hyperparameters(name, 'Fixed', 1, value, value, group,
+                                     [value])
         return value
 
     def Boolean(self, name, group="default"):
@@ -58,7 +63,8 @@ class DummyDistributions(Distributions):
         Returns:
             a boolean
         """
-        self._record_hyperparameters(name, 'Boolean', 2, True, False, group)
+        self._record_hyperparameters(name, 'Boolean', 2, True, False, group,
+                                     [True, False])
         return True
 
     def Choice(self, name, selection, group="default"):
@@ -74,7 +80,8 @@ class DummyDistributions(Distributions):
             fatal("list if choice must be a list []")
 
         self._record_hyperparameters(name, 'Choice', len(selection),
-                                     selection[0], selection[-1], group)
+                                     selection[0], selection[-1], group, 
+                                     selection)
         return selection[0]
 
     def Range(self, name, start, stop, increment=1, group='default'):
@@ -101,7 +108,7 @@ class DummyDistributions(Distributions):
 
         my_range = range(start, stop, increment)
         self._record_hyperparameters(name, 'Range', len(my_range),
-                                     start, stop, group)
+                                     start, stop, group, my_range)
         return start
 
     def Logarithmic(self, name, start, stop, num_buckets, precision=0,
@@ -125,9 +132,9 @@ class DummyDistributions(Distributions):
             fatal("num_bucket must be an integer")
         if stop <= start:
             fatal("start value:%s larger than stop value:%s" % (start, stop))
-
+        my_range = np.logspace(start, stop, num_buckets)
         self._record_hyperparameters(name, 'Logarithmic', num_buckets, start,
-                                     stop, group)
+                                     stop, group, my_range)
         return start
 
     def Linear(self, name, start, stop, num_buckets, precision=0,
@@ -151,6 +158,8 @@ class DummyDistributions(Distributions):
             fatal("num_bucket must be an integer")
         if stop <= start:
             fatal("start value:%s larger than stop value:%s" % (start, stop))
+
+        my_range = np.linspace(start, stop, num_buckets)
         self._record_hyperparameters(name, 'Linear', num_buckets, start, stop,
-                                     group)
+                                     group, my_range)
         return start

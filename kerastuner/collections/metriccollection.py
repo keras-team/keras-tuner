@@ -32,17 +32,16 @@ class MetricsCollection(Collection):
         """
         if isinstance(metric, str):
             metric_name = metric
+            metric_name = self._replace_alias(metric_name)
+            # canonalize metric name (val_metric vs metric)
+            no_val_name = metric_name.replace('val_', '')
+            if no_val_name in _METRIC_DIRECTION:
+                direction = _METRIC_DIRECTION[no_val_name]
+            else:
+                fatal('Unknown metric %s. Use a custom one?' % metric_name)
+            metric = Metric(metric_name, direction)
         else:
             metric_name = metric.name
-
-        metric_name = self._replace_alias(metric_name)
-        # canonalize metric name (val_metric vs metric)
-        no_val_name = metric_name.replace('val_', '')
-        if no_val_name in _METRIC_DIRECTION:
-            direction = _METRIC_DIRECTION[no_val_name]
-        else:
-            fatal('Unknown metric %s. Use a custom one?' % metric_name)
-        metric = Metric(metric_name, direction)
 
         if metric_name in self._objects:
             fatal('Duplicate metric:%s' % metric_name)

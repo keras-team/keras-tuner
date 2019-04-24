@@ -1,5 +1,5 @@
 import pytest
-from kerastuner.engine.distributions import Distributions
+from kerastuner.distributions.distributions import Distributions
 
 
 def test_record_retrieve_param():

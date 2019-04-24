@@ -40,7 +40,7 @@ def test_duplicate_name(mc):
 
 
 def test_duplicate_obj(mc):
-    mm = Metric('dup', 'min')
+    mm = Metric('acc', 'min')
     mc.add(mm)
     with pytest.raises(ValueError):
         mc.add(mm)
