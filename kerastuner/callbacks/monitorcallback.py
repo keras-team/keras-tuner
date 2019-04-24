@@ -137,7 +137,8 @@ class MonitorCallback(TunerCallback):
             "tuner": self.tuner_state.to_config(),
             "instance": self.instance_state.to_config(),
             "execution": self.execution_state.to_config(),
-            "hparams": config._DISTRIBUTIONS.get_hyperparameters_config()
+            "hparams": config._DISTRIBUTIONS.get_hyperparameters_config(),
+            "dynamic_hparams": config._DISTRIBUTIONS.dynamic_hyperparameters
         }
         # needed for cloudservice
         status['training_complete'] = self.training_complete
