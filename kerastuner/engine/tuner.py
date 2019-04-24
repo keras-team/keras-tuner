@@ -89,9 +89,6 @@ class Tuner(object):
                                              self.state.project,
                                              self.state.architecture)
         self.stats.instances_previously_trained = count
-
-        # metrics
-        # FIXME: fix importing metrics
         info("Tuner initialized")
 
     def summary(self, extended=False):
@@ -193,38 +190,6 @@ class Tuner(object):
         self.instances.add(idx, instance)
         return instance
 
-    def record_results(self, idx=None):
-        """Record instance results
-        Args:
-          idx (str): index of the instance. (default last trained)
-        """
-
-        if not idx:
-            instance = self.instances[self.current_instance_idx]
-        else:
-            instance = self.instances[idx]
-
-        results = instance.record_results()
-
-        # compute overall statistics
-        latest_results = {}
-        best_results = {}
-        for km in self.key_metrics:
-            metric_name = km[self.METRIC_NAME]
-            if metric_name in results['key_metrics']:
-                current_best = self.stats['best'][metric_name]
-                res_val = results['key_metrics'][metric_name]
-                latest_results[metric_name] = res_val
-                if km[self.METRIC_DIRECTION] == 'min':
-                    best_results[metric_name] = min(current_best, res_val)
-                else:
-                    best_results[metric_name] = max(current_best, res_val)
-
-        # updating
-        self.stats['best'] = best_results
-        self.stats['latest'] = latest_results
-        self.meta_data['statistics'] = self.stats
-
     def get_best_model(self, **kwargs):
         resultset, models = self.get_best_model(num_models=1, **kwargs)
         return models[0], ResultSet(resultset.results[0])
@@ -232,7 +197,7 @@ class Tuner(object):
     def get_best_models(
             self, metric="loss", direction='min', num_models=1, compile=False):
         # Glob/read the results metadata.
-        results_dir = self.meta_data["server"]["local_dir"]
+        results_dir = self.state.host.result_dir
 
         result_set = read_results(results_dir).sorted_by_metric(
             metric, direction).limit(num_models).results
@@ -249,10 +214,10 @@ class Tuner(object):
             models.append(model)
         return models, result_set
 
-    def export_best_model(self, **kwargs):
-        return self.export_best_models(num_models=1, **kwargs)
+    def save_best_model(self, **kwargs):
+        return self.save_best_models(num_models=1, **kwargs)
 
-    def export_best_models(
+    def save_best_models(
             self, metric="loss",
             direction='min',
             output_type="keras",
@@ -296,12 +261,8 @@ class Tuner(object):
             compile=False)
         for idx, (model, result) in enumerate(zip(models, results)):
             name = result["execution_prefix"]
-            export_path = os.path.join(
-                self.meta_data["server"]["export_dir"],
-                name)
-            tmp_path = os.path.join(
-                self.meta_data["server"]["tmp_dir"],
-                name)
+            export_path = os.path.join(self.state.host.export_dir, name)
+            tmp_path = os.path.join(self.state.host.tmp_dir, name)
             info("Exporting top model (%d/%d) - %s" % (idx + 1, len(models), export_path))
             save_model(model, export_path, tmp_path=tmp_path,
                        output_type=output_type)
@@ -310,17 +271,6 @@ class Tuner(object):
         "compute model hash"
         s = str(model.get_config())
         return hashlib.sha256(s.encode('utf-8')).hexdigest()[:32]
-
-    def _update_metadata(self):
-        "update metadata with latest hypertuner state"
-
-        md = self.meta_data['tuner']
-        md['remaining_budget'] = self.remaining_budget
-        # stats are updated at instance selection not training end
-        md['trained_models'] = self.num_generated_models
-        md['collisions'] = self.num_collisions
-        md['invalid_models'] = self.num_invalid_models
-        md['over_size_models'] = self.num_over_sized_models
 
     def display_result_summary(self, metric='loss', direction='min'):
         result_summary(
