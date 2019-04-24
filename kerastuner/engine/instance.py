@@ -134,8 +134,7 @@ class Instance(object):
         # FIXME can this be done in the in the execution fit instead of this?
         # execution.record_results(results)
 
-        # FIXME compute results and probably update the result file here
-        return self
+        return execution
 
     def record_results(self):
         """Record training results

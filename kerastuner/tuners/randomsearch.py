@@ -42,5 +42,5 @@ class RandomSearch(Tuner):
                 break
 
             # train n executions for the given model
-            for cur_execution in range(self.state.num_executions):
-                instance_state = instance.fit(x, y, self.state.max_epochs, **kwargs)  # nopep8 pylint: disable=unused-variable
+            for _ in range(self.state.num_executions):
+                execution = instance.fit(x, y, self.state.max_epochs, **kwargs)  # nopep8 pylint: disable=unused-variable
