@@ -5,7 +5,7 @@ from setuptools import find_packages
 from setuptools import setup
 import time
 
-version = "0.8.1"
+version = "0.8.2"
 stub = str(int(time.time()))  # Used to increase version automagically.
 version = version + '.' + stub
 
@@ -14,7 +14,7 @@ setup(
     version=version,
     description="Hypertuner for Keras",
     author='Elie Bursztein',
-    author_email='elieb@google.com',
+    author_email='kerastuner@google.com',
     url='https://fixme',
     license='Apache License 2.0',
     entry_points='''

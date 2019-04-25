@@ -2,8 +2,9 @@ from abc import abstractmethod
 import numpy as np
 from collections import defaultdict
 
-from kerastuner.abstractions.display import display_table, subsection, colorize
+from kerastuner.abstractions.display import display_table, subsection
 from kerastuner.abstractions.display import display_setting, fatal, warning
+from kerastuner.abstractions.display import colorize, colorize_row
 
 
 class Distributions(object):
@@ -168,25 +169,22 @@ class Distributions(object):
         total_size = 1
         data_by_group = defaultdict(dict)
         group_size = defaultdict(lambda: 1)
-        for data in self._hyperparameters.values():
+        for data in self._hyperparameters_config.values():
             data_by_group[data['group']][data['name']] = data['space_size']
             group_size[data['group']] *= data['space_size']
             total_size *= data['space_size']
 
         # Generate the table.
-        rows = [['param', 'space size']]
-        for idx, grp in enumerate(sorted(data_by_group.keys())):
-            if idx % 2:
-                color = 'blue'
-            else:
-                color = 'default'
+        rows = [['hyperparameter', 'search space']]
+        for grp in sorted(data_by_group.keys()):
+            row = ["%s total" % grp, group_size[grp]]
+            row = colorize_row(row, 'cyan')
+            rows.append(row)
 
-            rows.append([colorize(grp, color), ''])
             for param, size in data_by_group[grp].items():
-                rows.append([colorize("|-%s" % param, color),
-                             colorize(size, color)])
+                rows.append(["|-%s" % param, size])
 
-        rows.append(['', ''])
-        rows.append([colorize('total', 'magenta'),
-                     colorize(total_size, 'magenta')])
+            rows.append(['', ''])
+        rows.append([colorize('total', 'green'),
+                     colorize(total_size, 'green')])
         display_table(rows)

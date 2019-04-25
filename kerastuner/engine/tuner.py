@@ -115,7 +115,7 @@ class Tuner(object):
 
     def search(self, x, y, **kwargs):
         self.state.keras_function = 'fit'
-        #kwargs["verbose"] = 0
+        kwargs["verbose"] = 0
         self.tune(x, y, **kwargs)
         if self.cloudservice.is_enable:
             self.cloudservice.complete()
@@ -273,12 +273,14 @@ class Tuner(object):
         return hashlib.sha256(s.encode('utf-8')).hexdigest()[:32]
 
     def display_result_summary(self, metric='loss', direction='min'):
-        result_summary(
-            self.meta_data["server"]["local_dir"],
-            self.meta_data["project"],
-            metric,
-            direction=direction
-        )
+        # TODO: refactor
+        # result_summary(
+            # self.meta_data["server"]["local_dir"],
+            # self.meta_data["project"],
+        #    metric,
+        #    direction=direction
+        # )
+        pass
 
     @abstractmethod
     def tune(self, x, y, **kwargs):

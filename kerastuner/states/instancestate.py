@@ -2,6 +2,7 @@ import time
 import json
 import tensorflow as tf
 from copy import deepcopy
+from collections import defaultdict
 
 from .state import State
 from kerastuner import config
@@ -9,6 +10,7 @@ from kerastuner.abstractions.tf import compute_model_size
 from kerastuner.abstractions.io import serialize_loss
 from kerastuner.abstractions.display import display_table, section, subsection
 from kerastuner.abstractions.display import display_setting, display_settings
+from kerastuner.abstractions.display import colorize, colorize_row
 
 
 class InstanceState(State):
@@ -47,10 +49,22 @@ class InstanceState(State):
         display_settings(settings)
 
         subsection("Hyper parameters")
-        table = [["Hyperparameter", "Value"]]
-        for k, v in self.hyper_parameters.items():
-            table.append([k, v["value"]])
-        display_table(table, indent=2)
+        # group params
+        data_by_group = defaultdict(dict)
+        for data in self.hyper_parameters.values():
+            data_by_group[data['group']][data['name']] = data['value']
+
+        # Generate the table.
+        rows = [['Group', 'Hyperparameter', 'Value']]
+        idx = 0
+        for grp in sorted(data_by_group.keys()):
+            for param, value in data_by_group[grp].items():
+                row = [grp, param, value]
+                if idx % 2:
+                    row = colorize_row(row, 'cyan')
+                rows.append(row)
+                idx += 1
+        display_table(rows)
 
     def to_config(self):
         attrs = ['start_time', 'idx', 'training_size', 'validation_size',
