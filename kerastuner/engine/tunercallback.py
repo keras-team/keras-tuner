@@ -16,7 +16,7 @@ from kerastuner.abstractions.display import colorize, display_combined_table
 from kerastuner.abstractions.display import section, highlight, fatal, write_log
 from kerastuner.abstractions.host import Host
 from kerastuner.abstractions.io import save_model
-from kerastuner.abstractions.display import get_progress_bar
+from kerastuner.abstractions.display import progress_bar
 import numpy as np
 
 
@@ -93,7 +93,7 @@ class TunerCallback(keras.callbacks.Callback):
         self.current_epoch_key_metrics = defaultdict(list)
         self.epoch_start_ts = time.time()
         if self.use_fancy_bar:
-            self.pbar = get_progress_bar(
+            self.pbar = progress_bar(
                 desc="", unit=" steps", total=self.num_steps)
             self.pbar.update(1)
 

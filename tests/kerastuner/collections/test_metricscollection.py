@@ -19,13 +19,13 @@ def test_metric_name_add(mc):
 
 
 def test_metric_obj_add(mc):
-    mm = Metric('test_add', 'min')
+    mm = Metric('test', 'min')
     mc.add(mm)
-    metric = mc.get('test_add')
+    metric = mc.get('test')
     assert isinstance(metric, Metric)
     assert metric.direction == 'min'
-    assert metric.name == 'test_add'
-    assert metric == mm
+    assert metric.name == 'test'
+    assert mm == metric
 
 
 def test_add_invalid_name(mc):

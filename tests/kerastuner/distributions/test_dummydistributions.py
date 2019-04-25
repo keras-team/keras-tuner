@@ -1,9 +1,35 @@
 import pytest
+import json
 
 from kerastuner.distributions import DummyDistributions
 from .common import fixed_correctness_test, bool_correctness_test
 from .common import choice_correctness_test, range_type_correctness_test
 from .common import linear_correctness_test, logarithmic_correctness_test
+
+# hparams
+@pytest.fixture
+def dd():
+    distributions = DummyDistributions()
+    distributions.Boolean("myname", group='mygroup')
+    distributions.Range('range', 1, 20)
+    distributions.Linear('linear', 1, 20, 10)
+    distributions.Logarithmic('log', 1, 20, 10)
+    return distributions
+
+
+def test_hparam_reporting(dd):
+    hprams = dd.get_hyperparameters_config()
+    key = dd._get_key('range', 'default')
+    assert key in hprams
+    assert hprams[key]['name'] == 'range'
+    assert hprams[key]['space_size'] == 19
+    assert len(hprams[key]['values']) == 19
+
+
+def test_hparam_serializable(dd):
+    hprams = dd.get_hyperparameters_config()
+    sr = json.dumps(hprams)
+    assert hprams == json.loads(sr)
 
 
 # hyper parameters

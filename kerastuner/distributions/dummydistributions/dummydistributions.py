@@ -7,10 +7,11 @@ from kerastuner.abstractions.display import fatal
 class DummyDistributions(Distributions):
     "Dummy distribution class used to record and test hyper parameters space"
 
-    def __init__(self):
+    def __init__(self, max_reported_values=100):
         # !DO NOT do a super -- this is the bootstrap class
         self._hyperparameters = {}
         self._hyperparameters_config = {}
+        self.max_reported_values = max_reported_values
 
     def _record_hyperparameters(self, name, htype, space_size, start, stop,
                                 group, values):
@@ -32,6 +33,16 @@ class DummyDistributions(Distributions):
         if key in self._hyperparameters_config:
             fatal("%s hyperparameter is declared twice" % key)
 
+        # making sure values are serializable
+        serializable_values = []
+        for v in values[:self.max_reported_values]:
+            if isinstance(v, np.integer):
+                serializable_values.append(int(v))
+            if isinstance(v, np.float):
+                serializable_values.append(float(v))
+            else:
+                serializable_values.append(v)
+
         self._hyperparameters_config[key] = {
             "name": name,
             "group": group,
@@ -39,7 +50,7 @@ class DummyDistributions(Distributions):
             "space_size": space_size,
             "start": start,
             "stop": stop,
-            "values": values[:100]
+            "values": serializable_values
         }
 
     def Fixed(self, name, value, group="default"):
@@ -80,7 +91,7 @@ class DummyDistributions(Distributions):
             fatal("list if choice must be a list []")
 
         self._record_hyperparameters(name, 'Choice', len(selection),
-                                     selection[0], selection[-1], group, 
+                                     selection[0], selection[-1], group,
                                      selection)
         return selection[0]
 

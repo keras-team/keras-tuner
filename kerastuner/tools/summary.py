@@ -8,7 +8,7 @@ from collections import defaultdict
 import operator
 import numpy as np
 
-from kerastuner.abstractions.display import display_table, get_progress_bar
+from kerastuner.abstractions.display import display_table, progress_bar
 from kerastuner.abstractions.display import section, subsection, fatal
 
 
@@ -146,7 +146,7 @@ def summary(input_dir,
     filenames = list(input_dir.glob("*-results.json"))
 
     # Do an initial pass to collect all of the hyperparameters.
-    pb = get_progress_bar(total=len(filenames), desc="Parsing results",
+    pb = progress_bar(total=len(filenames), desc="Parsing results",
                           unit='file')
     infos = []
     hyper_parameters_list = set()

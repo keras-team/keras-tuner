@@ -115,15 +115,6 @@ class Instance(object):
             if not self.tuner_state.agg_metrics:
                 self.tuner_state.agg_metrics = MetricsCollection.from_config(self.metrics_config)  # nopep8
 
-        # tell the user we are training a new instance
-        if not len(self.executions):
-            section("Training new instance")
-            self.state.summary()
-            if self.tuner_state.display_model:
-                subsection("Model summary")
-                self.model.summary()
-
-        # FIXME we need to return properly results
         execution = Execution(self.model, self.state, self.tuner_state,
                               self.metrics_config, self.cloudservice)
         self.executions.add(execution.state.idx, execution)

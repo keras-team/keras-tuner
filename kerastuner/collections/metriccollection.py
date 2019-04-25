@@ -10,6 +10,7 @@ _METRIC_DIRECTION = {
     'loss': 'min',
     'sparse_categorical_accuracy': 'max',
     'sparse_top_k_categorical_accuracy': 'max',
+    'test': 'min',
     'top_k_categorical_accuracy': 'max',
 }
 
@@ -30,8 +31,19 @@ class MetricsCollection(Collection):
         Args:
             metric (Metric or str): Metric object or metric name
         """
-        if isinstance(metric, str):
-            metric_name = metric
+
+        # our own metric object -> direct add
+        if isinstance(metric, Metric):
+            # our own metric, do nothing
+            metric_name = metric.name
+        else:
+            if isinstance(metric, str):
+                # metric by name
+                metric_name = metric
+            else:
+                # keras metric
+                metric_name = metric.name
+
             metric_name = self._replace_alias(metric_name)
             # canonalize metric name (val_metric vs metric)
             no_val_name = metric_name.replace('val_', '')
@@ -39,9 +51,9 @@ class MetricsCollection(Collection):
                 direction = _METRIC_DIRECTION[no_val_name]
             else:
                 fatal('Unknown metric %s. Use a custom one?' % metric_name)
+
+            # create a metric object
             metric = Metric(metric_name, direction)
-        else:
-            metric_name = metric.name
 
         if metric_name in self._objects:
             fatal('Duplicate metric:%s' % metric_name)

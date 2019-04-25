@@ -1,7 +1,7 @@
 import json
 from abc import abstractmethod
 
-from kerastuner.abstractions.display import get_progress_bar, info, warning
+from kerastuner.abstractions.display import progress_bar, info, warning
 from kerastuner.abstractions.io import read_file, glob
 
 

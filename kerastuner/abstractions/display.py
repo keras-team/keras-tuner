@@ -429,7 +429,7 @@ def display_combined_table(array_rows):
     display(table)
 
 
-def get_progress_bar(*args, **kwargs):
+def progress_bar(*args, **kwargs):
     """ Returns a new tqdm progress bar appropriate for the current display.
 
     Returns:

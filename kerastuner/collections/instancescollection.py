@@ -1,7 +1,7 @@
 import json
 
 from .collections import Collection
-from kerastuner.abstractions.display import get_progress_bar, info
+from kerastuner.abstractions.display import progress_bar, info
 from kerastuner.abstractions.io import read_file, glob
 
 
@@ -29,7 +29,7 @@ class InstancesCollection(Collection):
         count = 0
         filenames = glob("%s*-results.json" % path)
 
-        for fname in get_progress_bar(filenames, unit='instance',
+        for fname in progress_bar(filenames, unit='instance',
                                       desc='Loading instances'):
 
             data = json.loads(read_file(str(fname)))

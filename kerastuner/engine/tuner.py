@@ -23,7 +23,7 @@ from kerastuner.abstractions.io import read_results, deserialize_loss
 from kerastuner.abstractions.display import highlight, display_table, section
 from kerastuner.abstractions.display import display_setting, display_settings
 from kerastuner.abstractions.display import info, warning, fatal, set_log
-from kerastuner.abstractions.display import get_progress_bar, subsection
+from kerastuner.abstractions.display import progress_bar, subsection
 from kerastuner.abstractions.display import colorize, colorize_default
 from kerastuner.tools.summary import summary as result_summary  # FIXME: name
 from kerastuner import config
