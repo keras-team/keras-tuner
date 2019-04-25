@@ -55,6 +55,12 @@ class DisplayCallback(TunerCallback):
         # model bar
         self.model_pbar.close()
 
+        # tuning budget exhausted
+        if self.tuner_state.remaining_budget < 1:
+            info("Hypertuning complete - results in %s" %
+                 self.tuner_state.host.result_dir)
+            # FIXME: final summary
+
     def on_epoch_begin(self, epoch, logs={}):
         # model bar
         self.model_pbar.update(1)

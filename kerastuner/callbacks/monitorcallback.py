@@ -7,7 +7,7 @@ from collections import defaultdict
 from kerastuner import config
 from .tunercallback import TunerCallback
 from kerastuner.collections import MetricsCollection
-from kerastuner.abstractions.display import write_log, fatal, info, section
+from kerastuner.abstractions.display import write_log, fatal
 from kerastuner.abstractions.io import save_model, write_file
 
 
@@ -47,19 +47,13 @@ class MonitorCallback(TunerCallback):
         self._report_status(force=True)
 
     def on_train_begin(self, logs={}):
-        # FIXME: move to display tuner
-        section("Training execution %s/%s" %
-                (self.instance_state.execution_trained + 1,
-                 self.tuner_state.num_executions))
+        pass
 
     def on_train_end(self, logs={}):
         self.training_complete = True
         self._end_training_statistics()
         self._report_status(force=True)
         self._write_result_file()
-
-        if self.tuner_state.remaining_budget < 1:
-            self._tuning_complete()
 
     def _end_training_statistics(self):
         """Compute and display end of training statistics
@@ -123,11 +117,6 @@ class MonitorCallback(TunerCallback):
         # self.thread_pool.apply_async(self._report_status_worker)
         self._report_status_worker()
         self.last_refresh = time()
-
-    def _tuning_complete(self):
-        "Final message when tuning (budget_remaining < 1) is complete"
-        info("Hypertuning complete - results in %s" %
-             self.tuner_state.host.result_dir)
 
     def _report_status_worker(self):
         "Report tuner status periodically"
