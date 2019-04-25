@@ -14,6 +14,17 @@ class InstancesCollection(Collection):
     def to_config(self):
         return self.to_dict()
 
+    def get_best_instances(self, objective, N=1):
+        objective_name = objective.name
+        reverse = objective.direction == "max"
+
+        def objective_sort_key(idx, instance):
+            instance_metrics = instance.state.agg_metrics
+            metric = instance_metrics.get(objective_name).get_best_value()
+            return metric
+
+        return self.to_list(sorted_by=objective_sort_key, reverse=reverse)
+
     def load_from_dir(self, path, project=None, architecture=None):
         """Load instance collection from disk or bucket
 
@@ -27,6 +38,7 @@ class InstancesCollection(Collection):
             int: number of instances loaded
         """
         count = 0
+
         filenames = glob("%s*-results.json" % path)
 
         for fname in get_progress_bar(filenames, unit='instance',

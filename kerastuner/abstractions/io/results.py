@@ -5,6 +5,7 @@ import os
 import json
 
 
+
 class ResultSet(object):
     """ A ResultSet is a light wrapper around a list of dictionaries
     representing the results of multiple models, which simplifies filtering,

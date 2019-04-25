@@ -1,13 +1,22 @@
 import os
+import tensorflow
 
-from tensorflow.gfile import Open, MakeDirs, Exists  # nopep8 pylint: disable=import-error
-from tensorflow.gfile import DeleteRecursively, Glob  # nopep8 pylint: disable=import-error
-from tensorflow.gfile import Remove, Copy  # nopep8 pylint: disable=import-error
-
+# Cover the tensorflow name changes, so we can handle tf 1.x and tf2.x
+if int(tensorflow.__version__.split(".")[0]) == 1:
+  from tensorflow.gfile import Open, MakeDirs, Exists # nopep8 pylint: disable=import-error
+  from tensorflow.gfile import DeleteRecursively, Glob # nopep8 pylint: disable=import-error
+  from tensorflow.gfile import Remove, Copy # nopep8 pylint: disable=import-error
+else:
+  from tensorflow.io.gfile import GFile as Open
+  from tensorflow.io.gfile import makedirs as MakeDirs
+  from tensorflow.io.gfile import exists as Exists
+  from tensorflow.io.gfile import rmtree as DeleteRecursively
+  from tensorflow.io.gfile import glob as Glob
+  from tensorflow.io.gfile import remove as Remove
+  from tensorflow.io.gfile import copy as Copy
 
 def open_file(filename, mode):
     return Open(filename, mode)
-
 
 def write_file(path, contents):
     with open_file(path, 'w') as output:

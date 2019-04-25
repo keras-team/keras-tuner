@@ -27,7 +27,7 @@ class InstanceState(State):
         self.execution_configs = []
 
         # model info
-        # we use deepcopy to avoid mutation due to tuner that swap models
+        # we use deepcopy to avoid mutation due to tuners that swap models
         self.model_size = compute_model_size(model)
         self.optimizer_config = deepcopy(tf.keras.optimizers.serialize(model.optimizer))  # nopep8
         self.loss_config = deepcopy(serialize_loss(model.loss))
@@ -43,7 +43,7 @@ class InstanceState(State):
                 "training size": self.training_size,
                 "validation size": self.validation_size,
                 "batch size": self.batch_size
-                })
+            })
         display_settings(settings)
 
         subsection("Hyper parameters")

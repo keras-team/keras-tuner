@@ -6,7 +6,7 @@ from kerastuner.abstractions.io import read_file, glob
 
 
 class Collection(object):
-    """ Manage a collection of instance
+    """ Manage a collection of objects
 
     Attributes:
         _objects (dict): collection of objects
@@ -28,7 +28,7 @@ class Collection(object):
             obj (Object): Object to add
         """
         if idx in self._objects:
-            warning('over ridding object %s - use update() instead?' % idx)
+            warning('overriding object %s - use update() instead?' % idx)
         self._objects[idx] = obj
         self._last_insert_idx = idx
 
@@ -70,14 +70,17 @@ class Collection(object):
     def to_config(self):
         "return a serializable config"
 
-    def to_list(self, reverse=False):
+    def to_list(self, sorted_by=None, reverse=False):
         """Returns collection as a list
 
         Args:
+            sorted_by (function): Function which generates takes two parameters
+                (idx, object) and produces the sort key. If `sorted_by` is
+                None, the objects are sorted by object ID.
             reverse (bool, optional): Reverse order. Defaults to False.
 
         Returns:
-            list: list of objects sorted by their key
+            list: list of objects sorted by the specified sort key.
         """
         names = sorted(self._objects.keys(), reverse=reverse)
         return [self._objects[name] for name in names]

@@ -106,7 +106,7 @@ class DummyDistributions(Distributions):
             fatal("increment: %s greater than range size:%s" % (increment,
                                                                 rsize))
 
-        my_range = range(start, stop, increment)
+        my_range = list(range(start, stop, increment))
         self._record_hyperparameters(name, 'Range', len(my_range),
                                      start, stop, group, my_range)
         return start

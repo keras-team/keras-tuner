@@ -87,7 +87,18 @@ class MetricsCollection(Collection):
 
         names = sorted(self._objects.keys())
         # for each metric returns its serialized form
-        return [self._objects[name].to_config() for name in names]
+
+        out = []
+        for name in names:
+            obj = self._objects[name]
+
+            cfg = None
+            if hasattr(obj, 'to_config'):
+                cfg = obj.to_config()
+            else:
+                cfg = obj.get_config()
+            out.append(cfg)
+        return out
 
     @staticmethod
     def from_config(config):

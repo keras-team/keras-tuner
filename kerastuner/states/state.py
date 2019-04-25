@@ -49,8 +49,6 @@ class State(object):
 
         value = self.kwargs.get(name, default_value)
         if not isinstance(value, type(default_value)):
-            print(value)
-            print(default_value)
             fatal('Invalid type for %s -- expected:%s, got:%s' %
                   (name, type(default_value), type(value)))
         self.user_parameters.append(name)

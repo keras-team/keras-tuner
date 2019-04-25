@@ -134,7 +134,7 @@ class Host():
 
     def _get_hostname(self):
         """get system name"""
-        print(platform.uname())
+        return platform.uname()
 
     def _get_cpu_usage(self):
         """Get CPU usage statistics"""

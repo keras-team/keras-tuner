@@ -1,10 +1,17 @@
 import os
 
 import six
+
 import tensorflow as tf
 import tensorflow.keras.backend as K
-from tensorflow.python.tools.freeze_graph import freeze_graph
-from tensorflow.tools.graph_transforms import TransformGraph
+
+import tensorflow
+from tensorflow import python
+from tensorflow.python import Session, Graph
+from tensorflow.python import tools
+from tensorflow.python.tools import freeze_graph
+from tensorflow.python.tools import optimize_for_inference_lib
+from tensorflow.python.saved_model import save
 
 from kerastuner.abstractions.display import warning
 from kerastuner.abstractions.io import read_file, write_file, copy_file, rm
@@ -92,32 +99,15 @@ def save_keras_bundle_model(model, path, tmp_path):
 def save_savedmodel(model, path, tmp_path):
     # Build the signature, which maps the user-specified names to the actual tensors
     # in the graph.
-    input_dict = {}
-    output_dict = {}
-    for input_layer in model.inputs:
-        input_dict[input_layer.name] = input_layer
-    for output_layer in model.outputs:
-        output_dict[output_layer.name] = output_layer
-    signature = tf.saved_model.signature_def_utils.predict_signature_def(
-        inputs=input_dict, outputs=output_dict)
-
-    # Using the existing Keras session (so we have access to the entire graph),
-    # save the MetaGraphDef containing the signature, proper tags, and the underlying
-    # GraphDef.
-    with K.get_session().as_default() as sess:
-        builder = tf.saved_model.builder.SavedModelBuilder(path)
-        builder.add_meta_graph_and_variables(
-            sess=sess,
-            tags=[tf.saved_model.tag_constants.SERVING],
-            signature_def_map={
-                tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY:
-                signature
-            })
-        builder.save()
+    tf.saved_model.save(model, path)
 
 
 def _get_input_ops(model):
     return [node.op.name for node in model.inputs]
+
+
+def _get_input_types(model):
+    return [node.op.dtype for node in model.inputs]
 
 
 def _get_output_ops(model):
@@ -142,9 +132,9 @@ def save_frozenmodel(model, path, tmp_path):
     # Note: This needs to be done in an empty session, otherwise names from
     # the loaded model (e.g. Adam/...) will conflict with the graph that is
     # inside of freeze_graph
-    with tf.Session().as_default() as sess:
-        with tf.Graph().as_default() as _:
-            freeze_graph(
+    with Session().as_default() as sess:
+        with Graph().as_default() as _:
+            freeze_graph.freeze_graph(
                 None,  # No input graph, read from saved model.
                 None,  # No input saver
                 True,  # Input is binary
@@ -162,35 +152,29 @@ def save_frozenmodel(model, path, tmp_path):
                 saved_model_path)  # Saved model path
 
 
-def save_minimizedmodel(model, filename, tmp_path, graph_transforms=None):
-    # A minimized model requires we first create the frozen model, in the
-    # temporary directory.
+def save_optimized_model(model, filename, tmp_path, toco_compatible=False):
+    # To save an optimized model, we first freeze the model, then apply
+    # the optimize_for_inference library.
     frozen_path = tmp_path + "_frozen"
     frozen_tmp_path = tmp_path + "_frozen_tmp"
     save_frozenmodel(model, frozen_path, frozen_tmp_path)
-
-    # Default graph transforms that are usually innocuous. Allow users to
-    # override the transformations if desired.
-    if graph_transforms is None:
-        graph_transforms = [
-            "strip_unused_nodes",
-            "fold_constants",
-            "fold_batch_norms",
-            "fold_old_batch_norms"
-        ]
 
     # Parse the GraphDef, and determine the inputs and outputs
     with tf.gfile.GFile(frozen_path, "rb") as f:
         graph_def = tf.GraphDef()
         graph_def.ParseFromString(f.read())
+
     input_ops = _get_input_ops(model)
+    input_types = _get_input_types(model)
     output_ops = _get_output_ops(model)
 
-    # Transform the graph (e.g. removing unused nodes, etc.) and write the results.
-    transformed_graph_def = TransformGraph(graph_def,
-                                           input_ops,
-                                           output_ops,
-                                           graph_transforms)
+    transformed_graph_def = optimize_for_inference_lib.optimize_for_inference(
+        graph_def,
+        input_ops,
+        output_ops,
+        input_types,
+        toco_compatible)
+
     tf.train.write_graph(transformed_graph_def,
                          logdir=os.path.dirname(filename),
                          as_text=False,
@@ -258,7 +242,7 @@ def save_model(model, path, output_type="keras", tmp_path="/tmp/", **kwargs):
     elif output_type == "tf_frozen":
         save_frozenmodel(model, path, tmp_path)
     elif output_type == "tf_optimized":
-        save_minimizedmodel(model, path, tmp_path)
+        save_optimized_model(model, path, tmp_path)
     elif output_type == "tf_lite":
         save_tflite(model, path, tmp_path)
     else:
