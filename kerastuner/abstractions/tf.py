@@ -1,6 +1,6 @@
 import gc
 import numpy as np
-import tensorflow as tf
+from tensorflow.python import Session, ConfigProto
 import tensorflow.keras.backend as K  # pylint: disable=import-error
 
 
@@ -16,6 +16,6 @@ def clear_tf_session():
     # K.get_session().close() # unsure if it is needed
     gc.collect()
 
-    cfg = tf.ConfigProto()
+    cfg = ConfigProto()
     cfg.gpu_options.allow_growth = True  # pylint: disable=no-member
-    K.set_session(tf.Session(config=cfg))
+    K.set_session(Session(config=cfg))

@@ -115,7 +115,7 @@ class Tuner(object):
 
     def search(self, x, y, **kwargs):
         self.state.keras_function = 'fit'
-        #kwargs["verbose"] = 0
+        # kwargs["verbose"] = 0
         self.tune(x, y, **kwargs)
         if self.cloudservice.is_enable:
             self.cloudservice.complete()
@@ -191,49 +191,56 @@ class Tuner(object):
         return instance
 
     def get_best_model(self, **kwargs):
-        resultset, models = self.get_best_model(num_models=1, **kwargs)
-        return models[0], ResultSet(resultset.results[0])
+        instances, executions, models = self.get_best_models(
+            num_models=1, **kwargs)
+        return instances[0], executions[0], models[0]
 
-    def get_best_models(
-            self, metric="loss", direction='min', num_models=1, compile=False):
-        # Glob/read the results metadata.
-        results_dir = self.state.host.result_dir
+    def get_model(self, instance, execution, compile=False):
+        # TODO - this needs to go somewhere common. It's used here and in monitorcallback
+        base_prefix = "%s-%s-%s" % (self.state.project,
+                                    self.state.architecture, instance.state.idx)
 
-        result_set = read_results(results_dir).sorted_by_metric(
-            metric, direction).limit(num_models).results
+        results_file = os.path.join(
+            self.state.host.result_dir, base_prefix + "-results.json")
+
+        base_prefix = "%s-%s" % (base_prefix, execution.state.idx)
+
+        config_file = os.path.join(
+            self.state.host.result_dir, base_prefix + "-config.json")
+        h5_file = os.path.join(self.state.host.result_dir,
+                               base_prefix + "-weights.h5")
+
+        model = reload_model(config_file, h5_file,
+                             results_file, compile=compile)
+        return model
+
+    def get_best_models(self, num_models=1, compile=False):
+        objective = self.state.agg_metrics.get_objective()
+
+        instances = self.instances.get_best_instances(
+            objective,
+            N=num_models)
 
         models = []
-
-        for result in result_set:
-            config_file = os.path.join(results_dir, result["config_file"])
-            weights_file = os.path.join(results_dir, result["weights_file"])
-            results_file = os.path.join(results_dir, result["results_file"])
-
-            model = reload_model(config_file, weights_file,
-                                 results_file, compile=compile)
+        executions = []
+        for instance in instances:
+            best_execution = instance.executions.get_best_executions(
+                objective, N=1)
+            best_execution = best_execution[0]
+            model = self.get_model(instance, best_execution, compile=compile)
             models.append(model)
-        return models, result_set
+            executions.append(best_execution)
+
+        return instances, executions, models
 
     def save_best_model(self, **kwargs):
         return self.save_best_models(num_models=1, **kwargs)
 
-    def save_best_models(
-            self, metric="loss",
-            direction='min',
-            output_type="keras",
-            num_models=1):
+    def save_best_models(self, output_type="keras", num_models=1):
         """ Exports the best model based on the specified metric, to the
             results directory.
 
             Args:
-                metric (str, optional): Defaults to "loss". The metric used to
-                     determine the best model.
-                direction (str, optional): Defaults to 'min'. The sort
-                    direction for the metric:
-                        'min' - for losses, and other metrics where smaller is
-                        better.
-                        'max' - for accuracy, and other metrics where
-                        larger is better.
                 output_type (str, optional): Defaults to "keras". What format
                     of model to export:
 
@@ -254,16 +261,21 @@ class Tuner(object):
                         https://github.com/tensorflow/tensorflow/tree/master/tensorflow/tools/graph_transforms
                     "tf_lite" - A TF Lite model.
         """
-        models, results = self.get_best_models(
-            metric=metric,
-            direction=direction,
-            num_models=num_models,
-            compile=False)
-        for idx, (model, result) in enumerate(zip(models, results)):
-            name = result["execution_prefix"]
-            export_path = os.path.join(self.state.host.export_dir, name)
-            tmp_path = os.path.join(self.state.host.tmp_dir, name)
-            info("Exporting top model (%d/%d) - %s" % (idx + 1, len(models), export_path))
+
+        instances, executions, models = self.get_best_models(
+            num_models=num_models, compile=False)
+
+        for idx, (model, instance, execution) in enumerate(zip(models, instances, executions)):
+            export_prefix = "%s-%s-%s-%s" % (
+                self.state.project,
+                self.state.architecture,
+                instance.state.idx,
+                execution.state.idx)
+
+            export_path = os.path.join(self.state.host.export_dir, export_prefix)
+            tmp_path = os.path.join(self.state.host.tmp_dir, export_prefix)
+            info("Exporting top model (%d/%d) - %s" %
+                 (idx + 1, len(models), export_path))
             save_model(model, export_path, tmp_path=tmp_path,
                        output_type=output_type)
 

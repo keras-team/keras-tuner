@@ -22,6 +22,7 @@ class MonitorCallback(TunerCallback):
         self.thread_pool = ThreadPool(num_threads)
         self.epoch_history = defaultdict(list)
         self.training_complete = False  # important for the cloudservice
+        self.num_threads = num_threads
 
     def on_batch_end(self, batch, logs={}):
         for metric, value in logs.items():
@@ -55,6 +56,16 @@ class MonitorCallback(TunerCallback):
         self._report_status(force=True)
         self._write_result_file()
 
+        self._flush_thread_pool()
+
+        if self.tuner_state.remaining_budget < 1:
+            self._tuning_complete()
+
+    def _flush_thread_pool(self):
+        self.thread_pool.close()
+        self.thread_pool.join()
+        self.thread_pool = ThreadPool(self.num_threads)
+
     def _end_training_statistics(self):
         """Compute and display end of training statistics
 
@@ -85,7 +96,7 @@ class MonitorCallback(TunerCallback):
     def _checkpoint_model(self):
         """Checkpoint model"""
         prefix = self._get_filename_prefix()
-        base_filename = path.join(self.tuner_state.host.local_dir, prefix)
+        base_filename = prefix
         save_model(self.model, base_filename, output_type="keras")
         write_log("Improved model saved to %s" % base_filename)
         self._write_result_file()
