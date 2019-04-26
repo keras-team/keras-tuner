@@ -13,65 +13,10 @@ from tensorflow.python.tools import freeze_graph
 from tensorflow.python.tools import optimize_for_inference_lib
 from tensorflow.python.saved_model import save
 
+
 from kerastuner.abstractions.display import warning
 from kerastuner.abstractions.io import read_file, write_file, copy_file, rm
-
-
-def serialize_loss(loss):
-    """Serialize the loss information for a model.
-
-    Example:
-        `json_loss_config = json.dumps(serialize_loss(model.loss))`
-
-    Args:
-        loss - One of the following:
-            (str): Name of one of the loss functions known to Keras.
-            (Callable): A function or callable object. Must be registered as a
-               Keras loss.
-            (dict): A dictionary mapping output nodes to loss functions in
-                 string or callable form. Loss functions must be represented
-                 as a str or Callable, as above.
-            (list): A list of loss functions, applied to the output nodes.
-                 Loss functions must be represented as a str or Callable,
-                 as above.
-    """
-    if isinstance(loss, six.string_types):
-        return loss
-    elif isinstance(loss, list):
-        loss_out = []
-        for l in loss:
-            loss_out.append(serialize_loss(l))
-        return loss_out
-    elif isinstance(loss, dict):
-        loss_out = {}
-        for k, v in loss.items():
-            loss_out[k] = serialize_loss(l)
-        return loss_out
-    else:
-        return tf.keras.losses.serialize(loss)
-
-
-def deserialize_loss(loss):
-    """ Deserialize a model loss, serialized by serialize_loss, above,
-        returning a single loss function, list of losses, or dict of
-        lossess, depending on what was serialized.
-
-        Args:
-            loss: JSON configuration representing the loss or losses.
-    """
-
-    if isinstance(loss, dict):
-        loss_out = {}
-        for output, l in loss.items():
-            loss_out[output] = tf.keras.losses.deserialize_loss(l)
-        return loss_out
-    elif isinstance(loss, list):
-        loss_out = []
-        for l in loss:
-            loss_out.append(tf.keras.losses.deserialize_loss(l))
-        return loss_out
-    else:
-        return tf.keras.losses.deserialize(loss)
+from kerastuner.abstractions.tensorflow import TENSORFLOW
 
 
 def save_keras_model(model, path, tmp_path):
@@ -94,91 +39,24 @@ def save_keras_bundle_model(model, path, tmp_path):
 
 
 def save_savedmodel(model, path, tmp_path):
-    # Build the signature, which maps the user-specified names to the actual tensors
-    # in the graph.
-    if hasattr(tf.saved_model, "save"):
-        tf.saved_model.save(model, path)
-    else:
-        session = K.get_session()
-        inputs = dict([(node.op.name, node) for node in model.inputs])
-        outputs = dict([(node.op.name, node) for node in model.outputs])                
-        tf.compat.v1.saved_model.simple_save(session, path, inputs, outputs)
-
-
-
-def _get_input_ops(model):
-    return [node.op.name for node in model.inputs]
-
-
-
-def _get_input_types(model):
-    return [node.op.dtype for node in model.inputs]
-
-
-def _get_output_ops(model):
-    if isinstance(model.output, list):
-        return [x.op.name for x in model.output]
-    else:
-        return [model.output.op.name]
+    TENSORFLOW.save_savedmodel(model, path, tmp_path)
 
 
 def save_frozenmodel(model, path, tmp_path):
     # First, create a SavedModel in the tmp directory.
     saved_model_path = tmp_path + "savedmodel"
     saved_model_tmp_path = tmp_path + "savedmodel_tmp"
-    save_savedmodel(model, saved_model_path, saved_model_tmp_path)
+    TENSORFLOW.save_savedmodel(
+        model, saved_model_path, saved_model_tmp_path)
 
     # Extract the output tensor names, which are needed in the freeze_graph
     # call to determine which nodes are actually needed in the final graph.
-    ops = _get_output_ops(model)
+    ops = TENSORFLOW.get_output_ops(model)
     ops = [op + ":0" for op in ops]
     output_tensor_names = ','.join(ops)
 
-    # Freeze the temporary graph into the final output file.
-    #
-    # Note: This needs to be done in an empty session, otherwise names from
-    # the loaded model (e.g. Adam/...) will conflict with the graph that is
-    # inside of freeze_graph
-
-    import subprocess
-    import sys
-
-    process = subprocess.Popen([
-        sys.executable,
-        "-m",
-        "tensorflow.python.tools.freeze_graph",
-        "--input_saved_model=%s" % saved_model_path,
-        "--output_node_names=%s" % output_tensor_names,
-        "--output_graph=%s" % path])
-
-    print([
-        sys.executable,
-        "-m",
-        "tensorflow.python.tools.freeze_graph",
-        "--input_saved_model=%s" % saved_model_path,
-        "--output_node_names=%s" % output_tensor_names,
-        "--output_graph=%s" % path])
-
-    process.wait()
-
-    # with Session().as_default() as sess:
-    #     with Graph().as_default() as _:
-    #         freeze_graph.freeze_graph(
-    #             None,  # No input graph, read from saved model.
-    #             None,  # No input saver
-    #             True,  # Input is binary
-    #             "",  # No input checkpoint
-    #             # Name of the output tensor for the graph.
-    #             output_tensor_names,
-    #             "",  # No restore op
-    #             "",  # No filename tensor
-    #             path,  # Output file for the frozen model.
-    #             True,  # Clear devices
-    #             "",  # No init nodes
-    #             "",  # No var whitelist
-    #             "",  # No var blacklist
-    #             "",  # No input meta graph
-    #             saved_model_path)  # Saved model path
+    TENSORFLOW.freeze_graph(
+        saved_model_path, path, output_tensor_names)
 
 
 def save_optimized_model(model, filename, tmp_path, toco_compatible=False):
@@ -189,31 +67,24 @@ def save_optimized_model(model, filename, tmp_path, toco_compatible=False):
     save_frozenmodel(model, frozen_path, frozen_tmp_path)
 
     # Parse the GraphDef, and determine the inputs and outputs
-    with tf.gfile.GFile(frozen_path, "rb") as f:
+    with TENSORFLOW.io.gfile.Open(frozen_path, "rb") as f:
         graph_def = tf.GraphDef()
         graph_def.ParseFromString(f.read())
 
-    input_ops = _get_input_ops(model)
-    input_types = _get_input_types(model)
-    output_ops = _get_output_ops(model)
+    input_ops = TENSORFLOW.get_input_ops(model)
+    input_types = TENSORFLOW.get_input_types(model)
+    output_ops = TENSORFLOW.get_output_ops(model)
 
-    transformed_graph_def = optimize_for_inference_lib.optimize_for_inference(
-        graph_def,
-        input_ops,
-        output_ops,
-        input_types,
-        toco_compatible)
+    TENSORFLOW.optimize_graph(frozen_path, input_ops, output_ops, input_types, toco_compatible)
+    TENSORFLOW.write_graph(transformed_graph_def, filename, as_text=False)
 
-    tf.train.write_graph(transformed_graph_def,
-                         logdir=os.path.dirname(filename),
-                         as_text=False,
-                         name=os.path.basename(filename))
-
+ 
 
 def save_tflite(model, path, tmp_path, post_training_quantize=True):
     # First, create a SavedModel in the temporary directory
     savedmodel_path = tmp_path + "savedmodel"
     savedmodel_tmp_path = tmp_path + "savedmodel_tmp"
+
     save_savedmodel(model, savedmodel_path, savedmodel_tmp_path)
 
     # Convert the saved model to TF Lite, with quantization.
@@ -249,7 +120,7 @@ def save_model(model, path, output_type="keras", tmp_path="/tmp/", **kwargs):
                 https://github.com/tensorflow/tensorflow/tree/master/tensorflow/tools/graph_transforms
             "tf_lite" - A TF Lite model.
     """
-    
+
     print("Saving as %s" % output_type)
     KNOWN_OUTPUT_TYPES = [
         "keras",

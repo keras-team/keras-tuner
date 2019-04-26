@@ -127,6 +127,8 @@ def test_save_tf(
         training_data,
         feed_dict,
         output_names):
+
+
     save_path = os.path.join(str(tmp_path), "model_output")
     tmp_path = os.path.join(str(tmp_path), "model_output_tmp")
     x, y = training_data
@@ -160,6 +162,8 @@ def test_save_frozen(
     orig_out = model.predict(x)
 
     save_model(model, save_path, tmp_path=tmp_path, output_type="tf_frozen")
+
+    tf.keras.backend.clear_session()
 
     graph = tf.Graph()
     sess = tf.Session(graph=graph)

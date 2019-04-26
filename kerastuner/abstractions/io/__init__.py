@@ -6,4 +6,4 @@ from .io import create_directory, glob, write_file, open_file, read_file, rm
 from .io import copy_file
 from .results import read_results
 from .model_saver import save_model, reload_model
-from .model_saver import serialize_loss, deserialize_loss
+

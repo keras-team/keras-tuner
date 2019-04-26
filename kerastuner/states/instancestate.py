@@ -6,7 +6,7 @@ from copy import deepcopy
 from .state import State
 from kerastuner import config
 from kerastuner.abstractions.tf import compute_model_size
-from kerastuner.abstractions.io import serialize_loss
+from kerastuner.abstractions.tensorflow import TENSORFLOW
 from kerastuner.abstractions.display import display_table, section, subsection
 from kerastuner.abstractions.display import display_setting, display_settings
 
@@ -28,9 +28,9 @@ class InstanceState(State):
 
         # model info
         # we use deepcopy to avoid mutation due to tuners that swap models
-        self.model_size = compute_model_size(model)
-        self.optimizer_config = deepcopy(tf.keras.optimizers.serialize(model.optimizer))  # nopep8
-        self.loss_config = deepcopy(serialize_loss(model.loss))
+        self.model_size = TENSORFLOW.compute_model_size(model)
+        self.optimizer_config = deepcopy(TENSORFLOW.serialize_optimizer(model.optimizer))  # nopep8
+        self.loss_config = deepcopy(TENSORFLOW.serialize_loss(model.loss))
         self.model_config = json.loads(model.to_json())
         self.hyper_parameters = deepcopy(hyper_parameters)
         self.agg_metrics = None
