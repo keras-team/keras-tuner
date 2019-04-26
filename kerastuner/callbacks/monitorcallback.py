@@ -32,14 +32,15 @@ class MonitorCallback(TunerCallback):
     def on_epoch_end(self, epoch, logs={}):
 
         # update epoch counters
-        self.execution_state.epochs += 1
+        self.execution_state .epochs += 1
         self.tuner_state.remaining_budget -= 1
 
         # update metrics and checkpoint if needed
         for metric, value in logs.items():
             improved = self.execution_state.metrics.update(metric, value)
             if self.tuner_state.objective == metric and improved:
-                self.thread_pool.apply_async(self._checkpoint_model)
+#                self.thread_pool.apply_async(self._checkpoint_model)
+                self._checkpoint_model()
 
         # reset epoch history
         self.epoch_history = defaultdict(list)
@@ -55,11 +56,8 @@ class MonitorCallback(TunerCallback):
         self._end_training_statistics()
         self._report_status(force=True)
         self._write_result_file()
-
         self._flush_thread_pool()
 
-        if self.tuner_state.remaining_budget < 1:
-            self._tuning_complete()
 
     def _flush_thread_pool(self):
         self.thread_pool.close()
@@ -97,8 +95,16 @@ class MonitorCallback(TunerCallback):
         """Checkpoint model"""
         prefix = self._get_filename_prefix()
         base_filename = prefix
-        save_model(self.model, base_filename, output_type="keras")
-        write_log("Improved model saved to %s" % base_filename)
+        write_log("Saving model to %s" % base_filename)
+        try:
+            save_model(self.model, base_filename, output_type="keras")
+            write_log("Improved model saved to %s" % base_filename)
+        except:
+            print("FAILED")
+            import traceback
+            traceback.print_exc()
+            write_log("Failed.")
+            exit(0)
         self._write_result_file()
 
     def _write_result_file(self):

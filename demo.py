@@ -8,6 +8,13 @@ from tensorflow.keras.optimizers import Adam
 # hypertune imports
 from kerastuner.distributions import Range, Choice, Boolean, Fixed
 from kerastuner.tuners import RandomSearch
+
+import signal
+import faulthandler
+faulthandler.register(signal.SIGUSR1)
+
+
+
 # Random data to feed the model to show how easy it is to use KerasTuner
 x_train = np.random.random((10000, 20))
 y_train = np.random.randint(2, size=(10000, 1))
@@ -48,4 +55,4 @@ hypermodel.search(x_train, y_train, validation_split=0.01)
 # Show the best models, their hyperparameters, and the resulting metrics.
 #hypermodel.display_result_summary()
 
-hypermodel.save_best_model(output_type="tf_optimized")
+hypermodel.save_best_model(output_type="tf_frozen")

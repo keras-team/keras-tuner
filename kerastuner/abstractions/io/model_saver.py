@@ -80,9 +80,6 @@ def save_keras_model(model, path, tmp_path):
     weights_tmp = "%s-weights.h5" % tmp_path
 
     write_file(config_path, model.to_json())
-
-    # Save to the tmp directory, which is assumed to be local. The final
-    # directory may be, e.g. a gs:// URL, which h5py cannot handle.
     model.save_weights(weights_tmp, overwrite=True)
 
     # Move the file, potentially across filesystems.
@@ -99,11 +96,19 @@ def save_keras_bundle_model(model, path, tmp_path):
 def save_savedmodel(model, path, tmp_path):
     # Build the signature, which maps the user-specified names to the actual tensors
     # in the graph.
-    tf.saved_model.save(model, path)
+    if hasattr(tf.saved_model, "save"):
+        tf.saved_model.save(model, path)
+    else:
+        session = K.get_session()
+        inputs = dict([(node.op.name, node) for node in model.inputs])
+        outputs = dict([(node.op.name, node) for node in model.outputs])                
+        tf.compat.v1.saved_model.simple_save(session, path, inputs, outputs)
+
 
 
 def _get_input_ops(model):
     return [node.op.name for node in model.inputs]
+
 
 
 def _get_input_types(model):
@@ -125,31 +130,55 @@ def save_frozenmodel(model, path, tmp_path):
 
     # Extract the output tensor names, which are needed in the freeze_graph
     # call to determine which nodes are actually needed in the final graph.
-    output_tensor_names = ','.join(_get_output_ops(model))
+    ops = _get_output_ops(model)
+    ops = [op + ":0" for op in ops]
+    output_tensor_names = ','.join(ops)
 
     # Freeze the temporary graph into the final output file.
     #
     # Note: This needs to be done in an empty session, otherwise names from
     # the loaded model (e.g. Adam/...) will conflict with the graph that is
     # inside of freeze_graph
-    with Session().as_default() as sess:
-        with Graph().as_default() as _:
-            freeze_graph.freeze_graph(
-                None,  # No input graph, read from saved model.
-                None,  # No input saver
-                True,  # Input is binary
-                "",  # No input checkpoint
-                # Name of the output tensor for the graph.
-                output_tensor_names,
-                "",  # No restore op
-                "",  # No filename tensor
-                path,  # Output file for the frozen model.
-                True,  # Clear devices
-                "",  # No init nodes
-                "",  # No var whitelist
-                "",  # No var blacklist
-                "",  # No input meta graph
-                saved_model_path)  # Saved model path
+
+    import subprocess
+    import sys
+
+    process = subprocess.Popen([
+        sys.executable,
+        "-m",
+        "tensorflow.python.tools.freeze_graph",
+        "--input_saved_model=%s" % saved_model_path,
+        "--output_node_names=%s" % output_tensor_names,
+        "--output_graph=%s" % path])
+
+    print([
+        sys.executable,
+        "-m",
+        "tensorflow.python.tools.freeze_graph",
+        "--input_saved_model=%s" % saved_model_path,
+        "--output_node_names=%s" % output_tensor_names,
+        "--output_graph=%s" % path])
+
+    process.wait()
+
+    # with Session().as_default() as sess:
+    #     with Graph().as_default() as _:
+    #         freeze_graph.freeze_graph(
+    #             None,  # No input graph, read from saved model.
+    #             None,  # No input saver
+    #             True,  # Input is binary
+    #             "",  # No input checkpoint
+    #             # Name of the output tensor for the graph.
+    #             output_tensor_names,
+    #             "",  # No restore op
+    #             "",  # No filename tensor
+    #             path,  # Output file for the frozen model.
+    #             True,  # Clear devices
+    #             "",  # No init nodes
+    #             "",  # No var whitelist
+    #             "",  # No var blacklist
+    #             "",  # No input meta graph
+    #             saved_model_path)  # Saved model path
 
 
 def save_optimized_model(model, filename, tmp_path, toco_compatible=False):
@@ -220,7 +249,8 @@ def save_model(model, path, output_type="keras", tmp_path="/tmp/", **kwargs):
                 https://github.com/tensorflow/tensorflow/tree/master/tensorflow/tools/graph_transforms
             "tf_lite" - A TF Lite model.
     """
-
+    
+    print("Saving as %s" % output_type)
     KNOWN_OUTPUT_TYPES = [
         "keras",
         "keras_bundle",
