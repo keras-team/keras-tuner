@@ -18,9 +18,8 @@ def get():
         from . import tensorflow_2_x as proxy
         return proxy.Tensorflow_2_x()
     elif MAJOR_VERSION == 1:
-        if MINOR_VERSION == 13:
-            from . import tensorflow_1_x as proxy
-            return proxy.Tensorflow_1_x()
+      from . import tensorflow_1_x as proxy
+      return proxy.Tensorflow_1_x()
 
     print(__UNSUPPORTED_VERSION_MSG)
     exit(1)

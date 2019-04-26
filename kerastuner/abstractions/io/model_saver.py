@@ -52,7 +52,6 @@ def save_frozenmodel(model, path, tmp_path):
     # Extract the output tensor names, which are needed in the freeze_graph
     # call to determine which nodes are actually needed in the final graph.
     ops = TENSORFLOW.get_output_ops(model)
-    ops = [op + ":0" for op in ops]
     output_tensor_names = ','.join(ops)
 
     TENSORFLOW.freeze_graph(

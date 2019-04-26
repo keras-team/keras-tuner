@@ -1,4 +1,3 @@
-
 class GFileProxy(object):
     """Provides a subset of the tensorflow-2.0 API and proxies the calls through to the
     appropriate tensorflow API."""
@@ -22,13 +21,13 @@ class IOProxy(object):
     def __init__(self):
         self.gfile = GFileProxy()
 
-    def __getattr__(self, name):           
+    def __getattr__(self, name):
         return getattr(tf.io, name)
 
 class PythonProxy(object):
-    def __getattr__(self, name):           
+    def __getattr__(self, name):
         return getattr(tf.python, name)
-    
+
 
 class TensorflowProxy(object):
     """A proxy object for tensorflow calls.
@@ -53,7 +52,7 @@ class TensorflowProxy(object):
 
     def serialize_optimizer(self, optimizer):
         """Serialize an optimizer."""
-        
+
 
     def serialize_loss(self, loss):
         """Serialize the loss information for a model.
@@ -87,9 +86,9 @@ class TensorflowProxy(object):
 
 
     def save_savedmodel(model, path, tmp_path):
-        pass        
+        pass
 
-    def freeze_graph(self, saved_graph_path, output_graph_path, output_node_names):        
+    def freeze_graph(self, saved_graph_path, output_graph_path, output_node_names):
         "Freeze a saved model with the specified output nodes."
         pass
 
@@ -106,7 +105,7 @@ class TensorflowProxy(object):
         """ Reconstructs a model from the files persisted by the tuner.
 
         Args:
-            config_file (string): Configuration filename. 
+            config_file (string): Configuration filename.
             weights_file (string): Keras weights filename.
             results_file (string): Results filename.
             compile (bool, optional): Defaults to False. If True, the optimizer
@@ -139,8 +138,7 @@ class TensorflowProxy(object):
 
     def get_input_types(self, model):
         """Return the input types for the model"""
-        pass 
+        pass
 
     def get_output_ops(self, model):
         """Return the output op names for the model, as a list."""
-
