@@ -135,6 +135,18 @@ def test_set_invalid_objective(mc):
         mc.set_objective('3713')
 
 
+def test_set_shortand_objective(mc):
+    mc.add('accuracy')
+    mc.set_objective('acc')
+    assert mc._objective_name == 'accuracy'
+
+
+def test_set_shortand_val_objective(mc):
+    mc.add('val_accuracy')
+    mc.set_objective('val_acc')
+    assert mc._objective_name == 'val_accuracy'
+
+
 def test_double_objective(mc):
     mc.add('loss')
     mc.add('accuracy')

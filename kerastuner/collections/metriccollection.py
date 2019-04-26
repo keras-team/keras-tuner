@@ -113,6 +113,7 @@ class MetricsCollection(Collection):
 
     def set_objective(self, name):
         "Mark a metric as tuning objective"
+        name = self._replace_alias(name)
         if name not in self._objects:
             fatal("can't find objective: %s in metric list" % name)
         if self._objective_name:

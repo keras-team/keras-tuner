@@ -10,7 +10,7 @@ from kerastuner.distributions import Range, Choice, Boolean, Fixed
 from kerastuner.tuners import RandomSearch
 
 # Random data to feed the model to show how easy it is to use KerasTuner
-x_train = np.random.random((10000, 20))
+x_train = np.random.random((10000, 200))
 y_train = np.random.randint(2, size=(10000, 1))
 
 # You can use http://keras-tuner.appspot.com to track results on the web, and
@@ -36,7 +36,7 @@ def model_fn():
     LOSS = Choice('loss', ['binary_crossentropy', 'mse'], group="optimizer")
 
     model = Sequential()
-    model.add(Dense(IL_UNITS, input_shape=(20,)))
+    model.add(Dense(IL_UNITS, input_shape=(200,)))
     model.add(Dense(L2_UNITS, activation=L2_ACTIVATION))
     if L2_OPTIONAL:
         model.add(Dense(L2_UNITS, activation=L2_ACTIVATION))
@@ -46,8 +46,8 @@ def model_fn():
     return model
 
 
-# train 2 models over 2 epochs
-hypermodel = RandomSearch(model_fn, 'loss', epoch_budget=4, max_epochs=2)
+# train 2 models over  5 epochs
+hypermodel = RandomSearch(model_fn, 'acc', epoch_budget=10, max_epochs=5)
 hypermodel.summary()
 if api_key:
     hypermodel.enable_cloud(

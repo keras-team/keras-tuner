@@ -175,16 +175,16 @@ class Distributions(object):
             total_size *= data['space_size']
 
         # Generate the table.
-        rows = [['hyperparameter', 'search space']]
+        rows = [['Hyper-parameter', 'Search space']]
         for grp in sorted(data_by_group.keys()):
-            row = ["%s total" % grp, group_size[grp]]
+            row = ["%s total" % grp, '']
             row = colorize_row(row, 'cyan')
             rows.append(row)
 
             for param, size in data_by_group[grp].items():
                 rows.append(["|-%s" % param, size])
 
-            rows.append(['', ''])
+            # rows.append(['', ''])
         rows.append([colorize('total', 'green'),
                      colorize(total_size, 'green')])
         display_table(rows)
