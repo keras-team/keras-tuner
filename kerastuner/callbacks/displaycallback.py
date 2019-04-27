@@ -106,11 +106,13 @@ class DisplayCallback(TunerCallback):
         self.epoch_pbar.close()
 
     def on_batch_end(self, batch, logs={}):
+        self.epoch_pbar.update(1)
+
         # computing metric statistics
         for k, v in logs.items():
             self.batch_history[k].append(v)
-        self.epoch_pbar.update(1)
         avg_metrics = self._avg_metrics(self.batch_history)
+        self.epoch_pbar.set_postfix(avg_metrics)
 
         # create bar desc with updated statistics
         description = ""
@@ -124,10 +126,7 @@ class DisplayCallback(TunerCallback):
         self.cpu_usage.append(int(status["cpu"]["usage"]))
         description += "[CPU:%3s%%]" % int(np.average(self.cpu_usage))
         description += "Epoch %s/%s" % (self.current_epoch, self.max_epochs)
-
-        # update epoch bar
         self.epoch_pbar.set_description(description)
-        self.epoch_pbar.set_postfix(avg_metrics)
 
     def _avg_metrics(self, metrics):
         "Aggregate metrics"
