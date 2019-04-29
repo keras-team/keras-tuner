@@ -102,16 +102,17 @@ class Tuner(object):
         self.state.summary(extended=extended)
         config._DISTRIBUTIONS.config_summary()
 
-    def enable_cloud(self, api_key, **kwargs):
+    def enable_cloud(self, api_key, url=None):
         """Enable cloud service reporting
 
             Args:
                 api_key (str): The backend API access token.
+                url (str, optional): The backend base URL.
 
             Note:
                 this is called by the user
         """
-        self.cloudservice.enable(api_key)
+        self.cloudservice.enable(api_key, url)
 
     def search(self, x, y, **kwargs):
         self.state.keras_function = 'fit'
