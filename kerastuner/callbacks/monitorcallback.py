@@ -153,7 +153,7 @@ class MonitorCallback(TunerCallback):
 
         # write on disk
         fname = path.join(self.tuner_state.host.result_dir, 'status.json')
-        write_file(fname, status_json)
+        tf_utils.write_file(fname, status_json)
 
         # send status to cloudservice
         if self.cloudservice.is_enable:

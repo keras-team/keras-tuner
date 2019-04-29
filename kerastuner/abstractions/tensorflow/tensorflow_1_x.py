@@ -22,8 +22,8 @@ class GFileProxy_1_x(proxy.GFileProxy):
         }
 
     def __getattr__(self, name):
-        if name in renames.keys():
-            return renames[name]
+        if name in self.renames.keys():
+            return self.renames[name]
 
         return getattr(gfile, name)
 

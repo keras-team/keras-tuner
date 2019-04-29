@@ -1,4 +1,5 @@
 import gc
+import json
 import os
 import subprocess
 import sys
@@ -6,6 +7,7 @@ import sys
 import numpy as np
 import tensorflow as tf
 from tensorflow import python as tf_python
+
 
 class GFileProxy(object):
     """Provides a subset of the tensorflow-2.0 API and proxies the calls through to the
@@ -101,12 +103,12 @@ class UtilsBase(object):
         elif isinstance(loss, list):
             loss_out = []
             for l in loss:
-                loss_out.append(serialize_loss(l))
+                loss_out.append(self.serialize_loss(l))
             return loss_out
         elif isinstance(loss, dict):
             loss_out = {}
             for k, v in loss.items():
-                loss_out[k] = serialize_loss(l)
+                loss_out[k] = self.serialize_loss(l)
             return loss_out
         else:
             return self.tf_proxy.keras.losses.serialize(loss)
@@ -170,15 +172,15 @@ class UtilsBase(object):
         """
 
         # Reconstruct the model.
-        config = read_file(config_file)
+        config = self.read_file(config_file)
         model = self.tf_proxy.keras.models.model_from_json(config)
         model.load_weights(weights_file)
 
         # If compilation is requested, we need to reload the results file to find
         # which optimizer and losses the model used.
         if compile:
-            results_file = json.loads(read_file(results_file))
-            loss = deserialize_loss(results_file["loss_config"])
+            results_file = json.loads(self.read_file(results_file))
+            loss = self.deserialize_loss(results_file["loss_config"])
             optimizer = self.tf_proxy.keras.optimizers.deserialize(
                 results_file["optimizer_config"])
             model.compile(loss=loss, optimizer=optimizer)
@@ -221,6 +223,11 @@ class UtilsBase(object):
             tags,
             export_dir)
 
+
+    def save_savedmodel(self, model, path, tmp_path):        
+        # Implemented by subclasses
+        raise NotImplementedError
+
     def save_keras_model(self, model, path, tmp_path):
         config_path = "%s-config.json" % path
         weights_path = "%s-weights.h5" % path
@@ -230,15 +237,16 @@ class UtilsBase(object):
         model.save_weights(weights_tmp, overwrite=True)
 
         # Move the file, potentially across filesystems.
-        self.tf_proxy.io.gfile.copy_file(
+        self.tf_proxy.io.gfile.copy(
             weights_tmp, weights_path, overwrite=True)
-        rm(weights_tmp)
+        
+        if self.tf_proxy.io.gfile.exists(weights_tmp):
+            self.tf_proxy.io.gfile.remove(weights_tmp)
 
     def save_keras_bundle_model(self, model, path, tmp_path):
         model.save(tmp_path)
-        copy_file(tmp_path, path, overwrite=True)
-        print(tmp_path)
-        rm(tmp_path)
+        self.tf_proxy.io.gfile.copy_file(tmp_path, path, overwrite=True)                
+        self.tf_proxy.io.gfile.remove(tmp_path)
 
     def save_frozenmodel(self, model, path, tmp_path):
         # First, create a SavedModel in the tmp directory.
