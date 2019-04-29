@@ -13,7 +13,7 @@ supports Tensorflow 2.0.x and Tensorflow 1.y (y >=1.12)
 """ % tensorflow.__version__
 
 
-def get():
+def get_tensorflow():
     if MAJOR_VERSION == 2:
         from . import tensorflow_2_x as proxy
         return proxy.Tensorflow_2_x()
@@ -25,4 +25,17 @@ def get():
     exit(1)
 
 
-TENSORFLOW = get()
+def get_utils():
+    if MAJOR_VERSION == 2:
+        from . import utils_2_x as utils
+        return utils.Utils_2_x()
+    elif MAJOR_VERSION == 1:
+        from . import utils_1_x as utils
+        return utils.Utils_1_x()
+
+    print(__UNSUPPORTED_VERSION_MSG)
+    exit(1)
+
+
+TENSORFLOW = get_tensorflow()
+TENSORFLOW_UTILS = get_utils()

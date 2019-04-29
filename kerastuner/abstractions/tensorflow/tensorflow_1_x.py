@@ -1,8 +1,10 @@
 from kerastuner.abstractions.tensorflow import proxy
-from kerastuner.abstractions.tensorflow import base
+import tensorflow
+from tensorflow.python import Graph, GraphDef, Session
 import tensorflow as tf
-
+from tensorflow.tools.graph_transforms import TransformGraph
 from tensorflow import gfile
+from tensorflow import python
 
 
 class GFileProxy_1_x(proxy.GFileProxy):
@@ -53,23 +55,23 @@ class IOProxy_1_x(proxy.IOProxy):
 
 class PythonProxy_1_x(proxy.PythonProxy):
     def __getattr__(self, name):
-        return getattr(tf.io, name)
+        raise ValueError(
+            "Attribute '%s' not supported" % name)
 
     def Session(self, *args, **kwargs):
         """Passthrough to create a new Session."""
         return tf.Session(*args, **kwargs)
 
+    def GraphDef(self, *args, **kwargs):
+        """Passthrough to create a new Session."""
+        return tf.GraphDef(*args, **kwargs)
 
-class Tensorflow_1_x(base.Tensorflow):
+    def Graph(self, *args, **kwargs):
+        """Passthrough to create a new Session."""
+        return tf.Graph(*args, **kwargs)
+
+
+class Tensorflow_1_x(proxy.TensorflowProxy):
     def __init__(self):
+        super(Tensorflow_1_x, self).__init__()
         self.io = IOProxy_1_x()
-        self.python = PythonProxy_1_x()
-
-    def save_savedmodel(self, model, path, tmp_path):
-        session = tf.keras.backend.get_session()
-        tf.io.write_graph(session.graph, "/tmp/session/", "graph.pbtxt")
-        tf.io.write_graph(tf.get_default_graph(),
-                          "/tmp/session/", "graph.pbtxt")
-        inputs = dict([(node.op.name, node) for node in model.inputs])
-        outputs = dict([(node.op.name, node) for node in model.outputs])
-        tf.compat.v1.saved_model.simple_save(session, path, inputs, outputs)

@@ -2,22 +2,10 @@ import os
 
 import six
 
-import tensorflow as tf
-import tensorflow.keras.backend as K
-
-import tensorflow
-from tensorflow import python
-from tensorflow.python import Session, Graph
-from tensorflow.python import tools
-from tensorflow.python.tools import freeze_graph
-from tensorflow.python.tools import optimize_for_inference_lib
-from tensorflow.python.saved_model import save
-
-
 from kerastuner.abstractions.display import warning
 from kerastuner.abstractions.io import read_file, write_file, copy_file, rm
-from kerastuner.abstractions.tensorflow import TENSORFLOW
-
+from kerastuner.abstractions.tensorflow import TENSORFLOW as tf
+from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 
 def save_keras_model(model, path, tmp_path):
     config_path = "%s-config.json" % path
@@ -28,37 +16,36 @@ def save_keras_model(model, path, tmp_path):
     model.save_weights(weights_tmp, overwrite=True)
 
     # Move the file, potentially across filesystems.
-    copy_file(weights_tmp, weights_path, overwrite=True)
-    rm(weights_tmp)
+    tf.io.gfile.copy(weights_tmp, weights_path, overwrite=True)
+    tf.io.gfile.remove(weights_tmp)
 
 
 def save_keras_bundle_model(model, path, tmp_path):
     model.save(tmp_path)
-    copy_file(tmp_path, path, overwrite=True)
-    rm(tmp_path)
+    tf.io.gfile.copy(tmp_path, path, overwrite=True)
+    tf.io.gfile.remove(tmp_path)
 
 
 def save_savedmodel(model, path, tmp_path):
-    TENSORFLOW.save_savedmodel(model, path, tmp_path)
-
+    tf_utils.save_savedmodel(model, path, tmp_path)
 
 def save_frozenmodel(model, path, tmp_path):
     # First, create a SavedModel in the tmp directory.
     saved_model_path = tmp_path + "savedmodel"
     saved_model_tmp_path = tmp_path + "savedmodel_tmp"
-    TENSORFLOW.save_savedmodel(
+    tf_utils.save_savedmodel(
         model, saved_model_path, saved_model_tmp_path)
 
     # Extract the output tensor names, which are needed in the freeze_graph
     # call to determine which nodes are actually needed in the final graph.
-    ops = TENSORFLOW.get_output_ops(model)
+    ops = tf_utils.get_output_ops(model)
     output_tensor_names = ','.join(ops)
 
-    TENSORFLOW.freeze_graph(
+    tf_utils.freeze_graph(
         saved_model_path, path, output_tensor_names)
 
 
-def save_optimized_model(model, filename, tmp_path, toco_compatible=False):
+def save_optimized_model(model, output_path, tmp_path, toco_compatible=False):
     # To save an optimized model, we first freeze the model, then apply
     # the optimize_for_inference library.
     frozen_path = tmp_path + "_frozen"
@@ -66,32 +53,24 @@ def save_optimized_model(model, filename, tmp_path, toco_compatible=False):
     save_frozenmodel(model, frozen_path, frozen_tmp_path)
 
     # Parse the GraphDef, and determine the inputs and outputs
-    with TENSORFLOW.io.gfile.Open(frozen_path, "rb") as f:
-        graph_def = tf.GraphDef()
+    with tf.io.gfile.Open(frozen_path, "rb") as f:
+        graph_def = tf.python.GraphDef()
         graph_def.ParseFromString(f.read())
+    input_ops = tf_utils.get_input_ops(model)
+    input_types = tf_utils.get_input_types(model)
+    output_ops = tf_utils.get_output_ops(model)
 
-    input_ops = TENSORFLOW.get_input_ops(model)
-    input_types = TENSORFLOW.get_input_types(model)
-    output_ops = TENSORFLOW.get_output_ops(model)
+    transformed_graph_def = tf_utils.optimize_graph(
+        frozen_path, input_ops, output_ops, input_types, toco_compatible)
 
-    TENSORFLOW.optimize_graph(frozen_path, input_ops, output_ops, input_types, toco_compatible)
-    TENSORFLOW.write_graph(transformed_graph_def, filename, as_text=False)
+    tf_utils.write_graph(
+        transformed_graph_def,
+        os.path.join(output_path, "optimized_graph.pb"),
+        as_text=False)
 
- 
 
 def save_tflite(model, path, tmp_path, post_training_quantize=True):
-    # First, create a SavedModel in the temporary directory
-    savedmodel_path = tmp_path + "savedmodel"
-    savedmodel_tmp_path = tmp_path + "savedmodel_tmp"
-
-    save_savedmodel(model, savedmodel_path, savedmodel_tmp_path)
-
-    # Convert the saved model to TF Lite, with quantization.
-    converter = tf.contrib.lite.TFLiteConverter.from_saved_model(
-        savedmodel_path)
-    converter.post_training_quantize = post_training_quantize
-    write_file(path, converter.convert())
-
+    tf_utils.save_tflite(model, path, tmp_path, post_training_quantize)
 
 def save_model(model, path, output_type="keras", tmp_path="/tmp/", **kwargs):
     """
@@ -119,8 +98,6 @@ def save_model(model, path, output_type="keras", tmp_path="/tmp/", **kwargs):
                 https://github.com/tensorflow/tensorflow/tree/master/tensorflow/tools/graph_transforms
             "tf_lite" - A TF Lite model.
     """
-
-    print("Saving as %s" % output_type)
     KNOWN_OUTPUT_TYPES = [
         "keras",
         "keras_bundle",

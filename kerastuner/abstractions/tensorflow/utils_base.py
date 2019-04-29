@@ -1,17 +1,17 @@
-import tensorflow
-from tensorflow import python
-from tensorflow.python import Session, Graph
-from tensorflow.python import tools
-from tensorflow.python.tools import freeze_graph
-from tensorflow.python.tools import optimize_for_inference_lib
-from tensorflow.python.saved_model import save
+import os
 import subprocess
 import sys
 
+import tensorflow as tf
+from tensorflow import python
+from tensorflow.python import Graph, Session, tools
+from tensorflow.python.saved_model import save
+from tensorflow.python.tools import freeze_graph, optimize_for_inference_lib
 
-from kerastuner.abstractions.tensorflow import proxy
+from kerastuner.abstractions.tensorflow.utils import Utils
 
-class Tensorflow(proxy.TensorflowProxy):
+
+class UtilsBase(Utils):
     def compute_model_size(self, model):
         "Compute the size of a given model"
         params = [K.count_params(p) for p in set(model.trainable_weights)]
@@ -27,7 +27,6 @@ class Tensorflow(proxy.TensorflowProxy):
         cfg = ConfigProto()
         cfg.gpu_options.allow_growth = True  # pylint: disable=no-member
         K.set_session(Session(config=cfg))
-
 
     def serialize_loss(self, loss):
         """Serialize the loss information for a model.
@@ -62,7 +61,6 @@ class Tensorflow(proxy.TensorflowProxy):
         else:
             return tf.keras.losses.serialize(loss)
 
-
     def deserialize_loss(self, loss):
         """ Deserialize a model loss, serialized by serialize_loss, above,
             returning a single loss function, list of losses, or dict of
@@ -85,8 +83,6 @@ class Tensorflow(proxy.TensorflowProxy):
         else:
             return tf.keras.losses.deserialize(loss)
 
-
-
     def freeze_graph(self, saved_model_path, output_graph_path, output_tensor_names):
 
         # Freeze the temporary graph into the final output file.
@@ -95,18 +91,17 @@ class Tensorflow(proxy.TensorflowProxy):
         # the loaded model (e.g. Adam/...) will conflict with the graph that is
         # inside of freeze_graph
 
-
         command = [
             sys.executable,
             "-m",
             "tensorflow.python.tools.freeze_graph",
             "--input_saved_model_dir=%s" % saved_model_path,
             "--output_node_names=%s" % output_tensor_names,
+            "--placeholder_type_enum=3",  # int32
             "--output_graph=%s" % output_graph_path]
 
         print("Freezing graph with:", " ".join(command))
         process = subprocess.Popen(command)
-
 
         process.wait()
         print("Done.")
@@ -129,28 +124,6 @@ class Tensorflow(proxy.TensorflowProxy):
         #             "",  # No var blacklist
         #             "",  # No input meta graph
         #             saved_model_path)  # Saved model path
-
-    def optimize_graph(self, frozen_model_path, input_ops, output_ops, input_types, toco_compatible):
-
-        # Parse the GraphDef, and determine the inputs and outputs
-        with tf.gfile.GFile(frozen_model_path, "rb") as f:
-            graph_def = tf.GraphDef()
-            graph_def.ParseFromString(f.read())
-
-        transformed_graph_def = optimize_for_inference_lib.optimize_for_inference(
-            graph_def,
-            input_ops,
-            output_ops,
-            input_types,
-            toco_compatible)
-
-        self.write_graph(transformed_graph_def, filename, as_text=False)
-
-    def convert_to_tflite(self,savedmodel_path, output_path, post_training_quantize=True):
-        converter = tf.contrib.lite.TFLiteConverter.from_saved_model(
-            savedmodel_path)
-        converter.post_training_quantize = post_training_quantize
-        write_file(path, converter.convert())
 
     def reload_model(self, config_file, weights_file, results_file, compile=False):
         """ Reconstructs a model from the persisted files.
@@ -184,10 +157,23 @@ class Tensorflow(proxy.TensorflowProxy):
         return model
 
     def get_input_ops(self, model):
+        for node in model.inputs:
+
+            print(node)
+            print(node.op)
+            print(dir(node.op))
         return [node.op.name for node in model.inputs]
 
     def get_input_types(self, model):
-        return [node.op.dtype for node in model.inputs]
+        outputs = []
+        for node in model.inputs:
+            print("Node:", dir(node))
+            if hasattr(node, "dtype"):
+                outputs.append(node.dtype)
+            elif hasattr(node.op, "dtype"):
+                outputs.append(node.op.dtype)
+
+        return outputs
 
     def get_output_ops(self, model):
         if isinstance(model.output, list):
@@ -195,8 +181,40 @@ class Tensorflow(proxy.TensorflowProxy):
         else:
             return [model.output.op.name]
 
-    def write_graph(graph_def, filename, as_text=True):
-        tf.train.write_graph(graph_def,
-                         logdir=os.path.dirname(filename),
-                         as_text=True,
-                         name=os.path.basename(filename))
+    def write_graph(self, graph_def, filename, as_text=True):
+        print("write_Graph", filename)
+        tf.io.write_graph(graph_def,
+                          logdir=os.path.dirname(filename),
+                          name=os.path.basename(filename),
+                          as_text=as_text)
+
+    def load_savedmodel(
+            self,
+            session,
+            export_dir,
+            tags=None):
+
+        return tf.saved_model.load(
+            session,
+            tags,
+            export_dir)
+
+    def save_keras_model(self, model, path, tmp_path):
+        config_path = "%s-config.json" % path
+        weights_path = "%s-weights.h5" % path
+        weights_tmp = "%s-weights.h5" % tmp_path
+
+        write_file(config_path, model.to_json())
+        model.save_weights(weights_tmp, overwrite=True)
+
+        # Move the file, potentially across filesystems.
+        copy_file(weights_tmp, weights_path, overwrite=True)
+        rm(weights_tmp)
+
+    def save_keras_bundle_model(self, model, path, tmp_path):
+        print("Saving model to ", tmp_path)
+        model.save(tmp_path)
+        print("Copying to ", path)
+        copy_file(tmp_path, path, overwrite=True)
+        print(tmp_path)
+        rm(tmp_path)
