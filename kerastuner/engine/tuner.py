@@ -42,7 +42,7 @@ class Tuner(object):
         Args:
             model_fn (function): Function that return a Keras model
             name (str): name of the tuner
-            objective (Objective): Which objective the tuner optimize for
+            objective (str): Which objective the tuner optimize for
             distributions (Distributions): distributions object
 
         Notes:
