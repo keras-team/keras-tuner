@@ -187,7 +187,7 @@ class UtilsBase(object):
 
         return model
 
-    def get_input_ops(self, model):        
+    def get_input_ops(self, model):
         return [node.op.name for node in model.inputs]
 
     def get_input_types(self, model):
@@ -223,8 +223,7 @@ class UtilsBase(object):
             tags,
             export_dir)
 
-
-    def save_savedmodel(self, model, path, tmp_path):        
+    def save_savedmodel(self, model, path, tmp_path):
         # Implemented by subclasses
         raise NotImplementedError
 
@@ -239,13 +238,13 @@ class UtilsBase(object):
         # Move the file, potentially across filesystems.
         self.tf_proxy.io.gfile.copy(
             weights_tmp, weights_path, overwrite=True)
-        
+
         if self.tf_proxy.io.gfile.exists(weights_tmp):
             self.tf_proxy.io.gfile.remove(weights_tmp)
 
     def save_keras_bundle_model(self, model, path, tmp_path):
         model.save(tmp_path)
-        self.tf_proxy.io.gfile.copy_file(tmp_path, path, overwrite=True)                
+        self.tf_proxy.io.gfile.copy_file(tmp_path, path, overwrite=True)
         self.tf_proxy.io.gfile.remove(tmp_path)
 
     def save_frozenmodel(self, model, path, tmp_path):
@@ -319,11 +318,9 @@ class UtilsBase(object):
         with self.tf_proxy.io.gfile.Open(path, 'w') as output:
             output.write(contents)
 
-
     def read_file(self, path, mode='r'):
         with self.tf_proxy.io.gfile.Open(path, mode) as i:
             return i.read()
-
 
     def create_directory(self, path, remove_existing=False):
         # Create the directory if it doesn't exist.
@@ -335,3 +332,13 @@ class UtilsBase(object):
         elif remove_existing:
             self.tf_proxy.io.gfile.rmtree(path)
             self.tf_proxy.io.gfile.makedirs(path)
+
+    def optimize_graph(
+            self,
+            frozen_model_path,
+            input_ops,
+            output_ops,
+            input_types,
+            toco_compatible):
+        # Implemented by subclasses
+        raise NotImplementedError

@@ -2,6 +2,8 @@
 # standard imports
 import numpy as np
 import os
+import tensorflow as tf
+from tensorflow.python import ConfigProto, Session
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
@@ -12,6 +14,13 @@ from kerastuner.tuners import RandomSearch
 import signal
 import faulthandler
 faulthandler.register(signal.SIGUSR1)
+
+config = ConfigProto()
+config.gpu_options.allow_growth = True
+session = Session(config=config)
+tf.keras.backend.set_session(session)
+
+
 
 
 
@@ -55,4 +64,4 @@ hypermodel.search(x_train, y_train, validation_split=0.01)
 # Show the best models, their hyperparameters, and the resulting metrics.
 #hypermodel.display_result_summary()
 
-hypermodel.save_best_model(output_type="tf_frozen")
+hypermodel.save_best_model(output_type="keras_bundle")

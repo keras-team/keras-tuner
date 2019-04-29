@@ -1,3 +1,5 @@
+import gc
+import json
 import os
 import subprocess
 import sys
@@ -5,8 +7,10 @@ import sys
 import tensorflow as tf
 from tensorflow.io import gfile
 from tensorflow.python import ConfigProto, GraphDef, Session
+from tensorflow.keras.models import model_from_json, load_model
 
 from kerastuner.abstractions.tensorflow import proxy
+
 
 class GFileProxy_2_x(proxy.GFileProxy):
     """Proxies calls through to the appropriate tensorflow API."""
@@ -127,4 +131,36 @@ class Utils_2_x(proxy.UtilsBase):
 
         cfg = ConfigProto()
         cfg.gpu_options.allow_growth = True  # pylint: disable=no-member
-        tf.keras.backend.set_session( Session(config=cfg))
+        tf.keras.backend.set_session(Session(config=cfg))
+
+    def save_model(self, model, path, output_type="keras", tmp_path="/tmp/", **kwargs):
+        KNOWN_OUTPUT_TYPES = [
+            "keras",
+            "keras_bundle",
+
+            # Not yet supported for tf 2.0 - numerous issues with models using GPU, etc.
+            # "tf",
+            # "tf_frozen",
+            # "tf_optimized",
+            # "tf_lite"'
+        ]
+
+        # Convert PosixPath to string, if necessary.
+        path = str(path)
+        tmp_path = str(tmp_path)
+
+        if output_type == "keras":
+            self.save_keras_model(model, path, tmp_path)
+        elif output_type == "keras_bundle":
+            self.save_keras_bundle_model(model, path, tmp_path)
+        elif output_type == "tf":
+            self.save_savedmodel(model, path, tmp_path)
+        elif output_type == "tf_frozen":
+            self.save_frozenmodel(model, path, tmp_path)
+        elif output_type == "tf_optimized":
+            self.save_optimized_model(model, path, tmp_path)
+        elif output_type == "tf_lite":
+            self.save_tflite(model, path, tmp_path)
+        else:
+            raise ValueError("Output type '%s' not in known types '%s'" % (
+                output_type, str(KNOWN_OUTPUT_TYPES)))
