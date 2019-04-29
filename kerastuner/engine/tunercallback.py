@@ -15,7 +15,6 @@ from multiprocessing.pool import ThreadPool
 from kerastuner.abstractions.display import colorize, display_combined_table
 from kerastuner.abstractions.display import section, highlight, fatal, write_log
 from kerastuner.abstractions.host import Host
-from kerastuner.abstractions.io import save_model
 from kerastuner.abstractions.display import progress_bar
 import numpy as np
 

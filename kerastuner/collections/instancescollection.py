@@ -2,7 +2,8 @@ import json
 
 from .collections import Collection
 from kerastuner.abstractions.display import progress_bar, info
-from kerastuner.abstractions.io import read_file, glob
+from kerastuner.abstractions.tensorflow import TENSORFLOW as tf
+from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 
 
 class InstancesCollection(Collection):
@@ -39,12 +40,12 @@ class InstancesCollection(Collection):
         """
         count = 0
 
-        filenames = glob("%s*-results.json" % path)
+        filenames = tf.io.gfile.glob("%s*-results.json" % path)
 
         for fname in progress_bar(filenames, unit='instance',
                                       desc='Loading instances'):
 
-            data = json.loads(read_file(str(fname)))
+            data = json.loads(tf_utils.read_file(str(fname)))
 
             if 'tuner' not in 'data':
                 continue

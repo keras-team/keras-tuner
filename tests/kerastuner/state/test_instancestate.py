@@ -5,7 +5,8 @@ from tensorflow.keras.layers import Input, Dense  # nopep8 pylint: disable=impor
 from tensorflow.keras.models import Model  # pylint: disable=import-error
 
 from .common import is_serializable
-from kerastuner.abstractions.tf import compute_model_size
+
+from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 from kerastuner.engine.instance import Instance
 from kerastuner.states.instancestate import InstanceState
 
@@ -37,7 +38,7 @@ def test_summary(hparams, basic_model, capsys):
     state.summary()
     captured = capsys.readouterr()
     to_test = [
-        'model size: %s' % compute_model_size(basic_model),
+        'model size: %s' % tf_utils.compute_model_size(basic_model),
         'idx: %s' % idx,
     ]
     for s in to_test:

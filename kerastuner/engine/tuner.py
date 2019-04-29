@@ -15,17 +15,13 @@ import traceback
 
 # used to check if supplied model_fn is a valid model
 from tensorflow.keras.models import Model  # pylint: disable=import-error
-
-from kerastuner.abstractions.tf import clear_tf_session, compute_model_size
-from kerastuner.abstractions.io import create_directory, glob, read_file
-from kerastuner.abstractions.io import save_model, reload_model
-from kerastuner.abstractions.io import read_results
+from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 from kerastuner.abstractions.display import highlight, display_table, section
 from kerastuner.abstractions.display import display_setting, display_settings
 from kerastuner.abstractions.display import info, warning, fatal, set_log
 from kerastuner.abstractions.display import progress_bar, subsection
 from kerastuner.abstractions.display import colorize, colorize_default
-from kerastuner.abstractions.tensorflow import TENSORFLOW
+from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 from kerastuner.tools.summary import summary as result_summary  # FIXME: name
 from kerastuner import config
 from kerastuner.states import TunerState
@@ -137,7 +133,7 @@ class Tuner(object):
 
         while 1:
             # clean-up TF graph from previously stored (defunct) graph
-            clear_tf_session()
+            tf_utils.clear_tf_session()
             self.stats.generated_instances += 1
             fail_streak += 1
             try:
@@ -171,7 +167,7 @@ class Tuner(object):
                 continue
 
             # check size
-            nump = compute_model_size(model)
+            nump = tf_utils.compute_model_size(model)
             if nump > self.state.max_model_parameters:
                 over_sized_streak += 1
                 self.stats.over_sized_models += 1
@@ -211,8 +207,8 @@ class Tuner(object):
         h5_file = os.path.join(self.state.host.result_dir,
                                base_prefix + "-weights.h5")
 
-        model = reload_model(config_file, h5_file,
-                             results_file, compile=compile)
+        model = tf_utils.reload_model(config_file, h5_file,
+                                      results_file, compile=compile)
         return model
 
     def get_best_models(self, num_models=1, compile=False):
@@ -277,8 +273,8 @@ class Tuner(object):
             tmp_path = os.path.join(self.state.host.tmp_dir, export_prefix)
             info("Exporting top model (%d/%d) - %s" %
                  (idx + 1, len(models), export_path))
-            save_model(model, export_path, tmp_path=tmp_path,
-                       output_type=output_type)
+            tf_utils.save_model(model, export_path, tmp_path=tmp_path,
+                                output_type=output_type)
 
     def __compute_model_id(self, model):
         "compute model hash"

@@ -1,15 +1,12 @@
-
-
-from kerastuner.abstractions.io import save_model, read_file
-from kerastuner.abstractions.tensorflow import MAJOR_VERSION, MINOR_VERSION
-
-from kerastuner.abstractions.tensorflow import TENSORFLOW as tf
-from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
+import json
+import os
 
 import numpy as np
-import os
 import pytest
-import json
+
+from kerastuner.abstractions.tensorflow import MAJOR_VERSION, MINOR_VERSION
+from kerastuner.abstractions.tensorflow import TENSORFLOW as tf
+from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 
 K = tf.keras.backend
 
@@ -91,7 +88,8 @@ def test_save_keras_bundle(tmp_path, model, training_data):
     tmp_path = os.path.join(str(tmp_path), "model_output_tmp")
     x, y = training_data
 
-    save_model(model, save_path, tmp_path=tmp_path, output_type="keras_bundle")
+    tf_utils.save_model(
+        model, save_path, tmp_path=tmp_path, output_type="keras_bundle")
 
     loaded = tf.keras.models.load_model(save_path)
 
@@ -106,9 +104,9 @@ def test_save_keras(tmp_path, model, training_data):
     tmp_path = os.path.join(str(tmp_path), "model_output_tmp")
     x, y = training_data
 
-    save_model(model, save_path, tmp_path=tmp_path, output_type="keras")
+    tf_utils.save_model(model, save_path, tmp_path=tmp_path, output_type="keras")
 
-    config = read_file(save_path + "-config.json")
+    config = tf_utils.read_file(save_path + "-config.json")
 
     loaded = tf.keras.models.model_from_json(config)
     loaded.load_weights(save_path + "-weights.h5")
@@ -134,7 +132,7 @@ def test_save_tf(
     tmp_path = os.path.join(str(tmp_path), "model_output_tmp")
     x, y = training_data
 
-    save_model(model, save_path, tmp_path=tmp_path, output_type="tf")
+    tf_utils.save_model(model, save_path, tmp_path=tmp_path, output_type="tf")
 
     orig_out = model.predict(x)
 
@@ -178,7 +176,7 @@ def test_save_frozen(
 
     orig_out = model.predict(x)
 
-    save_model(model, save_path, tmp_path=tmp_path, output_type="tf_frozen")
+    tf_utils.save_model(model, save_path, tmp_path=tmp_path, output_type="tf_frozen")
 
     tf.keras.backend.clear_session()
 
@@ -187,7 +185,7 @@ def test_save_frozen(
     with sess.as_default() as default_sess:
         with sess.graph.as_default() as default_graph:
             graph_def = tf.python.GraphDef()
-            graph_def.ParseFromString(read_file(save_path, "rb"))
+            graph_def.ParseFromString(tf_utils.read_file(save_path, "rb"))
             tf.import_graph_def(
                 graph_def, name="", return_elements=None)
 
@@ -209,7 +207,7 @@ def test_save_optimized(
     x, y = training_data
     orig_out = model.predict(x)
 
-    save_model(
+    tf_utils.save_model(
         model,
         save_path,
         tmp_path=tmp_save_path,
@@ -221,7 +219,8 @@ def test_save_optimized(
         with sess.graph.as_default() as default_graph:
             graph_def = tf.python.GraphDef()
             graph_def.ParseFromString(
-                read_file(os.path.join(save_path, "optimized_graph.pb"), "rb"))
+                tf_utils.read_file(os.path.join(
+                    save_path, "optimized_graph.pb"), "rb"))
             tf.import_graph_def(
                 graph_def, name="", return_elements=None)
 
@@ -251,7 +250,7 @@ def test_save_tf_lite(
     x, y = training_data
     orig_out = model.predict(x)
 
-    save_model(model, save_path, tmp_path=tmp_path, output_type="tf_lite")
+    tf_utils.save_model(model, save_path, tmp_path=tmp_path, output_type="tf_lite")
 
     with tf.python.Session().as_default() as sess:
         with tf.Graph().as_default() as _:

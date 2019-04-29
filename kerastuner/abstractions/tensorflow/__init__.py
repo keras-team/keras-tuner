@@ -12,30 +12,32 @@ FATAL: Unsupported tensorflow version: '%s'.  Kerastuner currently
 supports Tensorflow 2.0.x and Tensorflow 1.y (y >=1.12)
 """ % tensorflow.__version__
 
-
-def get_tensorflow():
+def get():
     if MAJOR_VERSION == 2:
         from . import tensorflow_2_x as proxy
-        return proxy.Tensorflow_2_x()
+        tf = proxy.Tensorflow_2_x()
+        return tf, proxy.Utils_2_x(tf)
     elif MAJOR_VERSION == 1:
-      from . import tensorflow_1_x as proxy
-      return proxy.Tensorflow_1_x()
+        from . import tensorflow_1_x as proxy
+        tf = proxy.Tensorflow_1_x()
+        return tf, proxy.Utils_1_x(tf)
 
     print(__UNSUPPORTED_VERSION_MSG)
     exit(1)
 
 
-def get_utils():
-    if MAJOR_VERSION == 2:
-        from . import utils_2_x as utils
-        return utils.Utils_2_x()
-    elif MAJOR_VERSION == 1:
-        from . import utils_1_x as utils
-        return utils.Utils_1_x()
-
-    print(__UNSUPPORTED_VERSION_MSG)
-    exit(1)
+_results = get()
+TENSORFLOW = _results[0]
+TENSORFLOW_UTILS = _results[1]
 
 
-TENSORFLOW = get_tensorflow()
-TENSORFLOW_UTILS = get_utils()
+save_model = TENSORFLOW_UTILS.save_model
+reload_model = TENSORFLOW_UTILS.reload_model
+
+Open = TENSORFLOW.io.gfile.Open
+makedirs = TENSORFLOW.io.gfile.makedirs
+exists = TENSORFLOW.io.gfile.exists
+rmtree = TENSORFLOW.io.gfile.rmtree
+glob = TENSORFLOW.io.gfile.glob
+remove = TENSORFLOW.io.gfile.remove
+copy = TENSORFLOW.io.gfile.copy

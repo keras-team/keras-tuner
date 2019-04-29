@@ -8,7 +8,7 @@ from kerastuner import config
 from .tunercallback import TunerCallback
 from kerastuner.collections import MetricsCollection
 from kerastuner.abstractions.display import write_log, fatal
-from kerastuner.abstractions.io import save_model, write_file
+from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 
 
 class MonitorCallback(TunerCallback):
@@ -97,7 +97,7 @@ class MonitorCallback(TunerCallback):
         base_filename = prefix
         write_log("Saving model to %s" % base_filename)
         try:
-            save_model(self.model, base_filename, output_type="keras")
+            tf_utils.save_model(self.model, base_filename, output_type="keras")
             write_log("Improved model saved to %s" % base_filename)
         except:
             print("FAILED")
@@ -119,7 +119,7 @@ class MonitorCallback(TunerCallback):
         prefix = self._get_filename_prefix(with_execution_info=False)
         # don't do a os.join as it is just appending a suffix
         fname = prefix + '-results.json'
-        write_file(fname, status_json)
+        tf_utils.write_file(fname, status_json)
 
         # send result to the cloud service
         if self.cloudservice.is_enable:

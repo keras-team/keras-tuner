@@ -7,7 +7,7 @@ from termcolor import cprint
 from pathlib import Path
 from pprint import pprint
 from collections import defaultdict
-from kerastuner.abstractions.io import create_directory
+from kerastuner.abstractions.tensorflow import TENSORFLOW as tf
 
 
 #which fields (and their sub_fields) to collect out of the result file
@@ -57,7 +57,7 @@ def clean_result(results):
 
 args = parse_args()
 
-create_directory(args.output_dir)
+tf.io.gfile.makedirs(args.output_dir)
 output_dir = Path(args.output_dir)
 
 input_dir = Path(args.input_dir)
