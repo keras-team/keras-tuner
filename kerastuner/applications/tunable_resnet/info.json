@@ -1,0 +1,13 @@
+{
+    "name": "Tunable Resnet",
+    "target": "images",
+    "description": "Hypertunable version of Resnet",
+    "version": "0.0.0.1",
+    "reference": "http://comingsoon",
+    "authors": [
+        "Luca Invernizzi",
+        "Elie Bursztein"
+    ],
+    "contact": "kerastuner@google.com",
+    "comments": ""
+}

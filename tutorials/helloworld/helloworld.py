@@ -47,7 +47,7 @@ def model_fn():
 
 
 # train 2 models over  5 epochs
-hypermodel = RandomSearch(model_fn, 'acc', epoch_budget=10, max_epochs=5)
+hypermodel = RandomSearch(model_fn, objective='binary_accuracy', epoch_budget=10, max_epochs=5)
 hypermodel.summary()
 if api_key:
     hypermodel.enable_cloud(

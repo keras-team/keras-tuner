@@ -63,9 +63,11 @@ class CloudService():
         self.last_update = -1
         self.executor = concurrent.futures.ProcessPoolExecutor()
 
-    def enable(self, api_key):
+    def enable(self, api_key, url=None):
         """enable cloud service by setting API key"""
         self.api_key = api_key
+        if url:
+          self.base_url = url
         if self._check_access():
             info("Cloud service enabled - Go to https://.. to track your\
                  tuning results in realtime")
