@@ -108,7 +108,7 @@ class Instance(object):
                     self.state.agg_metrics.add(Metric(val_loss, 'min'))
 
             # mark objective
-            self.state.agg_metrics.set_objective(self.tuner_state.objective)
+            self.state.set_objective(self.tuner_state.objective)
             self.metrics_config = self.state.agg_metrics.to_config()
 
             # init tuner global metric if needed (first training)

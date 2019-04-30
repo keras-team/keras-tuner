@@ -60,7 +60,10 @@ class Collection(object):
 
     def get_last(self):
         "Returns the last inserted object"
-        return self._objects[self._last_insert_idx]
+        if self._last_insert_idx:
+            return self._objects[self._last_insert_idx]
+        else:
+            return None
 
     def to_dict(self):
         "Returns collection as a dict"

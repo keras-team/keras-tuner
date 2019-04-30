@@ -47,7 +47,7 @@ def model_fn():
 
 
 # train 2 models over  5 epochs
-hypermodel = RandomSearch(model_fn, objective='accuracy', epoch_budget=4,
+hypermodel = RandomSearch(model_fn, objective='val_acc', epoch_budget=4,
                           max_epochs=2)
 hypermodel.summary()
 if api_key:

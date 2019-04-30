@@ -1,13 +1,15 @@
 import time
 import json
 import tensorflow as tf
+from tensorflow.keras.models import model_from_json  # nopep8 pylint: disable=import-error
 from copy import deepcopy
 from collections import defaultdict
 
 from .state import State
 from kerastuner import config
+from kerastuner.collections.metriccollection import MetricsCollection
 from kerastuner.abstractions.tf import compute_model_size
-from kerastuner.abstractions.io import serialize_loss
+from kerastuner.abstractions.io import serialize_loss, deserialize_loss
 from kerastuner.abstractions.display import display_table, section, subsection
 from kerastuner.abstractions.display import display_setting, display_settings
 from kerastuner.abstractions.display import colorize, colorize_row
@@ -15,6 +17,11 @@ from kerastuner.abstractions.display import colorize, colorize_row
 
 class InstanceState(State):
     # FIXME documentations
+
+    _ATTRS = ['start_time', 'idx', 'training_size', 'validation_size',
+              'batch_size', 'model_size', 'optimizer_config', 'loss_config',
+              'model_config', 'hyper_parameters', 'is_best_model',
+              'objective']
 
     def __init__(self, idx, model, hyper_parameters):
         super(InstanceState, self).__init__()
@@ -37,6 +44,12 @@ class InstanceState(State):
         self.hyper_parameters = deepcopy(hyper_parameters)
         self.agg_metrics = None
         self.is_best_model = False
+        self.objective = None  # needed by tools that only have this state
+
+    def set_objective(self, name):
+        "Set tuning objective"
+        self.agg_metrics.set_objective(name)
+        self.objective = name
 
     def summary(self, extended=False):
         subsection('Training parameters')
@@ -68,12 +81,23 @@ class InstanceState(State):
         display_table(rows)
 
     def to_config(self):
-        attrs = ['start_time', 'idx', 'training_size', 'validation_size',
-                 'batch_size', 'model_size', 'optimizer_config', 'loss_config',
-                 'model_config', 'hyper_parameters', 'is_best_model']
-        config = self._config_from_attrs(attrs)
+        config = self._config_from_attrs(self._ATTRS)
         config['executions'] = self.execution_configs
         config['hyper_parameters'] = self.hyper_parameters
         if self.agg_metrics:
             config['aggregate_metrics'] = self.agg_metrics.to_config()
         return config
+
+    @staticmethod
+    def from_config(config):
+        idx = config['idx']
+        model = model_from_json(json.dumps(config['model_config']))
+        model.loss = deserialize_loss(config['loss_config'])
+        model.optimizer = tf.keras.optimizers.deserialize(config['optimizer_config'])  # nopep8
+        hyper_parameters = config['hyper_parameters']
+        state = InstanceState(idx, model, hyper_parameters)
+        for attr in InstanceState._ATTRS:
+            setattr(state, attr, config[attr])
+        state.execution_configs = config['executions']
+        state.agg_metrics = MetricsCollection.from_config(config['aggregate_metrics'])  # nopep8
+        return state

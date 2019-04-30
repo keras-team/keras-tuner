@@ -162,8 +162,8 @@ class TunerState(State):
         # computing remaining time
         self._compute_eta()
 
-        attrs = ['name', 'start_time', 'remaining_budget', 'keras_function',
-                 'eta']
+        attrs = ['name', 'objective', 'start_time', 'remaining_budget',
+                 'keras_function', 'eta']
         config = self._config_from_attrs(attrs)
 
         # collect user params

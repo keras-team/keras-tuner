@@ -8,6 +8,7 @@ from .common import is_serializable
 from kerastuner.abstractions.tf import compute_model_size
 from kerastuner.engine.instance import Instance
 from kerastuner.states.instancestate import InstanceState
+from kerastuner.collections.metriccollection import MetricsCollection
 
 
 @pytest.fixture(scope='class')
@@ -30,6 +31,17 @@ def test_is_serializable(hparams, basic_model):
     state = InstanceState('3713', basic_model, hparams)
     is_serializable(state)
 
+
+def test_from_config(hparams, basic_model):
+    state = InstanceState('3713', basic_model, hparams)
+    state.agg_metrics = MetricsCollection()
+    state.agg_metrics.add('acc')
+    state.agg_metrics.update('acc', 11)
+    config = state.to_config()
+    state2 = InstanceState.from_config(config)
+    assert state2.objective == state.objective
+    for k in config.keys():
+        assert config[k] == config[k]
 
 def test_summary(hparams, basic_model, capsys):
     idx = '3713'
