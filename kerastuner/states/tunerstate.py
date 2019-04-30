@@ -8,7 +8,7 @@ from .state import State
 from .dummystate import DummyState
 from .tunerstatsstate import TunerStatsState
 from .hoststate import HostState
-from kerastuner.collections import MetricsCollection
+from kerastuner.collections.metriccollection import MetricsCollection
 from kerastuner.abstractions.display import fatal, set_log, section, subsection
 from kerastuner.abstractions.display import display_settings, colorize
 from kerastuner.abstractions.display import display_table, warning

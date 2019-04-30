@@ -58,7 +58,7 @@ if api_key:
 hypermodel.search(x_train, y_train, validation_split=0.01)
 
 # Show the best models, their hyperparameters, and the resulting metrics.
-#hypermodel.display_result_summary()
+hypermodel.results_summary()
 
 # Export the top 2 models, in tensorflow format.
 #hypermodel.export_best_models(

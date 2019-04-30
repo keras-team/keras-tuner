@@ -24,8 +24,11 @@ def test_loading(data_path):
     col = InstancesCollection()
     count = col.load_from_dir(data_path)
     assert count == 2
+
+
+def test_loading_objective_canonicalization(col):
     instance = col.get_last()
-    assert instance.objective == 'val_acc'
+    assert instance.objective == 'val_accuracy'
 
 
 def test_sort_by_metrics(col):

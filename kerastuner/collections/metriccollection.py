@@ -83,6 +83,10 @@ class MetricsCollection(Collection):
             return self._objects[metric_name]
         return None
 
+    def get_metric_names(self):
+        "return the list of metric names"
+        return sorted(self._objects.keys())
+
     def _replace_alias(self, metric_name):
         "replace metric alias with their canonical name"
         no_val_name = metric_name.replace('val_', '')

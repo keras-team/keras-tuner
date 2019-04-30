@@ -100,4 +100,9 @@ class InstanceState(State):
             setattr(state, attr, config[attr])
         state.execution_configs = config['executions']
         state.agg_metrics = MetricsCollection.from_config(config['aggregate_metrics'])  # nopep8
+
+        # !canonicalize objective name
+        m = state.agg_metrics.get(state.objective)
+        state.objective = m.name
+
         return state

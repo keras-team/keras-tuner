@@ -25,7 +25,7 @@ from kerastuner.abstractions.display import display_setting, display_settings
 from kerastuner.abstractions.display import info, warning, fatal, set_log
 from kerastuner.abstractions.display import progress_bar, subsection
 from kerastuner.abstractions.display import colorize, colorize_default
-from kerastuner.tools.summary import summary as result_summary  # FIXME: name
+from kerastuner.tools.summary import results_summary as _results_summary
 from kerastuner import config
 from kerastuner.states import TunerState
 from .cloudservice import CloudService
@@ -273,15 +273,11 @@ class Tuner(object):
         s = str(model.get_config())
         return hashlib.sha256(s.encode('utf-8')).hexdigest()[:32]
 
-    def display_result_summary(self, metric='loss', direction='min'):
-        # TODO: refactor
-        # result_summary(
-            # self.meta_data["server"]["local_dir"],
-            # self.meta_data["project"],
-        #    metric,
-        #    direction=direction
-        # )
-        pass
+    def results_summary(self, num_models=10, sort_metric=None):
+        _results_summary(input_dir=self.state.host.result_dir,
+                        project=self.state.project,
+                        architecture=self.state.architecture,
+                        num_models=10, sort_metric=sort_metric)
 
     @abstractmethod
     def tune(self, x, y, **kwargs):

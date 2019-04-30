@@ -28,7 +28,7 @@ class InstancesCollection(Collection):
 
         # checking if metric exist and getting its direction
         instance = self.get_last()
-        #!don't use _objects directly use get() instead who do canonicalization
+        # !don't use _objects -> use get() instead due to canonicalization
         metric = instance.agg_metrics.get(metric_name)
         if not metric:
             warning('Metric %s not found' % metric_name)
@@ -53,14 +53,20 @@ class InstancesCollection(Collection):
 
         return sorted_instances
 
-    def load_from_dir(self, path, project='default', architecture='default'):
+    def load_from_dir(self, path, project='default', architecture=None,
+                      verbose=1):
         """Load instance collection from disk or bucket
 
         Args:
-            path (str): local path or bucket path where instance are stored
-            project (str, optional): tuning project name. Defaults to default.
-            architecture (str, optional): tuning architecture name.
+            path (str): Local path or bucket path where instance results
+            are stored
+
+            project (str, optional): Tuning project name. Defaults to default.
+
+            architecture (str, optional): Tuning architecture name.
             Defaults to None.
+
+            verbose (int, optional): Verbose output? Default to 1.
 
         Returns:
             int: number of instances loaded
@@ -68,7 +74,8 @@ class InstancesCollection(Collection):
         count = 0
         filenames = glob("%s*-results.json" % path)
 
-        for fname in progress_bar(filenames, unit='instance', desc='Loading'):
+        for fname in progress_bar(filenames, unit='instance',
+                                  desc='Loading tuning results'):
 
             config = json.loads(read_file(str(fname)))
 
@@ -81,13 +88,21 @@ class InstancesCollection(Collection):
                 continue
 
             # check instance belongs to the right project / architecture
-            if (architecture == config['tuner']['architecture'] and
-                project == config['tuner']['project']):  # nopep8
-                    idx = config['instance']['idx']
-                    instance = InstanceState.from_config(config['instance'])
-                    self._objects[idx] = instance
-                    self._last_insert_idx = idx
-                    count += 1
+            if (project != config['tuner']['project']):
+                continue
 
-        info("%s previous instances reloaded" % count)
+            # Allowing architecture to be None allows to reload models from
+            # various architecture for retrain, summary and export purpose
+            if (architecture and architecture != config['tuner']['architecture']):  # nopep8
+                continue
+
+            idx = config['instance']['idx']
+            instance = InstanceState.from_config(config['instance'])
+            self._objects[idx] = instance
+            self._last_insert_idx = idx
+            count += 1
+
+        if verbose:
+            info("%s previous instances reloaded" % count)
+
         return count

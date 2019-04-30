@@ -3,7 +3,7 @@ from __future__ import absolute_import
 from time import time
 
 from .state import State
-from kerastuner.collections import MetricsCollection
+from kerastuner.collections.metriccollection import MetricsCollection
 from kerastuner.abstractions.display import fatal, subsection, display_settings
 
 
