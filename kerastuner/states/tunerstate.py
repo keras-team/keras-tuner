@@ -36,7 +36,7 @@ class TunerState(State):
         Defaults to 'default'.
 
         architecture (str, optional): Name of the architecture tuned.
-        Default to timestamp.
+        Default to 'default'.
 
         user_info(dict, optional): user supplied information that will be
         recorded alongside training data. Defaults to {}.
@@ -91,8 +91,9 @@ class TunerState(State):
         self.remaining_budget = self.epoch_budget
 
         # user info
+        # !don't use random identifiers -- it makes reloading impossible
         self.project = self._register('project', 'default')
-        self.architecture = self._register('architecture', str(int(time())))
+        self.architecture = self._register('architecture', 'default')
         self.user_info = self._register('user_info', {})
 
         # execution
