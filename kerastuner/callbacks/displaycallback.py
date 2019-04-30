@@ -82,7 +82,6 @@ class DisplayCallback(TunerCallback):
                       (self.tuner_state.remaining_budget,
                        self.tuner_state.epoch_budget))
 
-
     def on_epoch_begin(self, epoch, logs={}):
         # reset counters
         self.epoch_history = defaultdict(list)

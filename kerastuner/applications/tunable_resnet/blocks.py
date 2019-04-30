@@ -176,15 +176,20 @@ def block3(x, filters, kernel_size=3, stride=1, groups=32,
     x = layers.Reshape(x_shape + (groups, c, c))(x)
     output_shape = x_shape + (groups,
                               c) if backend.backend() == 'theano' else None
+
     x = layers.Lambda(lambda x: sum([x[:, :, :, :, i] for i in range(c)]),
                       output_shape=output_shape, name=name + '_2_reduce')(x)
+
     x = layers.Reshape(x_shape + (filters,))(x)
+
     x = layers.BatchNormalization(axis=bn_axis, epsilon=1.001e-5,
                                   name=name + '_2_bn')(x)
+
     x = layers.Activation('relu', name=name + '_2_relu')(x)
 
-    x = layers.Conv2D((64 // groups) * filters, 1,
-                      use_bias=False, name=name + '_3_conv')(x)
+    x = layers.Conv2D((64 // groups) * filters, 1, use_bias=False,
+                      name=name + '_3_conv')(x)
+
     x = layers.BatchNormalization(axis=bn_axis, epsilon=1.001e-5,
                                   name=name + '_3_bn')(x)
 
@@ -205,13 +210,9 @@ def stack3(x, filters, blocks, stride1=2, groups=32, name=None):
     # Returns
         Output tensor for the stacked blocks.
     """
-    x = block3(
-        x,
-        filters,
-        stride=stride1,
-        groups=groups,
-        name=name +
-        '_block1')
+    x = block3(x, filters, stride=stride1, groups=groups,
+               name=name + '_block1')
+
     for i in range(2, blocks + 1):
         x = block3(x, filters, groups=groups, conv_shortcut=False,
                    name=name + '_block' + str(i))
