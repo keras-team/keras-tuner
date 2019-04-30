@@ -1,7 +1,13 @@
 import pytest
 
 from kerastuner.distributions import Fixed, Boolean, Choice, Range
-from kerastuner.distributions import Linear, Logarithmic
+from kerastuner.distributions import Linear, Logarithmic, reset_distributions
+
+
+def test_clear_distributions():
+    Fixed('test_dup_succeed', 3)
+    reset_distributions()
+    Fixed('test_dup_succeed', 3)
 
 
 def test_duplicate_error():

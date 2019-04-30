@@ -5,6 +5,11 @@ from kerastuner import config
 config._DISTRIBUTIONS = DummyDistributions()
 
 
+def reset_distributions():
+  """Reset the _DISTRIBUTIONS global object to the default."""
+  config._DISTRIBUTIONS = DummyDistributions()
+
+
 def Fixed(name, value, group="default"):
     """Return a fixed selected value
     Args:
