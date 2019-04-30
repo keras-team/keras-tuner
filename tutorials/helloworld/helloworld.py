@@ -1,68 +1,64 @@
-# standard imports
-import numpy as np
+"Keras Tuner hello world sequential hello world"
 import os
+import numpy as np
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
 
-# hypertune imports
+# Function used to specify hyper-parameters.
 from kerastuner.distributions import Range, Choice, Boolean, Fixed
+
+# Tuner used to search for the best model. Changing hypertuning algorithm
+# simply requires to change the tuner class used.
 from kerastuner.tuners import RandomSearch
 
-# Random data to feed the model to show how easy it is to use KerasTuner
+# Random data to feed the model.
 x_train = np.random.random((10000, 200))
 y_train = np.random.randint(2, size=(10000, 1))
 
-# You can use http://keras-tuner.appspot.com to track results on the web, and
-# get notifications. To do so, grab an API key on that site, and fill it here.
-api_key = ''
-
 
 def model_fn():
-    # Input layer
-    IL_UNITS = Range('dims', 16, 32, 2, group='inputs')
+    "Model with hyper-parameters"
 
-    # Hidden layer
-    L2_UNITS = Range('dims', 16, 32, 2, group="hidden_layers")
-    L2_ACTIVATION = Choice(
-        'activation', ['relu', 'tanh'], group="hidden_layers")
-    L2_OPTIONAL = Boolean('2nd hidden layer', group="hidden_layers")
-
-    # Last layer
-    LL_UNITS = Fixed('dims', 1, group="output")
-    LL_ACTIVATION = Choice('activation', ['sigmoid', 'tanh'], group="output")
+    # layers
+    DIMS = Range('dims', 16, 32, 2, group='layers')
+    ACTIVATION = Choice('activation', ['relu', 'tanh'], group="layers")
+    EXTRA_LAYER = Boolean('extra_layer', group="layers")
 
     # Compile options
     LOSS = Choice('loss', ['binary_crossentropy', 'mse'], group="optimizer")
+    LR = Choice('lr', [0.01, 0.001, 0.0001], group="optimizer")
 
     model = Sequential()
-    model.add(Dense(IL_UNITS, input_shape=(200,)))
-    model.add(Dense(L2_UNITS, activation=L2_ACTIVATION))
-    if L2_OPTIONAL:
-        model.add(Dense(L2_UNITS, activation=L2_ACTIVATION))
-    model.add(Dense(LL_UNITS, activation=LL_ACTIVATION))
-    optimizer = Adam(lr=0.001)
+    model.add(Dense(DIMS, input_shape=(200,)))
+    model.add(Dense(DIMS, activation=ACTIVATION))
+    if EXTRA_LAYER:
+        model.add(Dense(DIMS, activation=ACTIVATION))
+    model.add(Dense(1, activation='sigmoid'))
+    optimizer = Adam(lr=LR)
     model.compile(optimizer=optimizer, loss=LOSS, metrics=['accuracy'])
     return model
 
 
-# train 2 models over  5 epochs
-hypermodel = RandomSearch(model_fn, objective='val_acc', epoch_budget=4,
-                          max_epochs=2)
-hypermodel.summary()
-if api_key:
-    hypermodel.enable_cloud(
-        api_key=api_key,
-        # url='http://localhost:5000/api/'
-    )
-hypermodel.search(x_train, y_train, validation_split=0.01)
+# Initialize the hypertuner by passing the model function (model_fn)
+# and specifying key search constraints: maximize val_acc (objective),
+# spend 9 epochs doing the search, spend at most 3 epoch on each model.
+tuner = RandomSearch(model_fn, objective='val_acc', epoch_budget=9,
+                     max_epochs=3)
+
+# display search overview
+tuner.summary()
+
+# You can use http://keras-tuner.appspot.com to track results on the web, and
+# get notifications. To do so, grab an API key on that site, and fill it here.
+# tuner.enable_cloud(api_key=api_key)
+
+# Perform the model search. The search function has the same prototype than
+# keras.Model.fit(). Similarly search_generator() mirror search_generator().
+tuner.search(x_train, y_train, validation_split=0.01)
 
 # Show the best models, their hyperparameters, and the resulting metrics.
-hypermodel.results_summary()
+tuner.results_summary()
 
 # Export the top 2 models, in tensorflow format.
-#hypermodel.export_best_models(
-#    metric="val_loss",
-#    direction="asc",
-#    output_type="tf_optimized",
-#    num_models=2)
+# tuner.export_best_models(output_type="tf_optimized", num_models=2)
