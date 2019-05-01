@@ -12,6 +12,7 @@ FATAL: Unsupported tensorflow version: '%s'.  Kerastuner currently
 supports Tensorflow 2.0.x and Tensorflow 1.y (y >=1.12)
 """ % tensorflow.__version__
 
+
 def get():
     if MAJOR_VERSION == 2:
         from . import tensorflow_2_x as proxy
@@ -29,15 +30,3 @@ def get():
 _results = get()
 TENSORFLOW = _results[0]
 TENSORFLOW_UTILS = _results[1]
-
-
-save_model = TENSORFLOW_UTILS.save_model
-reload_model = TENSORFLOW_UTILS.reload_model
-
-Open = TENSORFLOW.io.gfile.Open
-makedirs = TENSORFLOW.io.gfile.makedirs
-exists = TENSORFLOW.io.gfile.exists
-rmtree = TENSORFLOW.io.gfile.rmtree
-glob = TENSORFLOW.io.gfile.glob
-remove = TENSORFLOW.io.gfile.remove
-copy = TENSORFLOW.io.gfile.copy

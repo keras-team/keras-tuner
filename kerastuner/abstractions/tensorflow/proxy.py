@@ -156,7 +156,12 @@ class UtilsBase(object):
         process = subprocess.Popen(command)
         process.wait()
 
-    def reload_model(self, config_file, weights_file, results_file, compile=False):
+    def reload_model(
+            self,
+            config_file,
+            weights_file,
+            results_file,
+            compile=False):
         """ Reconstructs a model from the persisted files.
 
         Args:

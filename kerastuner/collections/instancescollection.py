@@ -74,7 +74,7 @@ class InstancesCollection(Collection):
         """
         count = 0
 
-        filenames = glob("%s*-results.json" % path)
+        filenames = glob("%s/*-results.json" % path)
 
         for fname in progress_bar(filenames, unit='instance',
                                   desc='Loading tuning results'):

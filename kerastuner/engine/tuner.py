@@ -28,6 +28,7 @@ from kerastuner.states import TunerState
 from .cloudservice import CloudService
 from .instance import Instance
 from kerastuner.collections import InstancesCollection
+from kerastuner.abstractions.io import reload_model
 
 
 class Tuner(object):
@@ -188,51 +189,46 @@ class Tuner(object):
         self.instances.add(idx, instance)
         return instance
 
-    def get_best_model(self, **kwargs):
+    def get_best_model(self, metric="loss", direction="min"):
         instances, executions, models = self.get_best_models(
-            num_models=1, **kwargs)
+            metric=metric, direction=direction, num_models=1)
         return instances[0], executions[0], models[0]
 
-    def get_model(self, instance, execution, compile=False):
-        # TODO - this needs to go somewhere common. It's used here and in monitorcallback
-        base_prefix = "%s-%s-%s" % (self.state.project,
-                                    self.state.architecture, instance.state.idx)
-
-        results_file = os.path.join(
-            self.state.host.result_dir, base_prefix + "-results.json")
-
-        base_prefix = "%s-%s" % (base_prefix, execution.state.idx)
-
-        config_file = os.path.join(
-            self.state.host.result_dir, base_prefix + "-config.json")
-        h5_file = os.path.join(self.state.host.result_dir,
-                               base_prefix + "-weights.h5")
-
-        model = tf_utils.reload_model(config_file, h5_file,
-                                      results_file, compile=compile)
-        return model
-
     def get_best_models(self, num_models=1, compile=False):
-        objective = self.state.agg_metrics.get_objective()
+        """Returns the best models, as determined by the tuner's objective.
 
-        instances = self.instances.get_best_instances(
-            objective,
-            N=num_models)
+        Args:
+            num_models (int, optional): Number of best models to return.
+                Models will be returned in sorted order. Defaults to 1.
+            compile (bool, optional): If True, infer the loss and optimizer,
+                and compile the returned models. Defaults to False.
+
+        Returns:
+            tuple: Tuple containing a list of Instances, a list of Execution,
+                and a list of Models, where the Nth Instance and Nth Execution
+                correspond to the Nth Model.
+        """
+        sorted_instances = self.instances.sort_by_objective()
+        if len(sorted_instances) > num_models:
+            sorted_instances = sorted_instances[:num_models]
+
+        executions = []
+        for instance in sorted_instances:
+            executions.append(instance.get_best_executions())
 
         models = []
-        executions = []
-        for instance in instances:
-            best_execution = instance.executions.get_best_executions(
-                objective, N=1)
-            best_execution = best_execution[0]
-            model = self.get_model(instance, best_execution, compile=compile)
-            models.append(model)
-            executions.append(best_execution)
+        for instance, execution in zip(sorted_instances, executions):
+            model = reload_model(
+                self.state,
+                instance,
+                execution,
+                compile=False)
 
-        return instances, executions, models
+        return sorted_instances, executions, models
 
-    def save_best_model(self, **kwargs):
-        return self.save_best_models(num_models=1, **kwargs)
+    def save_best_model(self, output_type="keras"):
+        """Shortcut for save_best_models for the case of only keeping the best model."""
+        return self.save_best_models(output_type="keras", num_models=1)
 
     def save_best_models(self, output_type="keras", num_models=1):
         """ Exports the best model based on the specified metric, to the
@@ -242,10 +238,13 @@ class Tuner(object):
                 output_type (str, optional): Defaults to "keras". What format
                     of model to export:
 
+                    # Tensorflow 1.x/2.x
                     "keras" - Save as separate config (JSON) and weights (HDF5)
                         files.
                     "keras_bundle" - Saved in Keras's native format (HDF5), via
                         save_model()
+
+                    # Currently only supported in Tensorflow 1.x
                     "tf" - Saved in tensorflow's SavedModel format. See:
                         https://www.tensorflow.org/alpha/guide/saved_model
                     "tf_frozen" - A SavedModel, where the weights are stored
@@ -263,7 +262,8 @@ class Tuner(object):
         instances, executions, models = self.get_best_models(
             num_models=num_models, compile=False)
 
-        for idx, (model, instance, execution) in enumerate(zip(models, instances, executions)):
+        for idx, (model, instance, execution) in enumerate(
+                zip(models, instances, executions)):
             export_prefix = "%s-%s-%s-%s" % (
                 self.state.project,
                 self.state.architecture,

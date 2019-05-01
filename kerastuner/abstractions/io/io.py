@@ -1,4 +1,5 @@
 from kerastuner.abstractions.tensorflow import TENSORFLOW as tf
+from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 
 
 def Open(name, mode):
@@ -141,3 +142,83 @@ def create_directory(path, remove_existing=False):
     elif remove_existing:
         tf.io.gfile.rmtree(path)
         tf.io.gfile.makedirs(path)
+
+
+def get_config_filename(tuner_state, instance, execution):
+    """ Get the filename containing the model configuration for the given instance/execution.
+
+    Args:
+      tuner_state: TunerState, state of the tuner.
+      instance: Instance, the instance for which we are getting the configuration.
+      execution: Execution, the execution for which we are getting the configuration.
+
+    Returns:
+      str, the file which holds the model configuration.
+    """
+    results_dir = tuner_state.host.result_dir
+    project = tuner_state.project
+    architecture = tuner_state.architecture
+    instance_id = instance.state.idx
+    execution_id = execution.state.idx
+
+    return "%s-%s-%s-%s-config.json" % (
+        project, architecture, instance_id, execution_id)
+
+
+def get_weights_filename(tuner_state, instance, execution):
+    """ Get the filename containing the model weights for the given instance/execution.
+
+    Args:
+      tuner_state: TunerState, state of the tuner.
+      instance: Instance, the instance for which we are getting the weights.
+      execution: Execution, the execution for which we are getting the weights.
+
+    Returns:
+      str, the file which holds the model configuration.
+    """
+    results_dir = tuner_state.host.result_dir
+    project = tuner_state.project
+    architecture = tuner_state.architecture
+    instance_id = instance.state.idx
+    execution_id = execution.state.idx
+
+    return "%s-%s-%s-%s-weights.h5" % (
+        project, architecture, instance_id, execution_id)
+
+
+def get_results_filename(tuner_state, instance):
+    """ Get the filename containing the results metadata for the given instance.
+
+    Args:
+      tuner_state: TunerState, state of the tuner.
+      instance: Instance, the instance for which we are getting the weights.
+
+    Returns:
+      str, the file which holds the model configuration.
+    """
+    results_dir = tuner_state.host.result_dir
+    project = tuner_state.project
+    architecture = tuner_state.architecture
+    instance_id = instance.state.idx
+
+    return "%s-%s-%s-results.json" % (project, architecture, instance_id)
+
+
+def reload_model(tuner_state, instance, execution, compile=False):
+    """Reload the model for the given instance and execution.
+
+    Args:
+        tuner_state: TunerState, the state of the tuner. 
+        instance: Instance, the instance to reload.
+        execution (Execution): Execution, the execution to reload.
+        compile (bool, optional): If True, attempt to infer the optimizer
+          and loss, and compile the resulting model. Defaults to False.
+
+    Returns:
+        tf.keras.models.Model, the reloaded model.
+    """
+    config = get_config_filename(tuner_state, instance, execution)
+    weights = get_weights_filename(tuner_state, instance, execution)
+    results = get_results_filename(tuner_state, instance, execution)
+
+    return tf_utils.reload_model(config, weights, results, compile=compile)
