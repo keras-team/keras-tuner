@@ -104,7 +104,8 @@ def test_save_keras(tmp_path, model, training_data):
     tmp_path = os.path.join(str(tmp_path), "model_output_tmp")
     x, y = training_data
 
-    tf_utils.save_model(model, save_path, tmp_path=tmp_path, output_type="keras")
+    tf_utils.save_model(model, save_path, tmp_path=tmp_path,
+                        output_type="keras")
 
     config = tf_utils.read_file(save_path + "-config.json")
 
@@ -130,7 +131,7 @@ def test_save_tf(
 
     # Not currently supported for tf2.0
     if MAJOR_VERSION == 2:
-      return
+        return
 
     save_path = os.path.join(str(tmp_path), "model_output")
     tmp_path = os.path.join(str(tmp_path), "model_output_tmp")
@@ -176,7 +177,7 @@ def test_save_frozen(
         output_names):
     # Not currently supported for tf2.0
     if MAJOR_VERSION == 2:
-      return
+        return
 
     save_path = os.path.join(str(tmp_path), "model_output")
     tmp_path = os.path.join(str(tmp_path), "model_output_tmp")
@@ -184,7 +185,8 @@ def test_save_frozen(
 
     orig_out = model.predict(x)
 
-    tf_utils.save_model(model, save_path, tmp_path=tmp_path, output_type="tf_frozen")
+    tf_utils.save_model(model, save_path, tmp_path=tmp_path,
+                        output_type="tf_frozen")
 
     tf.keras.backend.clear_session()
 
@@ -211,7 +213,7 @@ def test_save_optimized(
 
     # Not currently supported for tf2.0
     if MAJOR_VERSION == 2:
-      return
+        return
 
     save_path = os.path.join(str(tmp_path), "model_output")
     tmp_save_path = os.path.join(str(save_path), "tmp_model_output")
@@ -250,7 +252,7 @@ def test_save_tf_lite(
 
     # Not currently supported for tf2.0
     if MAJOR_VERSION == 2:
-      return
+        return
 
     # There are bugs with saving as tf.lite in early version
     # see: https://github.com/tensorflow/tensorflow/issues/17349
@@ -258,15 +260,15 @@ def test_save_tf_lite(
         return
 
     save_path = os.path.join(str(tmp_path), "model_output")
-    save_file = os.path.join(save_path, "optimized_model.tflite")
+    save_file = os.path.join(save_path, "model.tflite")
 
-    print("Creating:", save_path)
     os.makedirs(save_path)
 
     x, y = training_data
     orig_out = model.predict(x)
 
-    tf_utils.save_model(model, save_path, tmp_path=tmp_path, output_type="tf_lite")
+    tf_utils.save_model(model, save_path, tmp_path=tmp_path,
+                        output_type="tf_lite")
 
     with tf.python.Session().as_default() as sess:
         with tf.Graph().as_default() as _:

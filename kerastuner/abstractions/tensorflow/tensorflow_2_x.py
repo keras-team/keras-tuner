@@ -15,26 +15,95 @@ from kerastuner.abstractions.tensorflow import proxy
 class GFileProxy_2_x(proxy.GFileProxy):
     """Proxies calls through to the appropriate tensorflow API."""
 
-    def Open(self, *args, **kwargs):
-        return gfile.GFile(*args, **kwargs)
+    def Open(self, name, mode):
+        """Open a file.
 
-    def makedirs(self, *args, **kwargs):
-        return gfile.makedirs(*args, **kwargs)
+        Args:
+            name (str): name of the file
+            mode (str): one of 'r', 'w', 'a', 'r+', 'w+', 'a+'. Append 'b' for bytes mode.
 
-    def exists(self, *args, **kwargs):
-        return gfile.exists(*args, **kwargs)
+        Returns:
+            GFile - a GFile object representing the opened file.      
+        """
+        return tf.io.gfile.GFile(name, mode)
 
-    def rmtree(self, *args, **kwargs):
-        return gfile.rmtree(*args, **kwargs)
+    def makedirs(self, path):
+        """Creates a directory and all parent/intermediate directories.
 
-    def glob(self, *args, **kwargs):
-        return gfile.glob(*args, **kwargs)
+        It succeeds if path already exists and is writable.
 
-    def remove(self, *args, **kwargs):
-        return gfile.remove(*args, **kwargs)
+        Args:
+            path (str): string, name of the directory to be created
 
-    def copy(self, *args, **kwargs):
-        return gfile.copy(*args, **kwargs)
+        Raises:
+            errors.OpError: If the operation fails.
+        """
+        return tf.io.gfile.makedirs(path)
+
+    def exists(self, path):
+        """Determines whether a path exists or not.
+        Args:
+            path: string, a path
+
+        Returns:
+            True if the path exists, whether it's a file or a directory.
+            False if the path does not exist and there are no filesystem errors.
+
+        Raises:
+            errors.OpError: Propagates any errors reported by the FileSystem API.
+        """
+        return tf.io.gfile.exists(path)
+
+    def rmtree(self, path):
+        """Deletes everything under path recursively.
+
+        Args:
+        path: string, a path
+
+        Raises:
+        errors.OpError: If the operation fails.
+        """
+        return tf.io.gfile.rmtree(path)
+
+    def glob(self, pattern):
+        """Returns a list of files that match the given pattern(s).
+
+        Args:
+        pattern: string or iterable of strings. The glob pattern(s).
+
+        Returns:
+        A list of strings containing filenames that match the given pattern(s).
+
+        Raises:
+        errors.OpError: If there are filesystem / directory listing errors.
+        """
+        return tf.io.gfile.glob(pattern)
+
+    def remove(self, path):
+        """Deletes the path located at 'path'.
+
+        Args:
+        path: string, a path
+
+        Raises:
+        errors.OpError: Propagates any errors reported by the FileSystem API.  E.g.,
+        NotFoundError if the path does not exist.
+        """
+        return tf.io.gfile.remove(path)
+
+    def copy(self, src, dst, overwrite=False):
+        """Copies data from src to dst.
+
+        Args:
+        src: string, name of the file whose contents need to be copied
+        dst: string, name of the file to which to copy to
+        overwrite: boolean, if false its an error for newpath to be occupied by an
+            existing file.
+
+        Raises:
+        errors.OpError: If the operation fails.
+        """
+        return tf.io.gfile.copy(src, dst, overwrite=overwrite)
 
     def __getattr__(self, name):
         return getattr(gfile, name)
@@ -133,17 +202,26 @@ class Utils_2_x(proxy.UtilsBase):
         cfg.gpu_options.allow_growth = True  # pylint: disable=no-member
         tf.keras.backend.set_session(Session(config=cfg))
 
-    def save_model(self, model, path, output_type="keras", tmp_path="/tmp/", **kwargs):
+    def save_model(self, model, path, output_type="keras", tmp_path="/tmp/"):
         KNOWN_OUTPUT_TYPES = [
             "keras",
             "keras_bundle",
-
-            # Not yet supported for tf 2.0 - numerous issues with models using GPU, etc.
-            # "tf",
-            # "tf_frozen",
-            # "tf_optimized",
-            # "tf_lite"'
         ]
+
+        # Not yet supported for tf 2.0 - numerous issues with GPU models, and
+        # other issues we haven't debugged yet.
+        UNSUPPORTED_OUTPUT_TYPES = [
+            "tf",
+            "tf_frozen",
+            "tf_optimized",
+            "tf_lite"
+        ]
+
+        if output_type in UNSUPPORTED_OUTPUT_TYPES:
+            raise ValueError(
+                "Output type '%s' is not currently supported "
+                "when using tensorflow 2.x.  Valid output types are: %s" % (
+                    output_type, str(KNOWN_OUTPUT_TYPES)))
 
         # Convert PosixPath to string, if necessary.
         path = str(path)

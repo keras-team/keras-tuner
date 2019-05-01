@@ -1,3 +1,4 @@
+from abc import abstractmethod
 import gc
 import json
 import os
@@ -8,34 +9,109 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import python as tf_python
 
+from abc import abstractmethod
+
 
 class GFileProxy(object):
-    """Provides a subset of the tensorflow-2.0 API and proxies the calls through to the
-    appropriate tensorflow API."""
+    """Provides a subset of the tensorflow-2.0 API and proxies the
+    calls through to the appropriate tensorflow API."""
 
-    def Open(*args, **kwargs):
-        pass
+    @abstractmethod
+    def Open(self, name, mode):
+        """Open a file.
 
-    def makedirs(*args, **kwargs):
-        pass
+        Args:
+            name (str): name of the file
+            mode (str): one of 'r', 'w', 'a', 'r+', 'w+', 'a+'. Append 'b' for
+                bytes mode.
 
-    def exists(*args, **kwargs):
-        pass
+        Returns:
+            GFile - a GFile object representing the opened file.
+        """
 
-    def rmtree(*args, **kwargs):
-        pass
+    @abstractmethod
+    def makedirs(self, path):
+        """Creates a directory and all parent/intermediate directories.
 
-    def glob(*args, **kwargs):
-        pass
+        It succeeds if path already exists and is writable.
 
-    def remove(*args, **kwargs):
-        pass
+        Args:
+            path (str): string, name of the directory to be created
 
-    def copy(*args, **kwargs):
-        pass
+        Raises:
+            errors.OpError: If the operation fails.
+        """
+
+    @abstractmethod
+    def exists(self, path):
+        """Determines whether a path exists or not.
+        Args:
+            path: string, a path
+
+        Returns:
+            Boolean: True if the path exists, whether it's a file or a
+               directory. False if the path does not exist and there are no
+               filesystem errors.
+
+        Raises:
+            errors.OpError: Propagates any errors reported by the FileSystem API.
+        """
+
+    @abstractmethod
+    def rmtree(self, path):
+        """Deletes everything under path recursively.
+
+        Args:
+            path: string, a path
+
+        Raises:
+            errors.OpError: If the operation fails.
+        """
+
+    @abstractmethod
+    def glob(self, pattern):
+        """Returns a list of files that match the given pattern(s).
+
+        Args:
+            pattern: string or iterable of strings. The glob pattern(s).
+
+        Returns:
+            A list of strings containing filenames that match the given pattern(s).
+
+        Raises:
+            errors.OpError: If there are filesystem / directory listing errors.
+        """
+
+    @abstractmethod
+    def remove(self, path):
+        """Deletes the path located at 'path'.
+
+        Args:
+            path: string, a path
+
+        Raises:
+            errors.OpError: Propagates any errors reported by the FileSystem API.        
+        """
+
+    @abstractmethod
+    def copy(self, src, dst, overwrite=False):
+        """Copies data from src to dst.
+
+        Args:
+            src: string, name of the file whose contents need to be copied
+            dst: string, name of the file to which to copy to
+            overwrite: boolean, if false its an error for newpath to be occupied
+                by an existing file.
+
+        Raises:
+            errors.OpError: If the operation fails.
+        """
 
 
 class IOProxy(object):
+    """Proxy for tf.io. In general, the GFile module is redirected to a
+    custom proxy object, and all other calls are directly passed to `tf.io`"""
+
     def __init__(self):
         self.gfile = GFileProxy()
 
@@ -44,38 +120,40 @@ class IOProxy(object):
 
 
 class PythonProxy(object):
+    """Proxy for tf.python. In general, the calls are passed directly to
+    tf.python. Howerver, items in tf.python which exist in only one of tf 1.x
+    or tf 2.x may have be forwarded to the appropriate module.
+    """
+
     def __getattr__(self, name):
         return getattr(tf.python, name)
-
-
-class SavedModelProxy(object):
-    def __getattr__(self, name):
-        return getattr(tf.saved_model, name)
 
 
 class TensorflowProxy(object):
     """A proxy object for tensorflow calls.
 
     This proxy system aims to simplify the use of tensorflow across different
-    versions (1.11-1.14, 2.x) despite the fact that the APIs have drastically
+    versions(1.11-1.14, 2.x) despite the fact that the APIs have drastically
     changed.
     """
 
     def __init__(self):
         self.io = IOProxy()
         self.python = tf_python
-        self.saved_model = SavedModelProxy()
 
     def __getattr__(self, name):
         return getattr(tf, name)
 
 
 class UtilsBase(object):
+    """Base implementation of tensorflow utilities."""
+
     def __init__(self, tf_proxy):
+        """Construct a utils class with the given tensorflow proxy."""
         self.tf_proxy = tf_proxy
 
     def compute_model_size(self, model):
-        "Compute the size of a given model"
+        "Compute the size of a given model, in terms of the number of parameters."
         params = [self.tf_proxy.keras.backend.count_params(
             p) for p in set(model.trainable_weights)]
         return int(np.sum(params))
@@ -136,13 +214,26 @@ class UtilsBase(object):
         else:
             return self.tf_proxy.keras.losses.deserialize(loss)
 
-    def freeze_graph(self, saved_model_path, output_graph_path, output_tensor_names):
+    def freeze_graph(
+            self,
+            saved_model_path,
+            output_graph_path,
+            output_tensor_names):
+        """
+        Create a frozen version of the specified saved model.
 
-        # Freeze the temporary graph into the final output file.
-        #
-        # Note: This needs to be done in an empty session, otherwise names from
-        # the loaded model (e.g. Adam/...) will conflict with the graph that is
-        # inside of freeze_graph
+        This cannot be done in the main session, as the names will conflict
+        with the existing model. Rather than resorting to manipulating
+        sessions in a error-prone and messy fashion, we simply spawn a
+        subprocess to freeze the graph.
+
+        Args:
+            saved_model_path: str, path to the saved model directory.
+            output_graph_path: str, path to the file where the output graph
+                will be written.
+            output_tensor_names: str, comma separated list of tensors to set
+                as the outputs for the graph.
+        """
 
         command = [
             sys.executable,
@@ -162,18 +253,18 @@ class UtilsBase(object):
             weights_file,
             results_file,
             compile=False):
-        """ Reconstructs a model from the persisted files.
+        """ Reconstructs a model from the outputs of a kerastuner run.
 
         Args:
-            config_file (string): Configuration filename. 
-            weights_file (string): Keras weights filename.
-            results_file (string): Results filename.
-            compile (bool, optional): Defaults to False. If True, the optimizer
+            config_file(string): Configuration filename.
+            weights_file(string): Keras weights filename.
+            results_file(string): Results filename.
+            compile(bool, optional): Defaults to False. If True, the optimizer
                 and loss will be read from the Instance, and the model will be
                 compiled.
 
         Returns:
-            tf.keras.models.Model: The (optionally compiled) Model.
+            tf.keras.models.Model: The(optionally compiled) Model.
         """
 
         # Reconstruct the model.
@@ -193,9 +284,19 @@ class UtilsBase(object):
         return model
 
     def get_input_ops(self, model):
+        "Get the names of the input operations for the given model."
         return [node.op.name for node in model.inputs]
 
+    def get_input_tensors(self, model):
+        "Get the names of the input operations for the given model."
+        return [node.op for node in model.inputs]
+
+    def get_output_tensors(self, model):
+        "Get the names of the output operations for the given model."
+        return [node.op for node in model.outputs]
+
     def get_input_types(self, model):
+        "Get the dtypes of the input operations for the given model."
         outputs = []
         for node in model.inputs:
             if hasattr(node, "dtype"):
@@ -206,12 +307,14 @@ class UtilsBase(object):
         return outputs
 
     def get_output_ops(self, model):
+        "Get the names of the output operations for the given model."
         if isinstance(model.output, list):
             return [x.op.name for x in model.output]
         else:
             return [model.output.op.name]
 
     def write_graph(self, graph_def, filename, as_text=True):
+        "Write the given graph_def to the specified file."
         self.tf_proxy.io.write_graph(graph_def,
                                      logdir=os.path.dirname(filename),
                                      name=os.path.basename(filename),
@@ -222,17 +325,19 @@ class UtilsBase(object):
             session,
             export_dir,
             tags=None):
-
+        """Load a SavedModel into the given session."""
         return self.tf_proxy.saved_model.load(
             session,
             tags,
             export_dir)
 
     def save_savedmodel(self, model, path, tmp_path):
+        """Write a SavedModel to the given path."""
         # Implemented by subclasses
         raise NotImplementedError
 
     def save_keras_model(self, model, path, tmp_path):
+        """Save the given model as separate config and weights files."""
         config_path = "%s-config.json" % path
         weights_path = "%s-weights.h5" % path
         weights_tmp = "%s-weights.h5" % tmp_path
@@ -248,11 +353,14 @@ class UtilsBase(object):
             self.tf_proxy.io.gfile.remove(weights_tmp)
 
     def save_keras_bundle_model(self, model, path, tmp_path):
+        """Save a Keras model bundle (config + weights) to the given path."""
         model.save(tmp_path)
-        self.tf_proxy.io.gfile.copy_file(tmp_path, path, overwrite=True)
+        self.tf_proxy.io.gfile.copy(tmp_path, path, overwrite=True)
         self.tf_proxy.io.gfile.remove(tmp_path)
 
     def save_frozenmodel(self, model, path, tmp_path):
+        """Save a frozen SavedModel to the given path."""
+
         # First, create a SavedModel in the tmp directory.
         saved_model_path = tmp_path + "savedmodel"
         saved_model_tmp_path = tmp_path + "savedmodel_tmp"
@@ -267,7 +375,14 @@ class UtilsBase(object):
         self.freeze_graph(
             saved_model_path, path, output_tensor_names)
 
-    def save_optimized_model(self, model, output_path, tmp_path, toco_compatible=False):
+    def save_optimized_model(
+            self,
+            model,
+            output_path,
+            tmp_path,
+            toco_compatible=False):
+        """Save an optimized, frozen SavedModel to the given path."""
+
         # To save an optimized model, we first freeze the model, then apply
         # the optimize_for_inference library.
         frozen_path = tmp_path + "_frozen"
@@ -290,34 +405,37 @@ class UtilsBase(object):
             os.path.join(output_path, "optimized_graph.pb"),
             as_text=False)
 
+    @abstractmethod
     def save_model(self, model, path, output_type="keras", tmp_path="/tmp/", **kwargs):
-        KNOWN_OUTPUT_TYPES = [
-            "keras",
-            "keras_bundle",
-            "tf",
-            "tf_frozen",
-            "tf_optimized",
-            "tf_lite"]
+        """Save the provided model to the given path.
 
-        # Convert PosixPath to string, if necessary.
-        path = str(path)
-        tmp_path = str(tmp_path)
+        Args:
+            model(Model): the Keras model to be saved.
+            path (str): the directory in which to write the model.
+            output_type (str, optional): Defaults to "keras". What format
+                of model to export:
 
-        if output_type == "keras":
-            self.save_keras_model(model, path, tmp_path)
-        elif output_type == "keras_bundle":
-            self.save_keras_bundle_model(model, path, tmp_path)
-        elif output_type == "tf":
-            self.save_savedmodel(model, path, tmp_path)
-        elif output_type == "tf_frozen":
-            self.save_frozenmodel(model, path, tmp_path)
-        elif output_type == "tf_optimized":
-            self.save_optimized_model(model, path, tmp_path)
-        elif output_type == "tf_lite":
-            self.save_tflite(model, path, tmp_path)
-        else:
-            raise ValueError("Output type '%s' not in known types '%s'" % (
-                output_type, str(KNOWN_OUTPUT_TYPES)))
+                # Tensorflow 1.x/2.x
+                "keras" - Save as separate config (JSON) and weights (HDF5)
+                    files.
+                "keras_bundle" - Saved in Keras's native format (HDF5), via
+                    save_model()
+
+                # Currently only supported in Tensorflow 1.x
+                "tf" - Saved in tensorflow's SavedModel format. See:
+                    https://www.tensorflow.org/alpha/guide/saved_model
+                "tf_frozen" - A SavedModel, where the weights are stored
+                    in the model file itself, rather than a variables
+                    directory. See:
+                    https://www.tensorflow.org/guide/extend/model_files
+                "tf_optimized" - A frozen SavedModel, which has
+                    additionally been transformed via tensorflow's graph
+                    transform library to remove training-specific nodes
+                    and operations.  See:
+                    https://github.com/tensorflow/tensorflow/tree/master/tensorflow/tools/graph_transforms
+                "tf_lite" - A TF Lite model.
+            tmp_path (str, optional): directory in which to store temporary files. 
+        """
 
     def write_file(self, path, contents):
         with self.tf_proxy.io.gfile.Open(path, 'w') as output:

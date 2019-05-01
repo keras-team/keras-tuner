@@ -96,6 +96,7 @@ def copy(src, dst, overwrite=False):
     Raises:
       errors.OpError: If the operation fails.
     """
+    return tf.io.gfile.copy(src, dst, overwrite=overwrite)
 
 
 def write_file(path, contents):
