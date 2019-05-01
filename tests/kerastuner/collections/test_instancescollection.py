@@ -8,7 +8,7 @@ from kerastuner.collections.instancescollection import InstancesCollection
 @pytest.fixture()
 def data_path():
     data_path = Path(__file__).parents[2]
-    data_path = Path.joinpath(data_path, 'data', 'results')
+    data_path = Path.joinpath(data_path, 'data', 'tuner_results')
     return data_path
 
 
