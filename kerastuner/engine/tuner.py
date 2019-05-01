@@ -22,7 +22,7 @@ from kerastuner.abstractions.display import info, warning, fatal, set_log
 from kerastuner.abstractions.display import progress_bar, subsection
 from kerastuner.abstractions.display import colorize, colorize_default
 from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
-from kerastuner.tools.summary import summary as result_summary  # FIXME: name
+from kerastuner.tools.summary import results_summary as _results_summary
 from kerastuner import config
 from kerastuner.states import TunerState
 from .cloudservice import CloudService
@@ -39,7 +39,7 @@ class Tuner(object):
         Args:
             model_fn (function): Function that return a Keras model
             name (str): name of the tuner
-            objective (Objective): Which objective the tuner optimize for
+            objective (str): Which objective the tuner optimize for
             distributions (Distributions): distributions object
 
         Notes:
@@ -99,20 +99,21 @@ class Tuner(object):
         self.state.summary(extended=extended)
         config._DISTRIBUTIONS.config_summary()
 
-    def enable_cloud(self, api_key, **kwargs):
+    def enable_cloud(self, api_key, url=None):
         """Enable cloud service reporting
 
             Args:
                 api_key (str): The backend API access token.
+                url (str, optional): The backend base URL.
 
             Note:
                 this is called by the user
         """
-        self.cloudservice.enable(api_key)
+        self.cloudservice.enable(api_key, url)
 
     def search(self, x, y, **kwargs):
         self.state.keras_function = 'fit'
-        # kwargs["verbose"] = 0
+        kwargs["verbose"] = 0
         self.tune(x, y, **kwargs)
         if self.cloudservice.is_enable:
             self.cloudservice.complete()
@@ -269,7 +270,8 @@ class Tuner(object):
                 instance.state.idx,
                 execution.state.idx)
 
-            export_path = os.path.join(self.state.host.export_dir, export_prefix)
+            export_path = os.path.join(
+                self.state.host.export_dir, export_prefix)
             tmp_path = os.path.join(self.state.host.tmp_dir, export_prefix)
             info("Exporting top model (%d/%d) - %s" %
                  (idx + 1, len(models), export_path))
@@ -281,13 +283,11 @@ class Tuner(object):
         s = str(model.get_config())
         return hashlib.sha256(s.encode('utf-8')).hexdigest()[:32]
 
-    def display_result_summary(self, metric='loss', direction='min'):
-        result_summary(
-            self.meta_data["server"]["local_dir"],
-            self.meta_data["project"],
-            metric,
-            direction=direction
-        )
+    def results_summary(self, num_models=10, sort_metric=None):
+        _results_summary(input_dir=self.state.host.result_dir,
+                         project=self.state.project,
+                         architecture=self.state.architecture,
+                         num_models=10, sort_metric=sort_metric)
 
     @abstractmethod
     def tune(self, x, y, **kwargs):

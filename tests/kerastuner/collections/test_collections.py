@@ -17,6 +17,11 @@ def test_len():
     assert len(c) == 3
 
 
+def test_empty_get_last():
+    ic = Collection()
+    assert not ic.get_last()
+
+
 def test_add_get(obj):
     ic = Collection()
     idx = obj['idx']

@@ -76,15 +76,14 @@ class MonitorCallback(TunerCallback):
             self.instance_state.agg_metrics.update(metric.name, metric.get_best_value())  # nopep8
 
         # update tuner overall objective metric
-        update_best_model = False
         for metric in self.instance_state.agg_metrics.to_list():
             improved = self.tuner_state.agg_metrics.update(metric.name, metric.get_best_value())  # nopep8
             if metric.name == self.tuner_state.objective and improved:
-                update_best_model = True
+                self.instance_state.is_best_model = True
 
         # record which one is the best model
         # ! dont try to simplify - must be after all statistics are computed
-        if update_best_model or not self.tuner_state.best_instance_config:
+        if self.instance_state.is_best_model or not self.tuner_state.best_instance_config:  # nopep8
             config = self.instance_state.to_config()
             self.tuner_state.best_instance_config = config
 

@@ -8,7 +8,7 @@ import tensorflow as tf
 from tensorflow.keras.models import Sequential, Model  # nopep8 pylint: disable=import-error
 from tensorflow.keras.optimizers import Optimizer  # nopep8 pylint: disable=import-error
 
-from kerastuner.callbacks import MonitorCallback
+from kerastuner.callbacks import MonitorCallback, DisplayCallback
 from kerastuner.states import ExecutionState
 from kerastuner.abstractions.display import fatal
 
@@ -42,8 +42,14 @@ class Execution(object):
         if self.tuner_state.dry_run:
             self.tuner_state.remaining_budget -= self.tuner_state.max_epochs
             return
-        # creating the callback need to track training progress
+
+        # Tuner callbacks
         monitorcallback = MonitorCallback(self.tuner_state,
+                                          self.instance_state,
+                                          self.state, self.cloudservice)
+
+        # display
+        displaycallback = DisplayCallback(self.tuner_state,
                                           self.instance_state,
                                           self.state, self.cloudservice)
 
@@ -57,11 +63,14 @@ class Execution(object):
                     tensorboard_idx = monitorcallback._get_filename_prefix()
                     callback.log_dir = path.join(callback.log_dir,
                                                  tensorboard_idx)
-
-            callbacks.append(monitorcallback)
         else:
-            callbacks = [monitorcallback]
+            callbacks = []
 
+        # adding tuner callbacks -- displaycallback must be last
+        callbacks.append(monitorcallback)
+        callbacks.append(displaycallback)
+
+        # replacing callback with the new list
         kwargs['callbacks'] = callbacks
 
         if self.tuner_state.keras_function == 'fit':

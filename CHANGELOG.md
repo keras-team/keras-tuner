@@ -6,11 +6,21 @@ Major KerasTuner changes by version
 
 ### Major features
 
-- Distribution system complete overhaul: now distributions on the backend is
-object that can be subclassed by tuner developpers to create their own
+- Tuner API refactored and simplified
+- User API refactored and simplified
+- Tunable Model API initial version and initial application with `tunable_resnet`
+- Experiments recording refactored to remove duplicate, improve bucketing and
+log additional informations.
+- Display components refactored to offer a more consistent an clearer experience.
 
 ### Extra
+
 - access to system info and display have been moved to an abstraction layer
+- Major code refactoring to finalize API, cleanup the code and encapsulate all
+components correctly. This include a rewrite of the following components:
+`abstraction`, `distribution`, `collections`, `callbacks`, `engine`, `tuner`
+- unit-test refactored and extended with over 100 more tests.
+
 
 ## V0.7: Ecosystem integration
 

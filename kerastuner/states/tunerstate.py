@@ -8,7 +8,7 @@ from .state import State
 from .dummystate import DummyState
 from .tunerstatsstate import TunerStatsState
 from .hoststate import HostState
-from kerastuner.collections import MetricsCollection
+from kerastuner.collections.metriccollection import MetricsCollection
 from kerastuner.abstractions.display import fatal, set_log, section, subsection
 from kerastuner.abstractions.display import display_settings, colorize
 from kerastuner.abstractions.display import display_table, warning
@@ -36,7 +36,7 @@ class TunerState(State):
         Defaults to 'default'.
 
         architecture (str, optional): Name of the architecture tuned.
-        Default to timestamp.
+        Default to 'default'.
 
         user_info(dict, optional): user supplied information that will be
         recorded alongside training data. Defaults to {}.
@@ -91,8 +91,9 @@ class TunerState(State):
         self.remaining_budget = self.epoch_budget
 
         # user info
+        # !don't use random identifiers -- it makes reloading impossible
         self.project = self._register('project', 'default')
-        self.architecture = self._register('architecture', str(int(time())))
+        self.architecture = self._register('architecture', 'default')
         self.user_info = self._register('user_info', {})
 
         # execution
@@ -161,8 +162,8 @@ class TunerState(State):
         # computing remaining time
         self._compute_eta()
 
-        attrs = ['name', 'start_time', 'remaining_budget', 'keras_function',
-                 'eta']
+        attrs = ['name', 'objective', 'start_time', 'remaining_budget',
+                 'keras_function', 'eta']
         config = self._config_from_attrs(attrs)
 
         # collect user params

@@ -273,6 +273,22 @@ def cprint(text, color, bg_color=None, brightness='normal'):
     display(text)
 
 
+def colorize_row(row, color, bg_color=None, brightness='normal'):
+    """Colorize a table row.
+
+    Args:
+        row (list): The row to colorize.
+        color (str): Forground color.
+        bg_color (str): Background color. Defaults to None.
+        brightness (str, optional): Defaults to normal. Text brightness.
+    Returns:
+        list: colorized row
+    """
+    colored_row = []
+    for v in row:
+        colored_row.append(colorize(v, color, bg_color, brightness))
+    return colored_row
+
 def colorize_default(text):
     """Colorize a given piece of text with the terminal default color
     Args:

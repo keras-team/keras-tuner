@@ -83,6 +83,10 @@ class MetricsCollection(Collection):
             return self._objects[metric_name]
         return None
 
+    def get_metric_names(self):
+        "return the list of metric names"
+        return sorted(self._objects.keys())
+
     def _replace_alias(self, metric_name):
         "replace metric alias with their canonical name"
         no_val_name = metric_name.replace('val_', '')
@@ -124,6 +128,7 @@ class MetricsCollection(Collection):
 
     def set_objective(self, name):
         "Mark a metric as tuning objective"
+        name = self._replace_alias(name)
         if name not in self._objects:
             fatal("can't find objective: %s in metric list" % name)
         if self._objective_name:

@@ -1,9 +1,10 @@
 import json
 
+from kerastuner.abstractions.display import info, progress_bar, warning
+from kerastuner.abstractions.io import glob, read_file
+from kerastuner.states.instancestate import InstanceState
+
 from .collections import Collection
-from kerastuner.abstractions.display import progress_bar, info
-from kerastuner.abstractions.tensorflow import TENSORFLOW as tf
-from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 
 
 class InstancesCollection(Collection):
@@ -15,45 +16,95 @@ class InstancesCollection(Collection):
     def to_config(self):
         return self.to_dict()
 
-    def get_best_instances(self, objective, N=1):
-        objective_name = objective.name
-        reverse = objective.direction == "max"
+    def sort_by_objective(self):
+        "Returns instances list sorted by objective"
+        instance = self.get_last()
+        if not instance:
+            warning('No previous instance found')
+            return []
+        return self.sort_by_metric(instance.objective)
 
-        def objective_sort_key(idx, instance):
-            instance_metrics = instance.state.agg_metrics
-            metric = instance_metrics.get(objective_name).get_best_value()
-            return metric
+    def sort_by_metric(self, metric_name):
+        "Returns instances list sorted by a given metric"
 
-        return self.to_list(sorted_by=objective_sort_key, reverse=reverse)
+        # checking if metric exist and getting its direction
+        instance = self.get_last()
+        # !don't use _objects -> use get() instead due to canonicalization
+        metric = instance.agg_metrics.get(metric_name)
+        if not metric:
+            warning('Metric %s not found' % metric_name)
+            return []
 
-    def load_from_dir(self, path, project=None, architecture=None):
+        # getting metric values
+        values = {}
+        for instance in self._objects.values():
+            value = instance.agg_metrics.get(metric.name).get_best_value()
+            # seems wrong but make it easy to sort by value and return instance
+            values[value] = instance
+
+        # sorting
+        if metric.direction == 'min':
+            sorted_values = sorted(values.keys())
+        else:
+            sorted_values = sorted(values.keys(), reverse=True)
+
+        sorted_instances = []
+        for val in sorted_values:
+            sorted_instances.append(values[val])
+
+        return sorted_instances
+
+    def load_from_dir(self, path, project='default', architecture=None,
+                      verbose=1):
         """Load instance collection from disk or bucket
 
         Args:
-            path (str): local path or bucket path where instance are stored
-            project (str, optional): tuning project name. Defaults to None.
-            architecture (str, optional): tuning architecture name.
+            path (str): Local path or bucket path where instance results
+            are stored
+
+            project (str, optional): Tuning project name. Defaults to default.
+
+            architecture (str, optional): Tuning architecture name.
             Defaults to None.
+
+            verbose (int, optional): Verbose output? Default to 1.
 
         Returns:
             int: number of instances loaded
         """
         count = 0
 
-        filenames = tf.io.gfile.glob("%s*-results.json" % path)
+        filenames = glob("%s*-results.json" % path)
 
         for fname in progress_bar(filenames, unit='instance',
-                                      desc='Loading instances'):
+                                  desc='Loading tuning results'):
 
-            data = json.loads(tf_utils.read_file(str(fname)))
+            config = json.loads(read_file(str(fname)))
 
-            if 'tuner' not in 'data':
+            # check fields existence
+            if 'tuner' not in config:
                 continue
-            # Narrow down to matching project and architecture
-            if (not architecture or
-                    (data['tuner']['architecture'] == architecture)):
-                if (data['tuner']['project'] == project or not project):
-                    self._objects[data['instance']['idx']] = data
-                    count += 1
-        info("%s previous instances reloaded" % count)
+            if 'architecture' not in config['tuner']:
+                continue
+            if 'project' not in config['tuner']:
+                continue
+
+            # check instance belongs to the right project / architecture
+            if (project != config['tuner']['project']):
+                continue
+
+            # Allowing architecture to be None allows to reload models from
+            # various architecture for retrain, summary and export purpose
+            if (architecture and architecture != config['tuner']['architecture']):  # nopep8
+                continue
+
+            idx = config['instance']['idx']
+            instance = InstanceState.from_config(config['instance'])
+            self._objects[idx] = instance
+            self._last_insert_idx = idx
+            count += 1
+
+        if verbose:
+            info("%s previous instances reloaded" % count)
+
         return count

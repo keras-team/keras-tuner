@@ -108,7 +108,7 @@ class Instance(object):
                     self.state.agg_metrics.add(Metric(val_loss, 'min'))
 
             # mark objective
-            self.state.agg_metrics.set_objective(self.tuner_state.objective)
+            self.state.set_objective(self.tuner_state.objective)
             self.metrics_config = self.state.agg_metrics.to_config()
 
             # init tuner global metric if needed (first training)
@@ -132,9 +132,9 @@ class Instance(object):
             metric = execution_metrics.get(objective.name).get_best_value()
             return metric
 
-
         def sort_fn(idx, object):
             return object.state.agg_metrics[objective.name]
 
         for execution in self.executions.to_list():
-            value = ex.state.metrics.get(self.state.agg_metrics.objective.name).get_last_value()
+            value = ex.state.metrics.get(
+                self.state.agg_metrics.objective.name).get_last_value()

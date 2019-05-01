@@ -7,7 +7,7 @@ from tensorflow.keras import layers
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 from tensorflow.keras.layers import *
 from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import SGD, Adam, RMSprop
+from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
 
 from kerastuner.applications.hyperception.blocks import sep_conv, conv, dense, residual
@@ -56,7 +56,7 @@ def hyperception_single_model(input_shape, num_classes, **hparams):
 
 def _hyperception(input_shape, num_classes, **hparams):
     """
-    Implementation of a hypertunable adaptation of Xception.    
+    Implementation of a hypertunable adaptation of Xception.
     """
     hp = {}
     hp.update(default_hparams(input_shape, num_classes))
@@ -123,20 +123,8 @@ def _hyperception(input_shape, num_classes, **hparams):
     output = layers.Dense(num_classes, activation='softmax')(x)
     model = keras.Model(inputs, output)
 
-    if optimizer == "adam":
-        lr = hp["learning_rate"]
-        optimizer = Adam(lr=lr)
-    elif optimizer == "sgd":
-        lr = hp["learning_rate"]
-        momentum = hp["momentum"]
-        decay = hp["learning_rate_decay"]
-        optimizer = SGD(lr=lr, momentum=momentum, decay=decay)
-    elif optimizer == "rmsprop":
-        lr = hp["learning_rate"]
-        decay = hp["learning_rate_decay"]
-        optimizer = RMSprop(lr=lr, decay=decay)
-    else:
-        raise ValueError("Optimizer '%s' not supported", optimizer)
+    lr = hp["learning_rate"]
+    optimizer = Adam(lr=lr)
 
     model.compile(
         optimizer=optimizer,
