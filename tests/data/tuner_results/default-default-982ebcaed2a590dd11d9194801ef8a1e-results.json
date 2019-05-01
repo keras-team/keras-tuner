@@ -1,0 +1,965 @@
+{
+    "update_time": 1556596169,
+    "tuner": {
+        "name": "RandomSearch",
+        "objective": "val_acc",
+        "start_time": 1556596162,
+        "remaining_budget": 0,
+        "keras_function": "fit",
+        "eta": 0,
+        "epoch_budget": 4,
+        "max_epochs": 2,
+        "min_epochs": 3,
+        "project": "default",
+        "architecture": "default",
+        "user_info": {},
+        "num_executions": 1,
+        "max_model_parameters": 25000000,
+        "checkpoint": true,
+        "dry_run": false,
+        "debug": false,
+        "display_model": false,
+        "stats": {
+            "num_generated_models": 2,
+            "num_invalid_models": 0,
+            "num_mdl_previously_trained": 0,
+            "num_collision": 0,
+            "num_over_sized_models": 0
+        },
+        "host": {
+            "result_dir": "results/",
+            "tmp_dir": "tmp/",
+            "export_dir": "export/",
+            "cpu": {
+                "name": "Intel64 Family 6 Model 158 Stepping 10, GenuineIntel",
+                "core_count": 12,
+                "usage": 24.8,
+                "frequency": {
+                    "unit": "MHZ",
+                    "current": 3696.0,
+                    "max": 3696.0
+                }
+            },
+            "ram": {
+                "unit": "MB",
+                "used": 13729,
+                "total": 65450
+            },
+            "gpu": [
+                {
+                    "memory": {
+                        "unit": "MB",
+                        "total": 11264,
+                        "used": 10435
+                    },
+                    "temperature": {
+                        "unit": "C",
+                        "value": 58
+                    },
+                    "index": "0",
+                    "name": "GeForce RTX 2080 Ti",
+                    "usage": "7",
+                    "uuid": "GPU-e883dd3c-e24c-249e-a7e1-00f9c6c149a0"
+                }
+            ],
+            "uptime": 736154,
+            "disk": [
+                {
+                    "name": "C:\\",
+                    "unit": "GB",
+                    "used": 683,
+                    "total": 953
+                },
+                {
+                    "name": "D:\\",
+                    "unit": "GB",
+                    "used": 1636,
+                    "total": 1862
+                }
+            ],
+            "software": {
+                "kerastuner": "0.8.2",
+                "tensorflow": "1.12.0",
+                "tensorflow_use_gpu": true,
+                "python": "3.6.7rc1",
+                "os": {
+                    "name": "Windows",
+                    "version": "10.0.17134"
+                },
+                "gpu_driver": "419.35"
+            },
+            "hostname": "Emerald",
+            "available_gpu": 1
+        },
+        "metrics": {},
+        "aggregate_metrics": [
+            {
+                "name": "accuracy",
+                "best_value": 0.5098989898989899,
+                "last_value": 0.5098989898989899,
+                "direction": "max",
+                "history": [
+                    0.5008080808321634,
+                    0.5024242424483251,
+                    0.5024242424483251,
+                    0.5024242424483251,
+                    0.5098989898989899
+                ],
+                "statistics": {
+                    "min": 0.5008080808321634,
+                    "max": 0.5098989898989899,
+                    "mean": 0.5035959596152256,
+                    "median": 0.5024242424483251,
+                    "variance": 1.0323844444945135e-05,
+                    "stddev": 0.0032130739868457955
+                },
+                "is_objective": false
+            },
+            {
+                "name": "loss",
+                "best_value": 0.250726089001906,
+                "last_value": 0.250726089001906,
+                "direction": "min",
+                "history": [
+                    0.2859781167061642,
+                    0.25318370312151284,
+                    0.25318370312151284,
+                    0.25318370312151284,
+                    0.250726089001906
+                ],
+                "statistics": {
+                    "min": 0.250726089001906,
+                    "max": 0.2859781167061642,
+                    "mean": 0.2592510630145218,
+                    "median": 0.25318370312151284,
+                    "variance": 0.00017948982983311814,
+                    "stddev": 0.013397381454340924
+                },
+                "is_objective": false
+            },
+            {
+                "name": "val_accuracy",
+                "best_value": 0.57,
+                "last_value": 0.57,
+                "direction": "max",
+                "history": [
+                    0.38,
+                    0.46,
+                    0.46,
+                    0.46,
+                    0.57
+                ],
+                "statistics": {
+                    "min": 0.38,
+                    "max": 0.57,
+                    "mean": 0.466,
+                    "median": 0.46,
+                    "variance": 0.003663999999999998,
+                    "stddev": 0.06053098380168621
+                },
+                "is_objective": true
+            },
+            {
+                "name": "val_loss",
+                "best_value": 0.24798346638679505,
+                "last_value": 0.24798346638679505,
+                "direction": "min",
+                "history": [
+                    0.2749265909194946,
+                    0.25753367781639097,
+                    0.25753367781639097,
+                    0.25753367781639097,
+                    0.24798346638679505
+                ],
+                "statistics": {
+                    "min": 0.24798346638679505,
+                    "max": 0.2749265909194946,
+                    "mean": 0.2591022181510925,
+                    "median": 0.25753367781639097,
+                    "variance": 7.628367413083415e-05,
+                    "stddev": 0.00873405256057199
+                },
+                "is_objective": false
+            }
+        ],
+        "best_instance": {
+            "start_time": 1556596164,
+            "idx": "94116d134a927a4e87f89e1363732bec",
+            "training_size": 9900,
+            "validation_size": 100,
+            "batch_size": 32,
+            "model_size": 4059,
+            "optimizer_config": {
+                "class_name": "Adam",
+                "config": {
+                    "lr": 0.0010000000474974513,
+                    "beta_1": 0.8999999761581421,
+                    "beta_2": 0.9990000128746033,
+                    "decay": 0.0,
+                    "epsilon": 1e-07,
+                    "amsgrad": false
+                }
+            },
+            "loss_config": "mse",
+            "model_config": {
+                "class_name": "Sequential",
+                "config": {
+                    "name": "sequential",
+                    "layers": [
+                        {
+                            "class_name": "Dense",
+                            "config": {
+                                "name": "dense",
+                                "trainable": true,
+                                "batch_input_shape": [
+                                    null,
+                                    200
+                                ],
+                                "dtype": "float32",
+                                "units": 18,
+                                "activation": "linear",
+                                "use_bias": true,
+                                "kernel_initializer": {
+                                    "class_name": "GlorotUniform",
+                                    "config": {
+                                        "seed": null,
+                                        "dtype": "float32"
+                                    }
+                                },
+                                "bias_initializer": {
+                                    "class_name": "Zeros",
+                                    "config": {
+                                        "dtype": "float32"
+                                    }
+                                },
+                                "kernel_regularizer": null,
+                                "bias_regularizer": null,
+                                "activity_regularizer": null,
+                                "kernel_constraint": null,
+                                "bias_constraint": null
+                            }
+                        },
+                        {
+                            "class_name": "Dense",
+                            "config": {
+                                "name": "dense_1",
+                                "trainable": true,
+                                "dtype": "float32",
+                                "units": 22,
+                                "activation": "relu",
+                                "use_bias": true,
+                                "kernel_initializer": {
+                                    "class_name": "GlorotUniform",
+                                    "config": {
+                                        "seed": null,
+                                        "dtype": "float32"
+                                    }
+                                },
+                                "bias_initializer": {
+                                    "class_name": "Zeros",
+                                    "config": {
+                                        "dtype": "float32"
+                                    }
+                                },
+                                "kernel_regularizer": null,
+                                "bias_regularizer": null,
+                                "activity_regularizer": null,
+                                "kernel_constraint": null,
+                                "bias_constraint": null
+                            }
+                        },
+                        {
+                            "class_name": "Dense",
+                            "config": {
+                                "name": "dense_2",
+                                "trainable": true,
+                                "dtype": "float32",
+                                "units": 1,
+                                "activation": "tanh",
+                                "use_bias": true,
+                                "kernel_initializer": {
+                                    "class_name": "GlorotUniform",
+                                    "config": {
+                                        "seed": null,
+                                        "dtype": "float32"
+                                    }
+                                },
+                                "bias_initializer": {
+                                    "class_name": "Zeros",
+                                    "config": {
+                                        "dtype": "float32"
+                                    }
+                                },
+                                "kernel_regularizer": null,
+                                "bias_regularizer": null,
+                                "activity_regularizer": null,
+                                "kernel_constraint": null,
+                                "bias_constraint": null
+                            }
+                        }
+                    ]
+                },
+                "keras_version": "2.1.6-tf",
+                "backend": "tensorflow"
+            },
+            "hyper_parameters": {
+                "inputs:dims": {
+                    "name": "dims",
+                    "value": 18,
+                    "group": "inputs"
+                },
+                "hidden_layers:dims": {
+                    "name": "dims",
+                    "value": 22,
+                    "group": "hidden_layers"
+                },
+                "hidden_layers:activation": {
+                    "name": "activation",
+                    "value": "relu",
+                    "group": "hidden_layers"
+                },
+                "hidden_layers:2nd hidden layer": {
+                    "name": "2nd hidden layer",
+                    "value": false,
+                    "group": "hidden_layers"
+                },
+                "output:dims": {
+                    "name": "dims",
+                    "value": 1,
+                    "group": "output"
+                },
+                "output:activation": {
+                    "name": "activation",
+                    "value": "tanh",
+                    "group": "output"
+                },
+                "optimizer:loss": {
+                    "name": "loss",
+                    "value": "mse",
+                    "group": "optimizer"
+                }
+            },
+            "is_best_model": false,
+            "objective": "val_acc",
+            "executions": [
+                {
+                    "start_time": 1556596164,
+                    "idx": 1556596164,
+                    "epochs": 2,
+                    "eta": 3,
+                    "record_time": 1556596167,
+                    "metrics": [
+                        {
+                            "name": "accuracy",
+                            "best_value": 0.5024242424483251,
+                            "last_value": 0.5024242424483251,
+                            "direction": "max",
+                            "history": [
+                                0.5008080808321634,
+                                0.5024242424483251,
+                                0.5024242424483251,
+                                0.5024242424483251,
+                                0.5098989898989899
+                            ],
+                            "statistics": {
+                                "min": 0.5008080808321634,
+                                "max": 0.5024242424483251,
+                                "mean": 0.5020202020442847,
+                                "median": 0.5024242424483251,
+                                "variance": 4.897459442914051e-07,
+                                "stddev": 0.0006998185081086418
+                            },
+                            "is_objective": false
+                        },
+                        {
+                            "name": "loss",
+                            "best_value": 0.25318370312151284,
+                            "last_value": 0.25318370312151284,
+                            "direction": "min",
+                            "history": [
+                                0.2859781167061642,
+                                0.25318370312151284,
+                                0.25318370312151284,
+                                0.25318370312151284,
+                                0.250726089001906
+                            ],
+                            "statistics": {
+                                "min": 0.25318370312151284,
+                                "max": 0.2859781167061642,
+                                "mean": 0.2613823065176757,
+                                "median": 0.25318370312151284,
+                                "variance": 0.00020165129294271843,
+                                "stddev": 0.014200397633260782
+                            },
+                            "is_objective": false
+                        },
+                        {
+                            "name": "val_accuracy",
+                            "best_value": 0.46,
+                            "last_value": 0.46,
+                            "direction": "max",
+                            "history": [
+                                0.38,
+                                0.46,
+                                0.46,
+                                0.46,
+                                0.57
+                            ],
+                            "statistics": {
+                                "min": 0.38,
+                                "max": 0.46,
+                                "mean": 0.44,
+                                "median": 0.46,
+                                "variance": 0.0012000000000000008,
+                                "stddev": 0.03464101615137756
+                            },
+                            "is_objective": true
+                        },
+                        {
+                            "name": "val_loss",
+                            "best_value": 0.25753367781639097,
+                            "last_value": 0.25753367781639097,
+                            "direction": "min",
+                            "history": [
+                                0.2749265909194946,
+                                0.25753367781639097,
+                                0.25753367781639097,
+                                0.25753367781639097,
+                                0.24798346638679505
+                            ],
+                            "statistics": {
+                                "min": 0.25753367781639097,
+                                "max": 0.2749265909194946,
+                                "mean": 0.2618819060921669,
+                                "median": 0.25753367781639097,
+                                "variance": 5.672126741477147e-05,
+                                "stddev": 0.007531352296551495
+                            },
+                            "is_objective": false
+                        }
+                    ]
+                }
+            ],
+            "aggregate_metrics": [
+                {
+                    "name": "accuracy",
+                    "best_value": 0.5024242424483251,
+                    "last_value": 0.5024242424483251,
+                    "direction": "max",
+                    "history": [
+                        0.5008080808321634,
+                        0.5024242424483251,
+                        0.5024242424483251,
+                        0.5024242424483251,
+                        0.5098989898989899
+                    ],
+                    "statistics": {
+                        "min": 0.5008080808321634,
+                        "max": 0.5024242424483251,
+                        "mean": 0.5020202020442847,
+                        "median": 0.5024242424483251,
+                        "variance": 4.897459442914051e-07,
+                        "stddev": 0.0006998185081086418
+                    },
+                    "is_objective": false
+                },
+                {
+                    "name": "loss",
+                    "best_value": 0.25318370312151284,
+                    "last_value": 0.25318370312151284,
+                    "direction": "min",
+                    "history": [
+                        0.2859781167061642,
+                        0.25318370312151284,
+                        0.25318370312151284,
+                        0.25318370312151284,
+                        0.250726089001906
+                    ],
+                    "statistics": {
+                        "min": 0.25318370312151284,
+                        "max": 0.2859781167061642,
+                        "mean": 0.2613823065176757,
+                        "median": 0.25318370312151284,
+                        "variance": 0.00020165129294271843,
+                        "stddev": 0.014200397633260782
+                    },
+                    "is_objective": false
+                },
+                {
+                    "name": "val_accuracy",
+                    "best_value": 0.46,
+                    "last_value": 0.46,
+                    "direction": "max",
+                    "history": [
+                        0.38,
+                        0.46,
+                        0.46,
+                        0.46,
+                        0.57
+                    ],
+                    "statistics": {
+                        "min": 0.38,
+                        "max": 0.46,
+                        "mean": 0.44,
+                        "median": 0.46,
+                        "variance": 0.0012000000000000008,
+                        "stddev": 0.03464101615137756
+                    },
+                    "is_objective": true
+                },
+                {
+                    "name": "val_loss",
+                    "best_value": 0.25753367781639097,
+                    "last_value": 0.25753367781639097,
+                    "direction": "min",
+                    "history": [
+                        0.2749265909194946,
+                        0.25753367781639097,
+                        0.25753367781639097,
+                        0.25753367781639097,
+                        0.24798346638679505
+                    ],
+                    "statistics": {
+                        "min": 0.25753367781639097,
+                        "max": 0.2749265909194946,
+                        "mean": 0.2618819060921669,
+                        "median": 0.25753367781639097,
+                        "variance": 5.672126741477147e-05,
+                        "stddev": 0.007531352296551495
+                    },
+                    "is_objective": false
+                }
+            ]
+        }
+    },
+    "instance": {
+        "start_time": 1556596167,
+        "idx": "982ebcaed2a590dd11d9194801ef8a1e",
+        "training_size": 9900,
+        "validation_size": 100,
+        "batch_size": 32,
+        "model_size": 5449,
+        "optimizer_config": {
+            "class_name": "Adam",
+            "config": {
+                "lr": 0.0010000000474974513,
+                "beta_1": 0.8999999761581421,
+                "beta_2": 0.9990000128746033,
+                "decay": 0.0,
+                "epsilon": 1e-07,
+                "amsgrad": false
+            }
+        },
+        "loss_config": "mse",
+        "model_config": {
+            "class_name": "Sequential",
+            "config": {
+                "name": "sequential",
+                "layers": [
+                    {
+                        "class_name": "Dense",
+                        "config": {
+                            "name": "dense",
+                            "trainable": true,
+                            "batch_input_shape": [
+                                null,
+                                200
+                            ],
+                            "dtype": "float32",
+                            "units": 24,
+                            "activation": "linear",
+                            "use_bias": true,
+                            "kernel_initializer": {
+                                "class_name": "GlorotUniform",
+                                "config": {
+                                    "seed": null,
+                                    "dtype": "float32"
+                                }
+                            },
+                            "bias_initializer": {
+                                "class_name": "Zeros",
+                                "config": {
+                                    "dtype": "float32"
+                                }
+                            },
+                            "kernel_regularizer": null,
+                            "bias_regularizer": null,
+                            "activity_regularizer": null,
+                            "kernel_constraint": null,
+                            "bias_constraint": null
+                        }
+                    },
+                    {
+                        "class_name": "Dense",
+                        "config": {
+                            "name": "dense_1",
+                            "trainable": true,
+                            "dtype": "float32",
+                            "units": 24,
+                            "activation": "relu",
+                            "use_bias": true,
+                            "kernel_initializer": {
+                                "class_name": "GlorotUniform",
+                                "config": {
+                                    "seed": null,
+                                    "dtype": "float32"
+                                }
+                            },
+                            "bias_initializer": {
+                                "class_name": "Zeros",
+                                "config": {
+                                    "dtype": "float32"
+                                }
+                            },
+                            "kernel_regularizer": null,
+                            "bias_regularizer": null,
+                            "activity_regularizer": null,
+                            "kernel_constraint": null,
+                            "bias_constraint": null
+                        }
+                    },
+                    {
+                        "class_name": "Dense",
+                        "config": {
+                            "name": "dense_2",
+                            "trainable": true,
+                            "dtype": "float32",
+                            "units": 1,
+                            "activation": "sigmoid",
+                            "use_bias": true,
+                            "kernel_initializer": {
+                                "class_name": "GlorotUniform",
+                                "config": {
+                                    "seed": null,
+                                    "dtype": "float32"
+                                }
+                            },
+                            "bias_initializer": {
+                                "class_name": "Zeros",
+                                "config": {
+                                    "dtype": "float32"
+                                }
+                            },
+                            "kernel_regularizer": null,
+                            "bias_regularizer": null,
+                            "activity_regularizer": null,
+                            "kernel_constraint": null,
+                            "bias_constraint": null
+                        }
+                    }
+                ]
+            },
+            "keras_version": "2.1.6-tf",
+            "backend": "tensorflow"
+        },
+        "hyper_parameters": {
+            "inputs:dims": {
+                "name": "dims",
+                "value": 24,
+                "group": "inputs"
+            },
+            "hidden_layers:dims": {
+                "name": "dims",
+                "value": 24,
+                "group": "hidden_layers"
+            },
+            "hidden_layers:activation": {
+                "name": "activation",
+                "value": "relu",
+                "group": "hidden_layers"
+            },
+            "hidden_layers:2nd hidden layer": {
+                "name": "2nd hidden layer",
+                "value": false,
+                "group": "hidden_layers"
+            },
+            "output:dims": {
+                "name": "dims",
+                "value": 1,
+                "group": "output"
+            },
+            "output:activation": {
+                "name": "activation",
+                "value": "sigmoid",
+                "group": "output"
+            },
+            "optimizer:loss": {
+                "name": "loss",
+                "value": "mse",
+                "group": "optimizer"
+            }
+        },
+        "is_best_model": false,
+        "objective": "val_acc",
+        "executions": [
+            {
+                "start_time": 1556596167,
+                "idx": 1556596167,
+                "epochs": 2,
+                "eta": 2,
+                "record_time": 1556596169,
+                "metrics": [
+                    {
+                        "name": "accuracy",
+                        "best_value": 0.5098989898989899,
+                        "last_value": 0.5098989898989899,
+                        "direction": "max",
+                        "history": [
+                            0.5077777777777778,
+                            0.5098989898989899,
+                            0.5098989898989899
+                        ],
+                        "statistics": {
+                            "min": 0.5077777777777778,
+                            "max": 0.5098989898989899,
+                            "mean": 0.5091919191919192,
+                            "median": 0.5098989898989899,
+                            "variance": 9.998979695949e-07,
+                            "stddev": 0.0009999489834961082
+                        },
+                        "is_objective": false
+                    },
+                    {
+                        "name": "loss",
+                        "best_value": 0.250726089001906,
+                        "last_value": 0.250726089001906,
+                        "direction": "min",
+                        "history": [
+                            0.25382151945672854,
+                            0.250726089001906,
+                            0.250726089001906
+                        ],
+                        "statistics": {
+                            "min": 0.250726089001906,
+                            "max": 0.25382151945672854,
+                            "mean": 0.2517578991535135,
+                            "median": 0.250726089001906,
+                            "variance": 2.129264377920616e-06,
+                            "stddev": 0.0014591999101975766
+                        },
+                        "is_objective": false
+                    },
+                    {
+                        "name": "val_accuracy",
+                        "best_value": 0.57,
+                        "last_value": 0.57,
+                        "direction": "max",
+                        "history": [
+                            0.47,
+                            0.57,
+                            0.57
+                        ],
+                        "statistics": {
+                            "min": 0.47,
+                            "max": 0.57,
+                            "mean": 0.5366666666666666,
+                            "median": 0.57,
+                            "variance": 0.0022222222222222214,
+                            "stddev": 0.04714045207910316
+                        },
+                        "is_objective": true
+                    },
+                    {
+                        "name": "val_loss",
+                        "best_value": 0.24798346638679505,
+                        "last_value": 0.24798346638679505,
+                        "direction": "min",
+                        "history": [
+                            0.2532332968711853,
+                            0.24798346638679505,
+                            0.24798346638679505
+                        ],
+                        "statistics": {
+                            "min": 0.24798346638679505,
+                            "max": 0.2532332968711853,
+                            "mean": 0.2497334098815918,
+                            "median": 0.24798346638679505,
+                            "variance": 6.124604469962887e-06,
+                            "stddev": 0.0024747938237281277
+                        },
+                        "is_objective": false
+                    }
+                ]
+            }
+        ],
+        "aggregate_metrics": [
+            {
+                "name": "accuracy",
+                "best_value": 0.5098989898989899,
+                "last_value": 0.5098989898989899,
+                "direction": "max",
+                "history": [
+                    0.5077777777777778,
+                    0.5098989898989899,
+                    0.5098989898989899
+                ],
+                "statistics": {
+                    "min": 0.5077777777777778,
+                    "max": 0.5098989898989899,
+                    "mean": 0.5091919191919192,
+                    "median": 0.5098989898989899,
+                    "variance": 9.998979695949e-07,
+                    "stddev": 0.0009999489834961082
+                },
+                "is_objective": false
+            },
+            {
+                "name": "loss",
+                "best_value": 0.250726089001906,
+                "last_value": 0.250726089001906,
+                "direction": "min",
+                "history": [
+                    0.25382151945672854,
+                    0.250726089001906,
+                    0.250726089001906
+                ],
+                "statistics": {
+                    "min": 0.250726089001906,
+                    "max": 0.25382151945672854,
+                    "mean": 0.2517578991535135,
+                    "median": 0.250726089001906,
+                    "variance": 2.129264377920616e-06,
+                    "stddev": 0.0014591999101975766
+                },
+                "is_objective": false
+            },
+            {
+                "name": "val_accuracy",
+                "best_value": 0.57,
+                "last_value": 0.57,
+                "direction": "max",
+                "history": [
+                    0.47,
+                    0.57,
+                    0.57
+                ],
+                "statistics": {
+                    "min": 0.47,
+                    "max": 0.57,
+                    "mean": 0.5366666666666666,
+                    "median": 0.57,
+                    "variance": 0.0022222222222222214,
+                    "stddev": 0.04714045207910316
+                },
+                "is_objective": true
+            },
+            {
+                "name": "val_loss",
+                "best_value": 0.24798346638679505,
+                "last_value": 0.24798346638679505,
+                "direction": "min",
+                "history": [
+                    0.2532332968711853,
+                    0.24798346638679505,
+                    0.24798346638679505
+                ],
+                "statistics": {
+                    "min": 0.24798346638679505,
+                    "max": 0.2532332968711853,
+                    "mean": 0.2497334098815918,
+                    "median": 0.24798346638679505,
+                    "variance": 6.124604469962887e-06,
+                    "stddev": 0.0024747938237281277
+                },
+                "is_objective": false
+            }
+        ]
+    },
+    "hparams": {
+        "inputs:dims": {
+            "name": "dims",
+            "group": "inputs",
+            "type": "Range",
+            "space_size": 8,
+            "start": 16,
+            "stop": 32,
+            "values": [
+                16,
+                18,
+                20,
+                22,
+                24,
+                26,
+                28,
+                30
+            ]
+        },
+        "hidden_layers:dims": {
+            "name": "dims",
+            "group": "hidden_layers",
+            "type": "Range",
+            "space_size": 8,
+            "start": 16,
+            "stop": 32,
+            "values": [
+                16,
+                18,
+                20,
+                22,
+                24,
+                26,
+                28,
+                30
+            ]
+        },
+        "hidden_layers:activation": {
+            "name": "activation",
+            "group": "hidden_layers",
+            "type": "Choice",
+            "space_size": 2,
+            "start": "relu",
+            "stop": "tanh",
+            "values": [
+                "relu",
+                "tanh"
+            ]
+        },
+        "hidden_layers:2nd hidden layer": {
+            "name": "2nd hidden layer",
+            "group": "hidden_layers",
+            "type": "Boolean",
+            "space_size": 2,
+            "start": true,
+            "stop": false,
+            "values": [
+                true,
+                false
+            ]
+        },
+        "output:dims": {
+            "name": "dims",
+            "group": "output",
+            "type": "Fixed",
+            "space_size": 1,
+            "start": 1,
+            "stop": 1,
+            "values": [
+                1
+            ]
+        },
+        "output:activation": {
+            "name": "activation",
+            "group": "output",
+            "type": "Choice",
+            "space_size": 2,
+            "start": "sigmoid",
+            "stop": "tanh",
+            "values": [
+                "sigmoid",
+                "tanh"
+            ]
+        },
+        "optimizer:loss": {
+            "name": "loss",
+            "group": "optimizer",
+            "type": "Choice",
+            "space_size": 2,
+            "start": "binary_crossentropy",
+            "stop": "mse",
+            "values": [
+                "binary_crossentropy",
+                "mse"
+            ]
+        }
+    }
+}
