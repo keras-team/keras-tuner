@@ -1,4 +1,4 @@
-"Keras Tuner hello world sequential hello world"
+"Keras Tuner hello world sequential API - TensorFlow V1.x"
 import os
 import numpy as np
 from tensorflow.keras.models import Sequential
@@ -35,7 +35,7 @@ def model_fn():
     if EXTRA_LAYER:
         model.add(Dense(DIMS, activation=ACTIVATION))
     model.add(Dense(1, activation='sigmoid'))
-    optimizer = Adam(lr=LR)
+    optimizer = Adam(LR)
     model.compile(optimizer=optimizer, loss=LOSS, metrics=['accuracy'])
     return model
 

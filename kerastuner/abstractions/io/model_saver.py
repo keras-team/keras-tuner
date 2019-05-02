@@ -270,7 +270,7 @@ def reload_model(config_file, weights_file, results_file, compile=False):
     """ Reconstructs a model from the persisted files.
 
     Args:
-        config_file (string): Configuration filename. 
+        config_file (string): Configuration filename.
         weights_file (string): Keras weights filename.
         results_file (string): Results filename.
         compile (bool, optional): Defaults to False. If True, the optimizer
@@ -288,6 +288,7 @@ def reload_model(config_file, weights_file, results_file, compile=False):
 
     # If compilation is requested, we need to reload the results file to find
     # which optimizer and losses the model used.
+    # FIXME: merge with instance serialization
     if compile:
         results_file = json.loads(read_file(results_file))
         loss = deserialize_loss(results_file["loss_config"])
