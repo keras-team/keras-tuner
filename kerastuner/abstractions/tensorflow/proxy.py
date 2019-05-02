@@ -90,7 +90,7 @@ class GFileProxy(object):
             path: string, a path
 
         Raises:
-            errors.OpError: Propagates any errors reported by the FileSystem API.        
+            errors.OpError: Propagates any errors reported by the FileSystem API.
         """
 
     @abstractmethod
@@ -186,7 +186,7 @@ class UtilsBase(object):
         elif isinstance(loss, dict):
             loss_out = {}
             for k, v in loss.items():
-                loss_out[k] = self.serialize_loss(l)
+                loss_out[k] = self.serialize_loss(v)
             return loss_out
         else:
             return self.tf_proxy.keras.losses.serialize(loss)
@@ -434,7 +434,7 @@ class UtilsBase(object):
                     and operations.  See:
                     https://github.com/tensorflow/tensorflow/tree/master/tensorflow/tools/graph_transforms
                 "tf_lite" - A TF Lite model.
-            tmp_path (str, optional): directory in which to store temporary files. 
+            tmp_path (str, optional): directory in which to store temporary files.
         """
 
     def write_file(self, path, contents):
