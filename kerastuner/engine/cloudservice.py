@@ -69,8 +69,8 @@ class CloudService():
         if url:
           self.base_url = url
         if self._check_access():
-            info("Cloud service enabled - Go to https://.. to track your\
-                 tuning results in realtime")
+            info("Cloud service enabled - Go to https://.. to track your "
+                 "tuning results in realtime.")
             self.status = OK
             self.is_enable = True
         else:
