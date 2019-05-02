@@ -84,11 +84,11 @@ class MetricsCollection(Collection):
         return None
 
     def get_metric_names(self):
-        "return the list of metric names"
+        "Return the list of metric names"
         return sorted(self._objects.keys())
 
     def _replace_alias(self, metric_name):
-        "replace metric alias with their canonical name"
+        "Replace metric alias with their canonical name"
         no_val_name = metric_name.replace('val_', '')
         if no_val_name in _METRIC_ALIAS:
             return metric_name.replace(no_val_name, _METRIC_ALIAS[no_val_name])
@@ -103,7 +103,18 @@ class MetricsCollection(Collection):
 
         names = sorted(self._objects.keys())
         # for each metric returns its serialized form
-        return [self._objects[name].to_config() for name in names]
+
+        out = []
+        for name in names:
+            obj = self._objects[name]
+
+            cfg = None
+            if hasattr(obj, 'to_config'):
+                cfg = obj.to_config()
+            else:
+                cfg = obj.get_config()
+            out.append(cfg)
+        return out
 
     @staticmethod
     def from_config(config):
@@ -116,7 +127,7 @@ class MetricsCollection(Collection):
         return col
 
     def set_objective(self, name):
-        "Mark a metric as tuning objective"
+        "Mark a metric as the tuning objective"
         name = self._replace_alias(name)
         if name not in self._objects:
             fatal("can't find objective: %s in metric list" % name)
@@ -133,6 +144,7 @@ class MetricsCollection(Collection):
         return self._objects[self._objective_name]
 
     def summary(self, extended=False):
+        """Display a table containing the name and best/last value for each metric."""
         rows = [['name', 'best', 'last']]
         for m in self.to_list():
             row = [

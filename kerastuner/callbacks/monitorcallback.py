@@ -8,7 +8,7 @@ from kerastuner import config
 from .tunercallback import TunerCallback
 from kerastuner.collections import MetricsCollection
 from kerastuner.abstractions.display import write_log, fatal
-from kerastuner.abstractions.io import save_model, write_file
+from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 
 
 class MonitorCallback(TunerCallback):
@@ -22,6 +22,7 @@ class MonitorCallback(TunerCallback):
         self.thread_pool = ThreadPool(num_threads)
         self.epoch_history = defaultdict(list)
         self.training_complete = False  # important for the cloudservice
+        self.num_threads = num_threads
 
     def on_batch_end(self, batch, logs={}):
         for metric, value in logs.items():
@@ -31,14 +32,15 @@ class MonitorCallback(TunerCallback):
     def on_epoch_end(self, epoch, logs={}):
 
         # update epoch counters
-        self.execution_state.epochs += 1
+        self.execution_state .epochs += 1
         self.tuner_state.remaining_budget -= 1
 
         # update metrics and checkpoint if needed
         for metric, value in logs.items():
             improved = self.execution_state.metrics.update(metric, value)
             if self.tuner_state.objective == metric and improved:
-                self.thread_pool.apply_async(self._checkpoint_model)
+#                self.thread_pool.apply_async(self._checkpoint_model)
+                self._checkpoint_model()
 
         # reset epoch history
         self.epoch_history = defaultdict(list)
@@ -54,6 +56,13 @@ class MonitorCallback(TunerCallback):
         self._end_training_statistics()
         self._report_status(force=True)
         self._write_result_file()
+        self._flush_thread_pool()
+
+
+    def _flush_thread_pool(self):
+        self.thread_pool.close()
+        self.thread_pool.join()
+        self.thread_pool = ThreadPool(self.num_threads)
 
     def _end_training_statistics(self):
         """Compute and display end of training statistics
@@ -84,9 +93,17 @@ class MonitorCallback(TunerCallback):
     def _checkpoint_model(self):
         """Checkpoint model"""
         prefix = self._get_filename_prefix()
-        base_filename = path.join(self.tuner_state.host.local_dir, prefix)
-        save_model(self.model, base_filename, output_type="keras")
-        write_log("Improved model saved to %s" % base_filename)
+        base_filename = prefix
+        write_log("Saving model to %s" % base_filename)
+        try:
+            tf_utils.save_model(self.model, base_filename, output_type="keras")
+            write_log("Improved model saved to %s" % base_filename)
+        except:
+            print("FAILED")
+            import traceback
+            traceback.print_exc()
+            write_log("Failed.")
+            exit(0)
         self._write_result_file()
 
     def _write_result_file(self):
@@ -101,7 +118,7 @@ class MonitorCallback(TunerCallback):
         prefix = self._get_filename_prefix(with_execution_info=False)
         # don't do a os.join as it is just appending a suffix
         fname = prefix + '-results.json'
-        write_file(fname, status_json)
+        tf_utils.write_file(fname, status_json)
 
         # send result to the cloud service
         if self.cloudservice.is_enable:
@@ -135,7 +152,7 @@ class MonitorCallback(TunerCallback):
 
         # write on disk
         fname = path.join(self.tuner_state.host.result_dir, 'status.json')
-        write_file(fname, status_json)
+        tf_utils.write_file(fname, status_json)
 
         # send status to cloudservice
         if self.cloudservice.is_enable:

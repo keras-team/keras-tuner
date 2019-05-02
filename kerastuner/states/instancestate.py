@@ -1,18 +1,22 @@
-import time
 import json
-import tensorflow as tf
-from tensorflow.keras.models import model_from_json  # nopep8 pylint: disable=import-error
-from copy import deepcopy
+import time
 from collections import defaultdict
+from copy import deepcopy
+
+from tensorflow.keras.models import \
+    model_from_json  # nopep8 pylint: disable=import-error
+
+from kerastuner import config
+from kerastuner.abstractions.display import (colorize, colorize_row,
+                                             display_setting, display_settings,
+                                             display_table, section,
+                                             subsection)
+from kerastuner.abstractions.tensorflow import TENSORFLOW as tf
+from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
+from kerastuner.abstractions.tf import compute_model_size
+from kerastuner.collections.metriccollection import MetricsCollection
 
 from .state import State
-from kerastuner import config
-from kerastuner.collections.metriccollection import MetricsCollection
-from kerastuner.abstractions.tf import compute_model_size
-from kerastuner.abstractions.io import serialize_loss, deserialize_loss
-from kerastuner.abstractions.display import display_table, section, subsection
-from kerastuner.abstractions.display import display_setting, display_settings
-from kerastuner.abstractions.display import colorize, colorize_row
 
 
 class InstanceState(State):
@@ -36,10 +40,10 @@ class InstanceState(State):
         self.execution_configs = []
 
         # model info
-        # we use deepcopy to avoid mutation due to tuner that swap models
-        self.model_size = compute_model_size(model)
+        # we use deepcopy to avoid mutation due to tuners that swap models
+        self.model_size = tf_utils.compute_model_size(model)
         self.optimizer_config = deepcopy(tf.keras.optimizers.serialize(model.optimizer))  # nopep8
-        self.loss_config = deepcopy(serialize_loss(model.loss))
+        self.loss_config = deepcopy(tf_utils.serialize_loss(model.loss))
         self.model_config = json.loads(model.to_json())
         self.hyper_parameters = deepcopy(hyper_parameters)
         self.agg_metrics = None
@@ -59,7 +63,7 @@ class InstanceState(State):
                 "training size": self.training_size,
                 "validation size": self.validation_size,
                 "batch size": self.batch_size
-                })
+            })
         display_settings(settings)
 
         subsection("Hyper-parameters")
@@ -92,7 +96,7 @@ class InstanceState(State):
     def from_config(config):
         idx = config['idx']
         model = model_from_json(json.dumps(config['model_config']))
-        model.loss = deserialize_loss(config['loss_config'])
+        model.loss = tf_utils.deserialize_loss(config['loss_config'])
         model.optimizer = tf.keras.optimizers.deserialize(config['optimizer_config'])  # nopep8
         hyper_parameters = config['hyper_parameters']
         state = InstanceState(idx, model, hyper_parameters)

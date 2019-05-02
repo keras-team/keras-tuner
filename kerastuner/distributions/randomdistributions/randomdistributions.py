@@ -72,7 +72,7 @@ class RandomDistributions(Distributions):
         Returns:
             an element of the range
         """
-        my_range = range(start, stop, increment)
+        my_range = list(range(start, stop, increment))
         value = random.choice(my_range)
         self._record_hyperparameter(name, value, group)
         return value

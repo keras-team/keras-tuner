@@ -15,22 +15,20 @@ import traceback
 
 # used to check if supplied model_fn is a valid model
 from tensorflow.keras.models import Model  # pylint: disable=import-error
-
-from kerastuner.abstractions.tf import clear_tf_session, compute_model_size
-from kerastuner.abstractions.io import create_directory, glob, read_file
-from kerastuner.abstractions.io import save_model, reload_model
-from kerastuner.abstractions.io import read_results, deserialize_loss
+from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 from kerastuner.abstractions.display import highlight, display_table, section
 from kerastuner.abstractions.display import display_setting, display_settings
 from kerastuner.abstractions.display import info, warning, fatal, set_log
 from kerastuner.abstractions.display import progress_bar, subsection
 from kerastuner.abstractions.display import colorize, colorize_default
+from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 from kerastuner.tools.summary import results_summary as _results_summary
 from kerastuner import config
 from kerastuner.states import TunerState
 from .cloudservice import CloudService
 from .instance import Instance
 from kerastuner.collections import InstancesCollection
+from kerastuner.abstractions.io import reload_model
 
 
 class Tuner(object):
@@ -137,7 +135,7 @@ class Tuner(object):
 
         while 1:
             # clean-up TF graph from previously stored (defunct) graph
-            clear_tf_session()
+            tf_utils.clear_tf_session()
             self.stats.generated_instances += 1
             fail_streak += 1
             try:
@@ -171,7 +169,7 @@ class Tuner(object):
                 continue
 
             # check size
-            nump = compute_model_size(model)
+            nump = tf_utils.compute_model_size(model)
             if nump > self.state.max_model_parameters:
                 over_sized_streak += 1
                 self.stats.over_sized_models += 1
@@ -191,57 +189,62 @@ class Tuner(object):
         self.instances.add(idx, instance)
         return instance
 
-    def get_best_model(self, **kwargs):
-        resultset, models = self.get_best_model(num_models=1, **kwargs)
-        return models[0], ResultSet(resultset.results[0])
+    def get_best_model(self, metric="loss", direction="min"):
+        instances, executions, models = self.get_best_models(
+            metric=metric, direction=direction, num_models=1)
+        return instances[0], executions[0], models[0]
 
-    def get_best_models(
-            self, metric="loss", direction='min', num_models=1, compile=False):
-        # Glob/read the results metadata.
-        results_dir = self.state.host.result_dir
+    def get_best_models(self, num_models=1, compile=False):
+        """Returns the best models, as determined by the tuner's objective.
 
-        result_set = read_results(results_dir).sorted_by_metric(
-            metric, direction).limit(num_models).results
+        Args:
+            num_models (int, optional): Number of best models to return.
+                Models will be returned in sorted order. Defaults to 1.
+            compile (bool, optional): If True, infer the loss and optimizer,
+                and compile the returned models. Defaults to False.
+
+        Returns:
+            tuple: Tuple containing a list of Instances, a list of Execution,
+                and a list of Models, where the Nth Instance and Nth Execution
+                correspond to the Nth Model.
+        """
+        sorted_instances = self.instances.sort_by_objective()
+        if len(sorted_instances) > num_models:
+            sorted_instances = sorted_instances[:num_models]
+
+        executions = []
+        for instance in sorted_instances:
+            executions.append(instance.get_best_executions())
 
         models = []
+        for instance, execution in zip(sorted_instances, executions):
+            model = reload_model(
+                self.state,
+                instance,
+                execution,
+                compile=False)
 
-        for result in result_set:
-            config_file = os.path.join(results_dir, result["config_file"])
-            weights_file = os.path.join(results_dir, result["weights_file"])
-            results_file = os.path.join(results_dir, result["results_file"])
+        return sorted_instances, executions, models
 
-            model = reload_model(config_file, weights_file,
-                                 results_file, compile=compile)
-            models.append(model)
-        return models, result_set
+    def save_best_model(self, output_type="keras"):
+        """Shortcut for save_best_models for the case of only keeping the best model."""
+        return self.save_best_models(output_type="keras", num_models=1)
 
-    def save_best_model(self, **kwargs):
-        return self.save_best_models(num_models=1, **kwargs)
-
-    def save_best_models(
-            self, metric="loss",
-            direction='min',
-            output_type="keras",
-            num_models=1):
+    def save_best_models(self, output_type="keras", num_models=1):
         """ Exports the best model based on the specified metric, to the
             results directory.
 
             Args:
-                metric (str, optional): Defaults to "loss". The metric used to
-                     determine the best model.
-                direction (str, optional): Defaults to 'min'. The sort
-                    direction for the metric:
-                        'min' - for losses, and other metrics where smaller is
-                        better.
-                        'max' - for accuracy, and other metrics where
-                        larger is better.
                 output_type (str, optional): Defaults to "keras". What format
                     of model to export:
 
+                    # Tensorflow 1.x/2.x
                     "keras" - Save as separate config (JSON) and weights (HDF5)
                         files.
                     "keras_bundle" - Saved in Keras's native format (HDF5), via
                         save_model()
+
+                    # Currently only supported in Tensorflow 1.x
                     "tf" - Saved in tensorflow's SavedModel format. See:
                         https://www.tensorflow.org/alpha/guide/saved_model
                     "tf_frozen" - A SavedModel, where the weights are stored
@@ -255,18 +258,25 @@ class Tuner(object):
                         https://github.com/tensorflow/tensorflow/tree/master/tensorflow/tools/graph_transforms
                     "tf_lite" - A TF Lite model.
         """
-        models, results = self.get_best_models(
-            metric=metric,
-            direction=direction,
-            num_models=num_models,
-            compile=False)
-        for idx, (model, result) in enumerate(zip(models, results)):
-            name = result["execution_prefix"]
-            export_path = os.path.join(self.state.host.export_dir, name)
-            tmp_path = os.path.join(self.state.host.tmp_dir, name)
-            info("Exporting top model (%d/%d) - %s" % (idx + 1, len(models), export_path))
-            save_model(model, export_path, tmp_path=tmp_path,
-                       output_type=output_type)
+
+        instances, executions, models = self.get_best_models(
+            num_models=num_models, compile=False)
+
+        for idx, (model, instance, execution) in enumerate(
+                zip(models, instances, executions)):
+            export_prefix = "%s-%s-%s-%s" % (
+                self.state.project,
+                self.state.architecture,
+                instance.state.idx,
+                execution.state.idx)
+
+            export_path = os.path.join(
+                self.state.host.export_dir, export_prefix)
+            tmp_path = os.path.join(self.state.host.tmp_dir, export_prefix)
+            info("Exporting top model (%d/%d) - %s" %
+                 (idx + 1, len(models), export_path))
+            tf_utils.save_model(model, export_path, tmp_path=tmp_path,
+                                output_type=output_type)
 
     def __compute_model_id(self, model):
         "compute model hash"
@@ -275,9 +285,9 @@ class Tuner(object):
 
     def results_summary(self, num_models=10, sort_metric=None):
         _results_summary(input_dir=self.state.host.result_dir,
-                        project=self.state.project,
-                        architecture=self.state.architecture,
-                        num_models=10, sort_metric=sort_metric)
+                         project=self.state.project,
+                         architecture=self.state.architecture,
+                         num_models=10, sort_metric=sort_metric)
 
     @abstractmethod
     def tune(self, x, y, **kwargs):
