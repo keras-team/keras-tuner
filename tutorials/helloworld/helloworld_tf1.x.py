@@ -20,15 +20,15 @@ y_train = np.random.randint(2, size=(10000, 1))
 def model_fn():
     "Model with hyper-parameters"
 
-    # layers
+    # Hyper-parameters are defined as normal python variables
     DIMS = Range('dims', 16, 32, 2, group='layers')
     ACTIVATION = Choice('activation', ['relu', 'tanh'], group="layers")
     EXTRA_LAYER = Boolean('extra_layer', group="layers")
-
-    # Compile options
     LOSS = Choice('loss', ['binary_crossentropy', 'mse'], group="optimizer")
     LR = Choice('lr', [0.01, 0.001, 0.0001], group="optimizer")
 
+    # converting a model to a tunable model is a simple as replacing static
+    # values with the hyper parameters variables.
     model = Sequential()
     model.add(Dense(DIMS, input_shape=(200,)))
     model.add(Dense(DIMS, activation=ACTIVATION))

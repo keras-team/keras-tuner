@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+from time import time
 
 from kerastuner.abstractions.display import fatal
 
@@ -15,9 +16,13 @@ class Metric(object):
             direction (str): metric direction. One of {'min', 'max'}
 
         Attributes:
-            history (list): metric history
+            history (list): metric epoch history
             is_objective (bool): is this metric the main tuning objectived.
             Defaults to False.
+            start_time (float): when the metric was created
+            wall_time (list): time it took to reach a given epoch from start
+            time. Data recorded as float which are delta from start_time.
+
         """
         self.name = name
         if direction not in ['min', 'max']:
@@ -25,6 +30,9 @@ class Metric(object):
         self.direction = direction
         self.history = []
         self.is_objective = False
+
+        self.start_time = time()
+        self.wall_time = []
 
     def update(self, value):
         """ Update metric
@@ -38,6 +46,7 @@ class Metric(object):
         value = float(value)
         best_value = self.get_best_value()
         self.history.append(value)
+        self.wall_time.append(time() - self.start_time)
 
         # if no best_value then current is best
         if not best_value:
@@ -102,7 +111,9 @@ class Metric(object):
             "direction": self.direction,
             "history": self.history,
             "statistics": self.get_statistics(),
-            "is_objective": self.is_objective
+            "is_objective": self.is_objective,
+            "start_time": self.start_time,
+            "wall_time": self.wall_time
         }
 
     @staticmethod
@@ -111,4 +122,6 @@ class Metric(object):
         metric = Metric(config['name'], config['direction'])
         metric.history = config['history']
         metric.is_objective = config['is_objective']
+        metric.start_time = config['start_time']
+        metric.wall_time = config['wall_time']
         return metric

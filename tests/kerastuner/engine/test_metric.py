@@ -1,6 +1,7 @@
 import pytest
 import json
 from kerastuner.engine.metric import Metric
+import time
 
 
 @pytest.fixture
@@ -11,10 +12,21 @@ def mm():
     return mm
 
 
+def test_metric_wall_time():
+    mm = Metric('acc', 'max')
+    mm.update(10)
+    time.sleep()
+    mm.update(11)
+    assert mm.wall_time[1] > 1
+
+
 def test_metric_creation():
     metric = Metric('test', 'min')
     assert metric.name == 'test'
     assert metric.direction == 'min'
+    assert int(metric.start_time) == int(time.time())
+    assert metric.wall_time == []
+    assert metric.history == []
 
 
 def test_metric_invalid_direction():
@@ -60,11 +72,13 @@ def test_history(mm):
 
 
 def test_to_dict(mm):
+    start_time = mm.start_time
     conf = mm.to_config()
     assert conf['name'] == 'name'
     assert conf['best_value'] == 10
     assert conf['last_value'] == 11
     assert conf['history'] == [10, 11]
+    assert conf['start_time'] == start_time
 
 
 def test_to_dict_to_json_to_dict(mm):
