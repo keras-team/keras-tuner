@@ -39,7 +39,7 @@ class MonitorCallback(TunerCallback):
         for metric, value in logs.items():
             improved = self.execution_state.metrics.update(metric, value)
             if self.tuner_state.objective == metric and improved:
-#                self.thread_pool.apply_async(self._checkpoint_model)
+                # self.thread_pool.apply_async(self._checkpoint_model)
                 self._checkpoint_model()
 
         # reset epoch history
@@ -57,7 +57,6 @@ class MonitorCallback(TunerCallback):
         self._report_status(force=True)
         self._write_result_file()
         self._flush_thread_pool()
-
 
     def _flush_thread_pool(self):
         self.thread_pool.close()

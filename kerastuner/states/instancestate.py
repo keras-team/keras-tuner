@@ -3,8 +3,7 @@ import time
 from collections import defaultdict
 from copy import deepcopy
 
-from tensorflow.keras.models import \
-    model_from_json  # nopep8 pylint: disable=import-error
+from tensorflow.keras.models import model_from_json  # nopep8 pylint: disable=import-error
 
 from kerastuner import config
 from kerastuner.abstractions.display import (colorize, colorize_row,

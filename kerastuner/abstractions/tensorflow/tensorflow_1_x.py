@@ -2,6 +2,7 @@ import gc
 import os
 
 import tensorflow as tf
+
 from tensorflow.keras import backend as K
 from tensorflow import gfile, python
 from tensorflow.python import Graph, GraphDef, Session, ConfigProto
