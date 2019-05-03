@@ -1,12 +1,9 @@
 {
-    "name": "Tunable Resnet",
-    "target": "images",
+    "name": "Random Search Tuner",
     "description": "Hypertunable version of Resnet",
-    "version": "0.0.0.1",
-    "search_space": 96,
+    "version": "1.0",
     "reference": "http://comingsoon",
     "authors": [
-        "Luca Invernizzi",
         "Elie Bursztein"
     ],
     "contact": "kerastuner@google.com",

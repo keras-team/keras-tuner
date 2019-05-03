@@ -112,18 +112,9 @@ class Tuner(object):
         """
         self.cloudservice.enable(api_key, url)
 
-    def search(self, x, y, **kwargs):
-        self.state.keras_function = 'fit'
+    def search(self, x, y=None, **kwargs):
         kwargs["verbose"] = 0
         self.tune(x, y, **kwargs)
-        if self.cloudservice.is_enable:
-            self.cloudservice.complete()
-
-    def search_generator(self, x, **kwargs):
-        self.state.keras_function = 'fit_generator'
-        kwargs["verbose"] = 0
-        # fit_generator don't use y this so we use None instead
-        self.tune(x, None, **kwargs)
         if self.cloudservice.is_enable:
             self.cloudservice.complete()
 

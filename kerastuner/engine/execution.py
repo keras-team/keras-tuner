@@ -73,11 +73,5 @@ class Execution(object):
         # replacing callback with the new list
         kwargs['callbacks'] = callbacks
 
-        if self.tuner_state.keras_function == 'fit':
-            results = self.model.fit(x, y, **kwargs)
-        elif self.tuner_state.keras_function == 'fit_generator':
-            results = self.model.fit_generator(x, **kwargs)
-        else:
-            fatal("Unknown keras function requested ",
-                  self.tuner_state.keras_function)
+        results = self.model.fit(x, y, **kwargs)
         return results

@@ -62,7 +62,6 @@ class TunerState(State):
     Attributes:
         start_time (int): When tuning started.
         remaining_budget (int): How many epoch are left.
-        keras_function (str): Which keras function to use to train models.
         log_file (str): Path to the log file.
         eta (int): estimated time till training end
 
@@ -124,8 +123,6 @@ class TunerState(State):
                                      self.start_time)
         self.log_file = os.path.join(self.host.result_dir, log_name)
         set_log(self.log_file)
-
-        self.keras_function = 'unknown'
         self.eta = -1
 
     def summary(self, extended=False):
@@ -162,8 +159,7 @@ class TunerState(State):
         # computing remaining time
         self._compute_eta()
 
-        attrs = ['name', 'objective', 'start_time', 'remaining_budget',
-                 'keras_function', 'eta']
+        attrs = ['name', 'objective', 'start_time', 'remaining_budget', 'eta']
         config = self._config_from_attrs(attrs)
 
         # collect user params

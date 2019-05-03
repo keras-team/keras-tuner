@@ -1,6 +1,6 @@
 "Basic randomsearch tuner"
 from termcolor import cprint
-from ..engine import Tuner
+from kerastuner.engine import Tuner
 from kerastuner.abstractions.display import subsection
 from kerastuner.distributions import RandomDistributions
 

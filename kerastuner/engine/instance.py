@@ -40,7 +40,6 @@ class Instance(object):
 
         Args:
             x (numpy array): Training data
-            y (numpy array): Label
             epochs (int): Number of epochs to train the model.
 
         Returns:
