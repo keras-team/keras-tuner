@@ -4,6 +4,7 @@ from __future__ import division
 from __future__ import print_function
 
 import concurrent.futures
+import copy
 import time
 import requests
 import json
@@ -19,6 +20,23 @@ OK = 'ok'
 ERROR = 'error'
 
 
+def _normalize_data_to_send(info):
+    """Cleans up the data to send to the cloud service.
+
+    Args:
+        info (dict): the data to send
+
+    Returns:
+      dict: the info object, cleaned.
+    """
+    # Remove the parts of the data that are unbounded in size.
+    info = copy.deepcopy(info)
+    for key in ['model_config', 'epoch_history']:
+      if key in info:
+        del info[key]
+    return info
+
+
 def send_to_backend(url, api_key, info_type, info):
     """Sends data to the cloud service.
 
@@ -31,13 +49,15 @@ def send_to_backend(url, api_key, info_type, info):
         headers={'X-AUTH': api_key},
         json={
             'type': info_type,
-            'data': info
+            'data': _normalize_data_to_send(info)
         })
+
     if not response.ok:
         try:
             response_json = response.json()
         except json.decoder.JSONDecodeError:
-            warning("Cloud service down -- data not uploaded")
+            warning('Cloud service down -- data not uploaded: %s' %
+                    response.text)
             return CONNECT_ERROR
 
         if response_json['status'] == 'Unauthorized':
@@ -69,8 +89,8 @@ class CloudService():
         if url:
           self.base_url = url
         if self._check_access():
-            info("Cloud service enabled - Go to https://.. to track your\
-                 tuning results in realtime")
+            info("Cloud service enabled - Go to https://.. to track your "
+                 "tuning results in realtime.")
             self.status = OK
             self.is_enable = True
         else:

@@ -2,20 +2,25 @@ from kerastuner.distributions.distributions import Distributions
 from kerastuner.abstractions.display import fatal
 import random
 from numpy import linspace, logspace
+from collections import defaultdict
 
 
-class RandomDistributions(Distributions):
+class SequentialDistributions(Distributions):
     """Random distributions
 
     Args:
         hyperparameters_config (dict): hyperparameters dict describing
         the search space. Often refered as hparams. Generated using
         DummyDistributions() in Tuner()
+    Attributes:
+        counters (defaultdict(list)): track what is the current returned value
     """
 
     def __init__(self, hyperparameters_config):
-        super(RandomDistributions, self).__init__('RandomDistributions',
-                                                  hyperparameters_config)
+        super(SequentialDistributions, self).__init__('SequentialDistributions',  # nopep8
+                                                      hyperparameters_config)
+        self.counters = defaultdict(int)
+        self.ranges = {}
 
     def Fixed(self, name, value, group="default"):
         """Return a fixed selected value
@@ -37,7 +42,11 @@ class RandomDistributions(Distributions):
         Returns:
             an Boolean
         """
-        value = random.choice([False, True])
+        key = self._get_key(name, group)
+        if key not in self.ranges:
+            self.ranges[key] = [True, False]
+
+        value = self._get_next_value(key)
         self._record_hyperparameter(name, value, group)
         return value
 
@@ -50,7 +59,11 @@ class RandomDistributions(Distributions):
         Returns:
             an element of the list provided
         """
-        value = random.choice(selection)
+        key = self._get_key(name, group)
+        if key not in self.ranges:
+            self.ranges[key] = selection
+
+        value = self._get_next_value(key)
         if isinstance(selection[0], int):
             value = int(value)
         elif isinstance(selection[0], float):
@@ -72,8 +85,11 @@ class RandomDistributions(Distributions):
         Returns:
             an element of the range
         """
-        my_range = list(range(start, stop, increment))
-        value = random.choice(my_range)
+        key = self._get_key(name, group)
+        if key not in self.ranges:
+            self.ranges[key] = list(range(start, stop, increment))
+
+        value = self._get_next_value(key)
         self._record_hyperparameter(name, value, group)
         return value
 
@@ -90,8 +106,11 @@ class RandomDistributions(Distributions):
         Returns:
             an element of the range
         """
-        my_range = logspace(start, stop, num_buckets)
-        value = random.choice(my_range)
+        key = self._get_key(name, group)
+        if key not in self.ranges:
+            self.ranges[key] = logspace(start, stop, num_buckets)
+
+        value = self._get_next_value(key)
         self._record_hyperparameter(name, value, group)
         return value
 
@@ -108,9 +127,27 @@ class RandomDistributions(Distributions):
         Returns:
             an element of the range
         """
-        my_range = linspace(start, stop, num_buckets)
-        value = random.choice(my_range)
+        key = self._get_key(name, group)
+        if key not in self.ranges:
+            self.ranges[name] = linspace(start, stop, num_buckets)
+
+        value = self._get_next_value(key)
         if precision:
             value = round(value, precision)
+
         self._record_hyperparameter(name, value, group)
+        return value
+
+    def _get_next_value(self, key):
+        "Return next value of the range"
+        # counter index with wrap around
+
+        idx = self.counters[key]
+
+        idx = idx % len(self.ranges[key])
+        value = self.ranges[key][idx]
+
+        # increment counter will wrap-around if needed next time
+        self.counters[key] = idx + 1
+
         return value

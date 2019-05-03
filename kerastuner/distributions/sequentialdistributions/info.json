@@ -1,0 +1,11 @@
+{
+    "name": "Sequential distributions",
+    "description": "Stateful distributions that iterate sequentially",
+    "version": "1.0",
+    "reference": "N/A",
+    "authors": [
+        "Elie Bursztein"
+    ],
+    "contact": "kerastuner@google.com",
+    "comments": "Used by gridsearch"
+}
