@@ -219,9 +219,9 @@ class Tuner(object):
     def save_best_model(self, output_type="keras"):
         """Shortcut for save_best_models for the case of only keeping the best
         model."""
-        return self.save_best_models(output_type="keras", num_models=1)
+        return self.save_best_models(export_type="keras", num_models=1)
 
-    def save_best_models(self, output_type="keras", num_models=1):
+    def save_best_models(self, export_type="keras", num_models=1):
         """ Exports the best model based on the specified metric, to the
             results directory.
 
@@ -267,7 +267,7 @@ class Tuner(object):
             info("Exporting top model (%d/%d) - %s" % (idx + 1, len(models),
                                                        export_path))
             tf_utils.save_model(model, export_path, tmp_path=tmp_path,
-                                output_type=output_type)
+                                export_type=export_type)
 
     def __compute_model_id(self, model):
         "compute model hash"

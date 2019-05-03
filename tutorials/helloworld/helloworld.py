@@ -17,6 +17,12 @@ x_train = np.random.random((10000, 200))
 y_train = np.random.randint(2, size=(10000, 1))
 
 
+# Defining what to hypertune is as easy as writing a Keras/TensorFlow model
+# The only differences are:
+# 1. Wrapping the model in a function
+# 2. Defining hyperparameters as variable using distribution functions
+# 3. Replacing the fixed values with the variables holding the hyperparameters
+#    ranges.
 def model_fn():
     "Model with hyper-parameters"
 

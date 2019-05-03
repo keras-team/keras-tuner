@@ -212,13 +212,13 @@ class Utils_1_x(proxy.UtilsBase):
         cfg.gpu_options.allow_growth = True  # pylint: disable=no-member
         tf.keras.backend.set_session(Session(config=cfg))
 
-    def save_model(self, model, path, output_type="keras", tmp_path="/tmp/", **kwargs):
+    def save_model(self, model, path, export_type="keras", tmp_path="/tmp/", **kwargs):
         """Save the provided model to the given path.
 
         Args:
             model(Model): the Keras model to be saved.
             path (str): the directory in which to write the model.
-            output_type (str, optional): Defaults to "keras". What format
+            export_type (str, optional): Defaults to "keras". What format
                 of model to export:
 
                 # Tensorflow 1.x/2.x
@@ -251,18 +251,18 @@ class Utils_1_x(proxy.UtilsBase):
         path = str(path)
         tmp_path = str(tmp_path)
 
-        if output_type == "keras":
+        if export_type == "keras":
             self.save_keras_model(model, path, tmp_path)
-        elif output_type == "keras_bundle":
+        elif export_type == "keras_bundle":
             self.save_keras_bundle_model(model, path, tmp_path)
-        elif output_type == "tf":
+        elif export_type == "tf":
             self.save_savedmodel(model, path, tmp_path)
-        elif output_type == "tf_frozen":
+        elif export_type == "tf_frozen":
             self.save_frozenmodel(model, path, tmp_path)
-        elif output_type == "tf_optimized":
+        elif export_type == "tf_optimized":
             self.save_optimized_model(model, path, tmp_path)
-        elif output_type == "tf_lite":
+        elif export_type == "tf_lite":
             self.save_tflite(model, path, tmp_path)
         else:
             raise ValueError("Output type '%s' not in known types '%s'" % (
-                output_type, str(KNOWN_OUTPUT_TYPES)))
+                export_type, str(KNOWN_OUTPUT_TYPES)))

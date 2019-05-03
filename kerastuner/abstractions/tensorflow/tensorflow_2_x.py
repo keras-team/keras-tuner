@@ -23,7 +23,7 @@ class GFileProxy_2_x(proxy.GFileProxy):
             mode (str): one of 'r', 'w', 'a', 'r+', 'w+', 'a+'. Append 'b' for bytes mode.
 
         Returns:
-            GFile - a GFile object representing the opened file.      
+            GFile - a GFile object representing the opened file.
         """
         return tf.io.gfile.GFile(name, mode)
 
@@ -205,7 +205,7 @@ class Utils_2_x(proxy.UtilsBase):
         cfg.gpu_options.allow_growth = True  # pylint: disable=no-member
         tf.keras.backend.set_session(Session(config=cfg))
 
-    def save_model(self, model, path, output_type="keras", tmp_path="/tmp/"):
+    def save_model(self, model, path, export_type="keras", tmp_path="/tmp/"):
         KNOWN_OUTPUT_TYPES = [
             "keras",
             "keras_bundle",
@@ -220,28 +220,28 @@ class Utils_2_x(proxy.UtilsBase):
             "tf_lite"
         ]
 
-        if output_type in UNSUPPORTED_OUTPUT_TYPES:
+        if export_type in UNSUPPORTED_OUTPUT_TYPES:
             raise ValueError(
                 "Output type '%s' is not currently supported "
                 "when using tensorflow 2.x.  Valid output types are: %s" % (
-                    output_type, str(KNOWN_OUTPUT_TYPES)))
+                    export_type, str(KNOWN_OUTPUT_TYPES)))
 
         # Convert PosixPath to string, if necessary.
         path = str(path)
         tmp_path = str(tmp_path)
 
-        if output_type == "keras":
+        if export_type == "keras":
             self.save_keras_model(model, path, tmp_path)
-        elif output_type == "keras_bundle":
+        elif export_type == "keras_bundle":
             self.save_keras_bundle_model(model, path, tmp_path)
-        elif output_type == "tf":
+        elif export_type == "tf":
             self.save_savedmodel(model, path, tmp_path)
-        elif output_type == "tf_frozen":
+        elif export_type == "tf_frozen":
             self.save_frozenmodel(model, path, tmp_path)
-        elif output_type == "tf_optimized":
+        elif export_type == "tf_optimized":
             self.save_optimized_model(model, path, tmp_path)
-        elif output_type == "tf_lite":
+        elif export_type == "tf_lite":
             self.save_tflite(model, path, tmp_path)
         else:
             raise ValueError("Output type '%s' not in known types '%s'" % (
-                output_type, str(KNOWN_OUTPUT_TYPES)))
+                export_type, str(KNOWN_OUTPUT_TYPES)))
