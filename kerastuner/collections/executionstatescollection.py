@@ -2,17 +2,19 @@ import json
 
 from .collections import Collection
 from kerastuner.states.executionstate import ExecutionState
+from kerastuner.abstractions.display import warning
 
 
 class ExecutionStatesCollection(Collection):
-    """ Manage a collection of executions
-    """
+    "Manage a collection of ExecutionStates"
 
     def __init__(self):
         super(ExecutionStatesCollection, self).__init__()
 
     def sort_by_metric(self, metric_name):
         "Returns a list of `ExecutionState`s sorted by a given metric."
+        # FIXME: Refactor to avoid dup with InstanceState by adding an
+        # Statescollection
 
         # Checking if the metric exists and get its direction.
         execution_state = self.get_last()
@@ -25,9 +27,8 @@ class ExecutionStatesCollection(Collection):
         # getting metric values
         values = {}
         for execution_state in self._objects.values():
-            value = execution_state.metrics.get(
-                metric.name).get_best_value()
-            # seems wrong but make it easy to sort by value and return execution
+            value = execution_state.metrics.get(metric.name).get_best_value()
+            # seems wrong but make it easy to sort by value and return excution
             values[value] = execution_state
 
         # sorting
@@ -56,8 +57,7 @@ class ExecutionStatesCollection(Collection):
             "execution_states": [],
             "last_insert_idx": self._last_insert_idx
         }
-        for idx, obj in self._objects.items():
-            conf = obj.to_config()
+        for obj in self._objects.values():
             config["execution_states"].append(obj.to_config())
 
         return config

@@ -253,19 +253,19 @@ class Tuner(object):
         instance_states, execution_states, models = self.get_best_models(
             num_models=num_models, compile=False)
 
-        for idx, (model, instance_state, execution_state) in enumerate(
-                zip(models, instance_states, execution_states)):
-            export_prefix = "%s-%s-%s-%s" % (
-                self.state.project,
-                self.state.architecture,
-                instance_state.idx,
-                execution_state.idx)
+        zipped = zip(models, instance_states, execution_states)
+        for idx, (model, instance_state, execution_state) in enumerate(zipped):
+            export_prefix = "%s-%s-%s-%s" % (self.state.project,
+                                             self.state.architecture,
+                                             instance_state.idx,
+                                             execution_state.idx)
 
-            export_path = os.path.join(
-                self.state.host.export_dir, export_prefix)
-            tmp_path = os.path.join(self.state.host.tmp_dir, export_prefix + "_tmp")
-            info("Exporting top model (%d/%d) - %s" %
-                 (idx + 1, len(models), export_path))
+            export_path = os.path.join(self.state.host.export_dir,
+                                       export_prefix)
+
+            tmp_path = os.path.join(self.state.host.tmp_dir, export_prefix)
+            info("Exporting top model (%d/%d) - %s" % (idx + 1, len(models),
+                                                       export_path))
             tf_utils.save_model(model, export_path, tmp_path=tmp_path,
                                 output_type=output_type)
 
