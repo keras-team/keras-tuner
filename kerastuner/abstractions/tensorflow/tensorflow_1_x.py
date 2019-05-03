@@ -1,6 +1,7 @@
 import gc
 import os
 
+import tensorflow
 import tensorflow as tf
 
 from tensorflow.keras import backend as K
@@ -160,11 +161,9 @@ class Utils_1_x(proxy.UtilsBase):
 
     def save_tflite(self, model, path, tmp_path, post_training_quantize=True):
         sess = K.get_session()
-        input_ops = self.get_input_tensors(model)
-        output_ops = self.get_output_tensors(model)
 
         self.write_file(
-            os.path.join(path, "model.tflite"),
+            path + ".tflite",
             tf.lite.TFLiteConverter.from_session(
                 sess,
                 model.inputs,
@@ -177,7 +176,7 @@ class Utils_1_x(proxy.UtilsBase):
             output_path):
         converter = tf.lite.TFLiteConverter.from_saved_model(
             savedmodel_path)
-        self.write_file(path, converter.convert())
+        self.write_file(output_path, converter.convert())
 
     def optimize_graph(
             self,
@@ -245,12 +244,7 @@ class Utils_1_x(proxy.UtilsBase):
         """
 
         KNOWN_OUTPUT_TYPES = [
-            "keras",
-            "keras_bundle",
-            "tf",
-            "tf_frozen",
-            "tf_optimized",
-            "tf_lite"
+            "keras", "keras_bundle", "tf", "tf_frozen", "tf_optimized", "tf_lite"
         ]
 
         # Convert PosixPath to string, if necessary.

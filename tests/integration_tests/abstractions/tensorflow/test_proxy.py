@@ -91,7 +91,7 @@ def test_save_keras_bundle(tmp_path, model, training_data):
     tf_utils.save_model(
         model, save_path, tmp_path=tmp_path, output_type="keras_bundle")
 
-    loaded = tf.keras.models.load_model(save_path)
+    loaded = tf.keras.models.load_model(save_path + ".keras_bundle.h5")
 
     orig_out = model.predict(x)
     loaded_out = loaded.predict(x)
@@ -260,7 +260,7 @@ def test_save_tf_lite(
         return
 
     save_path = os.path.join(str(tmp_path), "model_output")
-    save_file = os.path.join(save_path, "model.tflite")
+    save_file = save_path + ".tflite"
 
     os.makedirs(save_path)
 

@@ -343,6 +343,7 @@ class UtilsBase(object):
         weights_tmp = "%s-weights.h5" % tmp_path
 
         self.write_file(config_path, model.to_json())
+
         model.save_weights(weights_tmp, overwrite=True)
 
         # Move the file, potentially across filesystems.
@@ -354,6 +355,7 @@ class UtilsBase(object):
 
     def save_keras_bundle_model(self, model, path, tmp_path):
         """Save a Keras model bundle (config + weights) to the given path."""
+        path += ".keras_bundle.h5"
         model.save(tmp_path)
         self.tf_proxy.io.gfile.copy(tmp_path, path, overwrite=True)
         self.tf_proxy.io.gfile.remove(tmp_path)

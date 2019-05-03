@@ -3,44 +3,45 @@ import json
 from kerastuner.abstractions.display import info, progress_bar, warning
 from kerastuner.abstractions.io import glob, read_file
 from kerastuner.states.instancestate import InstanceState
-
+from pathlib import Path
 from .collections import Collection
 
 
-class InstancesCollection(Collection):
-    "Manage a collection of instances"
+class InstanceStatesCollection(Collection):
+    "Manage a collection of InstanceStates"
 
     def __init__(self):
-        super(InstancesCollection, self).__init__()
+        super(InstanceStatesCollection, self).__init__()
 
     def to_config(self):
         return self.to_dict()
 
     def sort_by_objective(self):
-        "Returns instances list sorted by objective"
-        instance = self.get_last()
-        if not instance:
+        "Returns a list of `InstanceState`s sorted by the objective."
+        instance_state = self.get_last()
+        if not instance_state:
             warning('No previous instance found')
             return []
-        return self.sort_by_metric(instance.objective)
+        return self.sort_by_metric(instance_state.objective)
 
     def sort_by_metric(self, metric_name):
-        "Returns instances list sorted by a given metric"
+        "Returns a list of `InstanceState`s sorted by a given metric."
 
         # checking if metric exist and getting its direction
-        instance = self.get_last()
+        instance_state = self.get_last()
         # !don't use _objects -> use get() instead due to canonicalization
-        metric = instance.agg_metrics.get(metric_name)
+        metric = instance_state.agg_metrics.get(metric_name)
         if not metric:
             warning('Metric %s not found' % metric_name)
             return []
 
         # getting metric values
         values = {}
-        for instance in self._objects.values():
-            value = instance.agg_metrics.get(metric.name).get_best_value()
+        for instance_state in self._objects.values():
+            value = instance_state.agg_metrics.get(
+                metric.name).get_best_value()
             # seems wrong but make it easy to sort by value and return instance
-            values[value] = instance
+            values[value] = instance_state
 
         # sorting
         if metric.direction == 'min':
@@ -48,11 +49,11 @@ class InstancesCollection(Collection):
         else:
             sorted_values = sorted(values.keys(), reverse=True)
 
-        sorted_instances = []
+        sorted_instance_states = []
         for val in sorted_values:
-            sorted_instances.append(values[val])
+            sorted_instance_states.append(values[val])
 
-        return sorted_instances
+        return sorted_instance_states
 
     def load_from_dir(self, path, project='default', architecture=None,
                       verbose=1):
@@ -74,7 +75,8 @@ class InstancesCollection(Collection):
         """
         count = 0
 
-        filenames = glob("%s/*-results.json" % path)
+        glob_path = str(Path(path) / "*-results.json")
+        filenames = glob(glob_path)
 
         for fname in progress_bar(filenames, unit='instance',
                                   desc='Loading tuning results'):
@@ -99,8 +101,8 @@ class InstancesCollection(Collection):
                 continue
 
             idx = config['instance']['idx']
-            instance = InstanceState.from_config(config['instance'])
-            self._objects[idx] = instance
+            instance_state = InstanceState.from_config(config['instance'])
+            self._objects[idx] = instance_state
             self._last_insert_idx = idx
             count += 1
 

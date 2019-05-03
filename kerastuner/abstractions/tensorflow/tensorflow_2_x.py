@@ -8,7 +8,7 @@ import tensorflow as tf
 from tensorflow.io import gfile
 from tensorflow.python import ConfigProto, GraphDef, Session
 from tensorflow.keras.models import model_from_json, load_model
-
+from kerastuner.abstractions.display import write_log
 from kerastuner.abstractions.tensorflow import proxy
 
 
@@ -137,13 +137,16 @@ class Utils_2_x(proxy.UtilsBase):
         weights_tmp = "%s-weights.h5" % tmp_path
 
         self.write_file(config_path, model.to_json())
+        write_log("Saving weights to %s" % weights_tmp)
         model.save_weights(weights_tmp, overwrite=True)
 
         # Move the file, potentially across filesystems.
         tf.io.gfile.copy(weights_tmp, weights_path, overwrite=True)
+        write_log("Moving weights to %s" % weights_path)
         tf.io.gfile.remove(weights_tmp)
 
     def save_keras_bundle_model(self, model, path, tmp_path):
+        path += ".keras_bundle.h5"
         model.save(tmp_path)
         tf.io.gfile.copy(tmp_path, path, overwrite=True)
         tf.io.gfile.remove(tmp_path)

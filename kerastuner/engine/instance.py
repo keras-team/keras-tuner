@@ -7,7 +7,7 @@ import tensorflow as tf
 from .execution import Execution
 from .metric import Metric
 from kerastuner.states import InstanceState
-from kerastuner.collections import ExecutionsCollection, MetricsCollection
+from kerastuner.collections import ExecutionStatesCollection, MetricsCollection
 from kerastuner.abstractions.display import section, subsection, fatal
 
 
@@ -19,7 +19,7 @@ class Instance(object):
         self.model = model
         self.tuner_state = tuner_state
         self.cloudservice = cloudservice
-        self.executions = ExecutionsCollection()
+        self.executions = ExecutionStatesCollection()
 
         # init instance state
         self.state = InstanceState(idx, model, hparams)
@@ -121,19 +121,3 @@ class Instance(object):
         self.state.execution_trained += 1
 
         return execution
-
-    def get_best_execution(self):
-
-        objective = self.agg_metrics.get_objective()
-
-        def objective_sort_key(_, execution):
-            execution_metrics = execution.state.agg_metrics
-            metric = execution_metrics.get(objective.name).get_best_value()
-            return metric
-
-        def sort_fn(idx, object):
-            return object.state.agg_metrics[objective.name]
-
-        for execution in self.executions.to_list():
-            value = ex.state.metrics.get(
-                self.state.agg_metrics.objective.name).get_last_value()

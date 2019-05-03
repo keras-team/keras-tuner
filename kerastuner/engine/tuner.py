@@ -27,7 +27,7 @@ from kerastuner import config
 from kerastuner.states import TunerState
 from .cloudservice import CloudService
 from .instance import Instance
-from kerastuner.collections import InstancesCollection
+from kerastuner.collections import InstanceStatesCollection
 from kerastuner.abstractions.io import reload_model
 
 
@@ -80,13 +80,13 @@ class Tuner(object):
 
         # instances management
         self.max_fail_streak = 5  # how many failure before giving up
-        self.instances = InstancesCollection()
+        self.instance_states = InstanceStatesCollection()
 
         # previous models
-        count = self.instances.load_from_dir(self.state.host.result_dir,
-                                             self.state.project,
-                                             self.state.architecture)
-        self.stats.instances_previously_trained = count
+        count = self.instance_states.load_from_dir(self.state.host.result_dir,
+                                                   self.state.project,
+                                                   self.state.architecture)
+        self.stats.instance_states_previously_trained = count
         info("Tuner initialized")
 
     def summary(self, extended=False):
@@ -151,7 +151,7 @@ class Tuner(object):
 
             # computing instance unique idx
             idx = self.__compute_model_id(model)
-            if self.instances.exist(idx):
+            if self.instance_states.exist(idx):
                 collision_streak += 1
                 self.stats.collisions += 1
                 warning("Collision for %s -- skipping" % (idx))
@@ -177,13 +177,23 @@ class Tuner(object):
             break
 
         # recording instance
-        self.instances.add(idx, instance)
+        self.instance_states.add(idx, instance.state)
         return instance
 
-    def get_best_model(self, metric="loss", direction="min"):
-        instances, executions, models = self.get_best_models(
+    def get_best_model(self, compile=False):
+        """Returns the best model, as determined by the tuner's objective.
+
+        Args:
+            compile (bool, optional): If True, infer the loss and optimizer,
+                and compile the returned models. Defaults to False.
+
+        Returns:
+            tuple: Tuple containing the InstanceState, ExecutionState, and
+                Model for the best model the tuner found.
+        """
+        instances, execution_states, models = self.get_best_models(
             metric=metric, direction=direction, num_models=1)
-        return instances[0], executions[0], models[0]
+        return instances[0], execution_states[0], models[0]
 
     def get_best_models(self, num_models=1, compile=False):
         """Returns the best models, as determined by the tuner's objective.
@@ -195,30 +205,35 @@ class Tuner(object):
                 and compile the returned models. Defaults to False.
 
         Returns:
-            tuple: Tuple containing a list of Instances, a list of Execution,
-                and a list of Models, where the Nth Instance and Nth Execution
-                correspond to the Nth Model.
+            tuple: Tuple containing a list of InstanceStates, a list of
+                ExecutionStates, and a list of Models, where the Nth Instance
+                and Nth Execution correspond to the Nth Model.
         """
-        sorted_instances = self.instances.sort_by_objective()
-        if len(sorted_instances) > num_models:
-            sorted_instances = sorted_instances[:num_models]
+        sorted_instance_states = self.instance_states.sort_by_objective()
+        if len(sorted_instance_states) > num_models:
+            sorted_instance_states = sorted_instance_states[:num_models]
 
-        executions = []
-        for instance in sorted_instances:
-            executions.append(instance.get_best_executions())
+        execution_states = []
+        for instance_state in sorted_instance_states:
+            sorted_execution_list = (
+                instance_state.execution_states_collection.sort_by_metric(
+                    instance_state.objective
+                ))
+            best_execution_state = sorted_execution_list[0]
+            execution_states.append(best_execution_state)
 
         models = []
-        for instance, execution in zip(sorted_instances, executions):
-            model = reload_model(
-                self.state,
-                instance,
-                execution,
-                compile=False)
+        for instance_state, execution_state in zip(
+                sorted_instance_states, execution_states):
+            model = reload_model(self.state, instance_state, execution_state,
+                                 compile=True)
+            models.append(model)
 
-        return sorted_instances, executions, models
+        return sorted_instance_states, execution_states, models
 
     def save_best_model(self, output_type="keras"):
-        """Shortcut for save_best_models for the case of only keeping the best model."""
+        """Shortcut for save_best_models for the case of only keeping the best
+        model."""
         return self.save_best_models(output_type="keras", num_models=1)
 
     def save_best_models(self, output_type="keras", num_models=1):
@@ -250,16 +265,16 @@ class Tuner(object):
                     "tf_lite" - A TF Lite model.
         """
 
-        instances, executions, models = self.get_best_models(
+        instance_states, execution_states, models = self.get_best_models(
             num_models=num_models, compile=False)
 
-        for idx, (model, instance, execution) in enumerate(
-                zip(models, instances, executions)):
+        for idx, (model, instance_state, execution_state) in enumerate(
+                zip(models, instance_states, execution_states)):
             export_prefix = "%s-%s-%s-%s" % (
                 self.state.project,
                 self.state.architecture,
-                instance.state.idx,
-                execution.state.idx)
+                instance_state.idx,
+                execution_state.idx)
 
             export_path = os.path.join(
                 self.state.host.export_dir, export_prefix)

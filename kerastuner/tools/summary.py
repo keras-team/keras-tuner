@@ -6,7 +6,7 @@ from pathlib import Path
 from collections import defaultdict
 import operator
 
-from kerastuner.collections.instancescollection import InstancesCollection
+from kerastuner.collections.instancestatescollection import InstanceStatesCollection
 from kerastuner.abstractions.display import display_table, progress_bar
 from kerastuner.abstractions.display import section, subsection, fatal
 from kerastuner.abstractions.display import colorize_row
@@ -105,13 +105,13 @@ def results_summary(input_dir='results/', project='default',
     Collect kerastuner results and output a summary
     """
 
-    ic = InstancesCollection()
+    ic = InstanceStatesCollection()
     ic.load_from_dir(input_dir, project=project, verbose=0)
     if sort_metric:
-        instances = ic.sort_by_metric(sort_metric)
+        instance_states = ic.sort_by_metric(sort_metric)
     else:
         # by default sort by objective
-        instances = ic.sort_by_objective()
+        instance_states = ic.sort_by_objective()
         sort_metric = ic.get_last().objective
 
     other_metrics = ic.get_last().agg_metrics.get_metric_names()
@@ -121,13 +121,13 @@ def results_summary(input_dir='results/', project='default',
     other_metrics_values = defaultdict(list)
     hyper_parameters = defaultdict(list)
     hyper_parameters_group = defaultdict(set)
-    for instance in instances[:num_models]:
+    for instance in instance_states[:num_models]:
         val = instance.agg_metrics.get(sort_metric).get_best_value()
         sort_metric_values.append(round(val, 4))
 
         # other metrics
         for metric in other_metrics:
-            val = instance.agg_metrics.get(metric).get_best_value()
+            val = instance.agg_metrics.get(metric).get_best_value()        
             other_metrics_values[metric].append(round(val, 4))
 
         # hyper-parameters
@@ -148,6 +148,7 @@ def results_summary(input_dir='results/', project='default',
         subsection("Hyper Parameters")
         display_hparams(hyper_parameters, hyper_parameters_group, num_models,
                         use_colors)
+
 
 if __name__ == '__main__':
     args = parse_args()
