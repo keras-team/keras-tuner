@@ -8,7 +8,7 @@ from .state import State
 from .dummystate import DummyState
 from .tunerstatsstate import TunerStatsState
 from .hoststate import HostState
-from kerastuner.collections.metriccollection import MetricsCollection
+from kerastuner.collections.metricscollection import MetricsCollection
 from kerastuner.abstractions.display import fatal, set_log, section, subsection
 from kerastuner.abstractions.display import display_settings, colorize
 from kerastuner.abstractions.display import display_table, warning
@@ -119,7 +119,7 @@ class TunerState(State):
         self.best_instance_config = None  # set in callback after 1st training
 
         # logfile
-        log_name = "%s_%s_%d.log" % (self.project, self.architecture,
+        log_name = "%s-%s-%d.log" % (self.project, self.architecture,
                                      self.start_time)
         self.log_file = os.path.join(self.host.result_dir, log_name)
         set_log(self.log_file)

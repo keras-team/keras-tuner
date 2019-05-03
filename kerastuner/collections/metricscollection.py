@@ -3,8 +3,6 @@ from kerastuner.engine.metric import Metric
 from kerastuner.abstractions.display import warning, fatal, display_table
 
 _METRIC_DIRECTION = {
-    'acc': 'max',
-    'accuracy': 'max',
     'binary_accuracy': 'max',
     'categorical_accuracy': 'max',
     'loss': 'min',
@@ -14,9 +12,7 @@ _METRIC_DIRECTION = {
     'top_k_categorical_accuracy': 'max',
 }
 
-_METRIC_ALIAS = {
-    "acc": 'accuracy'
-}
+_METRIC_ALIAS = {}  # reserved in case metric aliases are back
 
 
 class MetricsCollection(Collection):
@@ -89,9 +85,29 @@ class MetricsCollection(Collection):
 
     def _replace_alias(self, metric_name):
         "Replace metric alias with their canonical name"
+
         no_val_name = metric_name.replace('val_', '')
+        # existing metric
+        if metric_name in self._objects or no_val_name in self._objects:
+            return metric_name
+
+        # alias?
         if no_val_name in _METRIC_ALIAS:
             return metric_name.replace(no_val_name, _METRIC_ALIAS[no_val_name])
+
+        # accuracy? which is a special case
+        if no_val_name == 'acc' or no_val_name == 'accuracy':
+                for obj_name in self._objects.keys():
+
+                    # val_*_accuracy case
+                    if 'val_' in metric_name and 'val_' in obj_name:
+                        if "accuracy" in obj_name:
+                            return obj_name
+                    # *_accuracy
+                    if 'val_' not in metric_name and 'val_' not in obj_name:
+                        if "accuracy" in obj_name:
+                            return obj_name
+        # don't know returning as is
         return metric_name
 
     def to_config(self):
@@ -130,11 +146,14 @@ class MetricsCollection(Collection):
         "Mark a metric as the tuning objective"
         name = self._replace_alias(name)
         if name not in self._objects:
-            fatal("can't find objective: %s in metric list" % name)
+            metrics = ", ".join(list(self._objects.keys()))
+            fatal("can't find objective: %s in metric list:%s" % (name,
+                                                                  metrics))
         if self._objective_name:
             fatal("Objective already set to %s" % self._objective_name)
         self._objective_name = name
         self._objects[name].is_objective = True
+        return name
 
     def get_objective(self):
         "Get metric objective"
@@ -144,7 +163,8 @@ class MetricsCollection(Collection):
         return self._objects[self._objective_name]
 
     def summary(self, extended=False):
-        """Display a table containing the name and best/last value for each metric."""
+        """Display a table containing the name and best/last value for
+        each metric."""
         rows = [['name', 'best', 'last']]
         for m in self.to_list():
             row = [

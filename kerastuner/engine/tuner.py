@@ -208,8 +208,8 @@ class Tuner(object):
             execution_states.append(best_execution_state)
 
         models = []
-        for instance_state, execution_state in zip(
-                sorted_instance_states, execution_states):
+        for instance_state, execution_state in zip(sorted_instance_states,
+                                                   execution_states):
             model = reload_model(self.state, instance_state, execution_state,
                                  compile=True)
             models.append(model)

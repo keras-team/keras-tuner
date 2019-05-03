@@ -113,6 +113,8 @@ class Instance(object):
             # init tuner global metric if needed (first training)
             if not self.tuner_state.agg_metrics:
                 self.tuner_state.agg_metrics = MetricsCollection.from_config(self.metrics_config)  # nopep8
+                # !dont remove - this is needed to canonicalize objective name
+                self.tuner_state.objective = self.state.objective
 
         execution = Execution(self.model, self.state, self.tuner_state,
                               self.metrics_config, self.cloudservice)

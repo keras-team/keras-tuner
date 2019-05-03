@@ -11,11 +11,11 @@ def mc():
 
 
 def test_metric_name_add(mc):
-    mc.add('accuracy')
+    mc.add('binary_accuracy')
     metric = mc.get('accuracy')
     assert isinstance(metric, Metric)
     assert metric.direction == 'max'
-    assert metric.name == 'accuracy'
+    assert metric.name == 'binary_accuracy'
 
 
 def test_metric_obj_add(mc):
@@ -48,14 +48,14 @@ def test_duplicate_obj(mc):
 
 def test_get_metrics(mc):
     mc.add('loss')
-    mc.add('accuracy')
-    mc.add('val_accuracy')
+    mc.add('binary_accuracy')
+    mc.add('val_binary_accuracy')
     metrics = mc.to_list()
     assert len(metrics) == 3
     # ensure metrics are properly sorted
-    assert metrics[0].name == 'accuracy'
+    assert metrics[0].name == 'binary_accuracy'
     assert metrics[1].name == 'loss'
-    assert metrics[2].name == 'val_accuracy'
+    assert metrics[2].name == 'val_binary_accuracy'
 
 
 def test_update_min(mc):
@@ -70,7 +70,7 @@ def test_update_min(mc):
 
 
 def test_update_max(mc):
-    mc.add('accuracy')
+    mc.add('binary_accuracy')
     # check if update tell us it improved
     assert mc.update('accuracy', 10)
     # check if update tell us it didn't improve
@@ -82,16 +82,16 @@ def test_update_max(mc):
 
 def test_to_dict(mc):
     mc.add('loss')
-    mc.add('accuracy')
-    mc.add('val_accuracy')
+    mc.add('binary_accuracy')
+    mc.add('val_loss')
 
     mc.update('loss', 1)
     mc.update('accuracy', 2)
     mc.update('val_loss', 3)
 
     config = mc.to_dict()
-    assert config['accuracy'].name == 'accuracy'
-    assert config['accuracy'].get_best_value() == 2
+    assert config['binary_accuracy'].name == 'binary_accuracy'
+    assert config['binary_accuracy'].get_best_value() == 2
     assert len(config) == 3
 
 
@@ -104,13 +104,15 @@ def test_serialization(mc):
 
 
 def test_alias(mc):
-    mc.add('acc')
+    mc.add('binary_accuracy')
+    mm = mc.get('accuracy')
+    assert mm.name == 'binary_accuracy'
     mm = mc.get('acc')
-    assert mm.name == 'accuracy'
+    assert mm.name == 'binary_accuracy'
 
 
 def test_alias_update(mc):
-    mc.add('acc')
+    mc.add('binary_accuracy')
     mc.update('acc', 14)
     mc.update('acc', 12)
     mm = mc.get('acc')
@@ -121,8 +123,8 @@ def test_alias_update(mc):
 
 def test_set_objective(mc):
     mc.add('loss')
-    mc.add('accuracy')
-    mc.add('val_accuracy')
+    mc.add('binary_accuracy')
+    mc.add('val_binary_accuracy')
     mm = mc.get('accuracy')
     assert not mm.is_objective
     mc.set_objective('accuracy')
@@ -136,20 +138,20 @@ def test_set_invalid_objective(mc):
 
 
 def test_set_shortand_objective(mc):
-    mc.add('accuracy')
+    mc.add('binary_accuracy')
     mc.set_objective('acc')
-    assert mc._objective_name == 'accuracy'
+    assert mc._objective_name == 'binary_accuracy'
 
 
 def test_set_shortand_val_objective(mc):
-    mc.add('val_accuracy')
+    mc.add('val_binary_accuracy')
     mc.set_objective('val_acc')
-    assert mc._objective_name == 'val_accuracy'
+    assert mc._objective_name == 'val_binary_accuracy'
 
 
 def test_double_objective(mc):
     mc.add('loss')
-    mc.add('accuracy')
+    mc.add('binary_accuracy')
     mc.set_objective('accuracy')
     with pytest.raises(ValueError):
         mc.set_objective('loss')

@@ -289,6 +289,7 @@ def colorize_row(row, color, bg_color=None, brightness='normal'):
         colored_row.append(colorize(v, color, bg_color, brightness))
     return colored_row
 
+
 def colorize_default(text):
     """Colorize a given piece of text with the terminal default color
     Args:

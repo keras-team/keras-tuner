@@ -9,7 +9,7 @@ from .common import is_serializable
 from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 from kerastuner.engine.instance import Instance
 from kerastuner.states.instancestate import InstanceState
-from kerastuner.collections.metriccollection import MetricsCollection
+from kerastuner.collections.metricscollection import MetricsCollection
 
 
 @pytest.fixture(scope='class')
@@ -36,7 +36,7 @@ def test_is_serializable(hparams, basic_model):
 def test_from_config(hparams, basic_model):
     state = InstanceState('3713', basic_model, hparams)
     state.agg_metrics = MetricsCollection()
-    state.agg_metrics.add('acc')
+    state.agg_metrics.add('binary_accuracy')
     state.agg_metrics.update('acc', 11)
     state.set_objective("accuracy")
     config = state.to_config()

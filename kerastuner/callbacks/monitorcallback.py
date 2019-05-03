@@ -37,14 +37,13 @@ class MonitorCallback(TunerCallback):
         # update metrics and checkpoint if needed
         for metric, value in logs.items():
             improved = self.execution_state.metrics.update(metric, value)
-
-            # TODO: Canonicalize the objective / metirc name
             if self.tuner_state.objective == metric and improved:
                 # TODO - figure out the race condition that causes us to clear
                 # the session before we finish the writes when we try to
                 # apply_async here.
                 # self.thread_pool.apply_async(self._checkpoint_model)
                 self._checkpoint_model()
+
         # reset epoch history
         self.epoch_history = defaultdict(list)
 

@@ -14,7 +14,7 @@ from kerastuner.abstractions.tensorflow import TENSORFLOW as tf
 from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 from kerastuner.abstractions.tf import compute_model_size
 from kerastuner.abstractions.io import get_weights_filename
-from kerastuner.collections.metriccollection import MetricsCollection
+from kerastuner.collections.metricscollection import MetricsCollection
 from ..collections.executionstatescollection import ExecutionStatesCollection
 
 from .state import State
@@ -54,8 +54,8 @@ class InstanceState(State):
 
     def set_objective(self, name):
         "Set tuning objective"
-        self.agg_metrics.set_objective(name)
-        self.objective = name
+        # leverage metric canonicalization
+        self.objective = self.agg_metrics.set_objective(name)
 
     def summary(self, extended=False):
         subsection('Training parameters')
@@ -126,8 +126,9 @@ class InstanceState(State):
         Returns:
             Model: The Keras Model for the configuration.
         """
-        return InstanceState._model_from_configs(
-            config['model_config'], config['loss_config'], config['optimizer_config'])
+        return InstanceState._model_from_configs(config['model_config'],
+                                                 config['loss_config'],
+                                                 config['optimizer_config'])
 
     def recreate_model(self):
         """Recreates the model configured for this instance.

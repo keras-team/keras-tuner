@@ -16,19 +16,19 @@ def data_path():
 def col(data_path):
     col = InstanceStatesCollection()
     count = col.load_from_dir(data_path)
-    assert count == 2
+    assert count == 6
     return col
 
 
 def test_loading(data_path):
     col = InstanceStatesCollection()
     count = col.load_from_dir(data_path)
-    assert count == 2
+    assert count == 6
 
 
 def test_loading_objective_canonicalization(col):
     instance_state = col.get_last()
-    assert instance_state.objective == 'val_accuracy'
+    assert instance_state.objective == 'val_binary_accuracy'
 
 
 def test_sort_by_metrics(col):
@@ -42,4 +42,4 @@ def test_sort_by_metrics(col):
         accuracies.append(a)
     assert losses[0] < losses[1]
     assert accuracies[0] > accuracies[1]
-    assert len(accuracies) == 2
+    assert len(accuracies) == 6
