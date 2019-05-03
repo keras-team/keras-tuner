@@ -7,16 +7,19 @@ from tensorflow.keras.models import \
     model_from_json  # nopep8 pylint: disable=import-error
 
 from kerastuner import config
-from kerastuner.abstractions.display import (colorize, colorize_row,
-                                             display_setting, display_settings,
-                                             display_table, section,
-                                             subsection)
+from kerastuner.abstractions.display import colorize, colorize_row
+from kerastuner.abstractions.display import display_setting, display_settings
+from kerastuner.abstractions.display import display_table, section
+from kerastuner.abstractions.display import subsection
 from kerastuner.abstractions.tensorflow import TENSORFLOW as tf
 from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 from kerastuner.abstractions.tf import compute_model_size
+from kerastuner.abstractions.io import get_weights_filename
 from kerastuner.collections.metriccollection import MetricsCollection
+from ..collections.executionstatescollection import ExecutionStatesCollection
 
 from .state import State
+from .executionstate import ExecutionState
 
 
 class InstanceState(State):
@@ -37,7 +40,7 @@ class InstanceState(State):
         self.validation_size = -1
         self.batch_size = -1
         self.execution_trained = 0
-        self.execution_configs = []
+        self.execution_states_collection = ExecutionStatesCollection()
 
         # model info
         # we use deepcopy to avoid mutation due to tuners that swap models
@@ -86,23 +89,43 @@ class InstanceState(State):
 
     def to_config(self):
         config = self._config_from_attrs(self._ATTRS)
-        config['executions'] = self.execution_configs
+        config['executions'] = self.execution_states_collection.to_config()
         config['hyper_parameters'] = self.hyper_parameters
         if self.agg_metrics:
             config['aggregate_metrics'] = self.agg_metrics.to_config()
         return config
 
+    def _model_from_configs(model_config, loss_config, optimizer_config):
+        model = model_from_json(json.dumps(model_config))
+        model.loss = tf_utils.deserialize_loss(loss_config)
+        model.optimizer = tf.keras.optimizers.deserialize(optimizer_config)  # nopep8
+        return model
+
+    @staticmethod
+    def model_from_config(config):
+        return InstanceState._model_from_configs(
+            config['model_config'],
+            config['loss_config'],
+            config['optimizer_config'])
+
+    def recreate_model(self):
+        return InstanceState._model_from_configs(
+            self.model_config,
+            self.loss_config,
+            self.optimizer_config)
+
     @staticmethod
     def from_config(config):
         idx = config['idx']
-        model = model_from_json(json.dumps(config['model_config']))
-        model.loss = tf_utils.deserialize_loss(config['loss_config'])
-        model.optimizer = tf.keras.optimizers.deserialize(config['optimizer_config'])  # nopep8
         hyper_parameters = config['hyper_parameters']
+        model = InstanceState.model_from_config(config)
         state = InstanceState(idx, model, hyper_parameters)
         for attr in InstanceState._ATTRS:
             setattr(state, attr, config[attr])
-        state.execution_configs = config['executions']
+
+        state.execution_states_collection = (
+            ExecutionStatesCollection.from_config(config["executions"]))
+
         state.agg_metrics = MetricsCollection.from_config(config['aggregate_metrics'])  # nopep8
 
         # !canonicalize objective name

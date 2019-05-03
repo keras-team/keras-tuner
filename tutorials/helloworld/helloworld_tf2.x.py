@@ -43,7 +43,7 @@ def model_fn():
 # Initialize the hypertuner by passing the model function (model_fn)
 # and specifying key search constraints: maximize val_acc (objective),
 # spend 9 epochs doing the search, spend at most 3 epoch on each model.
-tuner = RandomSearch(model_fn, objective='val_acc', epoch_budget=2,
+tuner = RandomSearch(model_fn, objective='val_accuracy', epoch_budget=2,
                      max_epochs=1)
 
 # display search overview
@@ -61,4 +61,4 @@ tuner.search(x_train, y_train, validation_split=0.01)
 tuner.results_summary()
 
 # Export the top 2 models, in tensorflow format.
-tuner.save_best_models(output_type="tf_optimized", num_models=2)
+tuner.save_best_models(output_type="keras_bundle", num_models=2)

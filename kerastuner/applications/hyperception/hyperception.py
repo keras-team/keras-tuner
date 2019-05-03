@@ -48,9 +48,7 @@ def hyperception_single_fn(input_shape, num_classes, **hparams):
 
 def hyperception_single_model(input_shape, num_classes, **hparams):
     model_fn = hyperception_single_fn(input_shape, num_classes, **hparams)
-    print(model_fn)
     i = model_fn()
-    print(i)
     return i
 
 

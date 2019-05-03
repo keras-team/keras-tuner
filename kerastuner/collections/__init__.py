@@ -1,4 +1,4 @@
 from __future__ import absolute_import
-from .instancescollection import InstancesCollection
-from .executionscollection import ExecutionsCollection
+from .instancestatescollection import InstanceStatesCollection
+from .executionstatescollection import ExecutionStatesCollection
 from .metriccollection import MetricsCollection

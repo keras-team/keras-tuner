@@ -24,7 +24,8 @@ class DisplayCallback(TunerCallback):
                  cloudservice):
         super(DisplayCallback, self).__init__(tuner_state, instance_state,
                                               execution_state, cloudservice)
-        self.num_executions = len(self.instance_state.execution_configs)
+        self.num_executions = len(
+            self.instance_state.execution_states_collection)
         self.max_excutions = self.tuner_state.num_executions
 
         # model tracking

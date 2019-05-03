@@ -24,11 +24,19 @@ class ExecutionState(State):
 
     def to_config(self):
         self._compute_eta()
-        attrs = ['start_time', 'idx', 'epochs', 'eta']
+        attrs = ['start_time', 'idx', 'epochs', 'max_epochs', 'eta']
         config = self._config_from_attrs(attrs)
         config['record_time'] = int(time())
         config['metrics'] = self.metrics.to_config()
         return config
+
+    @staticmethod
+    def from_config(config):
+        state = ExecutionState(config["max_epochs"], config["metrics"])
+
+        for attr in ['start_time', 'idx', 'epochs', 'eta']:
+            setattr(state, attr, config[attr])
+        return state
 
     def summary(self, extended=False):
         # FIXME: summary

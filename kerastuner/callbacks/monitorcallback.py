@@ -30,7 +30,6 @@ class MonitorCallback(TunerCallback):
         self._report_status()
 
     def on_epoch_end(self, epoch, logs={}):
-
         # update epoch counters
         self.execution_state .epochs += 1
         self.tuner_state.remaining_budget -= 1
@@ -38,10 +37,14 @@ class MonitorCallback(TunerCallback):
         # update metrics and checkpoint if needed
         for metric, value in logs.items():
             improved = self.execution_state.metrics.update(metric, value)
-            if self.tuner_state.objective == metric and improved:
-#                self.thread_pool.apply_async(self._checkpoint_model)
-                self._checkpoint_model()
 
+            # TODO: Canonicalize the objective / metirc name
+            if self.tuner_state.objective == metric and improved:
+                # TODO - figure out the race condition that causes us to clear
+                # the session before we finish the writes when we try to
+                # apply_async here.
+                # self.thread_pool.apply_async(self._checkpoint_model)
+                self._checkpoint_model()
         # reset epoch history
         self.epoch_history = defaultdict(list)
 
@@ -57,7 +60,6 @@ class MonitorCallback(TunerCallback):
         self._report_status(force=True)
         self._write_result_file()
         self._flush_thread_pool()
-
 
     def _flush_thread_pool(self):
         self.thread_pool.close()
@@ -88,16 +90,15 @@ class MonitorCallback(TunerCallback):
             self.tuner_state.best_instance_config = config
 
         # record execution config in instance
-        self.instance_state.execution_configs.append(self.execution_state.to_config())  # nopep8
+        self.instance_state.execution_states_collection.add(
+            self.execution_state.idx, self.execution_state)  # nopep8
 
     def _checkpoint_model(self):
         """Checkpoint model"""
         prefix = self._get_filename_prefix()
         base_filename = prefix
-        write_log("Saving model to %s" % base_filename)
         try:
             tf_utils.save_model(self.model, base_filename, output_type="keras")
-            write_log("Improved model saved to %s" % base_filename)
         except:
             print("FAILED")
             import traceback
