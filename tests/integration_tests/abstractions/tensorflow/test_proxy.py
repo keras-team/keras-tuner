@@ -260,7 +260,7 @@ def test_save_tf_lite(
         return
 
     save_path = os.path.join(str(tmp_path), "model_output")
-    save_file = os.path.join(save_path, "model.tflite")
+    save_file = save_path + ".tflite"
 
     os.makedirs(save_path)
 
