@@ -12,6 +12,10 @@ Major KerasTuner changes by version
 - Experiments recording refactored to remove duplicate, improve bucketing and
 log additional informations.
 - Display components refactored to offer a more consistent an clearer experience.
+- Tensorflow 2 compatibility added
+- Model exporting added -- allows to export in Keras formats and Tensorflow
+- Model resuming added.
+- Hello world tutorial completed.
 
 ### Extra
 
