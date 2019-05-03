@@ -5,6 +5,7 @@ from kerastuner.abstractions.display import warning, fatal, display_table
 _METRIC_DIRECTION = {
     'binary_accuracy': 'max',
     'categorical_accuracy': 'max',
+    'categorical_crossentropy': 'min',
     'loss': 'min',
     'sparse_categorical_accuracy': 'max',
     'sparse_top_k_categorical_accuracy': 'max',
