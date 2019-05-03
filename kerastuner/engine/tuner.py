@@ -180,21 +180,6 @@ class Tuner(object):
         self.instance_states.add(idx, instance.state)
         return instance
 
-    def get_best_model(self, compile=False):
-        """Returns the best model, as determined by the tuner's objective.
-
-        Args:
-            compile (bool, optional): If True, infer the loss and optimizer,
-                and compile the returned models. Defaults to False.
-
-        Returns:
-            tuple: Tuple containing the InstanceState, ExecutionState, and
-                Model for the best model the tuner found.
-        """
-        instances, execution_states, models = self.get_best_models(
-            metric=metric, direction=direction, num_models=1)
-        return instances[0], execution_states[0], models[0]
-
     def get_best_models(self, num_models=1, compile=False):
         """Returns the best models, as determined by the tuner's objective.
 
@@ -268,19 +253,19 @@ class Tuner(object):
         instance_states, execution_states, models = self.get_best_models(
             num_models=num_models, compile=False)
 
-        for idx, (model, instance_state, execution_state) in enumerate(
-                zip(models, instance_states, execution_states)):
-            export_prefix = "%s-%s-%s-%s" % (
-                self.state.project,
-                self.state.architecture,
-                instance_state.idx,
-                execution_state.idx)
+        zipped = zip(models, instance_states, execution_states)
+        for idx, (model, instance_state, execution_state) in enumerate(zipped):
+            export_prefix = "%s-%s-%s-%s" % (self.state.project,
+                                             self.state.architecture,
+                                             instance_state.idx,
+                                             execution_state.idx)
 
-            export_path = os.path.join(
-                self.state.host.export_dir, export_prefix)
+            export_path = os.path.join(self.state.host.export_dir,
+                                       export_prefix)
+
             tmp_path = os.path.join(self.state.host.tmp_dir, export_prefix)
-            info("Exporting top model (%d/%d) - %s" %
-                 (idx + 1, len(models), export_path))
+            info("Exporting top model (%d/%d) - %s" % (idx + 1, len(models),
+                                                       export_path))
             tf_utils.save_model(model, export_path, tmp_path=tmp_path,
                                 output_type=output_type)
 
