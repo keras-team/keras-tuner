@@ -94,7 +94,22 @@ class InstanceState(State):
             config['aggregate_metrics'] = self.agg_metrics.to_config()
         return config
 
+    @staticmethod
     def _model_from_configs(model_config, loss_config, optimizer_config):
+        """Creates a Keras model from the configurations typically stored in
+        an InstanceState.
+
+        Args:
+            model_config (dict): Configuration dictionary representing the
+                model.
+            loss_config (dict, list, or str): Configuration representing the
+                loss(es) for the model.
+            optimizer_config (dict): Configuration representing the optimizer.
+
+        Returns:
+            Model: The Keras Model defined by the config objects.
+        """
+
         model = model_from_json(json.dumps(model_config))
         model.loss = tf_utils.deserialize_loss(loss_config)
         model.optimizer = tf.keras.optimizers.deserialize(optimizer_config)  # nopep8
@@ -102,16 +117,26 @@ class InstanceState(State):
 
     @staticmethod
     def model_from_config(config):
+        """Creates a Keras Model based on an an InstanceState config
+        dictionary.
+
+        Args:
+            config (dict): InstanceState config, as returned by to_config()
+
+        Returns:
+            Model: The Keras Model for the configuration.
+        """
         return InstanceState._model_from_configs(
-            config['model_config'],
-            config['loss_config'],
-            config['optimizer_config'])
+            config['model_config'], config['loss_config'], config['optimizer_config'])
 
     def recreate_model(self):
+        """Recreates the model configured for this instance.
+
+        Returns:
+            Model: The Keras Model for this InstanceState.
+        """
         return InstanceState._model_from_configs(
-            self.model_config,
-            self.loss_config,
-            self.optimizer_config)
+            self.model_config, self.loss_config, self.optimizer_config)
 
     @staticmethod
     def from_config(config):
