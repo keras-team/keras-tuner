@@ -38,7 +38,8 @@ class InstanceStatesCollection(Collection):
         # getting metric values
         values = {}
         for instance_state in self._objects.values():
-            value = instance_state.agg_metrics.get(metric.name).get_best_value()
+            value = instance_state.agg_metrics.get(
+                metric.name).get_best_value()
             # seems wrong but make it easy to sort by value and return instance
             values[value] = instance_state
 
@@ -73,7 +74,7 @@ class InstanceStatesCollection(Collection):
             int: number of instances loaded
         """
         count = 0
-        
+
         glob_path = str(Path(path) / "*-results.json")
         filenames = glob(glob_path)
 

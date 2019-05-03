@@ -15,7 +15,7 @@ def mm():
 def test_metric_wall_time():
     mm = Metric('acc', 'max')
     mm.update(10)
-    time.sleep()
+    time.sleep(1)
     mm.update(11)
     assert mm.wall_time[1] > 1
 

@@ -36,9 +36,9 @@ def test_sort_by_metrics(col):
     losses = []
     accuracies = []
     for instance_state in instance_states:
-        l = instance.agg_metrics.get('loss').get_best_value()
+        l = instance_state.agg_metrics.get('loss').get_best_value()
         losses.append(l)
-        a = instance.agg_metrics.get('val_acc').get_best_value()
+        a = instance_state.agg_metrics.get('val_acc').get_best_value()
         accuracies.append(a)
     assert losses[0] < losses[1]
     assert accuracies[0] > accuracies[1]
