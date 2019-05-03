@@ -97,8 +97,14 @@ class MonitorCallback(TunerCallback):
         """Checkpoint model"""
         prefix = self._get_filename_prefix()
         base_filename = prefix
+
+        tmp_path = path.join(self.tuner_state.host.tmp_dir,
+                             path.basename(prefix))
+
         try:
-            tf_utils.save_model(self.model, base_filename, output_type="keras")
+            tf_utils.save_model(
+                self.model, base_filename,
+                tmp_path=tmp_path, output_type="keras")
         except:
             print("FAILED")
             import traceback
