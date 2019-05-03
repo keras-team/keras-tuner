@@ -43,8 +43,8 @@ def model_fn():
 # Initialize the hypertuner by passing the model function (model_fn)
 # and specifying key search constraints: maximize val_acc (objective),
 # spend 9 epochs doing the search, spend at most 3 epoch on each model.
-tuner = RandomSearch(model_fn, objective='val_acc', epoch_budget=2,
-                     max_epochs=1)
+tuner = RandomSearch(model_fn, objective='val_acc', epoch_budget=9,
+                     max_epochs=3)
 
 # display search overview
 tuner.summary()
