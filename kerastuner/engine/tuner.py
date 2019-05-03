@@ -275,10 +275,11 @@ class Tuner(object):
         return hashlib.sha256(s.encode('utf-8')).hexdigest()[:32]
 
     def results_summary(self, num_models=10, sort_metric=None):
+        # FIXME API documentation
         _results_summary(input_dir=self.state.host.result_dir,
                          project=self.state.project,
                          architecture=self.state.architecture,
-                         num_models=10, sort_metric=sort_metric)
+                         num_models=num_models, sort_metric=sort_metric)
 
     @abstractmethod
     def tune(self, x, y, **kwargs):

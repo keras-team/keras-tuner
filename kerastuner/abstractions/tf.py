@@ -1,7 +1,9 @@
 import gc
 import numpy as np
-from tensorflow.python import Session, ConfigProto
+from tensorflow.python import Session, ConfigProto  # nopep8 pylint: disable=no-name-in-module
 import tensorflow.keras.backend as K  # pylint: disable=import-error
+
+# FIXME: move to tensorflow abstraction directory
 
 
 def compute_model_size(model):
