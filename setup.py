@@ -34,7 +34,8 @@ setup(
         "colorama",
         "tqdm",
         "requests",
-        "psutil"
+        "psutil",
+        "sklearn"
     ],
     packages=find_packages()
 )

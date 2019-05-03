@@ -38,6 +38,9 @@ class TunerState(State):
         architecture (str, optional): Name of the architecture tuned.
         Default to 'default'.
 
+        label_names (list, optional): Label names for confusion matrix.
+        Defaults to None, in which case the numerical labels are used.
+
         user_info(dict, optional): user supplied information that will be
         recorded alongside training data. Defaults to {}.
 
@@ -93,6 +96,7 @@ class TunerState(State):
         # !don't use random identifiers -- it makes reloading impossible
         self.project = self._register('project', 'default')
         self.architecture = self._register('architecture', 'default')
+        self.label_names = self._register('label_names', None)
         self.user_info = self._register('user_info', {})
 
         # execution

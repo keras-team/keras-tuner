@@ -17,7 +17,7 @@ class Distributions(object):
         DummyDistributions() in Tuner()
 
         fatal_on_dynamic_hyperparmeter (Bool): Raise a ValueError when
-        a hyperparmeter not in the config is bein recorded. Need to be set
+        a hyperparmeter not in the config is being recorded. Need to be set
         for Distribution or hypertuner algorithm that requires params to be
         known in advance. Defaults to False.
 
@@ -33,7 +33,7 @@ class Distributions(object):
         self._hyperparameters_config = hyperparameters_config
         self._hyperparameters = {}  # hparams of the current instance
         self.dynamic_hyperparameters = False
-        self.fatal_on_dynamic_hyperparmeter = False
+        self.fatal_on_dynamic_hyperparmeter = fatal_on_dynamic_hyperparmeter
 
     @abstractmethod
     def Fixed(self, name, value, group="default"):

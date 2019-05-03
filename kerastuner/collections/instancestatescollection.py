@@ -38,7 +38,8 @@ class InstanceStatesCollection(Collection):
         # getting metric values
         values = {}
         for instance_state in self._objects.values():
-            value = instance_state.agg_metrics.get(metric.name).get_best_value()  # nopep8
+            metric = instance_state.agg_metrics.get(metric.name)
+            value = metric.get_best_value()
             # seems wrong but make it easy to sort by value and return instance
             values[value] = instance_state
 

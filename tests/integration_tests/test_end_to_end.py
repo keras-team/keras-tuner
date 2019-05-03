@@ -13,9 +13,8 @@ from kerastuner.distributions import Range, Choice, Boolean, Fixed
 from kerastuner.tuners import RandomSearch
 
 # Random data to feed the model.
-x_train = np.random.random((10000, 200))
-y_train = np.random.randint(2, size=(10000, 1))
-
+x_train = np.random.random((100, 200))
+y_train = np.random.randint(2, size=(100, 1))
 
 # Defining what to hypertune is as easy as writing a Keras/TensorFlow model
 # The only differences are:
@@ -61,7 +60,7 @@ tuner.summary()
 
 # Perform the model search. The search function has the same prototype than
 # keras.Model.fit(). Similarly search_generator() mirror search_generator().
-tuner.search(x_train, y_train, validation_split=0.01)
+tuner.search(x_train, y_train, validation_data=(x_train, y_train))
 
 # Show the best models, their hyperparameters, and the resulting metrics.
 tuner.results_summary()

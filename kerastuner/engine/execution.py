@@ -44,9 +44,11 @@ class Execution(object):
             return
 
         # Tuner callbacks
+        # TODO - support validation_split as well as validation data.
         monitorcallback = MonitorCallback(self.tuner_state,
                                           self.instance_state,
-                                          self.state, self.cloudservice)
+                                          self.state, self.cloudservice,
+                                          kwargs.get("validation_data", None))
 
         # display
         displaycallback = DisplayCallback(self.tuner_state,

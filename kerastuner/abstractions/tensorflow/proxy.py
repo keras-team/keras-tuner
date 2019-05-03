@@ -408,13 +408,13 @@ class UtilsBase(object):
             as_text=False)
 
     @abstractmethod
-    def save_model(self, model, path, output_type="keras", tmp_path="/tmp/", **kwargs):
+    def save_model(self, model, path, export_type="keras", tmp_path="/tmp/"):
         """Save the provided model to the given path.
 
         Args:
             model(Model): the Keras model to be saved.
             path (str): the directory in which to write the model.
-            output_type (str, optional): Defaults to "keras". What format
+            export_type (str, optional): Defaults to "keras". What format
                 of model to export:
 
                 # Tensorflow 1.x/2.x
@@ -436,7 +436,8 @@ class UtilsBase(object):
                     and operations.  See:
                     https://github.com/tensorflow/tensorflow/tree/master/tensorflow/tools/graph_transforms
                 "tf_lite" - A TF Lite model.
-            tmp_path (str, optional): directory in which to store temporary files.
+            tmp_path (str, optional): directory in which to store temporary
+                files.
         """
 
     def write_file(self, path, contents):

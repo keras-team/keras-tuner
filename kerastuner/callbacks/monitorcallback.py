@@ -9,12 +9,15 @@ from .tunercallback import TunerCallback
 from kerastuner.collections import MetricsCollection
 from kerastuner.abstractions.display import write_log, fatal
 from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
+from kerastuner.engine.metric import compute_epoch_end_classification_metrics
+from kerastuner.engine.metric import compute_training_end_classification_metrics  # nopep8
 
 
 class MonitorCallback(TunerCallback):
 
     def __init__(self, tuner_state, instance_state, execution_state,
-                 cloudservice, refresh_interval=2, num_threads=4):
+                 cloudservice, validation_data, refresh_interval=2,
+                 num_threads=4):
         super(MonitorCallback, self).__init__(tuner_state, instance_state,
                                               execution_state, cloudservice)
         self.last_refresh = -1
@@ -23,6 +26,7 @@ class MonitorCallback(TunerCallback):
         self.epoch_history = defaultdict(list)
         self.training_complete = False  # important for the cloudservice
         self.num_threads = num_threads
+        self.validation_data = validation_data
 
     def on_batch_end(self, batch, logs={}):
         for metric, value in logs.items():
@@ -103,7 +107,7 @@ class MonitorCallback(TunerCallback):
         try:
             tf_utils.save_model(
                 self.model, base_filename,
-                tmp_path=tmp_path, output_type="keras")
+                tmp_path=tmp_path, export_type="keras")
         except:
             print("FAILED")
             import traceback
@@ -151,6 +155,13 @@ class MonitorCallback(TunerCallback):
             "hparams": config._DISTRIBUTIONS.get_hyperparameters_config(),
             "dynamic_hparams": config._DISTRIBUTIONS.dynamic_hyperparameters
         }
+
+        # Classification metrics
+        if self.validation_data:
+            metrics = compute_epoch_end_classification_metrics(
+                self.model, self.validation_data, self.tuner_state.label_names)
+            status["classification_metrics"] = metrics
+
         # needed for cloudservice
         status['training_complete'] = self.training_complete
         status['epoch_history'] = self.epoch_history

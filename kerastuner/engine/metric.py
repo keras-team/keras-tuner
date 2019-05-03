@@ -1,7 +1,9 @@
 import sys
 import numpy as np
 from time import time
-
+from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.metrics import  roc_auc_score, roc_curve
+from sklearn.utils.multiclass import type_of_target
 from kerastuner.abstractions.display import fatal
 
 
@@ -125,3 +127,59 @@ class Metric(object):
         metric.start_time = config['start_time']
         metric.wall_time = config['wall_time']
         return metric
+
+
+def _compute_labels(model, x, y):
+    # FIXME - this only works for single output models.  Make it work with
+    # multi-class output models.
+    predictions = model.predict(x)
+
+    #predicted_labels = np.argmax(predictions, axis=1)
+    predicted_labels = np.round(predictions)
+
+    #actual_labels = np.argmax(y, axis=1)
+    actual_labels = y
+
+    return actual_labels, predicted_labels, predictions
+
+
+def _compute_common_classification_metrics(actual_labels, predicted_labels,
+                                           label_names=None):
+    matrix = confusion_matrix(actual_labels, predicted_labels)
+    metrics = classification_report(actual_labels, predicted_labels,
+                                    output_dict=True, target_names=label_names)
+
+    return {
+        "confusion_matrix": matrix.tolist(),
+        "classification_metrics": metrics
+    }
+
+
+def compute_epoch_end_classification_metrics(model, validation_data,
+                                             label_names=None):
+    (x, y) = validation_data
+    actual_labels, predicted_labels, _ = _compute_labels(model, x, y)
+    return _compute_common_classification_metrics(actual_labels,
+                                                  predicted_labels)
+
+
+def compute_training_end_classification_metrics(model, validation_data,
+                                                label_names=None):
+    (x, y) = validation_data
+    actual_labels, predicted_labels, predictions = _compute_labels(model, x, y)
+    results = _compute_common_classification_metrics(actual_labels,
+                                                     predicted_labels)
+
+    target_type = type_of_target(y)
+    results["target_type"] = target_type
+
+    if target_type == "binary":
+        fpr, tpr, thresholds = roc_curve(actual_labels, predictions)
+        results["roc_curve"] = {
+            "fpr": fpr.tolist(),
+            "tpr": tpr.tolist(),
+            "thresholds": thresholds.tolist()
+        }
+        results["roc_auc_score"] = roc_auc_score(actual_labels, predictions)
+
+    return results

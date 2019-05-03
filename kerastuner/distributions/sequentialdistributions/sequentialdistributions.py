@@ -21,6 +21,26 @@ class SequentialDistributions(Distributions):
                                                       hyperparameters_config)
         self.counters = defaultdict(int)
         self.ranges = {}
+        self.models_per_update_by_key = {}
+
+        # Determine the number of models between each parameter update. The
+        # first hyperparameter will change values every time we request a
+        # model.
+        #
+        # The second hyperparameter will change once after the entire search
+        # space of the first hyperparameter has been tried (i.e. once every
+        # len(first hyperparameter options) calls.
+        #
+        # The third hyperparameter will change once after every the search
+        # space for second hyperparameter has been tried (i.e. once every
+        # len(first hyperparameter space ) * len (second hyperparameter space)
+        # calls).
+        total_size = 1
+        for key, data in self._hyperparameters_config.items():
+            print("%s will update every %d" % (key, total_size))
+            self.models_per_update_by_key[key] = total_size
+            total_size *= data['space_size']
+            
 
     def Fixed(self, name, value, group="default"):
         """Return a fixed selected value
@@ -140,14 +160,18 @@ class SequentialDistributions(Distributions):
 
     def _get_next_value(self, key):
         "Return next value of the range"
-        # counter index with wrap around
 
-        idx = self.counters[key]
+        count = self.counters[key]
+        models_per_increment = self.models_per_update_by_key[key]
 
+        # Determine the index of the hyper parameter option based on the
+        # current counter, and the frequency of update for the key. Wrap the
+        # index around if necessary, and get the appropriate value.
+        idx = int(count / models_per_increment)
         idx = idx % len(self.ranges[key])
         value = self.ranges[key][idx]
 
-        # increment counter will wrap-around if needed next time
+        # Increment the model count.
         self.counters[key] = idx + 1
 
         return value
