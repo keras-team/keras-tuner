@@ -3,6 +3,7 @@ from kerastuner.abstractions.display import fatal
 import random
 from numpy import linspace, logspace
 from collections import defaultdict
+import math
 
 
 class SequentialDistributions(Distributions):
@@ -17,11 +18,16 @@ class SequentialDistributions(Distributions):
     """
 
     def __init__(self, hyperparameters_config):
-        super(SequentialDistributions, self).__init__('SequentialDistributions',  # nopep8
-                                                      hyperparameters_config)
+        print(hyperparameters_config)
+        super(SequentialDistributions, self).__init__(
+            'SequentialDistributions', hyperparameters_config,
+            fatal_on_dynamic_hyperparmeter=True)
         self.counters = defaultdict(int)
         self.ranges = {}
-        self.models_per_update_by_key = {}
+        self.step_size = {}
+
+        # Sort the keys to ensure a deterministic ordering.
+        param_names = sorted(list(self._hyperparameters_config.keys()))
 
         # Determine the number of models between each parameter update. The
         # first hyperparameter will change values every time we request a
@@ -35,12 +41,17 @@ class SequentialDistributions(Distributions):
         # space for second hyperparameter has been tried (i.e. once every
         # len(first hyperparameter space ) * len (second hyperparameter space)
         # calls).
-        total_size = 1
-        for key, data in self._hyperparameters_config.items():
-            print("%s will update every %d" % (key, total_size))
-            self.models_per_update_by_key[key] = total_size
-            total_size *= data['space_size']
-            
+        overall_size = 1
+        for param_name in param_names:
+            data = self._hyperparameters_config[param_name]
+            overall_size *= data['space_size']
+
+        running_size = 1
+        for param_name in param_names:
+            data = self._hyperparameters_config[param_name]
+            self.step_size[param_name] = int(overall_size / running_size)
+            print("!", param_name, self.step_size[param_name])
+            running_size *= data['space_size']
 
     def Fixed(self, name, value, group="default"):
         """Return a fixed selected value
@@ -99,7 +110,7 @@ class SequentialDistributions(Distributions):
         """Return a random value from a range.
         Args:
             name (str): name of the parameter
-            start (int/float): lower bound of the range
+            start (int/float): lower bound of the range 
             stop (int/float): upper bound of the range
             increment (int/float): incremental step
         Returns:
@@ -158,20 +169,34 @@ class SequentialDistributions(Distributions):
         self._record_hyperparameter(name, value, group)
         return value
 
-    def _get_next_value(self, key):
+    def _get_next_value_old(self, key):
         "Return next value of the range"
-
-        count = self.counters[key]
-        models_per_increment = self.models_per_update_by_key[key]
 
         # Determine the index of the hyper parameter option based on the
         # current counter, and the frequency of update for the key. Wrap the
         # index around if necessary, and get the appropriate value.
-        idx = int(count / models_per_increment)
-        idx = idx % len(self.ranges[key])
+        print(key, "Step", self.counters[key])
+
+        idx = self.counters[key] % len(self.ranges[key])
         value = self.ranges[key][idx]
 
         # Increment the model count.
-        self.counters[key] = idx + 1
+        self.counters[key] += self.step_size[key]
+
+        return value
+
+    def _get_next_value(self, key):
+        "Return next value of the range"
+
+        # Determine the index of the hyper parameter option based on the
+        # current counter, and the frequency of update for the key. Wrap the
+        # index around if necessary, and get the appropriate value.
+        print(key, "Step", self.counters[key])
+
+        idx = self.counters[key] % len(self.ranges[key])
+        value = self.ranges[key][idx]
+
+        # Increment the model count.
+        self.counters[key] += self.step_size[key]
 
         return value

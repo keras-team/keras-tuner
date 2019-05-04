@@ -125,7 +125,7 @@ class TunerState(State):
         # logfile
         log_name = "%s-%s-%d.log" % (self.project, self.architecture,
                                      self.start_time)
-        self.log_file = os.path.join(self.host.result_dir, log_name)
+        self.log_file = os.path.join(self.host.results_dir, log_name)
         set_log(self.log_file)
         self.eta = -1
 

@@ -36,7 +36,7 @@ def test_is_serializable(hparams, basic_model):
 def test_from_config(hparams, basic_model):
     state = InstanceState('3713', basic_model, hparams)
     state.agg_metrics = MetricsCollection()
-    state.agg_metrics.add('binary_accuracy')
+    state.agg_metrics.add('accuracy')
     state.agg_metrics.update('acc', 11)
     state.set_objective("accuracy")
     config = state.to_config()

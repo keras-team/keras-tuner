@@ -11,6 +11,7 @@ from kerastuner.abstractions.display import write_log, fatal
 from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 from kerastuner.engine.metric import compute_epoch_end_classification_metrics
 from kerastuner.engine.metric import compute_training_end_classification_metrics  # nopep8
+from kerastuner.engine.metric import canonicalize_metric_name  # nopep8
 
 
 class MonitorCallback(TunerCallback):
@@ -38,10 +39,13 @@ class MonitorCallback(TunerCallback):
         self.execution_state .epochs += 1
         self.tuner_state.remaining_budget -= 1
 
+        objective = canonicalize_metric_name(self.tuner_state.objective)
+
         # update metrics and checkpoint if needed
         for metric, value in logs.items():
             improved = self.execution_state.metrics.update(metric, value)
-            if self.tuner_state.objective == metric and improved:
+            metric = canonicalize_metric_name(metric)
+            if objective == metric and improved:
                 # TODO - figure out the race condition that causes us to clear
                 # the session before we finish the writes when we try to
                 # apply_async here.
@@ -168,7 +172,7 @@ class MonitorCallback(TunerCallback):
         status_json = json.dumps(status)
 
         # write on disk
-        fname = path.join(self.tuner_state.host.result_dir, 'status.json')
+        fname = path.join(self.tuner_state.host.results_dir, 'status.json')
         tf_utils.write_file(fname, status_json)
 
         # send status to cloudservice
@@ -182,4 +186,4 @@ class MonitorCallback(TunerCallback):
                                self.instance_state.idx)
         if with_execution_info:
             prefix += '-%s' % self.execution_state.idx
-        return path.join(self.tuner_state.host.result_dir, prefix)
+        return path.join(self.tuner_state.host.results_dir, prefix)

@@ -14,7 +14,7 @@ class HostState(State):
     Track underlying Host state
 
     Args:
-        result_dir (str, optional): Tuning results dir. Defaults to results/.
+        results_dir (str, optional): Tuning results dir. Defaults to results/.
 
         tmp_dir (str, optional): Temporary dir. Wipped at tuning start.
         Defaults to tmp/.
@@ -24,16 +24,16 @@ class HostState(State):
     def __init__(self, **kwargs):
         super(HostState, self).__init__(**kwargs)
 
-        self.result_dir = self._register('result_dir', 'results/', True)
+        self.results_dir = self._register('results_dir', 'results/', True)
         self.tmp_dir = self._register('tmp_dir', 'tmp/')
         self.export_dir = self._register('export_dir', 'export/', True)
 
         # ensure the user don't shoot himself in the foot
-        if self.result_dir == self.tmp_dir:
+        if self.results_dir == self.tmp_dir:
             fatal('Result dir and tmp dir must be different')
 
         # create directory if needed
-        tf_utils.create_directory(self.result_dir)
+        tf_utils.create_directory(self.results_dir)
         tf_utils.create_directory(self.tmp_dir, remove_existing=True)
         tf_utils.create_directory(self.export_dir)
 
@@ -52,7 +52,7 @@ class HostState(State):
     def summary(self, extended=False):
         subsection('Directories')
         settings = {
-            "results": self.result_dir,
+            "results": self.results_dir,
             "tmp": self.tmp_dir,
             "export": self.export_dir
         }

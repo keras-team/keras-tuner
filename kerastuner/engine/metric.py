@@ -2,9 +2,31 @@ import sys
 import numpy as np
 from time import time
 from sklearn.metrics import confusion_matrix, classification_report
-from sklearn.metrics import  roc_auc_score, roc_curve
+from sklearn.metrics import roc_auc_score, roc_curve
 from sklearn.utils.multiclass import type_of_target
-from kerastuner.abstractions.display import fatal
+from kerastuner.abstractions.display import warning, fatal
+
+# TODO - keep this?
+
+
+def canonicalize_metric_name(name):
+    _METRIC_ALIASES = {
+        "acc": "accuracy"
+    }
+    VAL_PREFIX = "val_"
+
+    # Drop the val_, if applicable, temporarily
+    is_validation = False
+    if name.startswith(VAL_PREFIX):
+        name = name[len(VAL_PREFIX):]
+        is_validation = True
+
+    name = _METRIC_ALIASES.get(name, name)
+
+    if is_validation:
+        return "val_" + name
+    else:
+        return name
 
 
 class Metric(object):
@@ -129,52 +151,104 @@ class Metric(object):
         return metric
 
 
-def _compute_labels(model, x, y):
-    # FIXME - this only works for single output models.  Make it work with
-    # multi-class output models.
+def _compute_continuous_labels(model, x, y):
     predictions = model.predict(x)
-
-    #predicted_labels = np.argmax(predictions, axis=1)
     predicted_labels = np.round(predictions)
-
-    #actual_labels = np.argmax(y, axis=1)
     actual_labels = y
-
     return actual_labels, predicted_labels, predictions
 
 
-def _compute_common_classification_metrics(actual_labels, predicted_labels,
-                                           label_names=None):
+def _compute_categorical_labels(model, x, y):
+    predictions = model.predict(x)
+    predicted_labels = np.argmax(predictions, axis=1)
+    actual_labels = np.argmax(y, axis=1)
+    return actual_labels, predicted_labels, predictions
+
+
+def _compute_continuous_classification_metrics(model, validation_data,
+                                               label_names=None):
+    x, y = validation_data
+    actual_labels, predicted_labels, predictions = _compute_continuous_labels(
+        model, x, y)
     matrix = confusion_matrix(actual_labels, predicted_labels)
     metrics = classification_report(actual_labels, predicted_labels,
                                     output_dict=True, target_names=label_names)
 
-    return {
+    data = {
+        "actual_labels": actual_labels,
+        "predicted_labels": predicted_labels,
+        "predicted_probabilities": predictions
+    }
+    results = {
+        "target_type": type_of_target(y),
         "confusion_matrix": matrix.tolist(),
         "classification_metrics": metrics
     }
 
+    return results, data
+
+
+def _compute_categorical_classification_metrics(model, validation_data,
+                                                label_names=None):
+    x, y = validation_data
+    actual_labels, predicted_labels, predictions = _compute_categorical_labels(
+        model, x, y)
+    matrix = confusion_matrix(actual_labels, predicted_labels)
+    metrics = classification_report(actual_labels, predicted_labels,
+                                    output_dict=True, target_names=label_names)
+
+    data = {
+        "actual_labels": actual_labels,
+        "predicted_labels": predicted_labels,
+        "predicted_probabilities": predictions
+    }
+    results = {
+        "target_type": type_of_target(y),
+        "confusion_matrix": matrix.tolist(),
+        "classification_metrics": metrics
+    }
+    return results, data
+
+
+def _compute_common_classification_metrics(model, validation_data,
+                                           label_names=None):
+    output_type = type_of_target(validation_data[1])
+    if output_type == "continuous":
+        return _compute_categorical_classification_metrics(model,
+                                                           validation_data,
+                                                           label_names)
+    elif output_type == "categorical":
+        return _compute_continuous_classification_metrics(model,
+                                                          validation_data,
+                                                          label_names)
+    else:
+        warning("No metrics configured for output type: ", output_type)
+        return {"target_type": output_type}, {}
+
 
 def compute_epoch_end_classification_metrics(model, validation_data,
                                              label_names=None):
-    (x, y) = validation_data
-    actual_labels, predicted_labels, _ = _compute_labels(model, x, y)
-    return _compute_common_classification_metrics(actual_labels,
-                                                  predicted_labels)
+    results, _ = _compute_common_classification_metrics(
+        model, validation_data, label_names)
+    return results
 
 
 def compute_training_end_classification_metrics(model, validation_data,
                                                 label_names=None):
-    (x, y) = validation_data
-    actual_labels, predicted_labels, predictions = _compute_labels(model, x, y)
-    results = _compute_common_classification_metrics(actual_labels,
-                                                     predicted_labels)
+    results, data = _compute_common_classification_metrics(
+        model, validation_data, label_names)
 
-    target_type = type_of_target(y)
-    results["target_type"] = target_type
+    target_type = data["target_type"]
 
+    # data = {
+    #     "actual_labels": actual_labels,
+    #     "predicted_labels": predicted_labels,
+    #     "predicted_probabilities": predictions
+    # }
     if target_type == "binary":
-        fpr, tpr, thresholds = roc_curve(actual_labels, predictions)
+        fpr, tpr, thresholds = roc_curve(
+            data["actual_labels", "prediction_probabilities"])
+
         results["roc_curve"] = {
             "fpr": fpr.tolist(),
             "tpr": tpr.tolist(),

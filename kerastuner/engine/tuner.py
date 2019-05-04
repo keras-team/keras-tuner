@@ -83,7 +83,7 @@ class Tuner(object):
         self.instance_states = InstanceStatesCollection()
 
         # previous models
-        count = self.instance_states.load_from_dir(self.state.host.result_dir,
+        count = self.instance_states.load_from_dir(self.state.host.results_dir,
                                                    self.state.project,
                                                    self.state.architecture)
         self.stats.instance_states_previously_trained = count
@@ -276,7 +276,7 @@ class Tuner(object):
 
     def results_summary(self, num_models=10, sort_metric=None):
         # FIXME API documentation
-        _results_summary(input_dir=self.state.host.result_dir,
+        _results_summary(input_dir=self.state.host.results_dir,
                          project=self.state.project,
                          architecture=self.state.architecture,
                          num_models=num_models, sort_metric=sort_metric)

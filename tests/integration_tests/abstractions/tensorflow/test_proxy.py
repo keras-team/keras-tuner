@@ -89,7 +89,7 @@ def test_save_keras_bundle(tmp_path, model, training_data):
     x, y = training_data
 
     tf_utils.save_model(
-        model, save_path, tmp_path=tmp_path, output_type="keras_bundle")
+        model, save_path, tmp_path=tmp_path, export_type="keras_bundle")
 
     loaded = tf.keras.models.load_model(save_path + ".keras_bundle.h5")
 
@@ -105,7 +105,7 @@ def test_save_keras(tmp_path, model, training_data):
     x, y = training_data
 
     tf_utils.save_model(model, save_path, tmp_path=tmp_path,
-                        output_type="keras")
+                        export_type="keras")
 
     config = tf_utils.read_file(save_path + "-config.json")
 
@@ -137,7 +137,7 @@ def test_save_tf(
     tmp_path = os.path.join(str(tmp_path), "model_output_tmp")
     x, y = training_data
 
-    tf_utils.save_model(model, save_path, tmp_path=tmp_path, output_type="tf")
+    tf_utils.save_model(model, save_path, tmp_path=tmp_path, export_type="tf")
 
     orig_out = model.predict(x)
 
@@ -186,7 +186,7 @@ def test_save_frozen(
     orig_out = model.predict(x)
 
     tf_utils.save_model(model, save_path, tmp_path=tmp_path,
-                        output_type="tf_frozen")
+                        export_type="tf_frozen")
 
     tf.keras.backend.clear_session()
 
@@ -225,7 +225,7 @@ def test_save_optimized(
         model,
         save_path,
         tmp_path=tmp_save_path,
-        output_type="tf_optimized")
+        export_type="tf_optimized")
 
     graph = tf.python.Graph()
     sess = tf.python.Session(graph=graph)
@@ -268,7 +268,7 @@ def test_save_tf_lite(
     orig_out = model.predict(x)
 
     tf_utils.save_model(model, save_path, tmp_path=tmp_path,
-                        output_type="tf_lite")
+                        export_type="tf_lite")
 
     with tf.python.Session().as_default() as sess:
         with tf.Graph().as_default() as _:

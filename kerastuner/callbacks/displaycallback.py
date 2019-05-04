@@ -76,7 +76,7 @@ class DisplayCallback(TunerCallback):
         # tuning budget exhausted
         if self.tuner_state.remaining_budget < 1:
             highlight("Hypertuning complete - results in %s" %
-                      self.tuner_state.host.result_dir)
+                      self.tuner_state.host.results_dir)
             # FIXME: final summary
         else:
             highlight("%d/%d epochs tuning budget left" %

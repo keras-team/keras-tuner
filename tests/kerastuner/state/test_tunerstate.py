@@ -9,7 +9,7 @@ from kerastuner.states import TunerState
 @pytest.fixture
 def kwargs(tmpdir):
     kwargs = {
-        "result_dir": str(tmpdir + '/results/'),
+        "results_dir": str(tmpdir + '/results/'),
         "tmp_dir": str(tmpdir + '/tmp/'),
         "export_dir": str(tmpdir + '/export/')
     }
@@ -45,7 +45,7 @@ def test_summary(kwargs, capsys):
     state.summary()
     captured = capsys.readouterr()
     to_test = [
-        'results: %s' % kwargs.get('result_dir'),
+        'results: %s' % kwargs.get('results_dir'),
         'tmp: %s' % kwargs.get('tmp_dir'),
         'export: %s' % kwargs.get('export_dir'),
     ]

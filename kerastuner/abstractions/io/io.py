@@ -157,7 +157,7 @@ def get_config_filename(tuner_state, instance_state, execution_state):
     Returns:
       str, the file which holds the model configuration.
     """
-    results_dir = tuner_state.host.result_dir
+    results_dir = tuner_state.host.results_dir
     project = tuner_state.project
     architecture = tuner_state.architecture
     instance_id = instance_state.idx
@@ -178,7 +178,7 @@ def get_weights_filename(tuner_state, instance_state, execution_state):
     Returns:
       str, the file which holds the model configuration.
     """
-    results_dir = tuner_state.host.result_dir
+    results_dir = tuner_state.host.results_dir
     project = tuner_state.project
     architecture = tuner_state.architecture
     instance_id = instance_state.idx
@@ -198,7 +198,7 @@ def get_results_filename(tuner_state, instance_state):
     Returns:
       str, the file which holds the model configuration.
     """
-    results_dir = tuner_state.host.result_dir
+    results_dir = tuner_state.host.results_dir
     project = tuner_state.project
     architecture = tuner_state.architecture
     instance_id = instance_state.idx

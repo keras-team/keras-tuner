@@ -8,7 +8,7 @@ from kerastuner.states.hoststate import HostState
 @pytest.fixture
 def kwargs(tmpdir):
     kwargs = {
-        "result_dir": str(tmpdir + '/results/'),
+        "results_dir": str(tmpdir + '/results/'),
         "tmp_dir": str(tmpdir + '/tmp/'),
         "export_dir": str(tmpdir + '/export/')
     }
@@ -22,7 +22,7 @@ def test_is_serializable(kwargs):
 
 def test_dir_creation(kwargs):
     HostState(**kwargs)
-    assert os.path.exists(kwargs.get('result_dir'))
+    assert os.path.exists(kwargs.get('results_dir'))
     assert os.path.exists(kwargs.get('tmp_dir'))
     assert os.path.exists(kwargs.get('export_dir'))
 
@@ -32,7 +32,7 @@ def test_summary(kwargs, capsys):
     cs.summary()
     captured = capsys.readouterr()
     to_test = [
-        'results: %s' % kwargs.get('result_dir'),
+        'results: %s' % kwargs.get('results_dir'),
         'tmp: %s' % kwargs.get('tmp_dir'),
         'export: %s' % kwargs.get('export_dir'),
     ]

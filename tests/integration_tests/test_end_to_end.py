@@ -1,6 +1,8 @@
 "Keras Tuner hello world sequential API - TensorFlow V1.13+ or V2.x"
-import os
 import numpy as np
+import os
+import pytest
+import tempfile
 from tensorflow.keras.models import Sequential  # pylint: disable=import-error
 from tensorflow.keras.layers import Dense  # pylint: disable=import-error
 from tensorflow.keras.optimizers import Adam  # pylint: disable=import-error
@@ -12,16 +14,14 @@ from kerastuner.distributions import Range, Choice, Boolean, Fixed
 # simply requires to change the tuner class used.
 from kerastuner.tuners import RandomSearch
 
-# Random data to feed the model.
-x_train = np.random.random((100, 200))
-y_train = np.random.randint(2, size=(100, 1))
-
 # Defining what to hypertune is as easy as writing a Keras/TensorFlow model
 # The only differences are:
 # 1. Wrapping the model in a function
 # 2. Defining hyperparameters as variable using distribution functions
 # 3. Replacing the fixed values with the variables holding the hyperparameters
 #    ranges.
+
+
 def model_fn():
     "Model with hyper-parameters"
 
@@ -44,26 +44,49 @@ def model_fn():
                   metrics=['acc'])
     return model
 
+@pytest.fixture(scope='session')
+def model_tmp_path(tmpdir_factory):
+    return tmpdir_factory.mktemp('end_to_end_test')
+    
 
-# Initialize the hypertuner by passing the model function (model_fn)
-# and specifying key search constraints: maximize val_acc (objective),
-# spend 9 epochs doing the search, spend at most 3 epoch on each model.
-tuner = RandomSearch(model_fn, objective='val_acc', epoch_budget=1,
-                     max_epochs=1)
 
-# display search overview
-tuner.summary()
 
-# You can use http://keras-tuner.appspot.com to track results on the web, and
-# get notifications. To do so, grab an API key on that site, and fill it here.
-# tuner.enable_cloud(api_key=api_key)
+@pytest.fixture(scope="module")
+def tuner(model_tmp_path):
+    tmp_dir = str(model_tmp_path / "tmp")
+    results_dir = str(model_tmp_path / "results")
+    export_dir = str(model_tmp_path / "export")
 
-# Perform the model search. The search function has the same prototype than
-# keras.Model.fit(). Similarly search_generator() mirror search_generator().
-tuner.search(x_train, y_train, validation_data=(x_train, y_train))
+    # Random data to feed the model.
+    x_train = np.random.random((100, 200))
+    y_train = np.random.randint(2, size=(100, 1))
 
-# Show the best models, their hyperparameters, and the resulting metrics.
-tuner.results_summary()
+    # Initialize the hypertuner by passing the model function (model_fn)
+    # and specifying key search constraints: maximize val_acc (objective),
+    # spend 9 epochs doing the search, spend at most 3 epoch on each model.
+    tuner = RandomSearch(model_fn, objective='val_acc', epoch_budget=1,
+                         max_epochs=1, results_dir=results_dir, tmp_dir=tmp_dir,
+                         export_dir=export_dir)
 
-# Export the top 2 models, in keras format format.
-tuner.save_best_models(num_models=2)
+    # display search overview
+    tuner.summary()
+
+    # You can use http://keras-tuner.appspot.com to track results on the web, and
+    # get notifications. To do so, grab an API key on that site, and fill it here.
+    # tuner.enable_cloud(api_key=api_key)
+
+    # Perform the model search. The search function has the same prototype than
+    # keras.Model.fit(). Similarly search_generator() mirror search_generator().
+    tuner.search(x_train, y_train, validation_data=(x_train, y_train))
+
+    return tuner
+
+
+def test_end_to_end_summary(tuner):
+    # Show the best models, their hyperparameters, and the resulting metrics.
+    tuner.results_summary()
+
+
+def test_end_to_end_export(tuner):
+    # Export the top 2 models, in keras format format.
+    tuner.save_best_models(num_models=2)
