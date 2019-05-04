@@ -24,7 +24,9 @@ class SequentialDistributions(Distributions):
             fatal_on_dynamic_hyperparmeter=True)
         self.counters = defaultdict(int)
         self.ranges = {}
-        self.step_size = {}
+
+        # Number of models created before changing values for this key.
+        self.period = {}
 
         # Sort the keys to ensure a deterministic ordering.
         param_names = sorted(list(self._hyperparameters_config.keys()))
@@ -41,16 +43,11 @@ class SequentialDistributions(Distributions):
         # space for second hyperparameter has been tried (i.e. once every
         # len(first hyperparameter space ) * len (second hyperparameter space)
         # calls).
-        overall_size = 1
-        for param_name in param_names:
-            data = self._hyperparameters_config[param_name]
-            overall_size *= data['space_size']
 
         running_size = 1
         for param_name in param_names:
             data = self._hyperparameters_config[param_name]
-            self.step_size[param_name] = int(overall_size / running_size)
-            print("!", param_name, self.step_size[param_name])
+            self.period[param_name] = running_size
             running_size *= data['space_size']
 
     def Fixed(self, name, value, group="default"):
@@ -169,34 +166,22 @@ class SequentialDistributions(Distributions):
         self._record_hyperparameter(name, value, group)
         return value
 
-    def _get_next_value_old(self, key):
-        "Return next value of the range"
-
-        # Determine the index of the hyper parameter option based on the
-        # current counter, and the frequency of update for the key. Wrap the
-        # index around if necessary, and get the appropriate value.
-        print(key, "Step", self.counters[key])
-
-        idx = self.counters[key] % len(self.ranges[key])
-        value = self.ranges[key][idx]
-
-        # Increment the model count.
-        self.counters[key] += self.step_size[key]
-
-        return value
-
     def _get_next_value(self, key):
         "Return next value of the range"
 
         # Determine the index of the hyper parameter option based on the
         # current counter, and the frequency of update for the key. Wrap the
         # index around if necessary, and get the appropriate value.
-        print(key, "Step", self.counters[key])
+        count = self.counters[key]
+        period = self.period[key]
 
-        idx = self.counters[key] % len(self.ranges[key])
+        steps = int(math.floor(count / period))
+        idx = steps % len(self.ranges[key])
         value = self.ranges[key][idx]
 
+        print(key, count, period, steps, idx, value)
+
         # Increment the model count.
-        self.counters[key] += self.step_size[key]
+        self.counters[key] += 1
 
         return value

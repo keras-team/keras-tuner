@@ -8,24 +8,24 @@ from .common import choice_correctness_test, range_type_correctness_test
 from .common import linear_correctness_test, logarithmic_correctness_test
 
 
-HPARAMS = {    
+HPARAMS = {
     "default:choice": {
-      "name": "choice",
-      "group": "default",
-      "type": "Choice",
-      "space_size": 3,
-      "start": 1,
-      "stop": 3,
-      "values": [1, 2, 3]        
+        "name": "choice",
+        "group": "default",
+        "type": "Choice",
+        "space_size": 3,
+        "start": 1,
+        "stop": 3,
+        "values": [1, 2, 3]
     },
     "group2:choice": {
-      "name": "choice",
-      "group": "default",
-      "type": "Choice",
-      "space_size": 3,
-      "start": 1,
-      "stop": 3,
-      "values": [1, 2, 3]        
+        "name": "choice",
+        "group": "default",
+        "type": "Choice",
+        "space_size": 3,
+        "start": 1,
+        "stop": 3,
+        "values": [1, 2, 3]
     }
 }
 
@@ -48,12 +48,11 @@ def test_naming():
     assert seq.Choice('choice', [1, 2, 3]) == 1
     assert seq.Choice('choice', [1, 2, 3], group='group2') == 1
     assert seq.Choice('choice', [1, 2, 3]) == 2
-    assert seq.Choice('choice', [1, 2, 3], group='group2') == 1
-    
+
 
 def test_sequencing():
     seq = SequentialDistributions(HPARAMS)
-    
+
     # Cycle 1
     assert seq.Choice('choice', [1, 2, 3]) == 1
     assert seq.Choice('choice', [1, 2, 3], group='group2') == 1
@@ -62,7 +61,7 @@ def test_sequencing():
     assert seq.Choice('choice', [1, 2, 3], group='group2') == 1
     assert seq.Choice('choice', [1, 2, 3]) == 3
     assert seq.Choice('choice', [1, 2, 3], group='group2') == 1
-    
+
     # Cycle 2
     assert seq.Choice('choice', [1, 2, 3]) == 1
     assert seq.Choice('choice', [1, 2, 3], group='group2') == 2
@@ -87,7 +86,6 @@ def test_sequencing():
     assert seq.Choice('choice', [1, 2, 3]) == 1
     assert seq.Choice('choice', [1, 2, 3], group='group2') == 1
 
-    
 
 # # Fixed
 # def test_fixed_correctness():
