@@ -131,10 +131,33 @@ class MetricsCollection(Collection):
     def set_objective(self, name):
         "Mark a metric as the tuning objective"
         name = self._replace_alias(name)
+        print(name)
         if name not in self._objects:
-            metrics = ", ".join(list(self._objects.keys()))
-            fatal("can't find objective: %s in metric list:%s" % (name,
-                                                                  metrics))
+            found = False
+
+            # accuracy special case which seems to be only a
+            # Windows -TF 1.13+ issue
+            if 'accuracy' in name:
+                # is it a validation metric
+                val = False
+                if 'val' in name:
+                    val = True
+
+                for mm in self.get_metric_names():
+                    # none val_* accuracy
+                    if not val and 'accuracy' in mm and 'val' not in mm:
+                        name = mm
+                        found = True
+
+                    # val_* accuracy
+                    if val and 'accuracy' in mm and 'val' in mm:
+                        name = mm
+                        found = True
+
+            if not found:
+                metrics = ", ".join(list(self._objects.keys()))
+                fatal("can't find objective: %s in metric list:%s" % (name,
+                                                                      metrics))
         if self._objective_name:
             fatal("Objective already set to %s" % self._objective_name)
         self._objective_name = name

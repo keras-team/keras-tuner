@@ -150,6 +150,43 @@ def test_set_shortand_val_objective(mc):
     assert mc._objective_name == 'val_accuracy'
 
 
+def test_objective_special_acc_aliasing(mc):
+    # only on some TF version the metric is the instanciation of the accuracy
+    mc.add('binary_accuracy')
+    mc.set_objective('acc')
+    assert mc._objective_name == 'binary_accuracy'
+
+
+def test_objective_special_acc_aliasing2(mc):
+    # only on some TF version the metric is the instanciation of the accuracy
+    mc.add('val_binary_accuracy')
+    mc.set_objective('val_acc')
+    assert mc._objective_name == 'val_binary_accuracy'
+
+
+def test_objective_special_acc_aliasing3(mc):
+    # only on some TF version the metric is the instanciation of the accuracy
+    mc.add('binary_accuracy')
+    mc.add('val_binary_accuracy')
+    mc.add('loss')
+    mc.set_objective('val_acc')
+    assert mc._objective_name == 'val_binary_accuracy'
+
+
+def test_objective_invalid_special_acc_aliasing(mc):
+    # only on some TF version the metric is the instanciation of the accuracy
+    mc.add('binary_accuracy')
+    with pytest.raises(ValueError):
+        mc.set_objective('val_acc')
+
+
+def test_objective_invalid_special_acc_aliasing2(mc):
+    # only on some TF version the metric is the instanciation of the accuracy
+    mc.add('val_binary_accuracy')
+    with pytest.raises(ValueError):
+        mc.set_objective('acc')
+
+
 def test_double_objective(mc):
     mc.add('loss')
     mc.add('accuracy')
