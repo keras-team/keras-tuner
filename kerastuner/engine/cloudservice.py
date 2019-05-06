@@ -77,7 +77,7 @@ class CloudService():
     def __init__(self):
         self.is_enable = False
         self.status = "disable"
-        self.base_url = 'https://us-central1-keras-tuner.cloudfunctions.net/api'  # nopep8
+        self.base_url= 'https://us-central1-kerastuner-prod.cloudfunctions.net/api/'  # nopep8
         self.api_key = None
         self.log_interval = 5
         self.last_update = -1
