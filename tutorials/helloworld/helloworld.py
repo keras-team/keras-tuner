@@ -45,12 +45,11 @@ def model_fn():
                   metrics=['acc'])
     return model
 
-
 # Initialize the hypertuner by passing the model function (model_fn)
 # and specifying key search constraints: maximize val_acc (objective),
 # spend 9 epochs doing the search, spend at most 3 epoch on each model.
-tuner = RandomSearch(model_fn, objective='val_acc', epoch_budget=1,
-                     max_epochs=1)
+tuner = RandomSearch(model_fn, objective='val_acc', epoch_budget=9,
+                     max_epochs=3)
 
 # display search overview
 tuner.summary()
@@ -67,4 +66,4 @@ tuner.search(x_train, y_train, validation_split=0.01)
 tuner.results_summary()
 
 # Export the top 2 models, in keras format format.
-tuner.save_best_models(num_models=2)
+tuner.save_best_models(num_models=1)
