@@ -13,7 +13,7 @@ from kerastuner.applications.tunable_resnet import blocks
 from kerastuner.applications.tunable_resnet.hparams import default_fixed_hparams, default_hparams
 
 
-def resnet(input_shape, num_classes, **hparams):
+def TunableResNet(input_shape, num_classes, **hparams):
     """ Returns a wrapper around a Resnet function which provides the
     specified shape, number of output classes, and hyperparameters.
 
@@ -29,7 +29,7 @@ def resnet(input_shape, num_classes, **hparams):
     return functools.partial(_resnet, input_shape, num_classes, **hparams)
 
 
-def resnet_single_fn(input_shape, num_classes, **hparams):
+def tunable_resnet_single_fn(input_shape, num_classes, **hparams):
     """ Returns a wrapper around a resnet_single function which provides the
     specified shape, number of output classes, and hyperparameters.
 
@@ -49,8 +49,8 @@ def resnet_single_fn(input_shape, num_classes, **hparams):
         **hparams)
 
 
-def resnet_single_model(input_shape, num_classes, **hparams):
-    model_fn = resnet_single_fn(input_shape, num_classes, **hparams)
+def tunable_resnet_single_model(input_shape, num_classes, **hparams):
+    model_fn = tunable_resnet_single_fn(input_shape, num_classes, **hparams)
     return model_fn()
 
 
