@@ -5,7 +5,7 @@ from sklearn.metrics import confusion_matrix, classification_report
 from sklearn.metrics import roc_auc_score, roc_curve
 from sklearn.utils.multiclass import type_of_target
 from kerastuner.abstractions.display import warning, fatal
-
+import traceback
 
 def canonicalize_metric_name(name):
     _METRIC_ALIASES = {
@@ -156,20 +156,25 @@ def _is_supported(y):
     return output_type in valid_types
 
 
-def _massage_labels(y):
+def _convert_labels(y):
+    argmax_types = [
+        "multilabel-indicator", "multiclass-multioutput",
+        "continuous-multioutput"
+    ]
+
     output_type = type_of_target(y)
 
-    if output_type == "multilabel-indicator":
+    if output_type in argmax_types:
         return np.argmax(y, axis=1)
-    elif output_type == "binary" or output_type == "continuous":
+
+    if output_type == "binary" or output_type == "continuous":
         return np.round(y)
-    elif output_type == "multiclass-multioutput":
-        return np.argmax(y, axis=1)
 
     return y
 
 
-def compute_common_classification_metrics(model, validation_data,
+def compute_common_classification_metrics(model,
+                                          validation_data,
                                           label_names=None):
     """Computes classification metrics on the validation set.
 
@@ -182,19 +187,42 @@ def compute_common_classification_metrics(model, validation_data,
         
         Returns:
             dict of classification metrics, dict of data.
-    """                                          
+    """
 
     y_pred = model(validation_data[0])
     y_true = validation_data[1]
 
-    predicted_labels = _massage_labels(y_pred)
-    actual_labels = _massage_labels(y_true)
+    predicted_labels = _convert_labels(y_pred)
+    actual_labels = _convert_labels(y_true)
 
     output_type = type_of_target(actual_labels)
 
-    matrix = confusion_matrix(actual_labels, predicted_labels)
-    metrics = classification_report(actual_labels, predicted_labels,
-                                    output_dict=True, target_names=label_names)
+    matrix = None
+
+    try:
+        matrix = confusion_matrix(actual_labels, predicted_labels)
+        matrix = matrix.tolist()
+    except:
+        print("Failed to produce confusion matrix.")
+        print("y_true is type ", type_of_target(y_true))
+        print(y_true[0:3])
+        print("y'_true is type ", type_of_target(actual_labels))
+        print(actual_labels[0:3])
+
+        print("y_pred is type ", type_of_target(y_pred))
+        print(y_pred[0:3])
+        print("y'_pred is type ", type_of_target(predicted_labels))
+        print(predicted_labels[0:3])
+        traceback.print_exc()
+
+    metrics = None
+    try:
+        metrics = classification_report(actual_labels,
+                                        predicted_labels,
+                                        output_dict=True,
+                                        target_names=label_names)
+    except:
+        traceback.print_exc()
 
     data = {
         "actual_labels": actual_labels,
@@ -203,13 +231,14 @@ def compute_common_classification_metrics(model, validation_data,
     }
     results = {
         "target_type": output_type,
-        "confusion_matrix": matrix.tolist(),
+        "confusion_matrix": matrix,
         "classification_metrics": metrics
     }
     return results, data
 
 
-def compute_epoch_end_classification_metrics(model, validation_data,
+def compute_epoch_end_classification_metrics(model,
+                                             validation_data,
                                              label_names=None):
     """Computes classification metrics on the validation set.
 
@@ -219,16 +248,17 @@ def compute_epoch_end_classification_metrics(model, validation_data,
             validation_data (tuple): tuple of feature data and labels.
             label_names (str, optional): Label names to be used in the
                 confusion matrix/classification report.
-        
+
         Returns:
             dict of classification metrics
     """
-    results, _ = compute_common_classification_metrics(
-        model, validation_data, label_names)
+    results, _ = compute_common_classification_metrics(model, validation_data,
+                                                       label_names)
     return results
 
 
-def compute_training_end_classification_metrics(model, validation_data,
+def compute_training_end_classification_metrics(model,
+                                                validation_data,
                                                 label_names=None):
     """Computes classification metrics on the validation set, including
        end-of-training metrics (e.g. ROC Curve for binary problems.)
@@ -239,7 +269,7 @@ def compute_training_end_classification_metrics(model, validation_data,
             validation_data (tuple): tuple of feature data and labels.
             label_names (str, optional): Label names to be used in the
                 confusion matrix/classification report.
-        
+
         Returns:
             dict of classification metrics
     """

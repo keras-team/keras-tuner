@@ -128,6 +128,13 @@ class MonitorCallback(TunerCallback):
             "instance": self.instance_state.to_config(),
             "hparams": config._DISTRIBUTIONS.get_hyperparameters_config()
         }
+
+        # Classification metrics
+        if self.validation_data:
+            classification_metrics = compute_epoch_end_classification_metrics(
+                self.model, self.validation_data, self.tuner_state.label_names)
+            status["classification_metrics"] = classification_metrics
+
         status_json = json.dumps(status)
         prefix = self._get_filename_prefix(with_execution_info=False)
         # don't do a os.join as it is just appending a suffix
@@ -159,12 +166,6 @@ class MonitorCallback(TunerCallback):
             "hparams": config._DISTRIBUTIONS.get_hyperparameters_config(),
             "dynamic_hparams": config._DISTRIBUTIONS.dynamic_hyperparameters
         }
-
-        # Classification metrics
-        if self.validation_data:
-            metrics = compute_epoch_end_classification_metrics(
-                self.model, self.validation_data, self.tuner_state.label_names)
-            status["classification_metrics"] = metrics
 
         # needed for cloudservice
         status['training_complete'] = self.training_complete
