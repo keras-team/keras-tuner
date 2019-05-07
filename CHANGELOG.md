@@ -16,6 +16,7 @@ log additional informations.
 - Model exporting added -- allows to export in Keras formats and Tensorflow
 - Model resuming added.
 - Hello world tutorial completed.
+- Add classification metrics reporting.
 
 ### Extra
 
