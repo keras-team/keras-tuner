@@ -20,12 +20,13 @@ model_fn = resnet(
 # Find the best model.
 tuner = RandomSearch(
     model_fn,
-    epoch_budget=10,
+    'val_acc',
+    epoch_budget=12,
     max_epochs=3,
-    project='Tunable Resnet',
+    project='Cifar10',
     architecture='Resnet',
     validation_data=(x_test, y_test),
     max_params=50000000)
 tuner.summary()
 tuner.search(x_train, y_train, validation_split=0.01)
-tuner.display_result_summary()
+tuner.results_summary()

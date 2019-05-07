@@ -6,8 +6,8 @@ config._DISTRIBUTIONS = DummyDistributions()
 
 
 def reset_distributions():
-  """Reset the _DISTRIBUTIONS global object to the default."""
-  config._DISTRIBUTIONS = DummyDistributions()
+    """Reset the _DISTRIBUTIONS global object to the default."""
+    config._DISTRIBUTIONS = DummyDistributions()
 
 
 def Fixed(name, value, group="default"):
@@ -38,7 +38,8 @@ def Choice(name, selection, group="default"):
     Args:
         name (str): name of the parameter
         selection (list): list of explicit choices
-        group (str): Optional logical group name this parameter belongs to
+        group (str): Optional logical group name this parameter belongs to.
+        Default to 'default'
     Returns:
         an element of the list provided
     """
@@ -52,6 +53,8 @@ def Range(name, start, stop, increment=1, group='default'):
         start (int): lower bound of the range
         stop (int): upper bound of the range
         increment (int): incremental step
+        group (str): Optional logical group name this parameter belongs to.
+        Default to 'default'
     Returns:
         an element of the range
     """
@@ -67,6 +70,8 @@ def Linear(name, start, stop, num_buckets, precision=0, group='default'):
         num_buckets (int): in how many buckets to divided the range i
         precision (int): For float range. Round the result rounded to the
                          nth decimal if needed. 0 means not rounded
+        group (str): Optional logical group name this parameter belongs to.
+        Default to 'default'
     Returns:
         an element of the range
     """
@@ -83,6 +88,8 @@ def Logarithmic(name, start, stop, num_buckets, precision=0, group='default'):
         num_buckets (int): in how many buckets to divided the range in
         precision (int): For float range. Round the result rounded to the
                         nth decimal if needed. 0 means not rounded
+        group (str): Optional logical group name this parameter belongs to.
+        Default to 'default'
     Returns:
         an element of the range
     """

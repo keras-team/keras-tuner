@@ -1,6 +1,6 @@
 {
-    "name": "Random Search Tuner",
-    "description": "Hypertunable version of Resnet",
+    "name": "Random search tuner",
+    "description": "Implement the direct random search method",
     "version": "1.0",
     "reference": "http://comingsoon",
     "authors": [

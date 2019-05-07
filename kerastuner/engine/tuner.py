@@ -275,6 +275,14 @@ class Tuner(object):
         return hashlib.sha256(s.encode('utf-8')).hexdigest()[:32]
 
     def results_summary(self, num_models=10, sort_metric=None):
+        """Display tuning results summary.
+
+        Args:
+            num_models (int, optional): Number of model to display.
+            Defaults to 10.
+            sort_metric (str, optional): Sorting metric, when not specified
+            sort models by objective value. Defaults to None.
+        """
         # FIXME API documentation
         _results_summary(input_dir=self.state.host.results_dir,
                          project=self.state.project,

@@ -11,22 +11,63 @@ class RandomSearch(Tuner):
     def __init__(self, model_fn, objective, **kwargs):
         """ RandomSearch hypertuner
         Args:
-            epoch_budget (int): How many epochs to spend hyper-tuning. Default 3171
-            max_epochs (int): How long to train model at most. default 50
-            model_name (str): used to prefix results. Default: timestamp
+            model_fn (function): Function that returns the Keras model to be
+            hypertuned. This function is supposed to return a different model
+            at every invocation via the use of distribution.* hyperparameters
+            range.
 
-            executions (int): number of execution for each model tested
+            objective (str): Name of the metric to optimize for. The referenced
+            metric must be part of the the `compile()` metrics.
 
-            display_model (str): base: cpu/single gpu version, multi-gpu: multi-gpu, both: base and multi-gpu. default (Nothing)
+        Attributes:
+            epoch_budget (int, optional): how many epochs to hypertune for.
+            Defaults to 100.
 
-            num_gpu (int): number of gpu to use. Default 0
-            gpu_mem (int): amount of RAM per GPU. Used for batch size calculation
+            max_budget (int, optional): how many epochs to spend at most on
+            a given model. Defaults to 10.
 
-            local_dir (str): where to store results and models. Default results/
-            gs_dir (str): Google cloud bucket to use to store results and model (optional). Default None
+            min_budget (int, optional): how many epochs to spend at least on
+            a given model. Defaults to 3.
 
-            dry_run (bool): do not train the model just run the pipeline. Default False
-            max_fail_streak (int): number of failed model before giving up. Default 20
+            num_executions(int, optional): number of execution for each model.
+            Defaults to 1.
+
+            project (str, optional): project the tuning belong to.
+            Defaults to 'default'.
+
+            architecture (str, optional): Name of the architecture tuned.
+            Default to 'default'.
+
+            user_info(dict, optional): user supplied information that will be
+            recorded alongside training data. Defaults to {}.
+
+            label_names (list, optional): Label names for confusion matrix.
+            Defaults to None, in which case the numerical labels are used.
+
+            max_model_parameters (int, optional):maximum number of parameters
+            allowed for a model. Prevent OOO issue. Defaults to 2500000.
+
+            checkpoint (Bool, optional): Checkpoint model. Setting it to false
+            disable it. Defaults to True
+
+            dry_run(bool, optional): Run the tuner without training models.
+            Defaults to False.
+
+            debug(bool, optional): Display debug information if true.
+            Defaults to False.
+
+            display_model(bool, optional):Display model summary if true.
+            Defaults to False.
+
+            results_dir (str, optional): Tuning results dir.
+            Defaults to results/. Can specify a gs:// path.
+
+            tmp_dir (str, optional): Temporary dir. Wipped at tuning start.
+            Defaults to tmp/. Can specify a gs:// path.
+
+            export_dir (str, optional): Export model dir. Defaults to export/.
+            Can specify a gs:// path.
+
         """
 
         # Do the super last -- it uses the variable setup by the tuner
