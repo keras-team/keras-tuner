@@ -50,6 +50,7 @@ class SequentialDistributions(Distributions):
             self.period[param_name] = running_size
             running_size *= data['space_size']
 
+
     def Fixed(self, name, value, group="default"):
         """Return a fixed selected value
         Args:

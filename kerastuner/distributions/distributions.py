@@ -162,6 +162,12 @@ class Distributions(object):
         """
         return self._hyperparameters_config
 
+    def get_search_space_size(self):
+        total_size = 1
+        for data in self._hyperparameters_config.values():
+            total_size *= data['space_size']
+        return total_size
+
     def config_summary(self):
         subsection("Hyper-parmeters search space")
         display_setting("distribution type: %s" % self.name)

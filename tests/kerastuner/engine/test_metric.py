@@ -1,7 +1,17 @@
-import pytest
 import json
-from kerastuner.engine.metric import Metric
 import time
+
+import numpy as np
+import pytest
+import sklearn
+import tensorflow as tf
+from tensorflow.keras.layers import Dense, Input
+from tensorflow.keras.models import Model
+
+from sklearn.utils.multiclass import type_of_target
+from kerastuner.engine.metric import Metric
+from kerastuner.engine.metric import compute_common_classification_metrics
+from kerastuner.engine.metric import compute_training_end_classification_metrics
 
 
 @pytest.fixture
@@ -95,3 +105,97 @@ def test_from_config_to_config(mm):
     assert mm2.direction == 'min'
     assert mm2.get_history() == [10, 11]
     assert mm2.is_objective
+
+
+def _test_classification_metrics(out):
+    metrics = out["classification_metrics"]
+    assert np.isclose(.8, metrics["macro avg"]["f1-score"])
+    assert np.isclose(.8, metrics["weighted avg"]["f1-score"])
+    assert np.isclose(.8, metrics["micro avg"]["f1-score"])
+
+
+def _single_output_model(dtype):
+    i = Input(shape=(1, ), dtype=dtype)
+    o = i
+    m = Model(i, o)
+    m.compile(loss="mse", optimizer="adam")
+    return m
+
+
+def _multi_output_model(dtype):
+    i = Input(shape=(2, ), dtype=dtype)
+    o = i
+    m = Model(i, o)
+    m.compile(loss="mse", optimizer="adam")
+    return m
+
+
+def test_continuous_single_classification_metrics():
+    model = _single_output_model(dtype=tf.float32)
+    x_val = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0])
+    y_val = np.array([0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0])
+
+    results, data = compute_common_classification_metrics(
+            model, (x_val, y_val))
+
+    _test_classification_metrics(results)
+
+
+def test_continuous_single_classification_metrics_int():
+    model = _single_output_model(dtype=tf.float32)
+    x_val = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0])
+    y_val = np.array([0, 0, 0, 0, 1, 0, 1, 1, 1, 1])
+
+    results, data = compute_common_classification_metrics(
+            model, (x_val, y_val))
+
+    _test_classification_metrics(results)
+
+
+def test_continuous_multi_classification_metrics():
+    model = _multi_output_model(dtype=tf.float32)
+
+    x_val = np.array(
+            [[0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0],
+             [1.0, 0.0], [1.0, 0.0], [1.0, 0.0], [1.0, 0.0],
+             [1.0, 0.0]])
+    y_val = [0, 0, 0, 0, 1, 0, 1, 1, 1, 1]
+    y_val = np.array([(x, 1 - x) for x in y_val], dtype=np.float32)
+
+    results, data = compute_common_classification_metrics(
+            model, (x_val, y_val))
+
+    _test_classification_metrics(results)
+
+
+def test_continuous_multi_classification_metrics_float():
+    model = _multi_output_model(dtype=tf.float32)
+
+    x_val = np.array(
+            [[0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0],
+             [1.0, 0.0], [1.0, 0.0], [1.0, 0.0], [1.0, 0.0],
+             [1.0, 0.0]])
+    y_val = [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0]
+    y_val = np.array([(x, 1 - x) for x in y_val], dtype=np.float32)
+
+    results, data = compute_common_classification_metrics(
+            model, (x_val, y_val))
+
+    _test_classification_metrics(results)
+
+def test_continuous_single_classification_metrics_training_end():
+    model = _single_output_model(dtype=tf.float32)
+    x_val = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0])
+    y_val = np.array([0, 0, 0, 0, 1, 0, 1, 1, 1, 1])
+
+    results = compute_training_end_classification_metrics(
+            model, (x_val, y_val))
+
+    _test_classification_metrics(results)
+
+    assert np.allclose(results["roc_curve"]["fpr"],
+                   [0, 0.2, 1], atol=.05)
+    assert np.allclose(results["roc_curve"]["tpr"],
+                   [0, 0.8, 1], atol=.05)
+    assert np.allclose(results["roc_curve"]["thresholds"],
+                   [2, 1, 0], atol=.05)
