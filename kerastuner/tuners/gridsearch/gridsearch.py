@@ -1,8 +1,9 @@
-"Basic randomsearch tuner"
+"Exhaustive GridSearch tuner"
 from termcolor import cprint
 from kerastuner.engine import Tuner
-from kerastuner.abstractions.display import subsection
+from kerastuner.abstractions.display import subsection, warning
 from kerastuner.distributions import SequentialDistributions
+from kerastuner import config
 
 
 class GridSearch(Tuner):
@@ -37,7 +38,17 @@ class GridSearch(Tuner):
 
     def tune(self, x, y, **kwargs):
 
-        while self.state.remaining_budget:
+        # Determine the number of total models to search over.
+        search_space_size = config._DISTRIBUTIONS.get_search_space_size()
+        required_num_epochs = (search_space_size * self.state.max_epochs *
+                               self.state.num_executions)
+
+        if required_num_epochs > self.state.remaining_budget:
+            warning("GridSearch epoch budget of %d is not sufficient to explore \
+                   the entire space.  Recommended budget: %d" % (
+                self.state.remaining_budget, required_num_epochs))
+
+        while self.state.remaining_budget and search_space_size:
             instance = self.new_instance()
 
             # not instances left time to wrap-up
@@ -47,3 +58,5 @@ class GridSearch(Tuner):
             # train n executions for the given model
             for _ in range(self.state.num_executions):
                 instance.fit(x, y, self.state.max_epochs, **kwargs)
+
+            search_space_size -= 1
