@@ -10,49 +10,49 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
 
-from kerastuner.applications.hyperception.blocks import sep_conv, conv, dense, residual
-from kerastuner.applications.hyperception.hparams import default_fixed_hparams, default_hparams
+from kerastuner.applications.tunable_xception.blocks import sep_conv, conv, dense, residual
+from kerastuner.applications.tunable_xception.hparams import default_fixed_hparams, default_hparams
 
 
-def hyperception(input_shape, num_classes, **hparams):
-    """ Returns a wrapper around a hyperception function which provides the
+def TunableXception(input_shape, num_classes, **hparams):
+    """ Returns a wrapper around a tunable_xception function which provides the
     specified shape, number of output classes, and hyperparameters.
 
     Args:
         input_shape (tuple):  Shape of the input image.
         num_classes (int): Number of output classes.
-        hparams (**dictionary): Hyperparameters to the Hyperception model.
+        hparams (**dictionary): Hyperparameters to the TunableXception model.
 
     Returns:
-        A wrapped hyperception function.
+        A wrapped tunable_xception function.
     """
 
-    return functools.partial(_hyperception, input_shape, num_classes, **hparams)
+    return functools.partial(_xception, input_shape, num_classes, **hparams)
 
 
-def hyperception_single_fn(input_shape, num_classes, **hparams):
-    """ Returns a wrapper around a hyperception_single function which provides the
+def tunable_xception_single_fn(input_shape, num_classes, **hparams):
+    """ Returns a wrapper around a tunable_xception_single function which provides the
     specified shape, number of output classes, and hyperparameters.
 
     Args:
         input_shape (tuple):  Shape of the input image.
         num_classes (int): Number of output classes.
-        hparams (**dictionary): Hyperparameters to the Hyperception model.
+        hparams (**dictionary): Hyperparameters to the TunableXception model.
 
     Returns:
-        A wrapped hyperception_single function.
+        A wrapped tunable_xception_single function.
     """
 
-    return functools.partial(_hyperception_single, input_shape, num_classes, **hparams)
+    return functools.partial(_xception_single, input_shape, num_classes, **hparams)
 
 
-def hyperception_single_model(input_shape, num_classes, **hparams):
-    model_fn = hyperception_single_fn(input_shape, num_classes, **hparams)
+def tunable_xception_single_model(input_shape, num_classes, **hparams):
+    model_fn = tunable_xception_single_fn(input_shape, num_classes, **hparams)
     i = model_fn()
     return i
 
 
-def _hyperception(input_shape, num_classes, **hparams):
+def _xception(input_shape, num_classes, **hparams):
     """
     Implementation of a hypertunable adaptation of Xception.
     """
@@ -68,8 +68,6 @@ def _hyperception(input_shape, num_classes, **hparams):
 
     initial_strides = hp["initial_strides"]
     activation = hp["activation"]
-
-    optimizer = hp["optimizer"]
 
     # [entry flow]
 
@@ -132,7 +130,7 @@ def _hyperception(input_shape, num_classes, **hparams):
     return model
 
 
-def _hyperception_single(
+def _xception_single(
         input_shape,
         num_classes,
         mode="full",
@@ -141,4 +139,4 @@ def _hyperception_single(
 
     hp = default_fixed_hparams(input_shape, num_classes)
     hp.update(hparams)
-    return _hyperception(input_shape=input_shape, num_classes=num_classes, **hp)
+    return _xception(input_shape=input_shape, num_classes=num_classes, **hp)

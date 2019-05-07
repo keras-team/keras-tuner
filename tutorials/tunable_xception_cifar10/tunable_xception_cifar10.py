@@ -2,7 +2,7 @@
 
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.datasets import cifar10
-from kerastuner.applications.tunable_resnet import TunableResNet
+from kerastuner.applications.tunable_xception import TunableXception
 from kerastuner.tuners.randomsearch import RandomSearch
 
 
@@ -12,21 +12,21 @@ NUM_CLASSES = 10
 y_train = to_categorical(y_train, NUM_CLASSES)
 y_test = to_categorical(y_test, NUM_CLASSES)
 
-# Import an hypertunable version of Resnet.
-model_fn = TunableResNet(
+# Import an hypertunable version of Xception.
+model_fn = TunableXception(
     input_shape=x_train.shape[1:],
     num_classes=NUM_CLASSES)
 
 # Initialize the hypertuner: we should find the model that maximixes the
-# validation accuracy, training each model for ten epochs for a max of
-# 40 epochs of total training time.
+# validation accuracy, training each model for three epochs for a max of
+# 12 epochs of total training time.
 tuner = RandomSearch(
     model_fn,
     objective='val_acc',
-    epoch_budget=40,
-    max_epochs=10,
+    epoch_budget=12,
+    max_epochs=3,
     project='Cifar10',
-    architecture='Resnet',
+    architecture='Xception',
     validation_data=(x_test, y_test),
     max_params=50000000)
 

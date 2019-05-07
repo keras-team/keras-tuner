@@ -1,5 +1,5 @@
 {
-    "name": "hyperception",
+    "name": "tunable_xception",
     "target": "images",
     "description": "Hypertunable version of Xception",
     "version": "0.0.0.1",
