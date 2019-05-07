@@ -1,4 +1,5 @@
-"Keras Tuner hello world sequential API - TensorFlow V1.13+ or V2.x"
+"""Keras Tuner hello world sequential API - TensorFlow V1.13+ or V2.x."""
+
 import os
 import numpy as np
 from tensorflow.keras.models import Sequential  # pylint: disable=import-error
@@ -66,4 +67,4 @@ tuner.search(x_train, y_train, validation_split=0.01)
 tuner.results_summary()
 
 # Export the top 2 models, in keras format format.
-tuner.save_best_models(num_models=1)
+tuner.save_best_models(num_models=2)
