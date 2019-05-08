@@ -29,6 +29,7 @@ from .cloudservice import CloudService
 from .instance import Instance
 from kerastuner.collections import InstanceStatesCollection
 from kerastuner.abstractions.io import reload_model
+from sklearn.model_selection import train_test_split
 
 
 class Tuner(object):
@@ -114,7 +115,27 @@ class Tuner(object):
 
     def search(self, x, y=None, **kwargs):
         kwargs["verbose"] = 0
-        self.tune(x, y, **kwargs)
+
+        validation_data = None
+
+        if "validation_split" in kwargs and "validation_data" in kwargs:
+            raise ValueError(
+                "Specify validation_data= or validation_split=, but not both.")
+
+        if "validation_split" in kwargs and "validation_data" not in kwargs:
+            val_split = kwargs["validation_split"]
+            x, x_validation = train_test_split(x, test_size=val_split)
+            if y is not None:
+                y, y_validation = train_test_split(y, test_size=val_split)
+            else:
+                y, y_validation = None, None
+            validation_data = (x_validation, y_validation)
+            del kwargs["validation_split"]
+        elif "validation_data" in kwargs:
+            validation_data = kwargs["validation_data"]
+            del kwargs["validation_data"]
+
+        self.tune(x, y, validation_data=validation_data, **kwargs)
         if self.cloudservice.is_enable:
             self.cloudservice.complete()
 
@@ -136,8 +157,8 @@ class Tuner(object):
                     traceback.print_exc()
 
                 self.stats.invalid_instances += 1
-                warning("invalid model %s/%s" % (self.stats.invalid_instances,
-                                                 self.max_fail_streak))
+                warning("invalid model %s/%s" %
+                        (self.stats.invalid_instances, self.max_fail_streak))
 
                 if self.stats.invalid_instances >= self.max_fail_streak:
                     warning("too many consecutive failed model - stopping")
@@ -202,15 +223,16 @@ class Tuner(object):
         for instance_state in sorted_instance_states:
             sorted_execution_list = (
                 instance_state.execution_states_collection.sort_by_metric(
-                    instance_state.objective
-                ))
+                    instance_state.objective))
             best_execution_state = sorted_execution_list[0]
             execution_states.append(best_execution_state)
 
         models = []
         for instance_state, execution_state in zip(sorted_instance_states,
                                                    execution_states):
-            model = reload_model(self.state, instance_state, execution_state,
+            model = reload_model(self.state,
+                                 instance_state,
+                                 execution_state,
                                  compile=True)
             models.append(model)
 
@@ -255,18 +277,19 @@ class Tuner(object):
 
         zipped = zip(models, instance_states, execution_states)
         for idx, (model, instance_state, execution_state) in enumerate(zipped):
-            export_prefix = "%s-%s-%s-%s" % (self.state.project,
-                                             self.state.architecture,
-                                             instance_state.idx,
-                                             execution_state.idx)
+            export_prefix = "%s-%s-%s-%s" % (
+                self.state.project, self.state.architecture,
+                instance_state.idx, execution_state.idx)
 
             export_path = os.path.join(self.state.host.export_dir,
                                        export_prefix)
 
             tmp_path = os.path.join(self.state.host.tmp_dir, export_prefix)
-            info("Exporting top model (%d/%d) - %s" % (idx + 1, len(models),
-                                                       export_path))
-            tf_utils.save_model(model, export_path, tmp_path=tmp_path,
+            info("Exporting top model (%d/%d) - %s" %
+                 (idx + 1, len(models), export_path))
+            tf_utils.save_model(model,
+                                export_path,
+                                tmp_path=tmp_path,
                                 export_type=export_type)
 
     def __compute_model_id(self, model):
@@ -287,7 +310,8 @@ class Tuner(object):
         _results_summary(input_dir=self.state.host.results_dir,
                          project=self.state.project,
                          architecture=self.state.architecture,
-                         num_models=num_models, sort_metric=sort_metric)
+                         num_models=num_models,
+                         sort_metric=sort_metric)
 
     @abstractmethod
     def tune(self, x, y, **kwargs):

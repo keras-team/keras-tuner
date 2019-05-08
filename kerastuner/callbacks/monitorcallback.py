@@ -9,8 +9,7 @@ from .tunercallback import TunerCallback
 from kerastuner.collections import MetricsCollection
 from kerastuner.abstractions.display import write_log, fatal
 from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
-from kerastuner.engine.metric import compute_epoch_end_classification_metrics
-from kerastuner.engine.metric import compute_training_end_classification_metrics  # nopep8
+from kerastuner.engine.metric import compute_common_classification_metrics
 from kerastuner.engine.metric import canonicalize_metric_name  # nopep8
 
 
@@ -46,11 +45,20 @@ class MonitorCallback(TunerCallback):
             improved = self.execution_state.metrics.update(metric, value)
             metric = canonicalize_metric_name(metric)
             if objective == metric and improved:
+                # Compute classification metrics and store in execution state
+                if self.validation_data:
+                    report = compute_common_classification_metrics(
+                        self.model, self.validation_data,
+                        self.tuner_state.label_names)
+                    self.execution_state.update_performance_metrics(report)
+
                 # TODO - figure out the race condition that causes us to clear
                 # the session before we finish the writes when we try to
                 # apply_async here.
                 # self.thread_pool.apply_async(self._checkpoint_model)
                 self._checkpoint_model()
+
+                self._write_result_file()
 
         # reset epoch history
         self.epoch_history = defaultdict(list)
@@ -118,7 +126,6 @@ class MonitorCallback(TunerCallback):
             traceback.print_exc()
             write_log("Failed.")
             exit(0)
-        self._write_result_file()
 
     def _write_result_file(self):
         """Record results - one file per instance"""
@@ -128,12 +135,6 @@ class MonitorCallback(TunerCallback):
             "instance": self.instance_state.to_config(),
             "hparams": config._DISTRIBUTIONS.get_hyperparameters_config()
         }
-
-        # Classification metrics
-        if self.validation_data:
-            classification_metrics = compute_epoch_end_classification_metrics(
-                self.model, self.validation_data, self.tuner_state.label_names)
-            status["classification_metrics"] = classification_metrics
 
         status_json = json.dumps(status)
         prefix = self._get_filename_prefix(with_execution_info=False)

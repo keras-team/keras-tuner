@@ -188,9 +188,22 @@ def compute_common_classification_metrics(model,
         Returns:
             dict of classification metrics, dict of data.
     """
+    x, y_true = validation_data
 
-    y_pred = model(validation_data[0])
-    y_true = validation_data[1]
+    start = time()
+
+    # We need to infer the validation set, and we also need to compute a
+    # a per-item inference time. So, while computing the predictions, we set the
+    # batch size to 1 so we can get the proper per-item metric.
+    y_pred = model.predict(x, batch_size=1)
+
+    # https://dawn.cs.stanford.edu/benchmark/
+    one_example_latency = time() - start
+    # Seconds -> Milliseconds
+    one_example_latency *= 1000
+    # Average latency over the input set
+    one_example_latency /= len(x)
+    one_example_latency = round(one_example_latency, 4)
 
     predicted_labels = _convert_labels(y_pred)
     actual_labels = _convert_labels(y_true)
@@ -203,26 +216,18 @@ def compute_common_classification_metrics(model,
         matrix = confusion_matrix(actual_labels, predicted_labels)
         matrix = matrix.tolist()
     except:
-        print("Failed to produce confusion matrix.")
-        print("y_true is type ", type_of_target(y_true))
-        print(y_true[0:3])
-        print("y'_true is type ", type_of_target(actual_labels))
-        print(actual_labels[0:3])
-
-        print("y_pred is type ", type_of_target(y_pred))
-        print(y_pred[0:3])
-        print("y'_pred is type ", type_of_target(predicted_labels))
-        print(predicted_labels[0:3])
         traceback.print_exc()
 
     metrics = None
+
     try:
         metrics = classification_report(actual_labels,
                                         predicted_labels,
                                         output_dict=True,
                                         target_names=label_names)
     except:
-        traceback.print_exc()
+        e = traceback.format_exc()
+        raise ValueError("Could not get classification_report: %s" % e)
 
     data = {
         "actual_labels": actual_labels,
@@ -234,49 +239,6 @@ def compute_common_classification_metrics(model,
         "confusion_matrix": matrix,
         "classification_metrics": metrics
     }
-    return results, data
-
-
-def compute_epoch_end_classification_metrics(model,
-                                             validation_data,
-                                             label_names=None):
-    """Computes classification metrics on the validation set.
-
-        Args:
-            model (Model): Model used to compute the predictions for the
-                validation data.        
-            validation_data (tuple): tuple of feature data and labels.
-            label_names (str, optional): Label names to be used in the
-                confusion matrix/classification report.
-
-        Returns:
-            dict of classification metrics
-    """
-    results, _ = compute_common_classification_metrics(model, validation_data,
-                                                       label_names)
-    return results
-
-
-def compute_training_end_classification_metrics(model,
-                                                validation_data,
-                                                label_names=None):
-    """Computes classification metrics on the validation set, including
-       end-of-training metrics (e.g. ROC Curve for binary problems.)
-
-        Args:
-            model (Model): Model used to compute the predictions for the
-                validation data.        
-            validation_data (tuple): tuple of feature data and labels.
-            label_names (str, optional): Label names to be used in the
-                confusion matrix/classification report.
-
-        Returns:
-            dict of classification metrics
-    """
-
-    results, data = compute_common_classification_metrics(
-        model, validation_data, label_names)
-
     target_type = results["target_type"]
 
     if target_type == "binary":

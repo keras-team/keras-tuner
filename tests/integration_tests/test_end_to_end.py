@@ -14,6 +14,8 @@ from kerastuner.distributions import Range, Choice, Boolean, Fixed
 # simply requires to change the tuner class used.
 from kerastuner.tuners import RandomSearch
 
+from kerastuner.collections.instancestatescollection import InstanceStatesCollection  # nopep8
+
 # Defining what to hypertune is as easy as writing a Keras/TensorFlow model
 # The only differences are:
 # 1. Wrapping the model in a function
@@ -44,11 +46,9 @@ def model_fn():
                   metrics=['acc'])
     return model
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="module")
 def model_tmp_path(tmpdir_factory):
     return tmpdir_factory.mktemp('end_to_end_test')
-    
-
 
 
 @pytest.fixture(scope="module")
@@ -58,8 +58,8 @@ def tuner(model_tmp_path):
     export_dir = str(model_tmp_path / "export")
 
     # Random data to feed the model.
-    x_train = np.random.random((100, 200))
-    y_train = np.random.randint(2, size=(100, 1))
+    x_train = np.random.random((10, 200))
+    y_train = [0, 1] * 5
 
     # Initialize the hypertuner by passing the model function (model_fn)
     # and specifying key search constraints: maximize val_acc (objective),
@@ -90,3 +90,24 @@ def test_end_to_end_summary(tuner):
 def test_end_to_end_export(tuner):
     # Export the top 2 models, in keras format format.
     tuner.save_best_models(num_models=2)
+
+
+def test_end_to_end_classification_reports(model_tmp_path):
+    # Show the best models, their hyperparameters, and the resulting metrics.
+
+    path = str(model_tmp_path / "results")
+    ic = InstanceStatesCollection()
+    ic.load_from_dir(path)
+
+    for instance in ic.to_list():
+        for execution in instance.execution_states_collection.to_list():
+            assert execution.roc_auc_score is not None
+            assert isinstance(execution.roc_auc_score, float)
+            assert execution.roc_auc_score > 0
+
+            # Classification metrics can be undefined if the model predicts a
+            # single class for all inputs.
+            if execution.classification_metrics:
+                assert "micro avg" in execution.classification_metrics
+                assert "macro avg" in execution.classification_metrics
+                assert "weighted avg" in execution.classification_metrics
