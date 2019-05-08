@@ -18,7 +18,6 @@ class SequentialDistributions(Distributions):
     """
 
     def __init__(self, hyperparameters_config):
-        print(hyperparameters_config)
         super(SequentialDistributions, self).__init__(
             'SequentialDistributions', hyperparameters_config,
             fatal_on_dynamic_hyperparmeter=True)
@@ -179,8 +178,6 @@ class SequentialDistributions(Distributions):
         steps = int(math.floor(count / period))
         idx = steps % len(self.ranges[key])
         value = self.ranges[key][idx]
-
-        print(key, count, period, steps, idx, value)
 
         # Increment the model count.
         self.counters[key] += 1
