@@ -38,11 +38,11 @@ class ExecutionState(State):
         self.metrics = MetricsCollection.from_config(metrics_config)
 
     def update_performance_metrics(self, report):
-        self.confusion_matrix = report["confusion_matrix"]
-        self.roc_curve = report["roc_curve"]
-        self.roc_auc_score = report["roc_auc_score"]
-        self.classification_metrics = report["classification_metrics"]
-        self.classifier_type = report["target_type"]
+        self.confusion_matrix = report.get("confusion_matrix", None)
+        self.roc_curve = report.get("roc_curve", None)
+        self.roc_auc_score = report.get("roc_auc_score", None)
+        self.classification_metrics = report.get("classification_metrics", None)
+        self.classifier_type = report.get("target_type", None)
 
     def to_config(self):
         self._compute_eta()
