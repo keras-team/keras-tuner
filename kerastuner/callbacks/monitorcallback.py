@@ -127,14 +127,20 @@ class MonitorCallback(TunerCallback):
             write_log("Failed.")
             exit(0)
 
-    def _write_result_file(self):
-        """Record results - one file per instance"""
+    def _make_status(self):
         status = {
             "update_time": int(time()),
             "tuner": self.tuner_state.to_config(),
             "instance": self.instance_state.to_config(),
-            "hparams": config._DISTRIBUTIONS.get_hyperparameters_config()
+            "execution": self.execution_state.to_config(),
+            "hparams": config._DISTRIBUTIONS.get_hyperparameters_config(),
+            "dynamic_hparams": config._DISTRIBUTIONS.dynamic_hyperparameters
         }
+        return status
+
+    def _write_result_file(self):
+        """Record results - one file per instance"""
+        status = self._make_status()
 
         status_json = json.dumps(status)
         prefix = self._get_filename_prefix(with_execution_info=False)
@@ -159,14 +165,7 @@ class MonitorCallback(TunerCallback):
     def _report_status_worker(self):
         "Report tuner status periodically"
         # getting stats
-        status = {
-            "update_time": int(time()),
-            "tuner": self.tuner_state.to_config(),
-            "instance": self.instance_state.to_config(),
-            "execution": self.execution_state.to_config(),
-            "hparams": config._DISTRIBUTIONS.get_hyperparameters_config(),
-            "dynamic_hparams": config._DISTRIBUTIONS.dynamic_hyperparameters
-        }
+        status = self._make_status()
 
         # needed for cloudservice
         status['training_complete'] = self.training_complete
