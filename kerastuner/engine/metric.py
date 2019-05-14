@@ -249,7 +249,8 @@ def compute_common_classification_metrics(model,
     results = {
         "target_type": output_type,
         "confusion_matrix": matrix,
-        "classification_metrics": metrics
+        "classification_metrics": metrics,
+        "one_example_latency": one_example_latency
     }
     target_type = results["target_type"]
 
