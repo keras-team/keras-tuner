@@ -108,6 +108,7 @@ def test_from_config_to_config(mm):
 
 def _test_classification_metrics(out):
     metrics = out["classification_metrics"]
+    assert out["classification_metrics"]["one_example_latency_millis"]
     assert np.isclose(.8, metrics["macro avg"]["f1-score"])
     assert np.isclose(.8, metrics["weighted avg"]["f1-score"])
     assert np.isclose(.8, metrics["micro avg"]["f1-score"])
