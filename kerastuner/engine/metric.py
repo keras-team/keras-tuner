@@ -241,17 +241,20 @@ def compute_common_classification_metrics(model,
         e = traceback.format_exc()
         raise ValueError("Could not get classification_report: %s" % e)
 
+
     data = {
         "actual_labels": actual_labels,
         "predicted_labels": predicted_labels,
         "predicted_probabilities": y_pred
     }
+    
+    metrics["one_example_latency_millis"] = one_example_latency
     results = {
         "target_type": output_type,
         "confusion_matrix": matrix,
         "classification_metrics": metrics,
-        "one_example_latency": one_example_latency
     }
+    
     target_type = results["target_type"]
 
     if target_type == "binary":
