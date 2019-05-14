@@ -7,16 +7,20 @@ from collections import defaultdict
 from kerastuner import config
 from .tunercallback import TunerCallback
 from kerastuner.collections import MetricsCollection
-from kerastuner.abstractions.display import write_log, fatal
+from kerastuner.abstractions.display import write_log, fatal, cprint
 from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 from kerastuner.engine.metric import compute_common_classification_metrics
 from kerastuner.engine.metric import canonicalize_metric_name  # nopep8
 
 
 class MonitorCallback(TunerCallback):
-
-    def __init__(self, tuner_state, instance_state, execution_state,
-                 cloudservice, validation_data, refresh_interval=2,
+    def __init__(self,
+                 tuner_state,
+                 instance_state,
+                 execution_state,
+                 cloudservice,
+                 validation_data,
+                 refresh_interval=2,
                  num_threads=4):
         super(MonitorCallback, self).__init__(tuner_state, instance_state,
                                               execution_state, cloudservice)
@@ -35,7 +39,7 @@ class MonitorCallback(TunerCallback):
 
     def on_epoch_end(self, epoch, logs={}):
         # update epoch counters
-        self.execution_state .epochs += 1
+        self.execution_state.epochs += 1
         self.tuner_state.remaining_budget -= 1
 
         objective = canonicalize_metric_name(self.tuner_state.objective)
@@ -88,15 +92,15 @@ class MonitorCallback(TunerCallback):
             update order matters must be instance then global
         """
 
-        # update instance aggregate statistics by reporting the best value
-        for metric in self.execution_state.metrics.to_list():
-            self.instance_state.agg_metrics.update(metric.name, metric.get_best_value())  # nopep8
+        # !Don't update execution state metrics here - they will be updated in
+        # !on_epoch_end
 
         # update tuner overall objective metric
         for metric in self.instance_state.agg_metrics.to_list():
             improved = self.tuner_state.agg_metrics.update(metric.name, metric.get_best_value())  # nopep8
-            if metric.name == self.tuner_state.objective and improved:
-                self.instance_state.is_best_model = True
+
+        if metric.name == self.tuner_state.objective and improved:
+            self.instance_state.is_best_model = True
 
         # record which one is the best model
         # ! dont try to simplify - must be after all statistics are computed
@@ -117,9 +121,10 @@ class MonitorCallback(TunerCallback):
                              path.basename(prefix))
 
         try:
-            tf_utils.save_model(
-                self.model, base_filename,
-                tmp_path=tmp_path, export_type="keras")
+            tf_utils.save_model(self.model,
+                                base_filename,
+                                tmp_path=tmp_path,
+                                export_type="keras")
         except:
             print("FAILED")
             import traceback

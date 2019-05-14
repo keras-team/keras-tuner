@@ -7,6 +7,7 @@ from sklearn.utils.multiclass import type_of_target
 from kerastuner.abstractions.display import warning, fatal
 import traceback
 
+
 def canonicalize_metric_name(name):
     _METRIC_ALIASES = {
         "acc": "accuracy"
@@ -139,20 +140,32 @@ class Metric(object):
         }
 
     @staticmethod
-    def from_config(config):
-        "Reload metric from config"
+    def from_config(config, with_values=True):
+        """Reload metric from config
+        
+        Args:
+            config (dict): Configuration dictionary, as returned by to_config.
+            with_values (bool, optional): If True, metric values are copied from
+                the configuration. If False, they are omitted. Defaults to True.
+        
+        Returns:
+            Metric: The Metric object defined by the config.
+        """
         metric = Metric(config['name'], config['direction'])
-        metric.history = config['history']
+        if with_values:
+            metric.history = config['history']
+            metric.start_time = config['start_time']
+            metric.wall_time = config['wall_time']
         metric.is_objective = config['is_objective']
-        metric.start_time = config['start_time']
-        metric.wall_time = config['wall_time']
         return metric
 
 
 def _is_supported(y):
     output_type = type_of_target(y)
-    valid_types = ["multilabel-indicator", "binary", "continuous",
-                   "multiclass-multioutput"]
+    valid_types = [
+        "multilabel-indicator", "binary", "continuous",
+        "multiclass-multioutput"
+    ]
     return output_type in valid_types
 
 
@@ -163,7 +176,6 @@ def _convert_labels(y):
     ]
 
     output_type = type_of_target(y)
-
     if output_type in argmax_types:
         return np.argmax(y, axis=1)
 
@@ -184,7 +196,7 @@ def compute_common_classification_metrics(model,
             validation_data (tuple): tuple of feature data and labels.
             label_names (str, optional): Label names to be used in the
                 confusion matrix/classification report.
-        
+
         Returns:
             dict of classification metrics, dict of data.
     """
@@ -194,7 +206,7 @@ def compute_common_classification_metrics(model,
 
     # We need to infer the validation set, and we also need to compute a
     # a per-item inference time. So, while computing the predictions, we set the
-    # batch size to 1 so we can get the proper per-item metric.
+    # batch size to 1 so we can get the proper per-item
     y_pred = model.predict(x, batch_size=1)
 
     # https://dawn.cs.stanford.edu/benchmark/
@@ -242,16 +254,22 @@ def compute_common_classification_metrics(model,
     target_type = results["target_type"]
 
     if target_type == "binary":
-        actual_labels = data["actual_labels"]
-        predictions = data["predicted_probabilities"]
+        try:
+            actual_labels = data["actual_labels"]
+            predictions = data["predicted_probabilities"]
+            predictions = predictions[..., 0]
 
-        fpr, tpr, thresholds = roc_curve(actual_labels, predictions)
+            fpr, tpr, thresholds = roc_curve(actual_labels, predictions)
 
-        results["roc_curve"] = {
-            "fpr": fpr.tolist(),
-            "tpr": tpr.tolist(),
-            "thresholds": thresholds.tolist()
-        }
-        results["roc_auc_score"] = roc_auc_score(actual_labels, predictions)
+            results["roc_curve"] = {
+                "fpr": fpr.tolist(),
+                "tpr": tpr.tolist(),
+                "thresholds": thresholds.tolist()
+            }
+            results["roc_auc_score"] = roc_auc_score(actual_labels, predictions)
+        except:
+            e = traceback.format_exc()
+            raise ValueError("Could not get roc_curve/roc_auc_score: %s" % e)
+
 
     return results

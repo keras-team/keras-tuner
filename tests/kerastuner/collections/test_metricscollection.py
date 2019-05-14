@@ -196,6 +196,11 @@ def test_double_objective(mc):
 
 
 def test_from_config_to_config(mc):
+    m = Metric("loss", "min")
+    mc = MetricsCollection()
+    mc.add(m)
+    mc.update("loss", .5)
+
     config = mc.to_config()
     mc2 = MetricsCollection.from_config(config)
     mcl = mc.to_list()
@@ -204,3 +209,23 @@ def test_from_config_to_config(mc):
     assert mc2._objective_name == mc._objective_name
     for idx in range(len(mcl)):
         assert mcl[idx].name == mc2l[idx].name
+        assert mcl[idx].get_last_value() == mc2l[idx].get_last_value()
+
+
+def test_from_config_to_config_no_val():
+    m = Metric("loss", "min")
+    mc = MetricsCollection()
+    mc.add(m)
+    mc.update("loss", .5)
+
+    config = mc.to_config()
+    mc2 = MetricsCollection.from_config(config, with_values=False)
+    mcl = mc.to_list()
+    mc2l = mc2.to_list()
+
+    assert mc2._objective_name == mc._objective_name
+    assert len(mcl) == 1
+    assert len(mc2l) == 1
+
+    assert mcl[0].get_last_value() == .5
+    assert mc2l[0].get_last_value() is None

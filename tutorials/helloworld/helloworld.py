@@ -14,8 +14,8 @@ from kerastuner.distributions import Range, Choice, Boolean, Fixed
 from kerastuner.tuners import RandomSearch
 
 # Random data to feed the model.
-x_train = np.random.random((10000, 200))
-y_train = np.random.randint(2, size=(10000, 1))
+x_train = np.random.random((500, 200))
+y_train = np.random.randint(2, size=(500, 1))
 
 
 # Defining what to hypertune is as easy as writing a Keras/TensorFlow model

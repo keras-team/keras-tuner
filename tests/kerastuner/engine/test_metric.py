@@ -11,7 +11,6 @@ from tensorflow.keras.models import Model
 from sklearn.utils.multiclass import type_of_target
 from kerastuner.engine.metric import Metric
 from kerastuner.engine.metric import compute_common_classification_metrics
-from kerastuner.engine.metric import compute_training_end_classification_metrics
 
 
 @pytest.fixture
@@ -122,10 +121,9 @@ def _single_output_model(dtype):
     return m
 
 
-def _multi_output_model(dtype):
-    i = Input(shape=(2, ), dtype=dtype)
-    o = i
-    m = Model(i, o)
+def _multi_output_model(n_input, dtype):
+    i = Input(shape=(n_input, ), dtype=dtype, name="Foo")
+    m = Model(i, i)
     m.compile(loss="mse", optimizer="adam")
     return m
 
@@ -135,8 +133,7 @@ def test_continuous_single_classification_metrics():
     x_val = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0])
     y_val = np.array([0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0])
 
-    results, data = compute_common_classification_metrics(
-        model, (x_val, y_val))
+    results = compute_common_classification_metrics(model, (x_val, y_val))
 
     _test_classification_metrics(results)
 
@@ -146,55 +143,45 @@ def test_continuous_single_classification_metrics_int():
     x_val = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0])
     y_val = np.array([0, 0, 0, 0, 1, 0, 1, 1, 1, 1])
 
-    results, data = compute_common_classification_metrics(
-        model, (x_val, y_val))
+    results = compute_common_classification_metrics(model, (x_val, y_val))
 
     _test_classification_metrics(results)
 
 
 def test_continuous_multi_classification_metrics():
-    model = _multi_output_model(dtype=tf.float32)
+    model = _multi_output_model(2, dtype=tf.float32)
 
-    x_val = np.array([[0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0,
-                                                           1.0], [0.0, 1.0],
-                      [1.0, 0.0], [1.0, 0.0], [1.0, 0.0], [1.0, 0.0],
-                      [1.0, 0.0]])
+    x_val = np.array([[-1, 1] for _ in range(5)] + [[1, -1] for _ in range(5)])
+
     y_val = [0, 0, 0, 0, 1, 0, 1, 1, 1, 1]
     y_val = np.array([(x, 1 - x) for x in y_val], dtype=np.float32)
 
-    results, data = compute_common_classification_metrics(
-        model, (x_val, y_val))
+    results = compute_common_classification_metrics(model, (x_val, y_val))
 
     _test_classification_metrics(results)
 
 
 def test_continuous_multi_classification_metrics_float():
-    model = _multi_output_model(dtype=tf.float32)
+    model = _multi_output_model(2, dtype=tf.float32)
 
-    x_val = np.array([[0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0,
-                                                           1.0], [0.0, 1.0],
-                      [1.0, 0.0], [1.0, 0.0], [1.0, 0.0], [1.0, 0.0],
-                      [1.0, 0.0]])
-    y_val = [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0]
-    y_val = np.array([(x, 1 - x) for x in y_val], dtype=np.float32)
+    model.summary()
 
-    results, data = compute_common_classification_metrics(
-        model, (x_val, y_val))
+    x_val = np.array([[0, 1] for _ in range(5)] + [[0, -1] for _ in range(5)], dtype=np.float32)
+    y_val = [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
+    y_val = np.array([[x, 1 - x] for x in y_val], dtype=np.float32)
+    results = compute_common_classification_metrics(model, (x_val, y_val))
 
     _test_classification_metrics(results)
 
 
 def test_continuous_multi_classification_metrics_5way():
-    model = _multi_output_model(dtype=tf.float32)
+    model = _multi_output_model(5, dtype=tf.float32)
 
-    x = [x for x in range(5)]
-    x = x + x
-
+    x = [x for x in range(5)] + [-x for x in range(5)]
     x = tf.keras.utils.to_categorical(x, num_classes=5)
     y = x
 
-    results, data = compute_common_classification_metrics(model, (x, y))
-    print(results)
+    results = compute_common_classification_metrics(model, (x, y))
 
     metrics = results["classification_metrics"]
     assert np.isclose(1, metrics["macro avg"]["f1-score"])
@@ -202,41 +189,12 @@ def test_continuous_multi_classification_metrics_5way():
     assert np.isclose(1, metrics["micro avg"]["f1-score"])
 
 
-def test_continuous_multi_classification_metrics_5way_int():
-    model = _multi_output_model(dtype=tf.float32)
-
-    x = [x for x in range(5)]
-    x = x + x
-
-    y = x[:]
-    y[0] = 1
-    y[-1] = 2
-
-    x = tf.keras.utils.to_categorical(x, num_classes=5)
-    x = np.array(x, dtype=np.int32)
-
-    y = tf.keras.utils.to_categorical(y, num_classes=5)
-    y = np.array(y, dtype=np.int32)
-
-    results, data = compute_common_classification_metrics(model, (x, y))
-
-    print(results)
-
-    metrics = results["classification_metrics"]
-    assert np.isclose(.78666666, metrics["macro avg"]["f1-score"])
-    assert np.isclose(.81333333, metrics["weighted avg"]["f1-score"])
-    assert np.isclose(.8, metrics["micro avg"]["f1-score"])
-
-
 def test_continuous_single_classification_metrics_training_end():
     model = _single_output_model(dtype=tf.float32)
     x_val = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0])
     y_val = np.array([0, 0, 0, 0, 1, 0, 1, 1, 1, 1])
 
-    results = compute_training_end_classification_metrics(
-        model, (x_val, y_val))
-
-    print(results)
+    results = compute_common_classification_metrics(model, (x_val, y_val))
 
     _test_classification_metrics(results)
 

@@ -119,10 +119,21 @@ class MetricsCollection(Collection):
         return out
 
     @staticmethod
-    def from_config(config):
+    def from_config(config, with_values=True):
+        """Generate a MetricsCollection from a configuration dictionary
+
+        Args:
+            config - (dict) The configuration dict returned from to_config.
+            with_values - (bool) If True, metric values are copied. If False,
+                only the metadata is copied. Defaults to True.
+
+        Returns:
+            (MetricsCollection) The collection of metrics defined by the config.
+        """
         col = MetricsCollection()
         for metric_config in config:
-            metric = Metric.from_config(metric_config)
+            metric = Metric.from_config(metric_config, with_values=with_values)
+
             col.add(metric)
             if metric.is_objective:
                 col._objective_name = metric.name
