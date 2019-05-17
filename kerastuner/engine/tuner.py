@@ -170,7 +170,7 @@ class Tuner(object):
             # stop if the model_fn() return nothing
             if not model:
                 warning("No model returned from model function - stopping.")
-            return None
+                return None
 
             # computing instance unique idx
             idx = self.__compute_model_id(model)
