@@ -105,7 +105,8 @@ class InstanceState(State):
             loss_config (dict, list, or str): Configuration representing the
                 loss(es) for the model.
             optimizer_config (dict): Configuration representing the optimizer.
-
+            compile (bool, optional): If True, a compiled model with the proper
+                loss and optimizer
         Returns:
             Model: The Keras Model defined by the config objects.
         """

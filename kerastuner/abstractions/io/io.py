@@ -1,6 +1,7 @@
 from kerastuner.abstractions.tensorflow import TENSORFLOW as tf
 from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 import os
+from kerastuner.abstractions.display import warning
 
 
 def Open(name, mode):
@@ -163,8 +164,9 @@ def get_config_filename(tuner_state, instance_state, execution_state):
     instance_id = instance_state.idx
     execution_id = execution_state.idx
 
-    return os.path.join(results_dir, "%s-%s-%s-%s-config.json" % (
-        project, architecture, instance_id, execution_id))
+    return os.path.join(
+        results_dir, "%s-%s-%s-%s-config.json" %
+        (project, architecture, instance_id, execution_id))
 
 
 def get_weights_filename(tuner_state, instance_state, execution_state):
@@ -184,8 +186,9 @@ def get_weights_filename(tuner_state, instance_state, execution_state):
     instance_id = instance_state.idx
     execution_id = execution_state.idx
 
-    return os.path.join(results_dir, "%s-%s-%s-%s-weights.h5" % (
-        project, architecture, instance_id, execution_id))
+    return os.path.join(
+        results_dir, "%s-%s-%s-%s-weights.h5" %
+        (project, architecture, instance_id, execution_id))
 
 
 def get_results_filename(tuner_state, instance_state):
@@ -203,16 +206,20 @@ def get_results_filename(tuner_state, instance_state):
     architecture = tuner_state.architecture
     instance_id = instance_state.idx
 
-    return "%s-%s-%s-results.json" % (project, architecture, instance_id)
-    return os.path.join(results_dir, "%s-%s-%s-results.json" % (
-        project, architecture, instance_id))
+    return os.path.join(
+        results_dir,
+        "%s-%s-%s-results.json" % (project, architecture, instance_id))
 
 
-def reload_model(tuner_state, instance_state, execution_state, compile=False):
+def reload_model(tuner_state,
+                 instance_state,
+                 execution_state=None,
+                 compile=False,
+                 metrics=[]):
     """Reload the model for the given instance and execution.
 
     Args:
-        tuner_state: TunerState, the state of the tuner. 
+        tuner_state: TunerState, the state of the tuner.
         instance_state: InstanceState, the instance to reload.
         execution_state: ExecutionState, the execution to reload.
         compile: bool, if true, compile the model before returning it.
@@ -222,10 +229,20 @@ def reload_model(tuner_state, instance_state, execution_state, compile=False):
     """
 
     model = instance_state.recreate_model()
-    weights = get_weights_filename(tuner_state, instance_state,
-                                   execution_state)
-    model.load_weights(weights)
+    print(model.metrics)
 
     if compile:
-        model.compile(loss=model.loss, optimizer=model.optimizer)
+        model.compile(loss=model.loss,
+                      optimizer=model.optimizer,
+                      metrics=metrics)
+        if execution_state:
+            weights = get_weights_filename(tuner_state, instance_state,
+                                           execution_state)
+            if exists(weights):
+                model.load_weights(weights)
+            else:
+                warning(
+                    "Weights file '%s' not found. Model training will start"
+                    " from the beginning" % weights)
+
     return model

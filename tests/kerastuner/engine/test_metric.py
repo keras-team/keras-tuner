@@ -167,7 +167,8 @@ def test_continuous_multi_classification_metrics_float():
 
     model.summary()
 
-    x_val = np.array([[0, 1] for _ in range(5)] + [[0, -1] for _ in range(5)], dtype=np.float32)
+    x_val = np.array([[0, 1] for _ in range(5)] + [[0, -1] for _ in range(5)],
+                     dtype=np.float32)
     y_val = [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0]
     y_val = np.array([[x, 1 - x] for x in y_val], dtype=np.float32)
     results = compute_common_classification_metrics(model, (x_val, y_val))

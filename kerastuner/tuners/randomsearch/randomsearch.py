@@ -3,6 +3,7 @@ from termcolor import cprint
 from kerastuner.engine import Tuner
 from kerastuner.abstractions.display import subsection
 from kerastuner.distributions import RandomDistributions
+from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 
 
 class RandomSearch(Tuner):
@@ -75,7 +76,6 @@ class RandomSearch(Tuner):
                                            RandomDistributions, **kwargs)
 
     def tune(self, x, y, **kwargs):
-
         while self.state.remaining_budget:
             instance = self.new_instance()
             # not instances left time to wrap-up
@@ -85,3 +85,4 @@ class RandomSearch(Tuner):
             # train n executions for the given model
             for _ in range(self.state.num_executions):
                 execution = instance.fit(x, y, self.state.max_epochs, **kwargs)  # nopep8 pylint: disable=unused-variable
+

@@ -86,18 +86,20 @@ class InstanceStatesCollection(Collection):
             # check fields existence
             if 'tuner' not in config:
                 continue
-            if 'architecture' not in config['tuner']:
+            if 'architecture' not in config['tuner']:                
                 continue
             if 'project' not in config['tuner']:
                 continue
 
             # check instance belongs to the right project / architecture
             if (project != config['tuner']['project']):
+                print("Rejected %s != %s" % (project, config['tuner']['project']))
                 continue
 
             # Allowing architecture to be None allows to reload models from
             # various architecture for retrain, summary and export purpose
             if (architecture and architecture != config['tuner']['architecture']):  # nopep8
+                print("Rejected arch %s != %s" % (architecture, config['tuner']['architecture']))
                 continue
 
             idx = config['instance']['idx']

@@ -28,7 +28,8 @@ from kerastuner.states import TunerState
 from .cloudservice import CloudService
 from .instance import Instance
 from kerastuner.collections import InstanceStatesCollection
-from kerastuner.abstractions.io import reload_model
+from kerastuner.abstractions.io import reload_model, exists
+from kerastuner.abstractions.io import get_weights_filename
 from sklearn.model_selection import train_test_split
 
 
@@ -84,6 +85,7 @@ class Tuner(object):
         self.instance_states = InstanceStatesCollection()
 
         # previous models
+        print("Loading from %s" % self.state.host.results_dir)
         count = self.instance_states.load_from_dir(self.state.host.results_dir,
                                                    self.state.project,
                                                    self.state.architecture)
@@ -161,14 +163,14 @@ class Tuner(object):
                         (self.stats.invalid_instances, self.max_fail_streak))
 
                 if self.stats.invalid_instances >= self.max_fail_streak:
-                    warning("too many consecutive failed model - stopping")
+                    warning("too many consecutive failed models - stopping")
                     return None
                 continue
 
             # stop if the model_fn() return nothing
             if not model:
                 warning("No model returned from model function - stopping.")
-                return None
+            return None
 
             # computing instance unique idx
             idx = self.__compute_model_id(model)
@@ -199,6 +201,39 @@ class Tuner(object):
 
         # recording instance
         self.instance_states.add(idx, instance.state)
+        return instance
+
+    def reload_instance(self, idx, execution="last", metrics=[]):
+        tf_utils.clear_tf_session()
+
+        instance_state = self.instance_states.get(idx)
+        if not instance_state:
+            raise ValueError("Attempted to reload unknown instance '%s'." %
+                             idx)
+
+        # Find the specified execution.
+        executions = instance_state.execution_states_collection
+        execution_state = None
+        if execution == "last":
+            execution_state = executions.get_last()
+        elif execution == "best":
+            execution_state = executions.sort_by_metric(
+                self.state.objective).to_list()[0]
+        elif execution:
+            execution_state = executions.get(idx)
+
+        model = reload_model(self.state,
+                             instance_state,
+                             execution_state,
+                             compile=True,
+                             metrics=metrics)
+
+        instance = Instance(idx=instance_state.idx,
+                            model=model,
+                            hparams=instance_state.hyper_parameters,
+                            tuner_state=self.state,
+                            cloudservice=self.cloudservice,
+                            instance_state=instance_state)
         return instance
 
     def get_best_models(self, num_models=1, compile=False):
@@ -316,3 +351,11 @@ class Tuner(object):
     @abstractmethod
     def tune(self, x, y, **kwargs):
         "method called by the hypertuner to train an instance"
+
+    @abstractmethod
+    def retrain(self, idx, x, y, execution=None, metrics=[], **kwargs):
+        "method called by the hypertuner to resume training an instance"
+        instance = self.reload_instance(idx,
+                                        execution=execution,
+                                        metrics=metrics)
+        instance.fit(x, y, self.state.max_epochs, **kwargs)

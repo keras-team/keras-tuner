@@ -116,8 +116,7 @@ class IOProxy_1_x(proxy.IOProxy):
 
 class PythonProxy_1_x(proxy.PythonProxy):
     def __getattr__(self, name):
-        raise ValueError(
-            "Attribute '%s' not supported" % name)
+        raise ValueError("Attribute '%s' not supported" % name)
 
     def Session(self, *args, **kwargs):
         """Passthrough to create a new Session."""
@@ -139,22 +138,17 @@ class Tensorflow_1_x(proxy.TensorflowProxy):
 
 
 class Utils_1_x(proxy.UtilsBase):
-    def load_savedmodel(
-            self,
-            session,
-            export_dir,
-            tags=tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY):
+    def load_savedmodel(self,
+                        session,
+                        export_dir,
+                        tags=tf.saved_model.DEFAULT_SERVING_SIGNATURE_DEF_KEY):
 
-        return tf.saved_model.load(
-            session,
-            tags,
-            export_dir)
+        return tf.saved_model.load(session, tags, export_dir)
 
     def save_savedmodel(self, model, path, tmp_path):
         session = tf.keras.backend.get_session()
         self.write_graph(session.graph, tmp_path, "graph.pbtxt")
-        self.write_graph(tf.get_default_graph(),
-                         tmp_path, "graph.pbtxt")
+        self.write_graph(tf.get_default_graph(), tmp_path, "graph.pbtxt")
         inputs = dict([(node.op.name, node) for node in model.inputs])
         outputs = dict([(node.op.name, node) for node in model.outputs])
         tf.compat.v1.saved_model.simple_save(session, path, inputs, outputs)
@@ -164,40 +158,25 @@ class Utils_1_x(proxy.UtilsBase):
 
         self.write_file(
             path + ".tflite",
-            tf.lite.TFLiteConverter.from_session(
-                sess,
-                model.inputs,
-                model.outputs).convert())
+            tf.lite.TFLiteConverter.from_session(sess, model.inputs,
+                                                 model.outputs).convert())
 
-    def convert_to_tflite(
-            self,
-            model,
-            savedmodel_path,
-            output_path):
-        converter = tf.lite.TFLiteConverter.from_saved_model(
-            savedmodel_path)
+    def convert_to_tflite(self, model, savedmodel_path, output_path):
+        converter = tf.lite.TFLiteConverter.from_saved_model(savedmodel_path)
         self.write_file(output_path, converter.convert())
 
-    def optimize_graph(
-            self,
-            frozen_model_path,
-            input_ops,
-            output_ops,
-            input_types,
-            toco_compatible):
+    def optimize_graph(self, frozen_model_path, input_ops, output_ops,
+                       input_types, toco_compatible):
 
         transforms = [
-            "fold_constants",
-            "fold_batch_norms",
-            "fold_old_batch_norms"
+            "fold_constants", "fold_batch_norms", "fold_old_batch_norms"
         ]
 
         with tf.gfile.GFile(frozen_model_path, "rb") as f:
             graph_def = tf.GraphDef()
             graph_def.ParseFromString(f.read())
-        transformed_graph_def = TransformGraph(
-            graph_def, input_ops, output_ops,
-            transforms)
+        transformed_graph_def = TransformGraph(graph_def, input_ops,
+                                               output_ops, transforms)
 
         return transformed_graph_def
 
@@ -212,7 +191,12 @@ class Utils_1_x(proxy.UtilsBase):
         cfg.gpu_options.allow_growth = True  # pylint: disable=no-member
         tf.keras.backend.set_session(Session(config=cfg))
 
-    def save_model(self, model, path, export_type="keras", tmp_path="/tmp/", **kwargs):
+    def save_model(self,
+                   model,
+                   path,
+                   export_type="keras",
+                   tmp_path="/tmp/",
+                   **kwargs):
         """Save the provided model to the given path.
 
         Args:
@@ -244,7 +228,8 @@ class Utils_1_x(proxy.UtilsBase):
         """
 
         KNOWN_OUTPUT_TYPES = [
-            "keras", "keras_bundle", "tf", "tf_frozen", "tf_optimized", "tf_lite"
+            "keras", "keras_bundle", "tf", "tf_frozen", "tf_optimized",
+            "tf_lite"
         ]
 
         # Convert PosixPath to string, if necessary.
@@ -264,5 +249,5 @@ class Utils_1_x(proxy.UtilsBase):
         elif export_type == "tf_lite":
             self.save_tflite(model, path, tmp_path)
         else:
-            raise ValueError("Output type '%s' not in known types '%s'" % (
-                export_type, str(KNOWN_OUTPUT_TYPES)))
+            raise ValueError("Output type '%s' not in known types '%s'" %
+                             (export_type, str(KNOWN_OUTPUT_TYPES)))

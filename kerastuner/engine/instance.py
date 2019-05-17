@@ -14,26 +14,28 @@ from kerastuner.abstractions.display import section, subsection, fatal
 class Instance(object):
     """Model instance class."""
 
-    def __init__(self, idx, model, hparams, tuner_state, cloudservice):
+    def __init__(self,
+                 idx,
+                 model,
+                 hparams,
+                 tuner_state,
+                 cloudservice,
+                 instance_state=None):
 
         self.model = model
         self.tuner_state = tuner_state
         self.cloudservice = cloudservice
         self.executions = ExecutionStatesCollection()
 
-        # init instance state
-        self.state = InstanceState(idx, model, hparams)
+        # init instance state, or reuse the provided value (e.g. for models
+        # that have been persisted to disk and then reloaded)
+        self.state = instance_state or InstanceState(idx, model, hparams)
+
         self.metrics_config = None  # metric config passed to each executions
 
     def summary(self, extended=False):
         section("Instance summary")
         self.state.summary(extended=extended)
-
-    def resume_fit(self, fixme):
-        """resume fiting an instance
-        use execution id?
-        """
-        pass
 
     def fit(self, x, y, epochs, **kwargs):
         """Fit an execution of the model instance
@@ -108,14 +110,15 @@ class Instance(object):
 
             # mark objective
             self.state.set_objective(self.tuner_state.objective)
-            self.metrics_config = self.state.agg_metrics.to_config()
 
-            # init tuner global metric if needed (first training)
-            if not self.tuner_state.agg_metrics:
-                self.tuner_state.agg_metrics = MetricsCollection.from_config(
-                    self.metrics_config, with_values=False)
-                # !dont remove - this is needed to canonicalize objective name
-                self.tuner_state.objective = self.state.objective
+        self.metrics_config = self.state.agg_metrics.to_config()
+
+        # init tuner global metric if needed (first training)
+        if not self.tuner_state.agg_metrics:
+            self.tuner_state.agg_metrics = MetricsCollection.from_config(
+                self.metrics_config, with_values=False)
+            # !dont remove - this is needed to canonicalize objective name
+            self.tuner_state.objective = self.state.objective
 
         execution = Execution(self.model, self.state, self.tuner_state,
                               self.metrics_config, self.cloudservice)
