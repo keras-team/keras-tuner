@@ -208,29 +208,12 @@ def write_tables_to_disk(tables, output_directory):
             out.close()
 
 
-def write_tables_to_bigquery(tables, dataset):
-    for project_name, results in tables.items():
-        table_name = "%(dataset)s.%(project_name)s" % {
-            "dataset": dataset,
-            "project_name": project_name
-        }
-
-
-# def create_dataset(dataset):
-#     client = bigquery.Client()
-#     try {
-#         dataset = client.get_dataset(@staticmethod
-
-#     dataset = bigquery.Dataset(dataset)
-
-
 def main():
     args = parse_args()
     tf.io.gfile.makedirs(args.output_directory)
     results_filename = collect_files(args.input_directory)
     tables = process_files(results_filename)
     write_tables_to_disk(tables, args.output_directory)
-    write_tables_to_bigquery(tables, args.bigquery_dataset)
 
 
 if __name__ == '__main__':
