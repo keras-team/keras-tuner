@@ -1,11 +1,9 @@
 import gc
 import os
 
-import tensorflow
 import tensorflow as tf
 
 from tensorflow.keras import backend as K
-from tensorflow import gfile, python
 from tensorflow.python import Graph, GraphDef, Session, ConfigProto
 from tensorflow.tools.graph_transforms import TransformGraph
 
@@ -25,7 +23,7 @@ class GFileProxy_1_x(proxy.GFileProxy):
         Returns:
             GFile - a GFile object representing the opened file.
         """
-        return gfile.GFile(name, mode)
+        return tf.io.gfile.GFile(name, mode)
 
     def makedirs(self, path):
         """Creates a directory and all parent/intermediate directories.
@@ -38,7 +36,7 @@ class GFileProxy_1_x(proxy.GFileProxy):
         Raises:
             errors.OpError: If the operation fails.
         """
-        return gfile.MakeDirs(path)
+        return tf.io.gfile.makedirs(path)
 
     def exists(self, path):
         """Determines whether a path exists or not.
@@ -52,7 +50,7 @@ class GFileProxy_1_x(proxy.GFileProxy):
         Raises:
             errors.OpError: Propagates any errors reported by the FileSystem API.
         """
-        return gfile.Exists(path)
+        return tf.io.gfile.exists(path)
 
     def rmtree(self, path):
         """Deletes everything under path recursively.
@@ -63,7 +61,7 @@ class GFileProxy_1_x(proxy.GFileProxy):
         Raises:
         errors.OpError: If the operation fails.
         """
-        return gfile.DeleteRecursively(path)
+        return tf.io.gfile.rmtree(path)
 
     def glob(self, pattern):
         """Returns a list of files that match the given pattern(s).
@@ -77,7 +75,7 @@ class GFileProxy_1_x(proxy.GFileProxy):
         Raises:
         errors.OpError: If there are filesystem / directory listing errors.
         """
-        return gfile.Glob(pattern)
+        return tf.io.gfile.glob(pattern)
 
     def remove(self, path):
         """Deletes the path located at 'path'.
@@ -89,7 +87,7 @@ class GFileProxy_1_x(proxy.GFileProxy):
         errors.OpError: Propagates any errors reported by the FileSystem API.  E.g.,
         NotFoundError if the path does not exist.
         """
-        return gfile.Remove(path)
+        return tf.io.gfile.remove(path)
 
     def copy(self, src, dst, overwrite=False):
         """Copies data from src to dst.
@@ -103,10 +101,10 @@ class GFileProxy_1_x(proxy.GFileProxy):
         Raises:
         errors.OpError: If the operation fails.
         """
-        return gfile.Copy(src, dst, overwrite=overwrite)
+        return tf.io.gfile.copy(src, dst, overwrite=overwrite)
 
     def __getattr__(self, name):
-        return getattr(gfile, name)
+        return getattr(tf.io.gfile, name)
 
 
 class IOProxy_1_x(proxy.IOProxy):
@@ -138,11 +136,11 @@ class Tensorflow_1_x(proxy.TensorflowProxy):
 
 
 class Utils_1_x(proxy.UtilsBase):
-    def load_savedmodel(self,
-                        session,
-                        export_dir,
-                        tags=tf.saved_model.DEFAULT_SERVING_SIGNATURE_DEF_KEY):
-
+    def load_savedmodel(
+            self,
+            session,
+            export_dir,
+            tags=tf.saved_model.DEFAULT_SERVING_SIGNATURE_DEF_KEY):
         return tf.saved_model.load(session, tags, export_dir)
 
     def save_savedmodel(self, model, path, tmp_path):
@@ -172,7 +170,7 @@ class Utils_1_x(proxy.UtilsBase):
             "fold_constants", "fold_batch_norms", "fold_old_batch_norms"
         ]
 
-        with tf.gfile.GFile(frozen_model_path, "rb") as f:
+        with tf.io.gfile.GFile(frozen_model_path, "rb") as f:
             graph_def = tf.GraphDef()
             graph_def.ParseFromString(f.read())
         transformed_graph_def = TransformGraph(graph_def, input_ops,

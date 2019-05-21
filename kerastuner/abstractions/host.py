@@ -35,7 +35,11 @@ class Host():
         self.cpu_name = platform.processor()
 
         # additional GPU info
-        self.tf_can_use_gpu = tf.test.is_gpu_available()  # before get_software
+        if hasattr(tf, 'test'):
+          self.tf_can_use_gpu = tf.test.is_gpu_available()  # before get_software
+        else:
+          # Support tensorflow versions where tf.test is unavailable.
+          self.tf_can_use_gpu = False
         self._get_gpu_usage()  # to get gpu driver info > before get software
 
         # keep it last
@@ -176,7 +180,8 @@ class Host():
 
         packages = {
             "kerastuner": kt.__version__,
-            "tensorflow": tf.__version__,
+            # Not all tensorflow versions have the __version__ field.
+            "tensorflow": tf.__dict__.get('__version__'),
             "tensorflow_use_gpu": self.tf_can_use_gpu,
             "python": platform.python_version(),
             "os": {

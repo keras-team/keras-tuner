@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from kerastuner import distributions
 from kerastuner import abstractions
 from kerastuner import engine
 from kerastuner import tuners
