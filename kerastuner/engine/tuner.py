@@ -330,6 +330,10 @@ class Tuner(object):
     def __compute_model_id(self, model):
         "compute model hash"
         s = str(model.get_config())
+        # Optimizer and loss are not currently part of the model config,
+        # but could conceivably be part of the model_fn/tuning process.
+        s += "optimizer:" + str(model.optimizer.get_config())
+        s += "loss:" + str(model.loss)
         return hashlib.sha256(s.encode('utf-8')).hexdigest()[:32]
 
     def results_summary(self, num_models=10, sort_metric=None):
