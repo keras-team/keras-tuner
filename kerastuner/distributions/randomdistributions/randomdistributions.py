@@ -1,10 +1,10 @@
-from kerastuner.distributions.distributions import Distributions
+from kerastuner import distributions
 from kerastuner.abstractions.display import fatal
 import random
 from numpy import linspace, logspace
 
 
-class RandomDistributions(Distributions):
+class RandomDistributions(distributions.Distributions):
     """Random distributions
 
     Args:
