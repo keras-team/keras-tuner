@@ -10,6 +10,7 @@ from tensorflow.python import ConfigProto, GraphDef, Session
 from tensorflow.keras.models import model_from_json, load_model
 from kerastuner.abstractions.display import write_log
 from kerastuner.abstractions.tensorflow import proxy
+from tensorflow.core.protobuf.saved_model_pb2 import SavedModel
 
 
 class GFileProxy_2_x(proxy.GFileProxy):
@@ -205,19 +206,62 @@ class Utils_2_x(proxy.UtilsBase):
         cfg.gpu_options.allow_growth = True  # pylint: disable=no-member
         tf.keras.backend.set_session(Session(config=cfg))
 
+    def _get_output_tensor_names_from_savedmodel(self, model, saved_model_path):
+        """ Looks in the default_serving signature def of the saved model to
+        determine the output tensor names for the given model.
+        """
+        saved_model_pb_file = os.path.join(saved_model_path, "saved_model.pb")
+
+        with tf.io.gfile.GFile(saved_model_pb_file, "rb") as f:
+            graph_bytes = f.read()
+
+        sm = SavedModel()
+        sm.ParseFromString(graph_bytes)
+
+        name_map = {}
+
+        for meta_graph in sm.meta_graphs:
+            sig_def = meta_graph.signature_def["serving_default"]
+            for name, tensor in sig_def.outputs.items():
+                tensor_name = tensor.name
+                # Drop the :0 suffix.
+                tensor_name = tensor_name.split(":")[0]
+                name_map[name] = tensor_name
+
+        outputs = []
+        for output_name in model.output_names:
+            outputs.append(name_map[output_name])
+        return outputs
+
+    def save_frozenmodel(self, model, path, tmp_path):
+        """Save a frozen SavedModel to the given path."""
+
+        # First, create a SavedModel in the tmp directory.
+        saved_model_path = tmp_path + "savedmodel"
+        saved_model_tmp_path = tmp_path + "savedmodel_tmp"
+        self.save_savedmodel(
+            model, saved_model_path, saved_model_tmp_path)
+
+        outputs = self._get_output_tensor_names_from_savedmodel(
+            model, saved_model_path)
+        output_tensor_names = ','.join(outputs)
+
+        self.freeze_graph(
+            saved_model_path, path, output_tensor_names)
+
     def save_model(self, model, path, export_type="keras", tmp_path="/tmp/"):
         KNOWN_OUTPUT_TYPES = [
             "keras",
             "keras_bundle",
+            "tf_frozen",
+            "tf"
         ]
 
         # Not yet supported for tf 2.0 - numerous issues with GPU models, and
         # other issues we haven't debugged yet.
         UNSUPPORTED_OUTPUT_TYPES = [
-            "tf",
-            "tf_frozen",
+            "tf_lite",
             "tf_optimized",
-            "tf_lite"
         ]
 
         if export_type in UNSUPPORTED_OUTPUT_TYPES:
