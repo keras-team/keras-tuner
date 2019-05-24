@@ -1,2 +1,3 @@
 from __future__ import absolute_import
-from .randomdistributions import RandomDistributions
+
+from kerastuner.distributions.randomdistributions.randomdistributions import RandomDistributions
