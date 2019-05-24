@@ -65,7 +65,7 @@ class Metric(object):
         Returns
             Bool: True if the metric improved, false otherwise
         """
-        # ensure standard python type for serialization purpose
+        # ensure standard python type for serialization purpose        
         value = float(value)
         best_value = self.get_best_value()
         self.history.append(value)

@@ -24,7 +24,7 @@ from kerastuner.abstractions.display import colorize, colorize_default
 from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 from kerastuner.tools.summary import results_summary as _results_summary
 from kerastuner import config
-from kerastuner.states import TunerState
+from kerastuner.states import TunerState, InstanceState
 from .cloudservice import CloudService
 from .instance import Instance
 from kerastuner.collections import InstanceStatesCollection
@@ -222,12 +222,16 @@ class Tuner(object):
         elif execution:
             execution_state = executions.get(idx)
 
-        model = reload_model(self.state,
-                             instance_state,
-                             execution_state,
-                             compile=True,
-                             metrics=metrics)
+        weights_filename = get_weights_filename(self.state, instance_state, execution_state)
 
+        model = InstanceState.model_from_configs(
+            instance_state.model_config,
+            instance_state.loss_config,
+            instance_state.optimizer_config,
+            instance_state.metrics_config,
+            weights_filename=weights_filename)
+        
+        
         instance = Instance(idx=instance_state.idx,
                             model=model,
                             hparams=instance_state.hyper_parameters,
@@ -265,6 +269,7 @@ class Tuner(object):
         models = []
         for instance_state, execution_state in zip(sorted_instance_states,
                                                    execution_states):
+
             model = reload_model(self.state,
                                  instance_state,
                                  execution_state,

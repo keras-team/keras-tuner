@@ -2,7 +2,7 @@ from kerastuner.abstractions.tensorflow import TENSORFLOW as tf
 from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 import os
 from kerastuner.abstractions.display import warning
-
+import json
 
 def Open(name, mode):
     """Open a file.
@@ -214,8 +214,7 @@ def get_results_filename(tuner_state, instance_state):
 def reload_model(tuner_state,
                  instance_state,
                  execution_state=None,
-                 compile=False,
-                 metrics=[]):
+                 compile=False):
     """Reload the model for the given instance and execution.
 
     Args:
@@ -229,7 +228,7 @@ def reload_model(tuner_state,
     """
 
     model = instance_state.recreate_model()
-    print(model.metrics)
+    metrics = json.loads(instance_state.metrics_config)
 
     if compile:
         model.compile(loss=model.loss,

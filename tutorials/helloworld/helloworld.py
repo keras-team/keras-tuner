@@ -12,6 +12,7 @@ from kerastuner.distributions import Range, Choice, Boolean, Fixed
 # Tuner used to search for the best model. Changing hypertuning algorithm
 # simply requires to change the tuner class used.
 from kerastuner.tuners import RandomSearch
+from kerastuner.tuners import UltraBand
 
 # Random data to feed the model.
 x_train = np.random.random((500, 200))
@@ -43,14 +44,14 @@ def model_fn():
     model.add(Dense(1, activation='sigmoid'))
     optimizer = Adam(LR)
     model.compile(optimizer=optimizer, loss="binary_crossentropy",
-                  metrics=['acc'])
+                  metrics=['accuracy'])
     return model
 
 # Initialize the hypertuner by passing the model function (model_fn)
 # and specifying key search constraints: maximize val_acc (objective),
 # spend 9 epochs doing the search, spend at most 3 epoch on each model.
-tuner = RandomSearch(model_fn, objective='val_acc', epoch_budget=9,
-                     max_epochs=3)
+tuner = UltraBand(model_fn, objective='val_acc', epoch_budget=982,
+                  max_epochs=27, dry_run=True)
 
 # display search overview
 tuner.summary()

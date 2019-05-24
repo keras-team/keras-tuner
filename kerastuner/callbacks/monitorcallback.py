@@ -97,7 +97,8 @@ class MonitorCallback(TunerCallback):
 
         # update tuner overall objective metric
         for metric in self.instance_state.agg_metrics.to_list():
-            improved = self.tuner_state.agg_metrics.update(metric.name, metric.get_best_value())  # nopep8
+            improved = self.tuner_state.agg_metrics.update(
+                metric.name, metric.get_best_value())
 
         if metric.name == self.tuner_state.objective and improved:
             self.instance_state.is_best_model = True

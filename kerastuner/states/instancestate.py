@@ -14,6 +14,7 @@ from kerastuner.abstractions.tensorflow import TENSORFLOW as tf
 from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 from kerastuner.abstractions.tf import compute_model_size
 from kerastuner.abstractions.io import get_weights_filename
+from kerastuner.abstractions.display import warning
 from kerastuner.collections.metricscollection import MetricsCollection
 from ..collections.executionstatescollection import ExecutionStatesCollection
 
@@ -26,8 +27,28 @@ class InstanceState(State):
 
     _ATTRS = ['start_time', 'idx', 'training_size', 'validation_size',
               'batch_size', 'model_size', 'optimizer_config', 'loss_config',
-              'model_config', 'hyper_parameters', 'is_best_model',
-              'objective']
+              'model_config', 'metrics_config', 'hyper_parameters',
+              'is_best_model', 'objective']
+
+    def __serialize_metrics(self, metrics):
+        if isinstance(metrics, list):
+            out = []
+            for metric in metrics:
+                out.append(self.__serialize_metrics(metric))
+            return json.dumps(out)
+        elif isinstance(metrics, dict):
+            out = {}
+            for k, v in metrics.items():
+                out[k] = self.__serialize_metrics(v)
+            return json.dumps(out)
+        elif isinstance(metrics, str):
+            return json.dumps(metrics)
+        else:
+            cfg = tf.keras.metrics.serialize(metrics)
+            name = cfg["config"]["name"]
+            if name == "acc":
+                name = "accuracy"
+            return name
 
     def __init__(self, idx, model, hyper_parameters):
         super(InstanceState, self).__init__()
@@ -46,7 +67,8 @@ class InstanceState(State):
         self.model_size = tf_utils.compute_model_size(model)
         self.optimizer_config = deepcopy(tf.keras.optimizers.serialize(model.optimizer))  # nopep8
         self.loss_config = deepcopy(tf_utils.serialize_loss(model.loss))
-        self.model_config = json.loads(model.to_json())
+        self.model_config = json.loads(model.to_json())        
+        self.metrics_config = self.__serialize_metrics(model.metrics)
         self.hyper_parameters = deepcopy(hyper_parameters)
         self.agg_metrics = None
         self.is_best_model = False
@@ -95,7 +117,7 @@ class InstanceState(State):
         return config
 
     @staticmethod
-    def _model_from_configs(model_config, loss_config, optimizer_config):
+    def model_from_configs(model_config, loss_config, optimizer_config, metrics_config, weights_filename=None):
         """Creates a Keras model from the configurations typically stored in
         an InstanceState.
 
@@ -105,40 +127,56 @@ class InstanceState(State):
             loss_config (dict, list, or str): Configuration representing the
                 loss(es) for the model.
             optimizer_config (dict): Configuration representing the optimizer.
-            compile (bool, optional): If True, a compiled model with the proper
-                loss and optimizer
+            metrics_config (dict, list, or str): Configuration representing the metrics.
+            weights_filename (str, optional): Filename containing weights to load.
         Returns:
             Model: The Keras Model defined by the config objects.
         """
 
         model = model_from_json(json.dumps(model_config))
-        model.loss = tf_utils.deserialize_loss(loss_config)
-        model.optimizer = tf.keras.optimizers.deserialize(optimizer_config)  # nopep8
+        loss = tf_utils.deserialize_loss(loss_config)
+        optimizer = tf.keras.optimizers.deserialize(optimizer_config)  # nopep8
+        metrics = json.loads(metrics_config)
+        model.compile(loss=loss, optimizer=optimizer, metrics=metrics)
+
+        if weights_filename:
+            if tf.io.gfile.exists(weights_filename):                
+                model.load_weights(weights_filename)
+            else:
+                warning("No weights file: '%s'" % weights_filename)                
+
         return model
 
     @staticmethod
-    def model_from_config(config):
+    def model_from_config(config, weights_filename=None):
         """Creates a Keras Model based on an an InstanceState config
         dictionary.
 
         Args:
             config (dict): InstanceState config, as returned by to_config()
-
+            weights_filename (str, optional): Filename containing weights to load.
         Returns:
             Model: The Keras Model for the configuration.
         """
-        return InstanceState._model_from_configs(config['model_config'],
-                                                 config['loss_config'],
-                                                 config['optimizer_config'])
+        model = InstanceState.model_from_configs(config['model_config'],
+                                                  config['loss_config'],
+                                                  config['optimizer_config'],
+                                                  config['metrics_config'],
+                                                  weights_filename)
 
-    def recreate_model(self):
+        return model
+
+
+    def recreate_model(self, weights_filename=None):
         """Recreates the model configured for this instance.
 
         Returns:
             Model: The Keras Model for this InstanceState.
         """
-        return InstanceState._model_from_configs(
-            self.model_config, self.loss_config, self.optimizer_config)
+        model = InstanceState.model_from_configs(
+            self.model_config, self.loss_config, self.optimizer_config, self.metrics_config, weights_filename)
+        
+        return model
 
     @staticmethod
     def from_config(config):
