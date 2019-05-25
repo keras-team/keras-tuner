@@ -25,8 +25,9 @@ class UltraBandConfig():
         print(self.__dict__)
 
     def get_models_per_final_band(self):
-        remaining_budget = self.budget - (int(self.num_batches) * self.epochs_per_batch)
-        fraction = remaining_budget / self.epochs_per_batch 
+        remaining_budget = self.budget - \
+            (int(self.num_batches) * self.epochs_per_batch)
+        fraction = remaining_budget / self.epochs_per_batch
         models_per_final_band = np.floor(
             np.array(self.model_sequence) * fraction).astype(np.int32)
 
@@ -69,7 +70,7 @@ class UltraBandConfig():
         return sizes
 
     def get_epochs_per_band(self):
-        
+
         out = []
         for e, m in zip(self.epoch_sequence, self.model_sequence):
             out.append(e * m)
@@ -79,5 +80,5 @@ class UltraBandConfig():
 
         epoch_count = 0
         for i in range(len(self.epochs_per_band)):
-            epoch_count += int(np.sum(self.epochs_per_band[i:])) 
+            epoch_count += int(np.sum(self.epochs_per_band[i:]))
         return epoch_count
