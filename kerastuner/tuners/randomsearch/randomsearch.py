@@ -63,7 +63,7 @@ class RandomSearch(Tuner):
             results_dir (str, optional): Tuning results dir.
             Defaults to results/. Can specify a gs:// path.
 
-            tmp_dir (str, optional): Temporary dir. Wipped at tuning start.
+            tmp_dir (str, optional): Temporary dir. Wiped at tuning start.
             Defaults to tmp/. Can specify a gs:// path.
 
             export_dir (str, optional): Export model dir. Defaults to export/.

@@ -1,80 +1,73 @@
 "Collect tuners results and output them into JSON files that can be uploaded to big query as tables"
-
 import argparse
-import copy
-import importlib
+from tqdm import tqdm
 import json
 import os
-# !Force tensorflow to use CPU only - we're not training, just compiling
-# !models, and allocating GPU memory would mean we could run far fewer
-# !readers.
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-from collections import defaultdict
-from multiprocessing import Pool
-from pathlib import Path
-import numpy as np
 from termcolor import cprint
-from tqdm import tqdm
-
+from pathlib import Path
+from pprint import pprint
+from collections import defaultdict
 from kerastuner.abstractions.tensorflow import TENSORFLOW as tf
-from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
-from kerastuner.states import InstanceState, TunerState
+from kerastuner.states import InstanceState
+from kerastuner.states import TunerState
 
-from google.cloud import bigquery
 
-# See: https://cloud.google.com/bigquery/docs/reference/libraries#client-libraries-install-python  # nopep8
-# for authentication information.
+def results_file_to_line(filename):
+    
+    with tf.io.gfile.GFile(filename, "r") as i:
+        contents = i.read()
+        
+        instance = InstanceState.from_config(contents["instance"])
+        tuner = TunerState.from_config(contents["tuner"])
+        output_dictionary = {}
+        
+        output_dictionary["tuner.name"] = tuner.name
+        output_dictionary["host"] = tuner.host
+        output_dictionary["architecture"] = tuner.architecture
+        output_dictionary["project"] = tuner.project            
+        output_dictionary["user_info"] = tuner.user_info
+        output_dictionary["performance.num_parameters"] = instance.model_size
+        output_dictionary["performance.batch_size"] = instance.batch_size
 
+        
+
+        for name, config in instance.hyper_parameters.items():
+            output_dictionary["hyper_parameters.%s" % name] = config["value"]
+        
+        # Per Execution stats
+        for execution in instance.execution_states_collection.to_list():
+            output_dictionary["idx"] = execution.idx
+            output_dictionary["metrics"] = execution.metrics.to_config()
+            output_dictionary[""]
+
+objective = objective name
+performance
+    model size (#paramters)
+    latency per item (inference)
+    latency per batch (training)
+epochs (# epochs trained)
+
+
+
+#which fields (and their sub_fields) to collect out of the result file
+fields_to_collect = ["ts", "meta_data", "key_metrics", "metrics", "training_size", "validation_size", "num_executions",
+                    "batch_size", "model_size", "hyper_parameters"]
 
 def parse_args():
     "Parse cmdline options"
-    parser = argparse.ArgumentParser(
-        description='KerasTuners results to Bigquery table files')
-    parser.add_argument('--input_directory',
-                        '-i',
-                        type=str,
-                        default='results/',
-                        help='Directory containing tuner results')
-    parser.add_argument('--bigquery_dataset',
-                        '-b',
-                        type=str,
-                        default='default',
-                        help='Directory containing tuner results')
-
-    parser.add_argument('--output_directory',
-                        '-o',
-                        type=str,
-                        default='bigquery/',
-                        help='Directory where table files will be outputed')
-    parser.add_argument('--project',
-                        '-p',
-                        type=str,
-                        help='Restrict result collection to a given project')
-    parser.add_argument('--custom_modules',
-                        '-m',
-                        type=str,
-                        help='Comma separated list of dependency modules to '
-                        'import, to define custom layers, etc.')
-    parser.add_argument('--reader_processes',
-                        '-n',
-                        type=int,
-                        help='Number of processes to use to read the files.')
-
+    parser = argparse.ArgumentParser(description='KerasTuners results to Bigquery table files')
+    parser.add_argument('--input_dir', '-i', type=str, default='results/', help='Directory containing tuner results')
+    parser.add_argument('--output_dir', '-o', type=str, default='bigquery/', help='Directory where table files will be outputed')
+    parser.add_argument('--project', '-p', type=str, help='Restrict result collection to a given project')
+    
     args = parser.parse_args()
 
-    for module in args.custom_modules.split(","):
-        module = module.strip()
-        if module:
-            importlib.import_module(module)
-
-    if not os.path.exists(args.input_directory):
-        cprint("[Error] Invalid Input directory %s" % args.input_directory,
-               'red')
+    if not os.path.exists(args.input_dir):
+        cprint("[Error] Invalid Input directory %s" % args.input_dir, 'red')
         parser.print_help()
         quit()
 
     return args
-
 
 def clean_value(value):
     if isinstance(value, str):
@@ -89,132 +82,51 @@ def clean_value(value):
     else:
         return value
 
-
 def clean_result(results):
     clean = {}
     for k, v in results.items():
         # Empty dicts cannot be imported in bigquery
         if v == {}:
             continue
-        k = k.replace(" ", "_").replace(':', '_').replace(".", "_")
+        k = k.replace(" ", "_").replace(':', '_')
         v = clean_value(v)
         clean[k] = v
     return clean
 
 
-def results_file_to_dicts(filename):
-    output = []
-    with tf.io.gfile.GFile(filename, "r") as i:
-        contents = json.loads(i.read())
+args = parse_args()
 
-        instance = InstanceState.from_config(contents["instance"])
-        tuner = contents["tuner"]
-        output_dictionary = {}
+tf.io.gfile.makedirs(args.output_dir)
+output_dir = Path(args.output_dir)
 
-        output_dictionary["tuner.name"] = tuner["name"]
-        output_dictionary["host"] = tuner["host"]["hostname"]
-        output_dictionary["architecture"] = tuner["architecture"]
-        output_dictionary["project"] = tuner["project"]
-        output_dictionary["user_info"] = tuner["user_info"]
-        output_dictionary["objective"] = tuner["objective"]
-        output_dictionary["performance"] = {
-            "num_parameters": instance.model_size,
-            "batch_size": instance.batch_size
-        }
+input_dir = Path(args.input_dir)
 
-        output_dictionary["hyper_parameters"] = []
-        for name, config in instance.hyper_parameters.items():
-            # TODO - figure out how to handle hparam range/type information.
-            output_dictionary["hyper_parameters"].append({
-                "name":
-                name,
-                "value":
-                str(config["value"]),
-                "group":
-                config["group"],
-                "type":
-                str(type(config["value"]))
-            })
+results_filenames = list(input_dir.glob("*-results.json"))
+pb = tqdm(total=len(results_filenames), desc="Parsing results files", unit='file')
+tables = defaultdict(list)
+for fname in results_filenames:
+    info = json.loads(open(str(fname)).read())
+    project_name = info['meta_data']['project']
+    #filtering if needed
+    if args.project and args.project != project_name:
+        continue
+    project_name = project_name.replace(" ", "_").lower()
+    
+    #collecting necessary fields
+    result = {}
+    for field in fields_to_collect:
+        if field in info:
+            result[field] = info[field]
 
-        output_dictionary["idx"] = instance.idx
+    #normalize the stuff
+    result = clean_result(result)
+    tables[project_name].append(result)
+    pb.update()
 
-        # Per Execution stats
-        for execution in instance.execution_states_collection.to_list():
-            execution_dictionary = copy.deepcopy(output_dictionary)
-
-            execution_dictionary["execution_idx"] = execution.idx
-
-            execution_dictionary["metrics"] = {}
-            for metric in execution.metrics.to_list():
-                execution_dictionary["metrics"][
-                    metric.name] = metric.get_last_value()
-
-            if execution.classification_metrics:
-                if execution.classification_metrics["one_example_latency_millis"]:
-                    latency = execution.classification_metrics[
-                        "one_example_latency_millis"]
-                    execution_dictionary["metrics"][
-                        "one_example_latency_millis"] = latency
-
-            execution_dictionary["epochs"] = execution.epochs
-            output.append(execution_dictionary)
-            tf_utils.clear_tf_session()
-
-    return output
-
-
-def collect_files(input_directory):
-    results_filenames = []
-    for root, _, files in os.walk(input_directory):
-        print(root)
-        for file in files:
-            if file.endswith("-results.json"):
-                results_filenames.append(os.path.join(root, file))
-    return results_filenames
-
-
-def process_file(filename):
-    ress = results_file_to_dicts(filename)
-    out = []
-    for res in ress:
-        project = res["project"]
-        res = clean_result(res)
-        out.append([project, res])
-    return out
-
-
-def process_files(results_filenames):
-    tables = defaultdict(list)
-
-    pb = tqdm(total=len(results_filenames),
-              desc="Parsing results files",
-              unit='file')
-
-    pool = Pool(64)
-    for res in pool.imap_unordered(process_file, results_filenames):
-        for project, results in res:
-            tables[project].append(results)
-        pb.update()
-    return tables
-
-
-def write_tables_to_disk(tables, output_directory):
-    for project_name, results in tables.items():
-        fname = os.path.join(output_directory, project_name + ".json")
-        with tf.io.gfile.GFile(str(fname), 'w+') as out:
-            for result in results:
-                line = "%s\n" % json.dumps(result)
-                out.write(line)
-            out.close()
-
-
-def main():
-    args = parse_args()
-    tf.io.gfile.makedirs(args.output_directory)
-    results_filename = collect_files(args.input_directory)
-    tables = process_files(results_filename)
-    write_tables_to_disk(tables, args.output_directory)
-
-
-if __name__ == '__main__':
-    main()
+for project_name, results in tables.items():
+    fname = output_dir / (project_name + ".json")
+    out = open(str(fname), 'w+')
+    for result in results:
+        line = "%s\n" % json.dumps(result)
+        out.write(line)
+    out.close()

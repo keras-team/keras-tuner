@@ -1,4 +1,5 @@
 # distributions objects
+from kerastuner.distributions.distributions import Distributions
 from kerastuner.distributions.dummydistributions import DummyDistributions
 from kerastuner.distributions.randomdistributions import RandomDistributions
 from kerastuner.distributions.sequentialdistributions import SequentialDistributions  # nopep8
@@ -7,3 +8,4 @@ from kerastuner.distributions.sequentialdistributions import SequentialDistribut
 from kerastuner.distributions.functions import Fixed, Boolean, Choice
 from kerastuner.distributions.functions import Range, Linear, Logarithmic
 from kerastuner.distributions.functions import reset_distributions
+

@@ -1,9 +1,7 @@
 import sys
 import numpy as np
 from time import time
-from sklearn.metrics import confusion_matrix, classification_report
-from sklearn.metrics import roc_auc_score, roc_curve
-from sklearn.utils.multiclass import type_of_target
+import sklearn
 from kerastuner.abstractions.display import warning, fatal
 import traceback
 
@@ -65,7 +63,7 @@ class Metric(object):
         Returns
             Bool: True if the metric improved, false otherwise
         """
-        # ensure standard python type for serialization purpose
+        # ensure standard python type for serialization purpose        
         value = float(value)
         best_value = self.get_best_value()
         self.history.append(value)
@@ -142,12 +140,12 @@ class Metric(object):
     @staticmethod
     def from_config(config, with_values=True):
         """Reload metric from config
-        
+
         Args:
             config (dict): Configuration dictionary, as returned by to_config.
             with_values (bool, optional): If True, metric values are copied from
                 the configuration. If False, they are omitted. Defaults to True.
-        
+
         Returns:
             Metric: The Metric object defined by the config.
         """
@@ -161,7 +159,7 @@ class Metric(object):
 
 
 def _is_supported(y):
-    output_type = type_of_target(y)
+    output_type = sklearn.utils.multiclass.type_of_target(y)
     valid_types = [
         "multilabel-indicator", "binary", "continuous",
         "multiclass-multioutput"
@@ -175,7 +173,7 @@ def _convert_labels(y):
         "continuous-multioutput"
     ]
 
-    output_type = type_of_target(y)
+    output_type = sklearn.utils.multiclass.type_of_target(y)
     if output_type in argmax_types:
         return np.argmax(y, axis=1)
 
@@ -192,7 +190,7 @@ def compute_common_classification_metrics(model,
 
         Args:
             model (Model): Model used to compute the predictions for the
-                validation data.        
+                validation data.
             validation_data (tuple): tuple of feature data and labels.
             label_names (str, optional): Label names to be used in the
                 confusion matrix/classification report.
@@ -220,12 +218,12 @@ def compute_common_classification_metrics(model,
     predicted_labels = _convert_labels(y_pred)
     actual_labels = _convert_labels(y_true)
 
-    output_type = type_of_target(actual_labels)
+    output_type = sklearn.utils.multiclass.type_of_target(actual_labels)
 
     matrix = None
 
     try:
-        matrix = confusion_matrix(actual_labels, predicted_labels)
+        matrix = sklearn.metrics.confusion_matrix(actual_labels, predicted_labels)
         matrix = matrix.tolist()
     except:
         traceback.print_exc()
@@ -233,7 +231,7 @@ def compute_common_classification_metrics(model,
     metrics = None
 
     try:
-        metrics = classification_report(actual_labels,
+        metrics = sklearn.metrics.classification_report(actual_labels,
                                         predicted_labels,
                                         output_dict=True,
                                         target_names=label_names)
@@ -247,14 +245,14 @@ def compute_common_classification_metrics(model,
         "predicted_labels": predicted_labels,
         "predicted_probabilities": y_pred
     }
-    
+
     metrics["one_example_latency_millis"] = one_example_latency
     results = {
         "target_type": output_type,
         "confusion_matrix": matrix,
         "classification_metrics": metrics,
     }
-    
+
     target_type = results["target_type"]
 
     if target_type == "binary":
@@ -263,14 +261,14 @@ def compute_common_classification_metrics(model,
             predictions = data["predicted_probabilities"]
             predictions = predictions[..., 0]
 
-            fpr, tpr, thresholds = roc_curve(actual_labels, predictions)
+            fpr, tpr, thresholds = sklearn.metrics.roc_curve(actual_labels, predictions)
 
             results["roc_curve"] = {
                 "fpr": fpr.tolist(),
                 "tpr": tpr.tolist(),
                 "thresholds": thresholds.tolist()
             }
-            results["roc_auc_score"] = roc_auc_score(actual_labels, predictions)
+            results["roc_auc_score"] = sklearn.metrics.roc_auc_score(actual_labels, predictions)
         except:
             e = traceback.format_exc()
             raise ValueError("Could not get roc_curve/roc_auc_score: %s" % e)

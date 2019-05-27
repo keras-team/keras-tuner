@@ -253,8 +253,8 @@ class Utils_2_x(proxy.UtilsBase):
         KNOWN_OUTPUT_TYPES = [
             "keras",
             "keras_bundle",
-            "tf_frozen",
-            "tf"
+            "tf",
+            "tf_frozen"
         ]
 
         # Not yet supported for tf 2.0 - numerous issues with GPU models, and

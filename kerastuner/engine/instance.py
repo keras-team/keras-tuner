@@ -92,11 +92,12 @@ class Instance(object):
 
             # loss(es) - model.loss in {str, dict, list}
             if isinstance(self.model.loss, dict):
-                losses = list(self.model.loss.keys())
-            elif isinstance(self.model.loss, str):
-                losses = ['loss']  # single loss is always named loss
+                losses = self.model.loss.values()
+                losses = [tf.keras.losses.serialize(i) for i in losses]
+            elif isinstance(self.model.loss, list):
+                losses = [tf.keras.losses.serialize(i) for i in self.model.loss]
             else:
-                losses = self.model.loss
+                losses = ['loss']  # single loss is always named loss
 
             for loss in losses:
                 self.state.agg_metrics.add(Metric(loss, 'min'))
