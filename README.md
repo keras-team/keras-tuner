@@ -1,16 +1,57 @@
 # Keras Tuner
 
-An hyperparameter tuner for Keras.
+An hyperparameter tuner for [Keras](https://keras.io).
 
-## Cloud service
-Make sure to enable default account: `gcloud auth application-default login`
-Otherwise you will get an error like:
+
+# Example
+Here's how to perform hyperparameter tuning on the MNIST digits dataset.
+
+```py
+from tensorflow import keras
+from tensorflow.keras import layers
+
+import numpy as np
+
+from tuner import SequentialRandomSearch
+from hypermodel import HyperModel
+from hyperparameters import HyperParameters
+
+
+(x, y), (val_x, val_y) = keras.datasets.mnist.load_data()
+x = x.astype('float32') / 255.
+val_x = val_x.astype('float32') / 255.
+
+
+"""Basic case:
+- We define a `build_model` function
+- It returns a compiled model
+- It uses hyperparameters defined on the fly
+"""
+
+
+def build_model(hp):
+    model = keras.Sequential()
+    model.add(layers.Flatten(input_shape=(28, 28)))
+    for i in range(hp.Range('num_layers', 2, 20)):
+        model.add(layers.Dense(units=hp.Range('units_' + str(i), 32, 512, 32),
+                               activation='relu'))
+    model.add(layers.Dense(10, activation='softmax'))
+    model.compile(
+        optimizer=keras.optimizers.Adam(
+            hp.Choice('learning_rate', [1e-2, 1e-3, 1e-4])),
+        loss='sparse_categorical_crossentropy',
+        metrics=['accuracy'])
+    return model
+
+
+tuner = SequentialRandomSearch(
+    build_model,
+    objective='val_accuracy')
+
+tuner.search(trials=2,
+             x=x,
+             y=y,
+             epochs=5,
+             validation_data=(val_x, val_y))
 
 ```
-2018-06-27 10:00:15.891357: I tensorflow/core/platform/cloud/retrying_utils.cc:77] The operation failed and will be automatically retried in 1.06535 seconds (attempt 1 out of 10), caused by: Unavailable: Error executing an HTTP request (error code 6, error message 'Couldn't resolve host name')
-```
-
-## Checkout
-
-```git fetch <remote> <rbranch>:<lbranch>
-git checkout <lbranch>```
