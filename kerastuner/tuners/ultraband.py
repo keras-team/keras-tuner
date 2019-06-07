@@ -1,3 +1,17 @@
+# Copyright 2019 The Keras Tuner Authors
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     https://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """"Ultraband hypertuner
 
 Initial algorithm: https://gist.github.com/ebursztein/8304de052a40058fd0ebaf08c949cc1d
@@ -167,6 +181,7 @@ class UltraBand(Tuner):
                         if instance is not None:
                             model_instances.append(instance)
 
+
                 # Training here
                 cprint(
                     '|- Training %s models for %s epochs' %
@@ -185,7 +200,6 @@ class UltraBand(Tuner):
                     band_total_cost += cost
 
                     # selecting best model
-                    # Bogus replace 2nd term with the loss array
                     band_models = self.__sort_models(model_instances,
                                                      loss_values)
                     cprint("|%sKeeping %d out of %d" %
@@ -200,6 +214,7 @@ class UltraBand(Tuner):
                     loss_values = self.__train_loop(
                         band_models, x, y, **kwargs)
             remaining_batches -= 1
+
 
     def __sort_models(self, models, loss_values):
         "Return a sorted list of model by loss rate"
