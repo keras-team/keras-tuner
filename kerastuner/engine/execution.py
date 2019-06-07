@@ -5,8 +5,10 @@ import time
 from os import path
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.models import Sequential, Model  # nopep8 pylint: disable=import-error
+from tensorflow.keras.models import model_from_config  # nopep8 pylint: disable=import-error
 from tensorflow.keras.optimizers import Optimizer  # nopep8 pylint: disable=import-error
+from tensorflow.keras.utils import deserialize_keras_object
+from tensorflow.keras.utils import serialize_keras_object
 
 from kerastuner.callbacks import MonitorCallback, DisplayCallback
 from kerastuner.states import ExecutionState
@@ -24,14 +26,12 @@ class Execution(object):
         self.state = ExecutionState(tuner_state.max_epochs, metrics_config)
 
         # Model recreaction
-        config = model.get_config()
-        if isinstance(model, Sequential):
-            self.model = Sequential.from_config(config)
-        else:
-            self.model = Model.from_config(config)
+        config = serialize_keras_object(model)
+        self.model = deserialize_keras_object(config)
 
         optimizer_config = tf.keras.optimizers.serialize(model.optimizer)
         optimizer = tf.keras.optimizers.deserialize(optimizer_config)
+
         self.model.compile(optimizer=optimizer, metrics=model.metrics,
                            loss=model.loss, loss_weights=model.loss_weights)
 
@@ -74,6 +74,5 @@ class Execution(object):
 
         # replacing callback with the new list
         kwargs['callbacks'] = callbacks
-
         results = self.model.fit(x, y, **kwargs)
         return results

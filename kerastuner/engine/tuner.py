@@ -230,8 +230,7 @@ class Tuner(object):
             instance_state.optimizer_config,
             instance_state.metrics_config,
             weights_filename=weights_filename)
-        
-        
+
         instance = Instance(idx=instance_state.idx,
                             model=model,
                             hparams=instance_state.hyper_parameters,
@@ -278,10 +277,10 @@ class Tuner(object):
 
         return sorted_instance_states, execution_states, models
 
-    def save_best_model(self, output_type="keras"):
+    def save_best_model(self, export_type="keras"):
         """Shortcut for save_best_models for the case of only keeping the best
         model."""
-        return self.save_best_models(export_type="keras", num_models=1)
+        return self.save_best_models(export_type=export_type, num_models=1)
 
     def save_best_models(self, export_type="keras", num_models=1):
         """ Exports the best model based on the specified metric, to the
@@ -337,7 +336,8 @@ class Tuner(object):
         s = str(model.get_config())
         # Optimizer and loss are not currently part of the model config,
         # but could conceivably be part of the model_fn/tuning process.
-        s += "optimizer:" + str(model.optimizer.get_config())
+        if model.optimizer:
+          s += "optimizer:" + str(model.optimizer.get_config())
         s += "loss:" + str(model.loss)
         return hashlib.sha256(s.encode('utf-8')).hexdigest()[:32]
 
