@@ -1,0 +1,12 @@
+{
+    "name": "UltraBand",
+    "description": "Generalized Hyperband algorithm",
+    "version": "1.0",
+    "reference": "https://arxiv.org/abs/1603.06560",
+    "authors": [
+        "Elie Bursztein",
+        "James Long"
+    ],
+    "contact": "kerastuner@google.com",
+    "comments": "This is an adaption of the hyperband paper that work with epoch budget and allows to iterate Nth time over the brackets to \"converge\" at the expense of \"wasted\" epochs"
+}

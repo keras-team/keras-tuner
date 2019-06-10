@@ -7,5 +7,5 @@
         "Elie Bursztein"
     ],
     "contact": "kerastuner@google.com",
-    "comments": ""
+    "comments": "Trivial implementation of random search"
 }

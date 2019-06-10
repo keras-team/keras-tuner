@@ -1,12 +1,12 @@
 # Copyright 2019 The Keras Tuner Authors
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     https://www.apache.org/licenses/LICENSE-2.0
-# 
-# Unless required by applicable law or agreed to in writing, software
+#
+# # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
@@ -28,14 +28,16 @@ class UltraBandConfig():
         self.factor = factor
         self.min_epochs = min_epochs
         self.max_epochs = max_epochs
-        self.num_bands = self.get_num_bands()
+        self.num_brackets = self.get_num_brackets()
         self.model_sequence = self.get_model_sequence()
         self.epoch_sequence = self.get_epoch_sequence()
+        # FIXME: epochs_per_batch should go away
         self.epochs_per_band = self.get_epochs_per_band()
         self.epochs_per_batch = self.count_epochs_per_batch()
         self.num_batches = float(self.budget) / self.epochs_per_batch
         self.partial_batch_epoch_sequence = self.get_models_per_final_band()
 
+        # FIXME remove me after fixing
         print(self.__dict__)
 
     def get_models_per_final_band(self):
@@ -49,7 +51,8 @@ class UltraBandConfig():
             return None
         return models_per_final_band
 
-    def get_num_bands(self):
+    def get_num_brackets(self):
+        "compute the number of brackets based of the scaling factor"
         n = 1
         v = self.min_epochs
         while v < self.max_epochs:
@@ -58,9 +61,12 @@ class UltraBandConfig():
         return n
 
     def get_epoch_sequence(self):
+        """compute the sequence of epoch brackets
+        Note: the len of the sequence is the number of brackets
+        """
         sizes = []
         size = self.min_epochs
-        for _ in range(self.num_bands - 1):
+        for _ in range(self.num_brackets - 1):
             sizes.append(int(size))
             size *= self.factor
         sizes.append(self.max_epochs)
@@ -76,7 +82,7 @@ class UltraBandConfig():
     def get_model_sequence(self):
         sizes = []
         size = self.min_epochs
-        for _ in range(self.num_bands - 1):
+        for _ in range(self.num_brackets - 1):
             sizes.append(int(size))
             size *= self.factor
         sizes.append(self.max_epochs)
