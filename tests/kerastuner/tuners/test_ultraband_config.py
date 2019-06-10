@@ -79,9 +79,7 @@ def test_total_epochs_per_band():
 
     ubc = UltraBandConfig(3, 4, 38, 1000)
     assert ubc.total_epochs_per_band == 736
-
-    assert 2 == 3
-
+    
 
 def test_num_batches():
     ubc = UltraBandConfig(3, 3, 27, 1000)

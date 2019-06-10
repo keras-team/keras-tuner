@@ -33,9 +33,6 @@ class UltraBandConfig():
         self.num_batches = float(self.budget) / self.total_epochs_per_band
         self.partial_batch_epoch_sequence = self.get_models_per_final_band()
 
-        # FIXME remove me after fixing
-        print(self.__dict__)
-
     def get_models_per_final_band(self):
         remaining_budget = self.budget - \
             (int(self.num_batches) * self.total_epochs_per_band)
@@ -43,8 +40,6 @@ class UltraBandConfig():
         models_per_final_band = np.floor(
             np.array(self.model_sequence) * fraction).astype(np.int32)
 
-        if models_per_final_band[-1] == 0:
-            return None
         return models_per_final_band
 
     def get_num_brackets(self):

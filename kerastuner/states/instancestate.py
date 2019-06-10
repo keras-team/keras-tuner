@@ -180,11 +180,12 @@ class InstanceState(State):
         Returns:
             Model: The Keras Model for the configuration.
         """
-        model = InstanceState.model_from_configs(config['model_config'],
-                                                 config['loss_config'],
-                                                 config['optimizer_config'],
-                                                 config['metrics_config'],
-                                                 weights_filename)
+        model = InstanceState.model_from_configs(
+            config['model_config'],
+            config['loss_config'],
+            config['optimizer_config'],
+            config.get('metrics_config', 'null'), 
+            weights_filename)
 
         return model
 
@@ -199,7 +200,6 @@ class InstanceState(State):
                                                  self.optimizer_config,
                                                  self.metrics_config,
                                                  weights_filename)
-
         return model
 
     @staticmethod
@@ -209,7 +209,7 @@ class InstanceState(State):
         model = InstanceState.model_from_config(config)
         state = InstanceState(idx, model, hyper_parameters)
         for attr in InstanceState._ATTRS:
-            setattr(state, attr, config[attr])
+            setattr(state, attr, config.get(attr, None))
 
         state.execution_states_collection = (
             ExecutionStatesCollection.from_config(config["executions"]))

@@ -117,16 +117,19 @@ class UltraBand(Tuner):
             "Epoch Budget": self.state.epoch_budget,
             "Num Models Sequence": self.config.model_sequence,
             "Num Epochs Sequence": self.config.epoch_sequence,
-            "Num Brackets": self.config.num_brackets,        
+            "Num Brackets": self.config.num_brackets,
             "Number of Iterations": self.config.num_batches,
             "Total Cost per Band": self.config.total_epochs_per_band
         }
 
         section('UltraBand Tuning')
-        subsection('Settings')                
+        subsection('Settings')
         display_settings(settings)
 
     def __load_instance(self, instance_state):
+        if self.state.dry_run:
+            return None
+
         # Determine the weights file (if any) to load, and rebuild the model.
         weights_file = None
 
@@ -155,7 +158,8 @@ class UltraBand(Tuner):
         instance = self.__load_instance(instance)
 
         # Fit the model
-        instance.fit(x, y, **fit_kwargs)
+        if not self.state.dry_run:
+            instance.fit(x, y, **fit_kwargs)
 
     def __train_bracket(self, instance_collection, num_epochs, x, y,
                         **fit_kwargs):
@@ -190,8 +194,14 @@ class UltraBand(Tuner):
             filtered_instances.append(instance)
         return filtered_instances
 
-    def __bracket(self, instance_collection, num_to_keep, num_epochs,
-                  total_num_epochs, x, y, **fit_kwargs):
+    def bracket(self, instance_collection, num_to_keep, num_epochs,
+                total_num_epochs, x, y, **fit_kwargs):
+        output_collection = InstanceStatesCollection()
+        if self.state.dry_run:
+            for i in range(num_to_keep):
+                output_collection.add(i, None)
+            return output_collection
+
         self.__train_bracket(instance_collection, num_epochs, x, y,
                              **fit_kwargs)
         instances = instance_collection.sort_by_objective()
@@ -230,12 +240,15 @@ class UltraBand(Tuner):
             # Generate N models, and perform the initial training.
             subsection('Generating %s models' % model_sequence[0])
             candidates = InstanceStatesCollection()
-            num_models = self.config.model_sequence[0]
+            num_models = model_sequence[0]
 
-            if not self.state.dry_run:
-                for _ in tqdm(range(num_models),
-                              desc='Generating models',
-                              unit='model'):
+            for idx in tqdm(range(num_models),
+                            desc='Generating models',
+                            unit='model'):
+
+                if self.state.dry_run:
+                    candidates.add(idx, None)
+                else:
                     instance = self.new_instance()
                     if instance is not None:
                         candidates.add(instance.state.idx, instance.state)
@@ -247,25 +260,31 @@ class UltraBand(Tuner):
             subsection("Training models.")
 
             for bracket_idx, num_models in enumerate(model_sequence):
+                num_epochs = self.config.delta_epoch_sequence[bracket_idx]
+                total_num_epochs = self.config.epoch_sequence[bracket_idx]
+
                 num_to_keep = 0
                 if bracket_idx < len(model_sequence) - 1:
                     num_to_keep = model_sequence[bracket_idx + 1]
-                    info("Running a bracket to reduce from %d to %d models" %
-                         (num_models, num_to_keep))
+                    info("Running a bracket to reduce from %d to %d models "
+                         "in %d epochs" %
+                         (num_models, num_to_keep, num_epochs))
                 else:
-                    info("Running final bracket.")
+                    num_to_keep = model_sequence[bracket_idx]
+                    info("Running final bracket - %d models for %d epochs" %
+                         (num_to_keep, num_epochs))
 
                 info('Budget: %s/%s - Loop %.2f/%.2f - Brackets %s/%s' %
                      (self.epoch_budget_expensed, self.state.epoch_budget,
                       remaining_batches, self.config.num_batches,
                       bracket_idx + 1, self.config.num_brackets))
 
-                num_epochs = self.config.delta_epoch_sequence[bracket_idx]
-                total_num_epochs = self.config.epoch_sequence[bracket_idx]
                 self.epoch_budget_expensed += num_models * num_epochs
 
-                candidates = self.__bracket(candidates, num_to_keep,
-                                            num_epochs, total_num_epochs, x, y,
-                                            **kwargs)
+                candidates = self.bracket(candidates, num_to_keep, num_epochs,
+                                          total_num_epochs, x, y, **kwargs)
 
             remaining_batches -= 1
+
+        info('Final Budget Used: %s/%s' %
+             (self.epoch_budget_expensed, self.state.epoch_budget))

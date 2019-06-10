@@ -1,11 +1,11 @@
 # Copyright 2019 The Keras Tuner Authors
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     https://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -52,9 +52,8 @@ def test_sort_by_metrics(col):
     for instance_state in instance_states:
         l = instance_state.agg_metrics.get('loss').get_best_value()
         losses.append(l)
-        a = instance_state.agg_metrics.get(
-            'val_accuracy').get_best_value()
+        a = instance_state.agg_metrics.get('val_accuracy').get_best_value()
         accuracies.append(a)
-    assert losses[0] < losses[1]
-    assert accuracies[0] < accuracies[1]
+    assert losses[0] <= losses[1]
+    assert accuracies[0] <= accuracies[1]
     assert len(accuracies) == 6

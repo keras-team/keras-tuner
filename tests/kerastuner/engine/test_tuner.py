@@ -36,7 +36,7 @@ def test_invalid_model_function():
 
 
 def basic_model():
-    # *can't pass as fixture as the tuner expect to call it itself
+    # Can't pass the model as a fixture, as the tuner expect to call it itself
     i = Input(shape=(1,), name="input")
     o = Dense(4, name="output")(i)
     model = Model(inputs=i, outputs=o)

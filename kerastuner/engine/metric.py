@@ -1,11 +1,11 @@
 # Copyright 2019 The Keras Tuner Authors
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     https://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,9 +21,7 @@ import traceback
 
 
 def canonicalize_metric_name(name):
-    _METRIC_ALIASES = {
-        "acc": "accuracy"
-    }
+    _METRIC_ALIASES = {"acc": "accuracy"}
     VAL_PREFIX = "val_"
 
     # Drop the val_, if applicable, temporarily
@@ -77,7 +75,7 @@ class Metric(object):
         Returns
             Bool: True if the metric improved, false otherwise
         """
-        # ensure standard python type for serialization purpose        
+        # ensure standard python type for serialization purpose
         value = float(value)
         best_value = self.get_best_value()
         self.history.append(value)
@@ -221,6 +219,8 @@ def compute_common_classification_metrics(model,
     # batch size to 1 so we can get the proper per-item
     y_pred = model.predict(x, batch_size=1)
 
+    print(y_pred)
+
     # https://dawn.cs.stanford.edu/benchmark/
     one_example_latency = time() - start
     # Seconds -> Milliseconds
@@ -237,7 +237,8 @@ def compute_common_classification_metrics(model,
     matrix = None
 
     try:
-        matrix = sklearn.metrics.confusion_matrix(actual_labels, predicted_labels)
+        matrix = sklearn.metrics.confusion_matrix(actual_labels,
+                                                  predicted_labels)
         matrix = matrix.tolist()
     except:
         traceback.print_exc()
@@ -245,14 +246,16 @@ def compute_common_classification_metrics(model,
     metrics = None
 
     try:
-        metrics = sklearn.metrics.classification_report(actual_labels,
-                                        predicted_labels,
-                                        output_dict=True,
-                                        target_names=label_names)
+        print(actual_labels)
+        print(predicted_labels)
+        metrics = sklearn.metrics.classification_report(
+            actual_labels,
+            predicted_labels,
+            output_dict=True,
+            target_names=label_names)
     except:
-        e = traceback.format_exc()
-        raise ValueError("Could not get classification_report: %s" % e)
-
+        e_str = traceback.format_exc()
+        traceback.print_exc()        
 
     data = {
         "actual_labels": actual_labels,
@@ -260,11 +263,11 @@ def compute_common_classification_metrics(model,
         "predicted_probabilities": y_pred
     }
 
-    metrics["one_example_latency_millis"] = one_example_latency
     results = {
         "target_type": output_type,
         "confusion_matrix": matrix,
         "classification_metrics": metrics,
+        "one_example_latency_millis": one_example_latency
     }
 
     target_type = results["target_type"]
@@ -275,17 +278,18 @@ def compute_common_classification_metrics(model,
             predictions = data["predicted_probabilities"]
             predictions = predictions[..., 0]
 
-            fpr, tpr, thresholds = sklearn.metrics.roc_curve(actual_labels, predictions)
+            fpr, tpr, thresholds = sklearn.metrics.roc_curve(
+                actual_labels, predictions)
 
             results["roc_curve"] = {
                 "fpr": fpr.tolist(),
                 "tpr": tpr.tolist(),
                 "thresholds": thresholds.tolist()
             }
-            results["roc_auc_score"] = sklearn.metrics.roc_auc_score(actual_labels, predictions)
+            results["roc_auc_score"] = sklearn.metrics.roc_auc_score(
+                actual_labels, predictions)
         except:
             e = traceback.format_exc()
             raise ValueError("Could not get roc_curve/roc_auc_score: %s" % e)
-
 
     return results

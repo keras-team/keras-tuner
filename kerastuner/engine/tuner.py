@@ -113,7 +113,7 @@ class Tuner(object):
             extended (bool, optional): Display extended summary.
             Defaults to False.
         """
-        section('Tuner summary')
+        section('Tuner summary')        
         self.state.summary(extended=extended)
         config._DISTRIBUTIONS.config_summary()
 
@@ -364,6 +364,10 @@ class Tuner(object):
             sort_metric (str, optional): Sorting metric, when not specified
             sort models by objective value. Defaults to None.
         """
+        if self.state.dry_run:
+            info("Dry-Run - no results to report.")
+            return
+
         # FIXME API documentation
         _results_summary(input_dir=self.state.host.results_dir,
                          project=self.state.project,

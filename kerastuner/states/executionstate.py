@@ -55,7 +55,8 @@ class ExecutionState(State):
         self.confusion_matrix = report.get("confusion_matrix", None)
         self.roc_curve = report.get("roc_curve", None)
         self.roc_auc_score = report.get("roc_auc_score", None)
-        self.classification_metrics = report.get("classification_metrics", None)
+        self.classification_metrics = report.get("classification_metrics",
+                                                 None)
         self.classifier_type = report.get("target_type", None)
 
     def to_config(self):
@@ -65,7 +66,7 @@ class ExecutionState(State):
         config['metrics'] = self.metrics.to_config()
 
         cfg = self._config_from_attrs(_CLASSIFICATION_METRIC_ATTRIBUTES)
-        config['evaluation_metrics'] = cfg
+        config['classification_metrics'] = cfg
 
         return config
 
@@ -76,8 +77,9 @@ class ExecutionState(State):
         for attr in _MAIN_ATTRIBUTES:
             setattr(state, attr, config[attr])
 
-        for attr in _CLASSIFICATION_METRIC_ATTRIBUTES:
-            setattr(state, attr, config["evaluation_metrics"][attr])
+        if "classification_metrics" in config: 
+            for attr in _CLASSIFICATION_METRIC_ATTRIBUTES:            
+                setattr(state, attr, config["classification_metrics"][attr])
 
         return state
 
