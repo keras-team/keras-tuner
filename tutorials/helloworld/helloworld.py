@@ -1,11 +1,11 @@
 # Copyright 2019 The Keras Tuner Authors
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     https://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,6 +16,7 @@
 
 import os
 import numpy as np
+from tensorflow.keras.callbacks import EarlyStopping  # pylint: disable=import-error
 from tensorflow.keras.models import Sequential  # pylint: disable=import-error
 from tensorflow.keras.layers import Dense  # pylint: disable=import-error
 from tensorflow.keras.optimizers import Adam  # pylint: disable=import-error
@@ -61,11 +62,18 @@ def model_fn():
                   metrics=['accuracy'])
     return model
 
+# Suppress INFO logs coming from th tensorflow implementation, to make
+# information about the search easier to read.
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
 # Initialize the hypertuner by passing the model function (model_fn)
 # and specifying key search constraints: maximize val_acc (objective),
 # spend 9 epochs doing the search, spend at most 3 epoch on each model.
-tuner = UltraBand(model_fn, objective='val_acc', epoch_budget=982,
-                  max_epochs=27, dry_run=True)
+tuner = UltraBand(model_fn,
+                  objective='val_acc',
+                  epoch_budget=256,
+                  min_epochs=3,
+                  max_epochs=27)
 
 # display search overview
 tuner.summary()
@@ -76,7 +84,8 @@ tuner.summary()
 
 # Perform the model search. The search function has the same prototype than
 # keras.Model.fit(). Similarly search_generator() mirror search_generator().
-tuner.search(x_train, y_train, validation_split=0.01)
+tuner.search(x_train, y_train, validation_split=0.01,
+             callbacks=[EarlyStopping(monitor='val_accuracy', patience=0)])
 
 # Show the best models, their hyperparameters, and the resulting metrics.
 tuner.results_summary()

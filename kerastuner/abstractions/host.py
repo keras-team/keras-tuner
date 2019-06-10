@@ -1,11 +1,11 @@
 # Copyright 2019 The Keras Tuner Authors
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     https://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -44,16 +44,17 @@ class Host():
         self.gpu_driver_version = 'N/A'
         self.nvidia_smi = self._find_nvidia_smi()
         self.cpu_core_count = psutil.cpu_count()
+        self.cpu_frequency = psutil.cpu_freq()
         self.partitions = psutil.disk_partitions()
         self.hostname = platform.node()
         self.cpu_name = platform.processor()
 
         # additional GPU info
         if hasattr(tf, 'test'):
-          self.tf_can_use_gpu = tf.test.is_gpu_available()  # before get_software
+            self.tf_can_use_gpu = tf.test.is_gpu_available()  # before get_software
         else:
-          # Support tensorflow versions where tf.test is unavailable.
-          self.tf_can_use_gpu = False
+            # Support tensorflow versions where tf.test is unavailable.
+            self.tf_can_use_gpu = False
         self._get_gpu_usage()  # to get gpu driver info > before get software
 
         # keep it last
@@ -164,13 +165,8 @@ class Host():
             "usage": psutil.cpu_percent(interval=None),
         }
 
-        freq = psutil.cpu_freq()
-        if freq:
-            cpu["frequency"] = {
-                        "unit": 'MHZ',
-                        "current": freq.current,
-                        "max": freq.max
-                    }
+        if self.cpu_frequency:
+            cpu["frequency"] = {"unit": 'MHZ', "max": self.cpu_frequency.max}
 
         return cpu
 

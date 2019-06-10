@@ -17,12 +17,7 @@ import numpy as np
 
 
 class UltraBandConfig():
-    def __init__(
-            self,
-            factor,
-            min_epochs,
-            max_epochs,
-            budget):
+    def __init__(self, factor, min_epochs, max_epochs, budget):
 
         self.budget = budget
         self.factor = factor
@@ -31,10 +26,11 @@ class UltraBandConfig():
         self.num_brackets = self.get_num_brackets()
         self.model_sequence = self.get_model_sequence()
         self.epoch_sequence = self.get_epoch_sequence()
-        # FIXME: epochs_per_batch should go away
-        self.epochs_per_band = self.get_epochs_per_band()
-        self.epochs_per_batch = self.count_epochs_per_batch()
-        self.num_batches = float(self.budget) / self.epochs_per_batch
+        self.delta_epoch_sequence = self.get_delta_epoch_sequence()
+
+        self.total_epochs_per_band = self.get_total_epochs_per_band()
+
+        self.num_batches = float(self.budget) / self.total_epochs_per_band
         self.partial_batch_epoch_sequence = self.get_models_per_final_band()
 
         # FIXME remove me after fixing
@@ -42,8 +38,8 @@ class UltraBandConfig():
 
     def get_models_per_final_band(self):
         remaining_budget = self.budget - \
-            (int(self.num_batches) * self.epochs_per_batch)
-        fraction = remaining_budget / self.epochs_per_batch
+            (int(self.num_batches) * self.total_epochs_per_band)
+        fraction = float(remaining_budget) / self.total_epochs_per_band
         models_per_final_band = np.floor(
             np.array(self.model_sequence) * fraction).astype(np.int32)
 
@@ -52,7 +48,7 @@ class UltraBandConfig():
         return models_per_final_band
 
     def get_num_brackets(self):
-        "compute the number of brackets based of the scaling factor"
+        "Compute the number of brackets based of the scaling factor"
         n = 1
         v = self.min_epochs
         while v < self.max_epochs:
@@ -61,22 +57,25 @@ class UltraBandConfig():
         return n
 
     def get_epoch_sequence(self):
-        """compute the sequence of epoch brackets
-        Note: the len of the sequence is the number of brackets
-        """
+        """Compute the sequence of epochs per bracket."""
         sizes = []
         size = self.min_epochs
         for _ in range(self.num_brackets - 1):
             sizes.append(int(size))
             size *= self.factor
         sizes.append(self.max_epochs)
+        return sizes
 
+    def get_delta_epoch_sequence(self):
+        """Compute the sequence of -additional- epochs per bracket.
+        
+        This is the number of additional epochs to train, when a model moves
+        from the Nth bracket in a band to the N+1th."""
         previous_size = 0
         output_sizes = []
-        for size in sizes:
+        for size in self.epoch_sequence:
             output_sizes.append(size - previous_size)
             previous_size = size
-        sizes.reverse()
         return output_sizes
 
     def get_model_sequence(self):
@@ -89,16 +88,8 @@ class UltraBandConfig():
         sizes.reverse()
         return sizes
 
-    def get_epochs_per_band(self):
-
-        out = []
-        for e, m in zip(self.epoch_sequence, self.model_sequence):
-            out.append(e * m)
-        return out
-
-    def count_epochs_per_batch(self):
-
-        epoch_count = 0
-        for i in range(len(self.epochs_per_band)):
-            epoch_count += int(np.sum(self.epochs_per_band[i:]))
-        return epoch_count
+    def get_total_epochs_per_band(self):
+        epochs = 0
+        for e, m in zip(self.delta_epoch_sequence, self.model_sequence):
+            epochs += e * m
+        return epochs

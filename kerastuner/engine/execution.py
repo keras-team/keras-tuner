@@ -39,9 +39,9 @@ class Execution(object):
         self.cloudservice = cloudservice
         self.state = ExecutionState(tuner_state.max_epochs, metrics_config)
 
-        # Model recreaction
+        # Model rereation
         config = serialize_keras_object(model)
-        self.model = deserialize_keras_object(config)
+        self.model = model_from_config(config)
 
         optimizer_config = tf.keras.optimizers.serialize(model.optimizer)
         optimizer = tf.keras.optimizers.deserialize(optimizer_config)
