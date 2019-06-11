@@ -219,8 +219,6 @@ def compute_common_classification_metrics(model,
     # batch size to 1 so we can get the proper per-item
     y_pred = model.predict(x, batch_size=1)
 
-    print(y_pred)
-
     # https://dawn.cs.stanford.edu/benchmark/
     one_example_latency = time() - start
     # Seconds -> Milliseconds
@@ -246,8 +244,6 @@ def compute_common_classification_metrics(model,
     metrics = None
 
     try:
-        print(actual_labels)
-        print(predicted_labels)
         metrics = sklearn.metrics.classification_report(
             actual_labels,
             predicted_labels,
@@ -255,7 +251,7 @@ def compute_common_classification_metrics(model,
             target_names=label_names)
     except:
         e_str = traceback.format_exc()
-        traceback.print_exc()        
+        traceback.print_exc()
 
     data = {
         "actual_labels": actual_labels,
