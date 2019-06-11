@@ -24,6 +24,9 @@ from tensorflow.keras.optimizers import Adam  # pylint: disable=import-error
 # Function used to specify hyper-parameters.
 from kerastuner.distributions import Range, Choice, Boolean, Fixed
 
+from kerastuner.engine.instance import Instance
+
+
 # Tuner used to search for the best model. Changing hypertuning algorithm
 # simply requires to change the tuner class used.
 from kerastuner.tuners import RandomSearch
@@ -78,10 +81,10 @@ def fixed_model_fn():
 def model_tmp_path(tmpdir_factory):
     return tmpdir_factory.mktemp('end_to_end_test')
 
+
 @pytest.fixture(scope="module")
 def fixed_model_tmp_path(tmpdir_factory):
     return tmpdir_factory.mktemp('fixed_end_to_end_test')
-
 
 
 @pytest.fixture(scope="module")
@@ -196,6 +199,13 @@ def test_end_to_end_summary(tuner):
 def test_end_to_end_export(tuner):
     # Export the top 2 models, in keras format format.
     tuner.save_best_models(num_models=2)
+
+
+def test_end_to_end_get_best_models(tuner):
+    instance_states, _, _ = tuner.get_best_models(num_models=1, compile=False)
+
+    m = tuner.reload_instance(instance_states[0].idx)
+    assert isinstance(m, Instance)
 
 
 def test_end_to_end_classification_reports(fixed_model_tmp_path):

@@ -1,11 +1,11 @@
 # Copyright 2019 The Keras Tuner Authors
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     https://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -113,7 +113,7 @@ class Tuner(object):
             extended (bool, optional): Display extended summary.
             Defaults to False.
         """
-        section('Tuner summary')        
+        section('Tuner summary')
         self.state.summary(extended=extended)
         config._DISTRIBUTIONS.config_summary()
 
@@ -236,7 +236,8 @@ class Tuner(object):
         elif execution:
             execution_state = executions.get(idx)
 
-        weights_filename = get_weights_filename(self.state, instance_state, execution_state)
+        weights_filename = get_weights_filename(self.state, instance_state,
+                                                execution_state)
 
         model = InstanceState.model_from_configs(
             instance_state.model_config,
@@ -351,7 +352,7 @@ class Tuner(object):
         # Optimizer and loss are not currently part of the model config,
         # but could conceivably be part of the model_fn/tuning process.
         if model.optimizer:
-          s += "optimizer:" + str(model.optimizer.get_config())
+            s += "optimizer:" + str(model.optimizer.get_config())
         s += "loss:" + str(model.loss)
         return hashlib.sha256(s.encode('utf-8')).hexdigest()[:32]
 
