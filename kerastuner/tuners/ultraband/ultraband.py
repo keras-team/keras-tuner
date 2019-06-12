@@ -37,7 +37,7 @@ from .ultraband_config import UltraBandConfig
 
 class UltraBand(Tuner):
     def __init__(self, model_fn, objective, **kwargs):
-        """ RandomSearch hypertuner
+        """ UltraBand hypertuner
         Args:
             model_fn (function): Function that returns the Keras model to be
             hypertuned. This function is supposed to return a different model
