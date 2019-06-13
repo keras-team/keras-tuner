@@ -2,6 +2,7 @@ from tqdm import tqdm
 
 import hashlib
 import os
+import queue
 from abc import abstractmethod
 import traceback
 
@@ -623,3 +624,65 @@ class UltraBand(Tuner):
 
     def populate_hyperparameter_values(self, hp):
         pass
+
+
+class Oracle(object):
+
+    def populate_hyperparameters(self, space):
+        raise NotImplementedError
+
+    def update_space(self, additional_hps):
+        raise NotImplementedError
+
+    def result(self, values, scalar_result):
+        raise NotImplementedError
+
+    def train(self, model, fit_args):
+        model.fit(fit_args)
+
+
+class UltraBandOracle(Oracle):
+
+    def __init__(self, trials):
+        super().__init__()
+        self.trials = trials
+        self.queue = queue.Queue()
+        self.during_batch = False
+        self._first_time = True
+        self._perf_record = {}
+        self._current_round = 0
+        self.spaces = []
+        self._model_sequence = []
+
+    def result(self, values, scalar_result):
+        self._perf_record[values] = scalar_result
+
+    def update_space(self, additional_hps):
+        pass
+
+    def populate_hyperparameters(self, space):
+        if self._first_time:
+            self._generate_candidates(space)
+            self._first_time = False
+
+        if not self.queue.empty():
+            self._copy_values(space, self.queue.get())
+            return
+
+        self._current_round += 1
+        self._select_candidates()
+
+    def _copy_values(self, space, values):
+        pass
+
+    def _generate_candidates(self, space):
+        self.spaces = []
+
+    def _select_candidates(self):
+        for values, _ in sorted(self._perf_record.items(),
+                                key=lambda key, value: value)[self._model_sequence[self._current_round]]:
+            self.queue.put(values)
+
+    def train(self, model, fit_args):
+        fit_args['epochs'] = None
+        model.fit(**fit_args)
