@@ -78,7 +78,7 @@ def test_load_save(metric_config, metric_config2):
 
     assert len(execution_states) == 2
 
-    conf = execution_states.to_config()
+    conf = execution_states.get_config()
     execution_states2 = ExecutionStatesCollection.from_config(conf)
 
     assert len(execution_states2) == 2
@@ -92,8 +92,8 @@ def test_load_save(metric_config, metric_config2):
         assert state.idx == state2.idx
         assert state.start_time == state2.start_time
         assert state.eta == state2.eta
-        assert json.dumps(state.metrics.to_config()) == json.dumps(
-            state2.metrics.to_config())
+        assert json.dumps(state.metrics.get_config()) == json.dumps(
+            state2.metrics.get_config())
 
-    assert json.dumps(execution_states.to_config()) == json.dumps(
-        execution_states2.to_config())
+    assert json.dumps(execution_states.get_config()) == json.dumps(
+        execution_states2.get_config())

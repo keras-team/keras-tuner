@@ -22,5 +22,5 @@ class DummyState(State):
     def __init__(self):
         pass
 
-    def to_config(self):
+    def get_config(self):
         return {}

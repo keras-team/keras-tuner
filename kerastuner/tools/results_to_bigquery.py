@@ -51,7 +51,7 @@ def results_file_to_line(filename):
         # Per Execution stats
         for execution in instance.execution_states_collection.to_list():
             output_dictionary["idx"] = execution.idx
-            output_dictionary["metrics"] = execution.metrics.to_config()
+            output_dictionary["metrics"] = execution.metrics.get_config()
             output_dictionary[""]
 
 objective = objective name

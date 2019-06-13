@@ -113,7 +113,7 @@ def test_serialization(mc):
     mc.add('loss')
     arr = np.asarray([0.1, 0.2], dtype=np.float32)
     mc.update('loss', arr[0])
-    config = mc.to_config()
+    config = mc.get_config()
     assert config == json.loads(json.dumps(config))
 
 
@@ -209,13 +209,13 @@ def test_double_objective(mc):
         mc.set_objective('loss')
 
 
-def test_from_config_to_config(mc):
+def test_from_config_get_config(mc):
     m = Metric("loss", "min")
     mc = MetricsCollection()
     mc.add(m)
     mc.update("loss", .5)
 
-    config = mc.to_config()
+    config = mc.get_config()
     mc2 = MetricsCollection.from_config(config)
     mcl = mc.to_list()
     mc2l = mc2.to_list()
@@ -226,13 +226,13 @@ def test_from_config_to_config(mc):
         assert mcl[idx].get_last_value() == mc2l[idx].get_last_value()
 
 
-def test_from_config_to_config_no_val():
+def test_from_config_get_config_no_val():
     m = Metric("loss", "min")
     mc = MetricsCollection()
     mc.add(m)
     mc.update("loss", .5)
 
-    config = mc.to_config()
+    config = mc.get_config()
     mc2 = MetricsCollection.from_config(config, with_values=False)
     mcl = mc.to_list()
     mc2l = mc2.to_list()

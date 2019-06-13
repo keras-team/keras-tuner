@@ -27,7 +27,7 @@ class InstanceStatesCollection(Collection):
     def __init__(self):
         super(InstanceStatesCollection, self).__init__()
 
-    def to_config(self):
+    def get_config(self):
         return self.to_dict()
 
     def sort_by_objective(self):

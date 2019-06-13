@@ -96,7 +96,7 @@ def test_history(mm):
 
 def test_to_dict(mm):
     start_time = mm.start_time
-    conf = mm.to_config()
+    conf = mm.get_config()
     assert conf['name'] == 'name'
     assert conf['best_value'] == 10
     assert conf['last_value'] == 11
@@ -105,14 +105,14 @@ def test_to_dict(mm):
 
 
 def test_to_dict_to_json_to_dict(mm):
-    conf = mm.to_config()
+    conf = mm.get_config()
     conf_json = json.loads(json.dumps(conf))
     assert conf_json == conf
 
 
-def test_from_config_to_config(mm):
+def test_from_config_get_config(mm):
     mm.is_objective = True
-    config = mm.to_config()
+    config = mm.get_config()
     mm2 = Metric.from_config(config)
     assert mm2.name == 'name'
     assert mm2.direction == 'min'

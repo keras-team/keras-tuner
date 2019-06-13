@@ -135,7 +135,7 @@ class Metric(object):
         """
         return self.history
 
-    def to_config(self):
+    def get_config(self):
         """Get a serializable dict version of the metric"""
         return {
             "name": self.name,
@@ -154,7 +154,7 @@ class Metric(object):
         """Reload metric from config
 
         Args:
-            config (dict): Configuration dictionary, as returned by to_config.
+            config (dict): Configuration dictionary, as returned by get_config.
             with_values (bool, optional): If True, metric values are copied from
                 the configuration. If False, they are omitted. Defaults to True.
 

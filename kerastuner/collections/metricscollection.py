@@ -110,7 +110,7 @@ class MetricsCollection(Collection):
             metric_name = metric_name.replace(no_val_name, no_val_replace_name)
         return metric_name
 
-    def to_config(self):
+    def get_config(self):
         """Serializable list of metrics.
 
         Returns:
@@ -125,8 +125,8 @@ class MetricsCollection(Collection):
             obj = self._objects[name]
 
             cfg = None
-            if hasattr(obj, 'to_config'):
-                cfg = obj.to_config()
+            if hasattr(obj, 'get_config'):
+                cfg = obj.get_config()
             else:
                 cfg = obj.get_config()
             out.append(cfg)
@@ -137,7 +137,7 @@ class MetricsCollection(Collection):
         """Generate a MetricsCollection from a configuration dictionary
 
         Args:
-            config - (dict) The configuration dict returned from to_config.
+            config - (dict) The configuration dict returned from get_config.
             with_values - (bool) If True, metric values are copied. If False,
                 only the metadata is copied. Defaults to True.
 

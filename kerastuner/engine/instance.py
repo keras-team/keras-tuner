@@ -126,7 +126,7 @@ class Instance(object):
             # mark objective
             self.state.set_objective(self.tuner_state.objective)
 
-        self.metrics_config = self.state.agg_metrics.to_config()
+        self.metrics_config = self.state.agg_metrics.get_config()
 
         # init tuner global metric if needed (first training)
         if not self.tuner_state.agg_metrics:
