@@ -54,13 +54,14 @@ def results_file_to_line(filename):
             output_dictionary["metrics"] = execution.metrics.to_config()
             output_dictionary[""]
 
+"""
 objective = objective name
 performance
     model size (#paramters)
     latency per item (inference)
     latency per batch (training)
 epochs (# epochs trained)
-
+"""
 
 
 #which fields (and their sub_fields) to collect out of the result file
