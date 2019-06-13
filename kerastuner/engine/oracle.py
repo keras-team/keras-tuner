@@ -32,30 +32,33 @@ class Oracle(object):
             if p.name not in ref_names:
                 self.space.append(p)
 
-    def populate_space(self, space):
+    def populate_space(self, trial_id, space):
         """Fill a given hyperparameter space with values.
 
         Args:
+            trial_id: String. Unique id for this trial.
             space: A list of HyperParameter objects
                 to provide values for.
 
         Returns:
-            A dictionary mapping parameter names to suggested values.
-            Note that if the Oracle is keeping tracking of a large
-            space, it may return values for more parameters
-            than what was listed in `space`.
+            A dictionary with keys:
+                - status: string, one of "RUN", "IDLE", "EXIT"
+                - values: Only included if status is "RUN".
+                    Dict mapping parameter names to suggested values.
+                    Note that if the Oracle is keeping tracking of a large
+                    space, it may return values for more parameters
+                    than what was listed in `space`.
         """
         raise NotImplementedError
 
-    def result(self, score, values):
+    def result(self, trial_id, score):
         """Record the neasured objective for a set of parameter values.
 
         If not overriden, this method does nothing.
 
         Args:
+            trial_id: String. Unique id for this trial.
             score: Scalar. Lower is better.
-            values: Dictionary mapping parameter names to values
-                used for obtaining the score.
         """
         pass
 
