@@ -66,12 +66,12 @@ class ExecutionStatesCollection(Collection):
         obj._last_insert_idx = config["last_insert_idx"]
         return obj
 
-    def to_config(self):
+    def get_config(self):
         config = {
             "execution_states": [],
             "last_insert_idx": self._last_insert_idx
         }
         for obj in self._objects.values():
-            config["execution_states"].append(obj.to_config())
+            config["execution_states"].append(obj.get_config())
 
         return config

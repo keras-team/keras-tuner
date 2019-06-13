@@ -172,7 +172,7 @@ class TunerState(State):
 
         self.host.summary(extended=extended)
 
-    def to_config(self):
+    def get_config(self):
 
         # computing remaining time
         self._compute_eta()
@@ -185,12 +185,12 @@ class TunerState(State):
             config[name] = getattr(self, name)
 
         # collect sub components
-        config['stats'] = self.stats.to_config()
-        config['host'] = self.host.to_config()
+        config['stats'] = self.stats.get_config()
+        config['host'] = self.host.get_config()
         config['metrics'] = {}
 
         if self.agg_metrics:
-            config['aggregate_metrics'] = self.agg_metrics.to_config()  # nopep8
+            config['aggregate_metrics'] = self.agg_metrics.get_config()  # nopep8
         else:
             config['aggregate_metrics'] = []
 

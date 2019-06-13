@@ -53,7 +53,7 @@ def test_from_config(hparams, basic_model):
     state.agg_metrics.add('accuracy')
     state.agg_metrics.update('acc', 11)
     state.set_objective("accuracy")
-    config = state.to_config()
+    config = state.get_config()
 
     state2 = InstanceState.from_config(config)
     assert state2.objective == state.objective

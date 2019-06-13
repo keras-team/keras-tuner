@@ -124,12 +124,12 @@ class InstanceState(State):
                 idx += 1
         display_table(rows)
 
-    def to_config(self):
+    def get_config(self):
         config = self._config_from_attrs(self._ATTRS)
-        config['executions'] = self.execution_states_collection.to_config()
+        config['executions'] = self.execution_states_collection.get_config()
         config['hyper_parameters'] = self.hyper_parameters
         if self.agg_metrics:
-            config['aggregate_metrics'] = self.agg_metrics.to_config()
+            config['aggregate_metrics'] = self.agg_metrics.get_config()
         return config
 
     @staticmethod
@@ -175,7 +175,7 @@ class InstanceState(State):
         dictionary.
 
         Args:
-            config (dict): InstanceState config, as returned by to_config()
+            config (dict): InstanceState config, as returned by get_config()
             weights_filename (str, optional): Filename containing weights to load.
         Returns:
             Model: The Keras Model for the configuration.

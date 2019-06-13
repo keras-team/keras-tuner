@@ -140,7 +140,7 @@ class Host():
                 display_setting('gpu', indent_level=indent - 1)
                 display_settings(gpu, indent_level=indent)
 
-    def to_config(self):
+    def get_config(self):
         """
         Return various hardware counters as dict
 

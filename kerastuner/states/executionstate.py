@@ -59,11 +59,11 @@ class ExecutionState(State):
                                                  None)
         self.classifier_type = report.get("target_type", None)
 
-    def to_config(self):
+    def get_config(self):
         self._compute_eta()
         config = self._config_from_attrs(_MAIN_ATTRIBUTES)
         config['record_time'] = int(time())
-        config['metrics'] = self.metrics.to_config()
+        config['metrics'] = self.metrics.get_config()
 
         cfg = self._config_from_attrs(_CLASSIFICATION_METRIC_ATTRIBUTES)
         config['classification_metrics'] = cfg

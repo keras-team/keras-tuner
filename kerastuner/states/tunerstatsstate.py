@@ -33,9 +33,9 @@ class TunerStatsState(State):
     def summary(self, extended=False):
         "display statistics summary"
         subsection("Tuning stats")
-        display_settings(self.to_config())
+        display_settings(self.get_config())
 
-    def to_config(self):
+    def get_config(self):
         return {
             'num_generated_models': self.generated_instances,
             'num_invalid_models': self.invalid_instances,

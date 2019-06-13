@@ -27,7 +27,7 @@ class State(object):
         self.kwargs = kwargs
 
     @abstractmethod
-    def to_config(self):
+    def get_config(self):
         "return state as an object"
 
     @abstractmethod

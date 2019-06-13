@@ -51,12 +51,12 @@ def test_is_serializable(metric_config):
 def test_from_config(metric_config):
 
     state = ExecutionState(3, metric_config)
-    state2 = state.from_config(state.to_config())
+    state2 = state.from_config(state.get_config())
 
     assert state.max_epochs == state2.max_epochs
     assert state.epochs == state2.epochs
     assert state.idx == state2.idx
     assert state.start_time == state2.start_time
     assert state.eta == state2.eta
-    assert json.dumps(state.metrics.to_config()) == json.dumps(
-        state2.metrics.to_config())
+    assert json.dumps(state.metrics.get_config()) == json.dumps(
+        state2.metrics.get_config())

@@ -72,7 +72,7 @@ class DisplayCallback(TunerCallback):
     def on_train_end(self, logs={}):
         # train summary
         if self.num_executions + 1 == self.max_excutions:
-            curr = self.instance_state.agg_metrics.to_config()
+            curr = self.instance_state.agg_metrics.get_config()
             best = self.tuner_state.best_instance_config['aggregate_metrics']
             rows = [['Name', 'Best model', 'Current model']]
             for idx, metric in enumerate(best):

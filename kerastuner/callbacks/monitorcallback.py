@@ -120,7 +120,7 @@ class MonitorCallback(TunerCallback):
         # record which one is the best model
         # ! dont try to simplify - must be after all statistics are computed
         if self.instance_state.is_best_model or not self.tuner_state.best_instance_config:  # nopep8
-            config = self.instance_state.to_config()
+            config = self.instance_state.get_config()
             self.tuner_state.best_instance_config = config
 
         # record execution config in instance
@@ -150,9 +150,9 @@ class MonitorCallback(TunerCallback):
     def _make_status(self):
         status = {
             "update_time": int(time()),
-            "tuner": self.tuner_state.to_config(),
-            "instance": self.instance_state.to_config(),
-            "execution": self.execution_state.to_config(),
+            "tuner": self.tuner_state.get_config(),
+            "instance": self.instance_state.get_config(),
+            "execution": self.execution_state.get_config(),
             "hparams": config._DISTRIBUTIONS.get_hyperparameters_config(),
             "dynamic_hparams": config._DISTRIBUTIONS.dynamic_hyperparameters
         }

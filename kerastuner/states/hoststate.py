@@ -77,13 +77,13 @@ class HostState(State):
         if extended:
             config._Host.summary(extended=extended)
 
-    def to_config(self):
+    def get_config(self):
         res = {}
         # collect user params
         for name in self.user_parameters:
             res[name] = getattr(self, name)
 
         # adding host hardware & software information
-        res.update(config._Host.to_config())
+        res.update(config._Host.get_config())
 
         return res

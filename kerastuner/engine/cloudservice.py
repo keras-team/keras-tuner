@@ -196,7 +196,7 @@ class CloudService():
             }
         display_settings(info)
 
-    def to_config(self):
+    def get_config(self):
         # !DO NOT record API key
         res = {
             "is_enable": self.is_enable,

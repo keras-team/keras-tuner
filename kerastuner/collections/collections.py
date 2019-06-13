@@ -82,7 +82,7 @@ class Collection(object):
         return self._objects
 
     @abstractmethod
-    def to_config(self):
+    def get_config(self):
         "return a serializable config"
 
     def to_list(self, sorted_by=None, reverse=False):
