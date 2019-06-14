@@ -7,7 +7,7 @@ from kerastuner.engine.oracle import Oracle
 class UltraBandTuner(Tuner):
     def run_trial(self, hp, trial_id, *fit_args, **fit_kwargs):
         model = self._build_model(hp)
-        trial = self.add_trial(model, hp)
+        trial = self._add_trial(model, hp)
         fit_kwargs['epochs'] = hp.values['tuner/epochs']
         trial.run_execution(*fit_args, **fit_kwargs)
         result = trial.best_metrics[self.objective]
