@@ -1,11 +1,11 @@
 # Copyright 2019 The Keras Tuner Authors
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     https://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,13 +18,20 @@ import os
 import subprocess
 import sys
 
+
 import tensorflow as tf
+
+# Needed in some versions (e.g. dev20190613) of the 2.0 preview nightly builds.
+import tensorflow
+from tensorflow import io
+
+from tensorflow.core.protobuf.saved_model_pb2 import SavedModel
 from tensorflow.io import gfile
+from tensorflow.keras.models import load_model, model_from_json
 from tensorflow.python import ConfigProto, GraphDef, Session
-from tensorflow.keras.models import model_from_json, load_model
+
 from kerastuner.abstractions.display import write_log
 from kerastuner.abstractions.tensorflow import proxy
-from tensorflow.core.protobuf.saved_model_pb2 import SavedModel
 
 
 class GFileProxy_2_x(proxy.GFileProxy):
@@ -35,7 +42,8 @@ class GFileProxy_2_x(proxy.GFileProxy):
 
         Args:
             name (str): name of the file
-            mode (str): one of 'r', 'w', 'a', 'r+', 'w+', 'a+'. Append 'b' for bytes mode.
+            mode (str): one of 'r', 'w', 'a', 'r+', 'w+', 'a+'. Append 'b' for
+                bytes mode.
 
         Returns:
             GFile - a GFile object representing the opened file.
@@ -215,10 +223,6 @@ class Utils_2_x(proxy.UtilsBase):
 
         tf.keras.backend.clear_session()
         gc.collect()
-
-        cfg = ConfigProto()
-        cfg.gpu_options.allow_growth = True  # pylint: disable=no-member
-        tf.keras.backend.set_session(Session(config=cfg))
 
     def _get_output_tensor_names_from_savedmodel(self, model, saved_model_path):
         """ Looks in the default_serving signature def of the saved model to
