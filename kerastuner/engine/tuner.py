@@ -17,16 +17,85 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import os
+import time
+import random
+import hashlib
+import traceback
+
+from tensorflow import keras
+
 from . import hyperparameters as hp_module
 from . import hypermodel as hm_module
 from . import trial as trial_module
 from . import execution as execution_module
-from . import config as engine_config
-from .. import cloudservice as cloudservice_module
+from . import cloudservice as cloudservice_module
+from .. import config
+from .. import utils
+from ..abstractions import display
+from ..abstractions import host as host_module
+from . import metrics_tracking
 
 
 class Tuner(object):
     """Tuner base class.
+
+    May be subclassed to create new tuners.
+
+    Args:
+        oracle: Instance of Oracle class.
+        hypermodel: Instnace of HyperModel class
+            (or callable that takes hyperparameters
+            and returns a Model isntance).
+        objective: String. Name of model metric to minimize
+            or maximize, e.g. "val_accuracy".
+        max_trials: Int. Total number of trials
+            (model configurations) to test at most.
+            Note that the oracle may interrupt the search
+            before `max_trial` models have been tested.
+        executions_per_trial: Int. Number of executions
+            (training a model from scratch,
+            starting from a new initialization)
+            to run per trial (model configuration).
+            Model metrics may vary greatly depending
+            on random initialization, hence it is
+            often a good idea to run several executions
+            per trial in order to evaluate the performance
+            of a given set of hyperparameter values.
+        max_model_size: Int. Maximum size of weights
+            (in floating point coefficients) for a valid
+            models. Models larger than this are rejected.
+        optimizer: Optional. Optimizer instance.
+            May be used to override the `optimizer`
+            argument in the `compile` step for the
+            models. If the hypermodel
+            does not compile the models it generates,
+            then this argument must be specified.
+        loss: Optional. May be used to override the `loss`
+            argument in the `compile` step for the
+            models. If the hypermodel
+            does not compile the models it generates,
+            then this argument must be specified.
+        metrics: Optional. May be used to override the
+            `metrics` argument in the `compile` step
+            for the models. If the hypermodel
+            does not compile the models it generates,
+            then this argument must be specified.
+        hyperparameters: HyperParameters class instance.
+            Can be used to override (or register in advance)
+            hyperparamters in the search space.
+        tune_new_entries: Whether hyperparameter entries
+            that are requested by the hypermodel
+            but that were not specified in `hyperparameters`
+            should be added to the search space, or not.
+            If not, then the default value for these parameters
+            will be used.
+        allow_new_entries: Whether the hypermodel is allowed
+            to request hyperparameter entries not listed in
+            `hyperparameters`.
+        directory: String. Path to the working directory (relative).
+        project_name: Name to use as prefix for files saved
+            by this Tuner.
     """
 
     def __init__(self,
@@ -40,10 +109,11 @@ class Tuner(object):
                  loss=None,
                  metrics=None,
                  hyperparameters=None,
-                 allow_new_parameters=True,
+                 tune_new_entries=True,
+                 allow_new_entries=True,
                  directory=None,
-                 project_name=None,
-                 metadata=None):
+                 project_name=None):
+
         self.oracle = oracle  # TODO: check Oracle instance
         if isinstance(hypermodel, hm_module.HyperModel):
             self.hypermodel = hypermodel
@@ -58,7 +128,7 @@ class Tuner(object):
         # Global search options
         self.objective = objective
         self.max_trials = max_trials
-        self.executions_per_trial = 1
+        self.executions_per_trial = executions_per_trial
         self.max_model_size = max_model_size
 
         # Compilation options
@@ -68,34 +138,53 @@ class Tuner(object):
 
         # Search space management
         if hyperparameters:
+            print('got hp:', hyperparameters)
             self.hyperparameters = hyperparameters
-            self._initial_hyperparameters = hp_module.HyperParameters.from_config(
-                hyperparameters.get_config())
+            self._initial_hyperparameters = hyperparameters.copy()
         else:
             self.hyperparameters = hp_module.HyperParameters()
             self._initial_hyperparameters = None
-        self.allow_new_parameters = allow_new_parameters
+            if not tune_new_entries:
+                raise ValueError(
+                    'If you set `tune_new_entries=False`, you must'
+                    'specify the search space via the '
+                    '`hyperparameters` argument.')
+            if not allow_new_entries:
+                raise ValueError(
+                    'If you set `allow_new_entries=False`, you must'
+                    'specify the search space via the '
+                    '`hyperparameters` argument.')
+        self.tune_new_entries = tune_new_entries
+        self.allow_new_entries = allow_new_entries
 
         # Ops and metadata
-        self.directory = directory
-        self.project_name = project_name
-        self.metadata = metadata
+        self.directory = directory or '.'
+        self.project_name = project_name or 'untitled_project'
 
-        # Internal state
-        self._trials = []
+        # Public internal state
+        self.trials = []
+
+        # Private internal state
         self._max_fail_streak = 5
-        self._cloudservice = None  # TODO / cloudservice_module.CloudService()
+        self._cloudservice = cloudservice_module.CloudService()
         self._stats = TunerStats()
-        self._host = None  # TODO
-        self._aggregated_metrics = None
+        self._best_metrics = None
         self._best_trial = None
-        self._start_time = int(time())
+        self._start_time = int(time.time())
         self._num_executions = 0
 
-        # Log file
-        log_name = '%s-%d.log' % (self.project_name, self.start_time)
+        # Track history of best values per metric
+        # (one timestep per trial).
+        self.best_metrics = metrics_tracking.MetricsTracker()
+
+        # Logs etc
+        self._host = host_module.Host(
+            results_dir=os.path.join(self.directory, 'results'),
+            tmp_dir=os.path.join(self.directory, 'tmp'),
+            export_dir=os.path.join(self.directory, 'export')
+        )
+        log_name = '%s-%d.log' % (self.project_name, self._start_time)
         self._log_file = os.path.join(self._host.results_dir, log_name)
-        set_log(self._log_file)
 
     def search(self, *fit_args, **fit_kwargs):
         """Top-level loop of the search process.
@@ -109,45 +198,57 @@ class Tuner(object):
         Note that any callbacks will be pickled so as to be reused
         across executions.
         """
-        if self._initial_hyperparameters:
+        if not self.tune_new_entries:
             # In this case, never append to the space
             # so work from a copy of the internal hp object
-            hp = hp_module.HyperParameters.from_config(
-                self._initial_hyperparameters.get_config())
+            hp = self._initial_hyperparameters.copy()
         else:
             # In this case, append to the space,
             # so pass the internal hp object to `build`
             hp = self.hyperparameters
         for i in range(self.max_trials):
-            trial_id = None  # TODO
-            hp.values = self.oracle.populate_space(hp.space, trial_id)
-            # These 2 lines can be turned into async calls
-            # in the distributed case: we dispatch trials,
-            # and get back the result at some later point
-            self._run_trial(hp, *fit_args, **fit_kwargs)
-        if self.cloudservice.enabled:
-            self.cloudservice.complete()
+            # Obtain unique trial ID to communicate with the oracle.
+            trial_id = self._generate_trial_id()
+            # Obtain hp value suggestions from the oracle.
+            while 1:
+                oracle_answer = self.oracle.populate_space(trial_id, hp.space)
+                if oracle_answer['status'] == 'RUN':
+                    hp.values = oracle_answer['values']
+                    break
+                elif oracle_answer['status'] == 'EXIT':
+                    return
+                else:
+                    time.sleep(10)
+            # Run trial with hp value suggestions.
+            trial = self.run_trial(trial_id, hp, *fit_args, **fit_kwargs)
+            score = trial.averaged_metrics.get_best_value(self.objective)
+            self.oracle.result(trial_id, score)
 
-    def run_trial(self, hp, trial_id, *fit_args, **fit_kwargs):
+        if self._cloudservice.enabled:
+            self._cloudservice.complete()
+
+    def run_trial(self, trial_id, hp, *fit_args, **fit_kwargs):
         """Runs one trial (may cover multiple Executions of the same model).
 
         Can be overridden by subclass implementers.
 
         Args:
+            trial_id: String. Unique trial id.
             hp: Populated HyperParameters objects holding the
                 parameter values to be used for this trial.
             *fit_args: To be passed to `fit`.
             **fit_kwargs: To be passed to `fit`.
+
+        Returns:
+            Trial instance.
         """
         model = self._build_model(hp)
-        trial = self._add_trial(model, hp)
-        trial.run_execution(*fit_args, **fit_kwargs)
-        score = trial.best_metrics[self.objective]
-        self.oracle.result(trial_id, score)
-
-    def _add_trial(self, model, hp):
-        # TODO
-        pass
+        trial = trial_module.Trial(trial_id, model, hp, self.objective,
+                                   tuner=self, cloudservice=self._cloudservice)
+        self.trials.append(trial)
+        for _ in range(self.executions_per_trial):
+            execution = trial.run_execution(*fit_args, **fit_kwargs)
+        return trial
 
     def get_best_models(self, num_models=1, compile=True):
         """Returns the best model(s), as determined by the tuner's objective.
@@ -201,6 +302,18 @@ class Tuner(object):
         """
         self.cloudservice.enable(api_key, url)
 
+    def get_status(self):
+        # TODO
+        pass
+
+    @property
+    def remaining_trials(self):
+        return self.max_trials - len(self.trials)
+
+    def _generate_trial_id(self):
+        s = str(time.time()) + str(random.randint(1, 1e7))
+        return hashlib.sha256(s.encode('utf-8')).hexdigest()[:32]
+
     def _build_model(self, hp):
         """Return a never seen before model instance, compiled.
 
@@ -217,25 +330,25 @@ class Tuner(object):
                 a unique Model instance.
         """
         fail_streak = 0
-        collision_streak = 0
         oversized_streak = 0
 
         while 1:
             # clean-up TF graph from previously stored (defunct) graph
-            tf_utils.clear_tf_session()
-            self._stats.generated_instances += 1
+            utils.clear_tf_session()
+            self._stats.num_generated_models += 1
             fail_streak += 1
             try:
                 model = self.hypermodel.build(hp)
             except:
-                if engine_config.DEBUG:
+                if config.DEBUG:
                     traceback.print_exc()
 
-                self._stats.invalid_instances += 1
-                warning('Invalid model %s/%s' %
-                        (self._stats.invalid_instances, self._max_fail_streak))
+                self._stats.num_invalid_models += 1
+                display.warning('Invalid model %s/%s' %
+                                (self._stats.num_invalid_models,
+                                 self._max_fail_streak))
 
-                if self._stats.invalid_instances >= self._max_fail_streak:
+                if self._stats.num_invalid_models >= self._max_fail_streak:
                     raise RuntimeError(
                         'Too many failed attempts to build model.')
                 continue
@@ -244,35 +357,25 @@ class Tuner(object):
             self._check_space_consistency(hp)
 
             # Stop if `build()` does not return a valid model.
-            if not isinstance(model, Model):
+            if not isinstance(model, keras.models.Model):
                 raise RuntimeError(
                     'Model-building function did not return '
                     'a valid Model instance.')
 
-            # Get unique id for instance.
-            idx = self._compute_model_id(model)
-            if idx in self._model_ids:
-                collision_streak += 1
-                self._stats.collisions += 1
-                warning('Collision for %s -- skipping' % (idx))
-                if collision_streak >= self._max_fail_streak:
-                    raise RuntimeError(
-                        'Too many identical models generated.')
-                continue
-
             # Check model size.
-            size = tf_utils.compute_model_size(model)
-            if size > self.max_model_size:
+            size = utils.compute_model_size(model)
+            if self.max_model_size and size > self.max_model_size:
                 oversized_streak += 1
-                self._stats.oversized_models += 1
-                warning('Oversized model: %s parameters -- skipping' % (size))
+                self._stats.num_oversized_models += 1
+                display.warning(
+                    'Oversized model: %s parameters -- skipping' % (size))
                 if oversized_streak >= self._max_fail_streak:
                     raise RuntimeError('Too many consecutive oversize models.')
                 continue
-
+            break
         return self._compile_model(model)
 
-    def _compile_model(model):
+    def _compile_model(self, model):
         if not model.optimizer:
             model.compile(
                 optimizer=self.optimizer, loss=self.loss, metrics=self.metrics)
@@ -295,19 +398,19 @@ class Tuner(object):
         # Optionally disallow hyperparameters defined on the fly.
         if not self._initial_hyperparameters:
             return
-        old_space = self._initial_hyperparameters.space[:]
-        new_space = hyperparameters.space[:]
+        old_space = [x.name for x in self._initial_hyperparameters.space]
+        new_space = [x.name for x in hp.space]
         difference = set(new_space) - set(old_space)
-        if not self.allow_new_parameters and difference:
+        if not self.allow_new_entries and difference:
             diff = set(new_space) - set(old_space)
             raise RuntimeError(
                 'The hypermodel has requested a parameter that was not part '
                 'of `hyperparameters`, '
-                'yet `allow_new_parameters` is set to False. '
+                'yet `allow_new_entries` is set to False. '
                 'The unknown parameters are: {diff}'.format(diff=diff))
         self.oracle.update_space(difference)
 
-    def _compute_model_id(self, model):
+    def _compute_model_hash(self, model):
         """Compute unique model hash."""
         s = str(model.get_config())
         # Optimizer and loss are not currently part of the model config,
@@ -321,7 +424,7 @@ class Tuner(object):
     def _eta(self):
         """Return search estimated completion time.
         """
-        num_trials = len(self._trials)
+        num_trials = len(self.trials)
         num_remaining_trials = self.max_trials - num_trials
         if num_remaining_trials < 1:
             return 0
@@ -335,11 +438,9 @@ class TunerStats(object):
     """Track tuner statistics."""
 
     def __init__(self):
-        self.generated_instances = 0  # overall number of instances generated
-        self.invalid_instances = 0  # how many models didn't work
-        self.instances_previously_trained = 0  # num instance already trained
-        self.collisions = 0  # how many time we regenerated the same model
-        self.oversized_models = 0  # num models with params> max_params
+        self.num_generated_models = 0  # overall number of instances generated
+        self.num_invalid_models = 0  # how many models didn't work
+        self.num_oversized_models = 0  # num models with params> max_params
 
     def summary(self, extended=False):
         subsection('Tuning stats')
@@ -347,9 +448,7 @@ class TunerStats(object):
 
     def get_config(self):
         return {
-            'num_generated_models': self.generated_instances,
-            'num_invalid_models': self.invalid_instances,
-            'num_mdl_previously_trained': self.instances_previously_trained,
-            'num_collision': self.collisions,
-            'num_over_sized_models': self.over_sized_models
+            'num_generated_models': self.num_generated_models,
+            'num_invalid_models': self.num_invalid_models,
+            'num_oversized_models': self.over_sized_models
         }

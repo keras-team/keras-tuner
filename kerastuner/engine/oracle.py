@@ -13,11 +13,17 @@
 # limitations under the License.
 "Oracle base class."
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import hashlib
+
 
 class Oracle(object):
 
     def __init__(self):
-        self.space = hp_module.HyperParameters()
+        self.space = []
 
     def update_space(self, new_entries):
         """Add new hyperparameters to the tracking space.
@@ -62,11 +68,14 @@ class Oracle(object):
         """
         pass
 
-    def _raise_if_unknown_hyperparameter(self, hyperparameters):
-        names = {p.name for p in hyperparameters}
-        ref_names = {p.name for p in self.space}
-        diff = names - ref_names
-        if diff:
-            raise ValueError(
-                'Unknown parameters requested, call `update_space` first. '
-                'Unknown:', diff)
+    def save(self):
+        raise NotImplementedError
+
+    @classmethod
+    def load(self, filename):
+        raise NotImplementedError
+
+    def _compute_values_hash(self, values):
+        keys = sorted(values.keys())
+        s = ''.join(str(k) + '=' + str(values[k]) for k in keys)
+        return hashlib.sha256(s.encode('utf-8')).hexdigest()[:32]

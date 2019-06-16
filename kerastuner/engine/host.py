@@ -1,11 +1,11 @@
 # Copyright 2019 The Keras Tuner Authors
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     https://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,16 +23,13 @@ from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 from kerastuner import config
 
 
-class HostState(State):
-    """
-    Track underlying Host state
+class Host(object):
+    """Track underlying Host state
 
     Args:
         results_dir (str, optional): Tuning results dir. Defaults to results/.
-
         tmp_dir (str, optional): Temporary dir. Wipped at tuning start.
         Defaults to tmp/.
-
         export_dir (str, optional): Export model dir. Defaults to export/.
     """
     def __init__(self, **kwargs):
@@ -56,15 +53,15 @@ class HostState(State):
         status = config._Host.get_status()
         tf_version = status['software']['tensorflow']
         if tf_version:
-          major, minor, rev = tf_version.split('.')
-          if major == '1':
-              if int(minor) >= 13:
-                  print('ok')
-              else:
-                  fatal("Keras Tuner only work with TensorFlow version >= 1.13\
-                      current version: %s - please upgrade" % tf_version)
+            major, minor, rev = tf_version.split('.')
+            if major == '1':
+                if int(minor) >= 13:
+                    print('ok')
+                else:
+                    fatal("Keras Tuner only work with TensorFlow version >= 1.13\
+                          current version: %s - please upgrade" % tf_version)
         else:
-          warning('Could not determine TensorFlow version.')
+            warning('Could not determine TensorFlow version.')
 
     def summary(self, extended=False):
         subsection('Directories')
@@ -84,6 +81,6 @@ class HostState(State):
             res[name] = getattr(self, name)
 
         # adding host hardware & software information
-        res.update(config._Host.get_config())
+        res.update(config._Host.to_config())
 
         return res
