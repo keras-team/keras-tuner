@@ -11,9 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Keras Tuner hello world sequential API - TensorFlow V1.13+ or V2.x."""
 
+import argparse
 import os
 import numpy as np
 from tensorflow.keras.callbacks import EarlyStopping  # pylint: disable=import-error
@@ -52,43 +52,70 @@ def model_fn():
     # converting a model to a tunable model is a simple as replacing static
     # values with the hyper parameters variables.
     model = Sequential()
-    model.add(Dense(DIMS, input_shape=(200,)))
+    model.add(Dense(DIMS, input_shape=(200, )))
     model.add(Dense(DIMS, activation=ACTIVATION))
     if EXTRA_LAYER:
         model.add(Dense(DIMS, activation=ACTIVATION))
     model.add(Dense(1, activation='sigmoid'))
     optimizer = Adam(LR)
-    model.compile(optimizer=optimizer, loss="binary_crossentropy",
+    model.compile(optimizer=optimizer,
+                  loss="binary_crossentropy",
                   metrics=['accuracy'])
     return model
 
-# Suppress INFO logs coming from th tensorflow implementation, to make
-# information about the search easier to read.
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+def main(args):
+    # Suppress INFO logs coming from th tensorflow implementation, to make
+    # information about the search easier to read.
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-# Initialize the hypertuner by passing the model function (model_fn)
-# and specifying key search constraints: maximize val_acc (objective),
-# spend 9 epochs doing the search, spend at most 3 epoch on each model.
-tuner = UltraBand(model_fn,
-                  objective='val_acc',
-                  epoch_budget=256,
-                  min_epochs=3,
-                  max_epochs=27)
+    # Initialize the hypertuner by passing the model function (model_fn)
+    # and specifying key search constraints: maximize val_acc (objective),
+    # spend 9 epochs doing the search, spend at most 3 epoch on each model.
+    tuner = UltraBand(
+        model_fn,
+        objective='val_acc',
+        epoch_budget=256,
+        min_epochs=3,
+        max_epochs=27,
+        results_dir=os.path.join(args.output_directory, "results"),
+        export_dir=os.path.join(args.output_directory, "export"))
 
-# display search overview
-tuner.summary()
+    # display search overview
+    tuner.summary()
 
-# You can use http://keras-tuner.appspot.com to track results on the web, and
-# get notifications. To do so, grab an API key on that site, and fill it here.
-# tuner.enable_cloud(api_key=api_key)
+    # You can use http://keras-tuner.appspot.com to track results on the web,
+    # and get notifications. To do so, grab an API key on that site, and fill
+    # it here.
+    #
+    # tuner.enable_cloud(api_key=api_key)
 
-# Perform the model search. The search function has the same prototype than
-# keras.Model.fit(). Similarly search_generator() mirror search_generator().
-tuner.search(x_train, y_train, validation_split=0.01,
-             callbacks=[EarlyStopping(monitor='val_accuracy', patience=0)])
+    # Perform the model search. The search function has the same prototype than
+    # keras.Model.fit(). Similarly search_generator() mirror search_generator().
+    tuner.search(x_train,
+                 y_train,
+                 validation_split=0.01,
+                 callbacks=[EarlyStopping(monitor='val_accuracy', patience=0)])
 
-# Show the best models, their hyperparameters, and the resulting metrics.
-tuner.results_summary()
+    # Show the best models, their hyperparameters, and the resulting metrics.
+    tuner.results_summary()
 
-# Export the top 2 models, in keras format format.
-tuner.save_best_models(num_models=2)
+    # Export the top 2 models, in keras format format.
+    tuner.save_best_models(num_models=2)
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Showcases the Keras Tuner API.")
+
+    parser.add_argument(
+        "--output_directory",
+        "-o",
+        type=str,
+        default=".",
+        help="Path where the models and results from the tuner will be stored")
+
+    return parser.parse_args()
+
+
+if __name__ == '__main__':
+    main(parse_args())
