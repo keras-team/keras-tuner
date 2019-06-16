@@ -138,7 +138,6 @@ class Tuner(object):
 
         # Search space management
         if hyperparameters:
-            print('got hp:', hyperparameters)
             self.hyperparameters = hyperparameters
             self._initial_hyperparameters = hyperparameters.copy()
         else:
@@ -408,7 +407,6 @@ class Tuner(object):
                 'of `hyperparameters`, '
                 'yet `allow_new_entries` is set to False. '
                 'The unknown parameters are: {diff}'.format(diff=diff))
-        self.oracle.update_space(difference)
 
     def _compute_model_hash(self, model):
         """Compute unique model hash."""
