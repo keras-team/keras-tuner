@@ -27,6 +27,7 @@ from tensorflow import keras
 
 from . import hyperparameters as hp_module
 from . import hypermodel as hm_module
+from . import oracle as oracle_module
 from . import trial as trial_module
 from . import execution as execution_module
 from . import cloudservice as cloudservice_module
@@ -113,8 +114,10 @@ class Tuner(object):
                  allow_new_entries=True,
                  directory=None,
                  project_name=None):
-
-        self.oracle = oracle  # TODO: check Oracle instance
+        if not isinstance(oracle, oracle_module.Oracle):
+            raise ValueError('Expected oracle to be '
+                             'an instance of Oracle, got: %s' % (oracle,))
+        self.oracle = oracle
         if isinstance(hypermodel, hm_module.HyperModel):
             self.hypermodel = hypermodel
         else:
@@ -215,6 +218,7 @@ class Tuner(object):
                     hp.values = oracle_answer['values']
                     break
                 elif oracle_answer['status'] == 'EXIT':
+                    print('Oracle triggered exit')
                     return
                 else:
                     time.sleep(10)
@@ -241,15 +245,17 @@ class Tuner(object):
         Returns:
             Trial instance.
         """
+        # Create a sample model from the hp configuration.
+        # Note that this may add new entries to the search space.
         model = self._build_model(hp)
-        trial = trial_module.Trial(trial_id, model, hp, self.objective,
+        trial = trial_module.Trial(trial_id, hp, model, self.objective,
                                    tuner=self, cloudservice=self._cloudservice)
         self.trials.append(trial)
         for _ in range(self.executions_per_trial):
             execution = trial.run_execution(*fit_args, **fit_kwargs)
         return trial
 
-    def get_best_models(self, num_models=1, compile=True):
+    def get_best_models(self, num_models=1):
         """Returns the best model(s), as determined by the tuner's objective.
 
         The models are loaded with the weights corresponding to
@@ -260,25 +266,38 @@ class Tuner(object):
         Args:
             num_models (int, optional): Number of best models to return.
                 Models will be returned in sorted order. Defaults to 1.
-            compile (bool, optional): If True, compile the returned models
-                using the loss, optimizer, and metrics used during training.
-                Defaults to True.
 
         Returns:
             List of trained model instances.
         """
-        # TODO
-        pass
+        best_trials = self._get_best_trials(num_models)
+        hps = [x.hyperparameters for x in best_trials]
+        models = [self.hypermodel.build(hp) for hp in hps]
+        for model in models:
+            self._compile_model(model)
+        # TODO: reload best checkpoint.
+        return models
 
     def search_space_summary(self, extended=False):
-        """Print tuner summary
+        """Print search space summary.
 
         Args:
             extended: Bool, optional. Display extended summary.
                 Defaults to False.
         """
-        # TODO
-        pass
+        display.section('Search space summary')
+        hp = self.hyperparameters.copy()
+        if self.allow_new_entries:
+            # Attempt to populate the space
+            # if it is expected to be dynamic.
+            self.hypermodel.build(hp)
+        display.display_setting(
+            'Default search space size: %d' % len(hp.space))
+        for p in hp.space:
+            config = p.get_config()
+            name = config.pop('name')
+            display.subsection('%s (%s)' % (name, p.__class__.__name__))
+            display.display_settings(config)
 
     def results_summary(self, num_models=10, sort_metric=None):
         """Display tuning results summary.
@@ -289,8 +308,19 @@ class Tuner(object):
             sort_metric (str, optional): Sorting metric, when not specified
                 sort models by objective value. Defaults to None.
         """
-        # TODO
-        pass
+        display.section('Results summary')
+        if not self.trials:
+            display.display_setting('No results to display.')
+            return
+        display.display_setting('Results in %s' % self._host.results_dir)
+        display.display_setting('Ran %d trials' % len(self.trials))
+        display.display_setting('Ran %d executions (%d per trial)' %
+                                (sum([len(x.executions) for x in self.trials]),
+                                 self.executions_per_trial))
+        display.display_setting(
+            'Best %s: %.4f' % (self.objective,
+                               self.best_metrics.get_best_value(
+                                   self.objective)))
 
     def enable_cloud(self, api_key, url=None):
         """Enable cloud service reporting
@@ -302,12 +332,48 @@ class Tuner(object):
         self.cloudservice.enable(api_key, url)
 
     def get_status(self):
-        # TODO
-        pass
+        config = {
+            'project_name': self.project_name,
+            'objective': self.objective,
+            'start_time': self._start_time,
+            'max_trials': self.max_trials,
+            'executions_per_trial': self.executions_per_trial,
+            'eta': self._eta,
+            'remaining_trials': self.remaining_trials,
+        }
+
+        config['stats'] = self._stats.get_config()
+        config['host'] = self._host.get_config()
+        config['metrics'] = {}
+
+        best_trials = self._get_best_trials(1)
+        if best_trials:
+            config['aggregate_metrics'] = self.best_metrics.get_config()
+            best_trial = best_trials[0]
+            config['best_trial'] = best_trial.get_status()
+        else:
+            config['aggregate_metrics'] = []
+            config['best_trial'] = None
+        return config
 
     @property
     def remaining_trials(self):
         return self.max_trials - len(self.trials)
+
+    def _get_best_trials(self, num_trials=1):
+        if not self.best_metrics.exists(self.objective):
+            return []
+        trials = []
+        for x in self.trials:
+            if x.score is not None:
+                trials.append(x)
+        if not trials:
+            return []
+        direction = self.best_metrics.directions[self.objective]
+        sorted_trials = sorted(trials,
+                               key=lambda x: x.score,
+                               reverse=direction == 'max')
+        return trials[:num_trials]
 
     def _generate_trial_id(self):
         s = str(time.time()) + str(random.randint(1, 1e7))
@@ -369,7 +435,8 @@ class Tuner(object):
                 display.warning(
                     'Oversized model: %s parameters -- skipping' % (size))
                 if oversized_streak >= self._max_fail_streak:
-                    raise RuntimeError('Too many consecutive oversize models.')
+                    raise RuntimeError(
+                        'Too many consecutive oversized models.')
                 continue
             break
         return self._compile_model(model)
@@ -407,16 +474,7 @@ class Tuner(object):
                 'of `hyperparameters`, '
                 'yet `allow_new_entries` is set to False. '
                 'The unknown parameters are: {diff}'.format(diff=diff))
-
-    def _compute_model_hash(self, model):
-        """Compute unique model hash."""
-        s = str(model.get_config())
-        # Optimizer and loss are not currently part of the model config,
-        # but could conceivably be part of the model_fn/tuning process.
-        if model.optimizer:
-            s += 'optimizer:' + str(model.optimizer.get_config())
-        s += 'loss:' + str(model.loss)
-        return hashlib.sha256(s.encode('utf-8')).hexdigest()[:32]
+        # TODO: consider calling the oracle to update the space.
 
     @property
     def _eta(self):
@@ -427,9 +485,9 @@ class Tuner(object):
         if num_remaining_trials < 1:
             return 0
         else:
-            elapsed_time = int(time() - self._start_time)
+            elapsed_time = int(time.time() - self._start_time)
             time_per_trial = elapsed_time / num_trials
-            return int(num_remaining_trials * time_per_epoch)
+            return int(num_remaining_trials * time_per_trial)
 
 
 class TunerStats(object):
@@ -448,5 +506,5 @@ class TunerStats(object):
         return {
             'num_generated_models': self.num_generated_models,
             'num_invalid_models': self.num_invalid_models,
-            'num_oversized_models': self.over_sized_models
+            'num_oversized_models': self.num_oversized_models
         }

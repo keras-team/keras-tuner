@@ -14,8 +14,8 @@
 
 "Basic randomsearch tuner"
 
-from ...oracles import randomsearch
-from ...engine import tuner as tuner_module
+from ..oracles import randomsearch
+from ..engine import tuner as tuner_module
 
 
 class RandomSearch(tuner_module.Tuner):
