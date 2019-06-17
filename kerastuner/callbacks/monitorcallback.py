@@ -1,11 +1,11 @@
 # Copyright 2019 The Keras Tuner Authors
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     https://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -13,69 +13,65 @@
 # limitations under the License.
 
 import json
-from time import time
+import time
 from os import path
 from multiprocessing.pool import ThreadPool
 from collections import defaultdict
+import traceback
 
-from kerastuner import config
-from .tunercallback import TunerCallback
-from kerastuner.collections import MetricsCollection
-from kerastuner.abstractions.display import write_log, fatal, cprint
-from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
-from kerastuner.engine.metric import compute_common_classification_metrics
-from kerastuner.engine.metric import canonicalize_metric_name  # nopep8
+import numpy as np
+
+from tensorflow.keras import callbacks
+
+from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
+from .. import utils
 
 
-class MonitorCallback(TunerCallback):
+class MonitorCallback(callbacks.Callback):
+
     def __init__(self,
-                 tuner_state,
-                 instance_state,
-                 execution_state,
+                 tuner,
+                 trial,
+                 execution,
                  cloudservice,
-                 validation_data,
                  refresh_interval=2,
                  num_threads=4):
-        super(MonitorCallback, self).__init__(tuner_state, instance_state,
-                                              execution_state, cloudservice)
+        self.tuner = tuner
+        self.trial = trial
+        self.execution = execution
+        self.cloudservice = cloudservice
+
         self.last_refresh = -1
         self.refresh_interval = refresh_interval
         self.thread_pool = ThreadPool(num_threads)
         self.epoch_history = defaultdict(list)
         self.training_complete = False  # important for the cloudservice
         self.num_threads = num_threads
-        self.validation_data = validation_data
+        self.start_time = int(time.time())
 
     def on_batch_end(self, batch, logs={}):
-        for metric, value in logs.items():
-            self.epoch_history[metric].append(float(value))
+        for name, value in logs.items():
+            value = float(value)
+            self.epoch_history[name].append(value)
+            self.execution.per_batch_metrics.update(name, value)
         self._report_status()
 
     def on_epoch_end(self, epoch, logs={}):
         # update epoch counters
-        self.execution_state.epochs += 1
-        self.tuner_state.remaining_budget -= 1
+        self.execution.epochs_seen += 1
 
-        objective = canonicalize_metric_name(self.tuner_state.objective)
+        objective = utils.canonicalize_metric_name(self.tuner.objective)
 
         # update metrics and checkpoint if needed
-        for metric, value in logs.items():
-            improved = self.execution_state.metrics.update(metric, value)
-            metric = canonicalize_metric_name(metric)
-            if objective == metric and improved:
-                # Compute classification metrics and store in execution state
-                if self.validation_data:
-                    report = compute_common_classification_metrics(
-                        self.model, self.validation_data,
-                        self.tuner_state.label_names)
-                    self.execution_state.update_performance_metrics(report)
-
+        for name, value in logs.items():
+            improved = self.execution.per_epoch_metrics.update(name, value)
+            name = utils.canonicalize_metric_name(name)
+            if objective == name and improved:
                 # TODO - figure out the race condition that causes us to clear
                 # the session before we finish the writes when we try to
                 # apply_async here.
                 # self.thread_pool.apply_async(self._checkpoint_model)
                 self._checkpoint_model()
-
                 self._write_result_file()
 
         # reset epoch history
@@ -84,12 +80,40 @@ class MonitorCallback(TunerCallback):
         # update status
         self._report_status(force=True)
 
-    def on_train_begin(self, logs={}):
-        pass
-
     def on_train_end(self, logs={}):
+        # Update tracker of averaged metrics on Trial
+        if len(self.trial.executions) == 1:
+            for name in self.execution.per_epoch_metrics.names:
+                direction = self.execution.per_epoch_metrics.directions[name]
+                if not self.trial.averaged_metrics.exists(name):
+                    self.trial.averaged_metrics.register(name, direction)
+                self.trial.averaged_metrics.set_history(
+                    name, self.execution.per_epoch_metrics.get_history(name))
+        else:
+            # Need to average.
+            for name in self.execution.per_epoch_metrics.names:
+                direction = self.execution.per_epoch_metrics.directions[name]
+                histories = []
+                for execution in self.trial.executions:
+                    histories.append(
+                        self.execution.per_epoch_metrics.get_history(name))
+                if len(set(len(h) for h in histories)) != 1:
+                    raise ValueError(
+                        'Inconsistent metric history length '
+                        'across executions for %s' % (name,))
+                self.trial.averaged_metrics.set_history(
+                    name, list(np.average(histories, axis=0)))
+
+        if len(self.trial.executions) == self.tuner.executions_per_trial:
+            # Update tracker of best metrics on Tuner
+            for name in self.trial.averaged_metrics.names:
+                if not self.tuner.best_metrics.exists(name):
+                    direction = self.trial.averaged_metrics.directions[name]
+                    self.tuner.best_metrics.register(name, direction)
+                self.tuner.best_metrics.update(
+                    name, self.trial.averaged_metrics.get_best_value(name))
+
         self.training_complete = True
-        self._end_training_statistics()
         self._report_status(force=True)
         self._write_result_file()
         self._flush_thread_pool()
@@ -99,67 +123,35 @@ class MonitorCallback(TunerCallback):
         self.thread_pool.join()
         self.thread_pool = ThreadPool(self.num_threads)
 
-    def _end_training_statistics(self):
-        """Compute and display end of training statistics
-
-        Notes:
-            update order matters must be instance then global
-        """
-
-        # !Don't update execution state metrics here - they will be updated in
-        # !on_epoch_end
-
-        # update tuner overall objective metric
-        for metric in self.instance_state.agg_metrics.to_list():
-            improved = self.tuner_state.agg_metrics.update(
-                metric.name, metric.get_best_value())
-
-        if metric.name == self.tuner_state.objective and improved:
-            self.instance_state.is_best_model = True
-
-        # record which one is the best model
-        # ! dont try to simplify - must be after all statistics are computed
-        if self.instance_state.is_best_model or not self.tuner_state.best_instance_config:  # nopep8
-            config = self.instance_state.get_config()
-            self.tuner_state.best_instance_config = config
-
-        # record execution config in instance
-        self.instance_state.execution_states_collection.add(
-            self.execution_state.idx, self.execution_state)  # nopep8
-
     def _checkpoint_model(self):
         """Checkpoint model"""
         prefix = self._get_filename_prefix()
         base_filename = prefix
 
-        tmp_path = path.join(self.tuner_state.host.tmp_dir,
+        tmp_path = path.join(self.tuner._host.tmp_dir,
                              path.basename(prefix))
 
         try:
             tf_utils.save_model(self.model,
                                 base_filename,
                                 tmp_path=tmp_path,
-                                export_type="keras")
+                                export_type='keras')
         except:
-            print("FAILED")
-            import traceback
             traceback.print_exc()
-            write_log("Failed.")
+            write_log('Failed.')
             exit(0)
 
     def _make_status(self):
         status = {
-            "update_time": int(time()),
-            "tuner": self.tuner_state.get_config(),
-            "instance": self.instance_state.get_config(),
-            "execution": self.execution_state.get_config(),
-            "hparams": config._DISTRIBUTIONS.get_hyperparameters_config(),
-            "dynamic_hparams": config._DISTRIBUTIONS.dynamic_hyperparameters
+            'update_time': int(time.time()),
+            'tuner': self.tuner.get_status(),
+            'trial': self.trial.get_status(),
+            'execution': self.execution.get_status(),
         }
         return status
 
     def _write_result_file(self):
-        """Record results - one file per instance"""
+        """Record results - one file per trial"""
         status = self._make_status()
 
         status_json = json.dumps(status)
@@ -169,21 +161,21 @@ class MonitorCallback(TunerCallback):
         tf_utils.write_file(fname, status_json)
 
         # send result to the cloud service
-        if self.cloudservice.is_enable:
+        if self.cloudservice.enabled:
             self.cloudservice.send_results(status)
 
     def _report_status(self, force=False):
-        "update the status.json file"
-        delta = time() - self.last_refresh
+        """Update the status.json file."""
+        delta = time.time() - self.last_refresh
         if delta < self.refresh_interval and not force:
             return
         # FIXME: can we make it async?
         # self.thread_pool.apply_async(self._report_status_worker)
         self._report_status_worker()
-        self.last_refresh = time()
+        self.last_refresh = time.time()
 
     def _report_status_worker(self):
-        "Report tuner status periodically"
+        """Report tuner status periodically."""
         # getting stats
         status = self._make_status()
 
@@ -193,18 +185,17 @@ class MonitorCallback(TunerCallback):
         status_json = json.dumps(status)
 
         # write on disk
-        fname = path.join(self.tuner_state.host.results_dir, 'status.json')
+        fname = path.join(self.tuner._host.results_dir, 'status.json')
         tf_utils.write_file(fname, status_json)
 
         # send status to cloudservice
-        if self.cloudservice.is_enable:
+        if self.cloudservice and self.cloudservice.enabled:
             self.cloudservice.send_status(status)
 
     def _get_filename_prefix(self, with_execution_info=True):
-        "Build dir/filename prefix based of the instance and execution trained"
-        prefix = '%s-%s-%s' % (self.tuner_state.project,
-                               self.tuner_state.architecture,
-                               self.instance_state.idx)
+        """Build dir/filename prefix based on the trial & execution."""
+        prefix = '%s-%s' % (self.tuner.project_name,
+                            self.trial.trial_id)
         if with_execution_info:
-            prefix += '-%s' % self.execution_state.idx
-        return path.join(self.tuner_state.host.results_dir, prefix)
+            prefix += '-%s' % self.execution.execution_id
+        return path.join(self.tuner._host.results_dir, prefix)

@@ -13,8 +13,13 @@
 # limitations under the License.
 "HyperParameters logic."
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import random
+
 from tensorflow import keras
-import numpy as np
 
 
 class HyperParameter(object):
@@ -69,7 +74,7 @@ class Choice(HyperParameter):
         return self.values[0]
 
     def random_sample(self, seed=None):
-        random_state = np.random.RandomState(seed)
+        random_state = random.Random(seed)
         return random_state.choice(self.values)
 
     def get_config(self):
@@ -92,13 +97,13 @@ class Range(HyperParameter):
 
     def __init__(self, name, min_value, max_value, step=1, default=None):
         super(Range, self).__init__(name=name, default=default)
-        self.max_value = max_value
-        self.min_value = min_value
-        self.step = step
+        self.max_value = int(max_value)
+        self.min_value = int(min_value)
+        self.step = int(step)
         self._values = list(range(min_value, max_value, step))
 
     def random_sample(self, seed=None):
-        random_state = np.random.RandomState(seed)
+        random_state = random.Random(seed)
         return random_state.choice(self._values)
 
     @property
@@ -109,8 +114,8 @@ class Range(HyperParameter):
 
     def get_config(self):
         config = super(Range, self).get_config()
-        config['max_value'] = self.max_value
         config['min_value'] = self.min_value
+        config['max_value'] = self.max_value
         config['step'] = self.step
         return config
 
@@ -130,9 +135,9 @@ class Linear(HyperParameter):
 
     def __init__(self, name, min_value, max_value, resolution, default=None):
         super(Logarithmic, self).__init__(name=name, default=default)
-        self.max_value = max_value
-        self.min_value = min_value
-        self.resolution = resolution
+        self.max_value = float(max_value)
+        self.min_value = float(min_value)
+        self.resolution = float(resolution)
 
     @property
     def default_value(self):
@@ -141,18 +146,35 @@ class Linear(HyperParameter):
         return self.min_value
 
     def random_sample(self, seed):
-        random_state = np.random.RandomState(seed)
+        random_state = random.Random(seed)
         width = max_value - min_value
-        value = self.min_value + random_state.random() * width
+        value = self.min_value + float(random_state.random()) * width
         quantized_value = round(value / self.resolution) * self.resolution
         return quantized_value
 
     def get_config(self):
         config = super(Range, self).get_config()
-        config['max_value'] = self.max_value
         config['min_value'] = self.min_value
-        config['num_bins'] = self.num_bins
+        config['max_value'] = self.max_value
+        config['resolution'] = self.resolution
         return config
+
+
+class Fixed(HyperParameter):
+
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+
+    def random_sample(self, seed=None):
+        return self.value
+
+    @property
+    def default_value(self):
+        return self.value
+
+    def get_config(self):
+        return {'name': self.name, 'value': self.value}
 
 
 class HyperParameters(object):
@@ -193,19 +215,23 @@ class HyperParameters(object):
                              config={'values': values,
                                      'default': default})
 
-    def Range(self, name, min_value, max_value, step=None, default=None):
+    def Range(self, name, min_value, max_value, step=1, default=None):
         return self.retrieve(name, 'Range',
                              config={'min_value': min_value,
                                      'max_value': max_value,
                                      'step': step,
                                      'default': default})
 
-    def Linear(self, name, min_value, max_value, resolution=None, default=None):
+    def Linear(self, name, min_value, max_value, resolution, default=None):
         return self.retrieve(name, 'Range',
                              config={'min_value': min_value,
                                      'max_value': max_value,
                                      'resolution': resolution,
                                      'default': default})
+
+    def Fixed(self, name, value):
+        return self.retrieve(name, 'Fixed',
+                             config={'value': value})
 
     def get_config(self):
         return {
@@ -220,6 +246,9 @@ class HyperParameters(object):
         hp.space = [deserialize(p) for p in config['space']]
         hp.values = dict((k, v) for (k, v) in config['values'].items())
         return hp
+
+    def copy(self):
+        return HyperParameters.from_config(self.get_config())
 
 
 def deserialize(config):
