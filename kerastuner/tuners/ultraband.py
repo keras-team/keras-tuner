@@ -14,8 +14,10 @@
 
 "Variation of HyperBand algorithm."
 
-from ...oracles import ultraband
-from ...engine import tuner as tuner_module
+
+from ..oracles import ultraband
+from ..engine import tuner as tuner_module
+from ..engine import trial as trial_module
 
 
 class UltraBand(tuner_module.Tuner):
@@ -25,10 +27,23 @@ class UltraBand(tuner_module.Tuner):
                  objective,
                  max_trials,
                  **kwargs):
-        oracle = ultraband.UltraBand()
+        oracle = ultraband.UltraBand(max_trials)
         super(UltraBand, self).__init__(
             oracle,
             hypermodel,
             objective,
             max_trials,
             **kwargs)
+
+    def run_trial(self, hp, trial_id, *fit_args, **fit_kwargs):
+        model = self._build_model(hp)
+        trial = trial_module.Trial(trial_id, hp, model, self.objective,
+                                   tuner=self, cloudservice=self._cloudservice)
+        self.trials.append(trial)
+
+        fit_kwargs['epochs'] = hp.values['tuner/epochs']
+        for _ in range(self.executions_per_trial):
+            execution = trial.run_execution(*fit_args, **fit_kwargs)
+        return trial
+
+
