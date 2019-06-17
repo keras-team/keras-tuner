@@ -68,7 +68,11 @@ class Trial(object):
         return execution
 
     def summary(self):
-        display.section("Instance summary")
+        display.section('Trial summary')
+        display.subsection('Hp values:')
+        display.display_settings(self.hyperparameters.values)
+        if self.score:
+            display.display_setting('Score: %.4f' % self.score)
 
     def get_status(self):
         return {

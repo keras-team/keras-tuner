@@ -103,7 +103,7 @@ class MetricsTracker(object):
             'stddev': float(np.std(history))
         }
 
-    def get_last_value(self):
+    def get_last_value(self, name):
         history = self.get_history(name)
         if history:
             return history[-1]

@@ -96,7 +96,7 @@ class MonitorCallback(callbacks.Callback):
                 histories = []
                 for execution in self.trial.executions:
                     histories.append(
-                        self.execution.per_epoch_metrics.get_history(name))
+                        execution.per_epoch_metrics.get_history(name))
                 if len(set(len(h) for h in histories)) != 1:
                     raise ValueError(
                         'Inconsistent metric history length '
