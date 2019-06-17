@@ -45,10 +45,14 @@ tuner = RandomSearch(
     executions_per_trial=3,
     directory='test_dir')
 
+tuner.search_space_summary()
+
 tuner.search(x=x,
              y=y,
              epochs=3,
              validation_data=(val_x, val_y))
+
+tuner.results_summary()
 
 
 # """Case #2:

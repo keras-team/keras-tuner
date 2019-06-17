@@ -272,6 +272,7 @@ def make_bar_chart(val, max_val, title=None, left='', right='',
 
 def cprint(text, color, bg_color=None, brightness='normal'):
     """ Print given piece of text with color
+
     Args:
         text (str): text to colorize
         color (str): forground color

@@ -67,8 +67,6 @@ class Execution(object):
         self.batch_size = fit_kwargs.get('batch_size', None)
         self.max_steps = self._get_max_steps(*fit_args, **fit_kwargs)
 
-        reinitialize_model(self.model)
-
         # Tuner callbacks
         monitor_callback = MonitorCallback(self.tuner,
                                            self.trial,
@@ -103,16 +101,21 @@ class Execution(object):
         fit_kwargs['verbose'] = 0
 
         history = self.model.fit(*fit_args, **fit_kwargs)
-        self.history = history
+        self.history = history.history
         return history
 
     def get_status(self):
-        # TODO
-        pass
+        config = {
+            'start_time': self._start_time,
+            'history': self.history,
+            'eta': self.eta,
+            'epochs_seen': self.epochs_seen,
+            'max_epochs': self.max_epochs,
+        }
 
     @property
     def eta(self):
-        elapsed_time = int(time()) - self._start_time
+        elapsed_time = int(time.time()) - self._start_time
         time_per_epoch = elapsed_time / max(self.epochs_seen, 1)
         return int(self.max_epochs * time_per_epoch)
 
@@ -125,8 +128,3 @@ class Execution(object):
         if hasattr(x, '__len__'):
             return math.ceil(float(len(x)) / batch_size)
         return fit_kwargs.get('steps')
-
-
-def reinitialize_model(model):
-    # TODO
-    pass

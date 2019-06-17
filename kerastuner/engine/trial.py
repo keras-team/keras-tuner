@@ -21,6 +21,7 @@ import copy
 
 from . import execution as execution_module
 from . import metrics_tracking
+from ..abstractions import display
 
 
 class Trial(object):
@@ -29,26 +30,34 @@ class Trial(object):
     Not to be subclassed.
     """
 
-    def __init__(self, trial_id, model, hyperparameters, objective,
+    def __init__(self, trial_id, hyperparameters, model, objective,
                  tuner=None, cloudservice=None):
         self.trial_id = trial_id
-        self.model = model
         self.executions = []
         self.hyperparameters = hyperparameters.copy()
+        self.model = model
         self.objective = objective
 
         self.tuner = tuner
         self.cloudservice = cloudservice
 
         # Per-epoch metrics averages across all executions
-        self.averaged_metrics = metrics_tracking.MetricsTracker(model.metrics)
+        self.averaged_metrics = metrics_tracking.MetricsTracker()
         self.score = None  # Score of the trial: best objective value achieved.
 
     def run_execution(self, *fit_args, **fit_kwargs):
         execution_id = str(len(self.executions))
+        if not self.executions:
+            # Use initial model.
+            model = self.model
+        else:
+            # Create new model from the same hyperparameters.
+            # Note that we use a copy of the hyperparameters
+            # so we won't mutate them.
+            model = self.tuner._build_model(self.hyperparameters)
         execution = execution_module.Execution(
             execution_id,
-            self.model,
+            model,
             trial=self, tuner=self.tuner, cloudservice=self.cloudservice)
         self.executions.append(execution)
         execution.run(*fit_args, **fit_kwargs)
@@ -59,14 +68,13 @@ class Trial(object):
         return execution
 
     def summary(self):
-        # TODO
-        pass
+        display.section("Instance summary")
 
     def get_status(self):
         return {
             'trial_id': self.trial_id,
-            'model': self.model.get_config(),
             'hyperparameters': self.hyperparameters.get_config(),
+            'model': self.model.get_config(),
             'objective': self.objective,
             'averaged_metrics': self.averaged_metrics.get_config(),
             'score': self.score
