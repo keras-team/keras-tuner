@@ -49,7 +49,6 @@ class RandomSearch(oracle_module.Oracle):
             space, it may return values for more parameters
             than what was listed in `space`.
         """
-        print('populate', space)
         self.update_space(space)
         collisions = 0
         while 1:
