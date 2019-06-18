@@ -1,11 +1,11 @@
 # Copyright 2019 The Keras Tuner Authors
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     https://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -97,14 +97,16 @@ def output_names():
     ]
 
 
+# TODO
+@pytest.mark.skip(MAJOR_VERSION == 2, reason="Broken in TF2")
 def test_save_keras_bundle(tmp_path, model, training_data):
+
     save_path = os.path.join(str(tmp_path), "model_output")
     tmp_path = os.path.join(str(tmp_path), "model_output_tmp")
     x, y = training_data
 
     tf_utils.save_model(
         model, save_path, tmp_path=tmp_path, export_type="keras_bundle")
-
     loaded = tf.keras.models.load_model(save_path + ".keras_bundle.h5")
 
     orig_out = model.predict(x)
@@ -136,16 +138,13 @@ def test_save_keras(tmp_path, model, training_data):
     assert np.allclose(orig_out, loaded_out)
 
 
+@pytest.mark.skip(MAJOR_VERSION == 2, reason="Not supported in TF2")
 def test_save_tf(
         tmp_path,
         model,
         training_data,
         feed_dict,
         output_names):
-
-    # Not currently supported for tf2.0
-    if MAJOR_VERSION == 2:
-        return
 
     save_path = os.path.join(str(tmp_path), "model_output")
     tmp_path = os.path.join(str(tmp_path), "model_output_tmp")
@@ -183,15 +182,13 @@ def test_save_tf(
             output_node.input[1] == "o1/BiasAdd/ReadVariableOp"
 
 
+@pytest.mark.skip(MAJOR_VERSION == 2, reason="Not supported in TF2")
 def test_save_frozen(
         tmp_path,
         model,
         training_data,
         feed_dict,
         output_names):
-    # Not currently supported for tf2.0
-    if MAJOR_VERSION == 2:
-        return
 
     save_path = os.path.join(str(tmp_path), "model_output")
     tmp_path = os.path.join(str(tmp_path), "model_output_tmp")
@@ -218,16 +215,13 @@ def test_save_frozen(
     assert np.allclose(orig_out, loaded_out)
 
 
+@pytest.mark.skip(MAJOR_VERSION == 2, reason="Not supported in TF2")
 def test_save_optimized(
         tmp_path,
         model,
         training_data,
         feed_dict,
         output_names):
-
-    # Not currently supported for tf2.0
-    if MAJOR_VERSION == 2:
-        return
 
     save_path = os.path.join(str(tmp_path), "model_output")
     tmp_save_path = os.path.join(str(save_path), "tmp_model_output")
@@ -257,16 +251,13 @@ def test_save_optimized(
     assert np.allclose(orig_out, loaded_out)
 
 
+@pytest.mark.skip(MAJOR_VERSION == 2, reason="Not supported in TF2")
 def test_save_tf_lite(
         tmp_path,
         model,
         training_data,
         feed_dict,
         output_names):
-
-    # Not currently supported for tf2.0
-    if MAJOR_VERSION == 2:
-        return
 
     # There are bugs with saving as tf.lite in early version
     # see: https://github.com/tensorflow/tensorflow/issues/17349

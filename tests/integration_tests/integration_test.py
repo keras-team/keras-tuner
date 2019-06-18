@@ -88,6 +88,24 @@ def test_basic_tuner_attributes(tmp_dir):
     assert os.path.exists(os.path.join(tmp_dir, 'results'))
 
 
+def test_callbacks_in_fit_kwargs(tmp_dir):
+    tuner = kerastuner.tuners.RandomSearch(
+        build_model,
+        objective='val_accuracy',
+        max_trials=2,
+        executions_per_trial=3,
+        directory=tmp_dir)
+    tuner.search(x=TRAIN_INPUTS,
+                 y=TRAIN_TARGETS,
+                 epochs=2,
+                 validation_data=(VAL_INPUTS, VAL_TARGETS),
+                 callbacks=[keras.callbacks.EarlyStopping(),
+                            keras.callbacks.TensorBoard(tmp_dir)])
+    assert len(tuner.trials) == 2
+    assert len(tuner.trials[0].executions) == 3
+    assert len(tuner.trials[1].executions) == 3
+
+
 def test_hypermodel_with_dynamic_space(tmp_dir):
     hypermodel = ExampleHyperModel()
     tuner = kerastuner.tuners.RandomSearch(
