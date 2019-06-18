@@ -200,15 +200,16 @@ class Tuner(object):
         Note that any callbacks will be pickled so as to be reused
         across executions.
         """
-        if not self.tune_new_entries:
-            # In this case, never append to the space
-            # so work from a copy of the internal hp object
-            hp = self._initial_hyperparameters.copy()
-        else:
-            # In this case, append to the space,
-            # so pass the internal hp object to `build`
-            hp = self.hyperparameters
         for i in range(self.max_trials):
+            if not self.tune_new_entries:
+                # In this case, never append to the space
+                # so work from a copy of the internal hp object
+                hp = self._initial_hyperparameters.copy()
+            else:
+                # In this case, append to the space,
+                # so pass the internal hp object to `build`
+                hp = self.hyperparameters
+
             # Obtain unique trial ID to communicate with the oracle.
             trial_id = self._generate_trial_id()
             # Obtain hp value suggestions from the oracle.
@@ -247,8 +248,9 @@ class Tuner(object):
         """
         # Create a sample model from the hp configuration.
         # Note that this may add new entries to the search space.
+        static_hp = hp.copy()
         model = self._build_model(hp)
-        trial = trial_module.Trial(trial_id, hp, model, self.objective,
+        trial = trial_module.Trial(trial_id, static_hp, model, self.objective,
                                    tuner=self, cloudservice=self._cloudservice)
         self.trials.append(trial)
         for _ in range(self.executions_per_trial):

@@ -54,7 +54,7 @@ class Trial(object):
             # Create new model from the same hyperparameters.
             # Note that we use a copy of the hyperparameters
             # so we won't mutate them.
-            model = self.tuner._build_model(self.hyperparameters)
+            model = self.tuner._build_model(self.hyperparameters.copy())
         execution = execution_module.Execution(
             execution_id,
             model,
