@@ -27,15 +27,15 @@ def test_ultraband_oracle():
 
     for trial_id in range(oracle._model_sequence[2]):
         assert oracle.populate_space('2_' + str(trial_id), hp_list)['status'] == 'RUN'
+    assert oracle.populate_space('idle2', hp_list)['status'] == 'IDLE'
+    for trial_id in range(oracle._model_sequence[2]):
         oracle.result('2_' + str(trial_id), trial_id)
 
     for trial_id in range(oracle._model_sequence[0]):
-        assert oracle.populate_space('0_' + str(trial_id), hp_list)['status'] == 'RUN'
-
-    assert oracle.populate_space('idle2', hp_list)['status'] == 'IDLE'
-
+        assert oracle.populate_space('3_' + str(trial_id), hp_list)['status'] == 'RUN'
+    assert oracle.populate_space('idle3', hp_list)['status'] == 'IDLE'
     for trial_id in range(oracle._model_sequence[0]):
-        oracle.result('0_' + str(trial_id), trial_id)
+        oracle.result('3_' + str(trial_id), trial_id)
 
     assert oracle.populate_space('last', hp_list)['status'] == 'RUN'
     oracle.result('last', 0)

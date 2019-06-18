@@ -53,7 +53,8 @@ class UltraBand(oracle_module.Oracle):
             return self._run_values(space, trial_id)
 
         # check if the current batch ends
-        if self._bracket_index >= self._num_brackets:
+        if self._bracket_index >= self._num_brackets \
+                and not any([value for key, value in self._running.items()]):
             self._bracket_index = 0
 
         # check if the band ends
