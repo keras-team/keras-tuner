@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"Variation of HyperBand algorithm."
-
 
 from ..oracles import ultraband
 from ..engine import tuner as tuner_module
@@ -21,6 +19,7 @@ from ..engine import trial as trial_module
 
 
 class UltraBand(tuner_module.Tuner):
+    """Variation of HyperBand algorithm."""
 
     def __init__(self,
                  hypermodel,
