@@ -138,12 +138,13 @@ def test_override_compile(tmp_dir):
 
     tuner.results_summary()
 
-    execution = tuner.trials[0].executions[0]
-    assert execution.model.optimizer.__class__.__name__ == 'RMSprop'
-    assert execution.model.loss == 'sparse_categorical_crossentropy'
-    assert len(execution.model.metrics) == 2
-    assert execution.model.metrics[0]._fn.__name__ == 'mean_squared_error'
-    assert execution.model.metrics[1]._fn.__name__ == 'sparse_categorical_accuracy'
+    model = tuner._build_model(tuner.trials[0].hyperparameters)
+    tuner._compile_model(model)
+    assert model.optimizer.__class__.__name__ == 'RMSprop'
+    assert model.loss == 'sparse_categorical_crossentropy'
+    assert len(model.metrics) == 2
+    assert model.metrics[0]._fn.__name__ == 'mean_squared_error'
+    assert model.metrics[1]._fn.__name__ == 'sparse_categorical_accuracy'
 
 
 def test_static_space(tmp_dir):

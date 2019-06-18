@@ -68,6 +68,15 @@ class Oracle(object):
         """
         pass
 
+    def report_status(self, trial_id, status):
+        """Used by a worker to report the current status of a trial.
+
+        Args:
+            trial_id: A previously seen trial id.
+            status: String, one of "RUNNING", "CANCELLED"
+        """
+        raise NotImplementedError
+
     def save(self):
         raise NotImplementedError
 

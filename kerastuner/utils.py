@@ -34,21 +34,3 @@ def clear_tf_session():
         cfg = ConfigProto()
         cfg.gpu_options.allow_growth = True  # pylint: disable=no-member
         K.set_session(Session(config=cfg))
-
-
-def canonicalize_metric_name(name):
-    _METRIC_ALIASES = {"acc": "accuracy"}
-    VAL_PREFIX = "val_"
-
-    # Drop the val_, if applicable, temporarily
-    is_validation = False
-    if name.startswith(VAL_PREFIX):
-        name = name[len(VAL_PREFIX):]
-        is_validation = True
-
-    name = _METRIC_ALIASES.get(name, name)
-
-    if is_validation:
-        return "val_" + name
-    else:
-        return name

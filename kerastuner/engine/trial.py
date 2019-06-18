@@ -11,61 +11,35 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"Trial base class."
+"""Trial class."""
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import copy
+import os
 
-from . import execution as execution_module
 from . import metrics_tracking
 from ..abstractions import display
+from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 
 
 class Trial(object):
-    """Trial base class.
 
-    Not to be subclassed.
-    """
-
-    def __init__(self, trial_id, hyperparameters, model, objective,
-                 tuner=None, cloudservice=None):
+    def __init__(self,
+                 trial_id,
+                 hyperparameters,
+                 max_executions,
+                 base_directory='.'):
         self.trial_id = trial_id
-        self.executions = []
-        self.hyperparameters = hyperparameters.copy()
-        self.model = model
-        self.objective = objective
+        self.hyperparameters = hyperparameters
+        self.max_executions = max_executions
 
-        self.tuner = tuner
-        self.cloudservice = cloudservice
-
-        # Per-epoch metrics averages across all executions
         self.averaged_metrics = metrics_tracking.MetricsTracker()
-        self.score = None  # Score of the trial: best objective value achieved.
-
-    def run_execution(self, *fit_args, **fit_kwargs):
-        execution_id = str(len(self.executions))
-        if not self.executions:
-            # Use initial model.
-            model = self.model
-        else:
-            # Create new model from the same hyperparameters.
-            # Note that we use a copy of the hyperparameters
-            # so we won't mutate them.
-            model = self.tuner._build_model(self.hyperparameters.copy())
-        execution = execution_module.Execution(
-            execution_id,
-            model,
-            trial=self, tuner=self.tuner, cloudservice=self.cloudservice)
-        self.executions.append(execution)
-        execution.run(*fit_args, **fit_kwargs)
-
-        # Note that self.averaged_metrics is updated in a callback.
-
-        self.score = self.averaged_metrics.get_best_value(self.objective)
-        return execution
+        self.score = None
+        self.executions = []
+        self.directory = os.path.join(base_directory, 'trial_' + trial_id)
+        tf_utils.create_directory(self.directory)
 
     def summary(self):
         display.section('Trial summary')
@@ -78,8 +52,8 @@ class Trial(object):
         return {
             'trial_id': self.trial_id,
             'hyperparameters': self.hyperparameters.get_config(),
-            'model': self.model.get_config(),
-            'objective': self.objective,
+            'executions_seen': len(self.executions),
+            'max_executions': self.max_executions,
             'averaged_metrics': self.averaged_metrics.get_config(),
             'score': self.score
         }

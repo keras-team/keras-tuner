@@ -147,7 +147,7 @@ class Linear(HyperParameter):
 
     def random_sample(self, seed):
         random_state = random.Random(seed)
-        width = max_value - min_value
+        width = self.max_value - self.min_value
         value = self.min_value + float(random_state.random()) * width
         quantized_value = round(value / self.resolution) * self.resolution
         return quantized_value
