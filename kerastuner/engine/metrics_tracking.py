@@ -26,14 +26,16 @@ class MetricsTracker(object):
         self.names = []
         self.directions = {}
         self.metrics_history = {}
+        self.register_metrics(metrics)
 
+    def exists(self, name):
+        return name in self.names
+
+    def register_metrics(self, metrics=None):
         metrics = metrics or []
         for metric in metrics:
             direction = infer_metric_direction(metric)
             self.register(metric.name, direction)
-
-    def exists(self, name):
-        return name in self.names
 
     def register(self, name, direction=None):
         if direction is None:

@@ -43,7 +43,6 @@ class MonitorCallback(callbacks.Callback):
 
         self.last_refresh = -1
         self.refresh_interval = refresh_interval
-        self.thread_pool = ThreadPool(num_threads)
         self.epoch_history = defaultdict(list)
         self.training_complete = False  # important for the cloudservice
         self.num_threads = num_threads
@@ -67,10 +66,6 @@ class MonitorCallback(callbacks.Callback):
             improved = self.execution.per_epoch_metrics.update(name, value)
             name = utils.canonicalize_metric_name(name)
             if objective == name and improved:
-                # TODO - figure out the race condition that causes us to clear
-                # the session before we finish the writes when we try to
-                # apply_async here.
-                # self.thread_pool.apply_async(self._checkpoint_model)
                 self._checkpoint_model()
                 self._write_result_file()
 
@@ -116,12 +111,6 @@ class MonitorCallback(callbacks.Callback):
         self.training_complete = True
         self._report_status(force=True)
         self._write_result_file()
-        self._flush_thread_pool()
-
-    def _flush_thread_pool(self):
-        self.thread_pool.close()
-        self.thread_pool.join()
-        self.thread_pool = ThreadPool(self.num_threads)
 
     def _checkpoint_model(self):
         """Checkpoint model"""
@@ -171,11 +160,6 @@ class MonitorCallback(callbacks.Callback):
             return
         # FIXME: can we make it async?
         # self.thread_pool.apply_async(self._report_status_worker)
-        self._report_status_worker()
-        self.last_refresh = time.time()
-
-    def _report_status_worker(self):
-        """Report tuner status periodically."""
         # getting stats
         status = self._make_status()
 
@@ -191,6 +175,8 @@ class MonitorCallback(callbacks.Callback):
         # send status to cloudservice
         if self.cloudservice and self.cloudservice.enabled:
             self.cloudservice.send_status(status)
+
+        self.last_refresh = time.time()
 
     def _get_filename_prefix(self, with_execution_info=True):
         """Build dir/filename prefix based on the trial & execution."""
