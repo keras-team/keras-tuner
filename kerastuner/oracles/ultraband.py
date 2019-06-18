@@ -1,5 +1,5 @@
 import queue
-import numpy as np
+import random
 
 from ..engine import oracle as oracle_module
 
@@ -9,42 +9,51 @@ class UltraBand(oracle_module.Oracle):
 
     # Attributes:
         trails: An integer. The maximum number of trails allowed.
-        queue: An instance of Queue. The elements in the queue are values dictionaries. {name: value}
+        queue: An instance of Queue. The elements in the queue are neural network candidate indices.
 
     """
 
-    def __init__(self, trials):
+    def __init__(self,
+                 trials=200,
+                 seed=None,
+                 factor=3,
+                 min_epochs=3,
+                 max_epochs=10):
         super().__init__()
         self.trials = trials
         self.queue = queue.Queue()
-        self.during_batch = False
-        self._first_time = True
-        self._perf_record = {}
+        self.seed = seed or random.randint(1, 1e4)
         self._bracket_index = 0
         self._trials_count = 0
-        self.spaces = []
-        self._model_sequence = []
-        self.config = UltraBandConfig(budget=self.trials)
+        self._running = {}
+        self._trial_id_to_candidate_index = {}
+        self._candidates = None
+        self._candidate_score = None
+        self._max_collisions = 20
+        self._seed_state = self.seed
+        self._tried_so_far = set()
+        self._num_brackets = self._get_num_brackets(factor, min_epochs, max_epochs)
+        self._model_sequence = self._get_model_sequence(factor, min_epochs, max_epochs)
+        self._epoch_sequence = self._get_epoch_sequence(factor, min_epochs, max_epochs)
 
     def result(self, trial_id, score):
-        self._perf_record[trial_id] = score
-
-    def update_space(self, additional_hps):
-        pass
+        self._running[trial_id] = False
+        self._candidate_score[self._trial_id_to_candidate_index[trial_id]] = score
 
     def populate_space(self, trial_id, space):
-        if self._trials_count >= self.trials:
-            return 'EXIT', None
-        self._trials_count += 1
-        if self._trials_count == 1:
-            return 'RUN', self._default_values(space)
+        if self._trials_count >= self.trials \
+                and not any([value for key, value in self._running.items()]):
+            return {'status': 'EXIT'}
+        if self._trials_count == 0:
+            self._trials_count += 1
+            return {'status': 'RUN', 'values': self._default_values(space)}
 
         # queue not empty means it is in one bracket
         if not self.queue.empty():
-            return 'RUN', self._copy_values(space, self.queue.get())
+            return self._run_values(space, trial_id)
 
         # check if the current batch ends
-        if self._bracket_index >= self.config.num_brackets:
+        if self._bracket_index >= self._num_brackets:
             self._bracket_index = 0
 
         # check if the band ends
@@ -53,9 +62,22 @@ class UltraBand(oracle_module.Oracle):
             self._generate_candidates(space)
         else:
             # bracket ends
+            if any([value for key, value in self._running.items()]):
+                return {'status': 'IDLE'}
             self._select_candidates()
         self._bracket_index += 1
-        return 'RUN', self._copy_values(space, self.queue.get())
+
+        return self._run_values(space, trial_id)
+
+    def _run_values(self, space, trial_id):
+        self._trials_count += 1
+        self._running[trial_id] = True
+        candidate_index = self.queue.get()
+        candidate = self._candidates[candidate_index]
+        self._trial_id_to_candidate_index[trial_id] = candidate_index
+        if candidate is not None:
+            return {'status': 'RUN', 'values': self._copy_values(space, candidate)}
+        return {'status': 'EXIT'}
 
     @staticmethod
     def _copy_values(space, values):
@@ -68,16 +90,26 @@ class UltraBand(oracle_module.Oracle):
         return return_values
 
     def _generate_candidates(self, space):
-        self.spaces = []
+        self._candidates = []
+        self._candidate_score = []
+        num_models = self._model_sequence[0]
+
+        for index in range(num_models):
+            instance = self._new_instance(space)
+            if instance is not None:
+                self._candidates.append(instance)
+                self._candidate_score.append(None)
+
+        for index, instance in enumerate(self._candidates):
+            self.queue.put(index)
 
     def _select_candidates(self):
-        for values, _ in sorted(self._perf_record.items(),
-                                key=lambda key, value: value)[self._model_sequence[self._bracket_index]]:
-            self.queue.put(values)
-
-    def train(self, model, fit_args):
-        fit_args['epochs'] = None
-        model.fit(**fit_args)
+        for index in sorted(
+                list(range(len(self._candidates))),
+                key=lambda i: self._candidate_score[i],
+                reverse=True,
+        )[:self._model_sequence[self._bracket_index]]:
+            self.queue.put(index)
 
     @classmethod
     def load(cls, filename):
@@ -89,85 +121,66 @@ class UltraBand(oracle_module.Oracle):
     def _default_values(self, space):
         pass
 
+    def _new_instance(self, space):
+        """Fill a given hyperparameter space with values.
 
-class UltraBandConfig(object):
-    """The parameters in a UltraBand algorithm.
+        Args:
+            space: A list of HyperParameter objects
+                to provide values for.
 
-    # Attributes:
-        budget: An integer, the number of trials of the Oracle.
-    """
-    def __init__(self,
-                 factor=3,
-                 min_epochs=3,
-                 max_epochs=10,
-                 budget=200):
+        Returns:
+            A dictionary mapping parameter names to suggested values.
+            Note that if the Oracle is keeping tracking of a large
+            space, it may return values for more parameters
+            than what was listed in `space`.
+        """
+        self.update_space(space)
+        collisions = 0
+        while 1:
+            # Generate a set of random values.
+            values = {}
+            for p in space:
+                values[p.name] = p.random_sample(self._seed_state)
+                self._seed_state += 1
+            # Keep trying until the set of values is unique,
+            # or until we exit due to too many collisions.
+            values_hash = self._compute_values_hash(values)
+            if values_hash in self._tried_so_far:
+                collisions += 1
+                if collisions > self._max_collisions:
+                    return None
+                continue
+            self._tried_so_far.add(values_hash)
+            break
+        values['epochs'] = self._epoch_sequence[self._bracket_index]
+        return values
 
-        self.budget = budget
-        self.factor = factor
-        self.min_epochs = min_epochs
-        self.max_epochs = max_epochs
-        self.num_brackets = self.get_num_brackets()
-        self.model_sequence = self.get_model_sequence()
-        self.epoch_sequence = self.get_epoch_sequence()
-        self.delta_epoch_sequence = self.get_delta_epoch_sequence()
-
-        self.total_epochs_per_band = self.get_total_epochs_per_band()
-
-        self.num_batches = float(self.budget) / sum(self.model_sequence)
-        self.partial_batch_epoch_sequence = self.get_models_per_final_band()
-
-    def get_models_per_final_band(self):
-        remaining_budget = self.budget - \
-                           (int(self.num_batches) * self.total_epochs_per_band)
-        fraction = float(remaining_budget) / self.total_epochs_per_band
-        models_per_final_band = np.floor(
-            np.array(self.model_sequence) * fraction).astype(np.int32)
-
-        return models_per_final_band
-
-    def get_num_brackets(self):
-        """Compute the number of brackets based of the scaling factor"""
+    @staticmethod
+    def _get_num_brackets(factor, min_epochs, max_epochs):
+        """Compute the number of brackets based on the scaling factor"""
         n = 1
-        v = self.min_epochs
-        while v < self.max_epochs:
-            v *= self.factor
+        v = min_epochs
+        while v < max_epochs:
+            v *= factor
             n += 1
         return n
 
-    def get_epoch_sequence(self):
-        """Compute the sequence of epochs per bracket."""
+    def _get_model_sequence(self, factor, min_epochs, max_epochs):
         sizes = []
-        size = self.min_epochs
-        for _ in range(self.num_brackets - 1):
+        size = min_epochs
+        for _ in range(self._num_brackets - 1):
             sizes.append(int(size))
-            size *= self.factor
-        sizes.append(self.max_epochs)
-        return sizes
-
-    def get_delta_epoch_sequence(self):
-        """Compute the sequence of -additional- epochs per bracket.
-
-        This is the number of additional epochs to train, when a model moves
-        from the Nth bracket in a band to the N+1th."""
-        previous_size = 0
-        output_sizes = []
-        for size in self.epoch_sequence:
-            output_sizes.append(size - previous_size)
-            previous_size = size
-        return output_sizes
-
-    def get_model_sequence(self):
-        sizes = []
-        size = self.min_epochs
-        for _ in range(self.num_brackets - 1):
-            sizes.append(int(size))
-            size *= self.factor
-        sizes.append(self.max_epochs)
+            size *= factor
+        sizes.append(max_epochs)
         sizes.reverse()
         return sizes
 
-    def get_total_epochs_per_band(self):
-        epochs = 0
-        for e, m in zip(self.delta_epoch_sequence, self.model_sequence):
-            epochs += e * m
-        return epochs
+    def _get_epoch_sequence(self, factor, min_epochs, max_epochs):
+        """Compute the sequence of epochs per bracket."""
+        sizes = []
+        size = min_epochs
+        for _ in range(self._num_brackets - 1):
+            sizes.append(int(size))
+            size *= factor
+        sizes.append(max_epochs)
+        return sizes

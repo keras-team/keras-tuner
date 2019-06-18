@@ -40,7 +40,7 @@ class UltraBand(tuner_module.Tuner):
                                    tuner=self, cloudservice=self._cloudservice)
         self.trials.append(trial)
 
-        fit_kwargs['epochs'] = hp.values['tuner/epochs']
+        fit_kwargs['epochs'] = hp.values['epochs']
         for _ in range(self.executions_per_trial):
             execution = trial.run_execution(*fit_args, **fit_kwargs)
         return trial
