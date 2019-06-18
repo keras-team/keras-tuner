@@ -15,12 +15,12 @@
 from __future__ import absolute_import
 
 from .state import State
-from kerastuner.abstractions.host import Host
-from kerastuner.abstractions.display import fatal, subsection, warning
-from kerastuner.abstractions.display import display_settings, fatal
-from kerastuner.abstractions.tensorflow import TENSORFLOW as tf
-from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
-from kerastuner import config
+from ..abstractions.host import Host
+from ..abstractions.display import fatal, subsection, warning
+from ..abstractions.display import display_settings, fatal
+from ..abstractions.tensorflow import TENSORFLOW as tf
+from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
+from .. import config
 
 
 class Host(object):

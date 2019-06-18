@@ -134,7 +134,7 @@ class Linear(HyperParameter):
     """
 
     def __init__(self, name, min_value, max_value, resolution, default=None):
-        super(Logarithmic, self).__init__(name=name, default=default)
+        super(Linear, self).__init__(name=name, default=default)
         self.max_value = float(max_value)
         self.min_value = float(min_value)
         self.resolution = float(resolution)
@@ -147,13 +147,13 @@ class Linear(HyperParameter):
 
     def random_sample(self, seed):
         random_state = random.Random(seed)
-        width = max_value - min_value
+        width = self.max_value - self.min_value
         value = self.min_value + float(random_state.random()) * width
         quantized_value = round(value / self.resolution) * self.resolution
         return quantized_value
 
     def get_config(self):
-        config = super(Range, self).get_config()
+        config = super(Linear, self).get_config()
         config['min_value'] = self.min_value
         config['max_value'] = self.max_value
         config['resolution'] = self.resolution
@@ -223,7 +223,7 @@ class HyperParameters(object):
                                      'default': default})
 
     def Linear(self, name, min_value, max_value, resolution, default=None):
-        return self.retrieve(name, 'Range',
+        return self.retrieve(name, 'Linear',
                              config={'min_value': min_value,
                                      'max_value': max_value,
                                      'resolution': resolution,
