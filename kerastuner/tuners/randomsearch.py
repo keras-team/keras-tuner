@@ -12,10 +12,64 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"Basic randomsearch tuner"
+"Basic random search tuner."
 
-from ..oracles import randomsearch
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from ..engine import tuner as tuner_module
+from ..engine import oracle as oracle_module
+from ..engine import hyperparameters as hp_module
+
+import random
+
+
+class RandomSearchOracle(oracle_module.Oracle):
+
+    def __init__(self, seed=None):
+        super(RandomSearchOracle, self).__init__()
+        self.seed = seed or random.randint(1, 1e4)
+        # Incremented at every call to `populate_space`.
+        self._seed_state = self.seed
+        # Hashes of values tried so far.
+        self._tried_so_far = set()
+        # Maximum number of identical values that can be generated
+        # before we consider the space to be exhausted.
+        self._max_collisions = 5
+
+    def populate_space(self, trial_id, space):
+        """Fill a given hyperparameter space with values.
+
+        Args:
+            space: A list of HyperParameter objects
+                to provide values for.
+
+        Returns:
+            A dictionary mapping parameter names to suggested values.
+            Note that if the Oracle is keeping tracking of a large
+            space, it may return values for more parameters
+            than what was listed in `space`.
+        """
+        self.update_space(space)
+        collisions = 0
+        while 1:
+            # Generate a set of random values.
+            values = {}
+            for p in space:
+                values[p.name] = p.random_sample(self._seed_state)
+                self._seed_state += 1
+            # Keep trying until the set of values is unique,
+            # or until we exit due to too many collisions.
+            values_hash = self._compute_values_hash(values)
+            if values_hash in self._tried_so_far:
+                collisions += 1
+                if collisions > self._max_collisions:
+                    return {'status': 'EXIT'}
+                continue
+            self._tried_so_far.add(values_hash)
+            break
+        return {'values': values, 'status': 'RUN'}
 
 
 class RandomSearch(tuner_module.Tuner):
@@ -27,7 +81,7 @@ class RandomSearch(tuner_module.Tuner):
                  seed=None,
                  **kwargs):
         self.seed = seed
-        oracle = randomsearch.RandomSearch(seed)
+        oracle = RandomSearchOracle(seed)
         super(RandomSearch, self).__init__(
             oracle,
             hypermodel,

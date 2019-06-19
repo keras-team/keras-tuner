@@ -43,8 +43,11 @@ class Trial(object):
 
     def summary(self):
         display.section('Trial summary')
-        display.subsection('Hp values:')
-        display.display_settings(self.hyperparameters.values)
+        if self.hyperparameters.values:
+            display.subsection('Hp values:')
+            display.display_settings(self.hyperparameters.values)
+        else:
+            display.subsection('Hp values: default configuration.')
         if self.score:
             display.display_setting('Score: %.4f' % self.score)
 

@@ -313,12 +313,21 @@ class Tuner(object):
                 for execution in trial.executions:
                     histories.append(
                         execution.per_epoch_metrics.get_history(name))
-                if len(set(len(h) for h in histories)) != 1:
-                    raise ValueError(
-                        'Inconsistent metric history length '
-                        'across executions for %s' % (name,))
-                trial.averaged_metrics.set_history(
-                    name, list(np.average(histories, axis=0)))
+                # The length of the histories may not match
+                # if some executions ran for fewer epochs
+                # due to early stopping.
+                # We do an average of the available timesteps.
+                max_len = max(len(h) for h in histories)
+                avg_history = []
+                for i in range(max_len):
+                    tot = 0.
+                    num = 0
+                    for h in histories:
+                        if len(h) > i:
+                            tot += h[i]
+                            num += 1
+                    avg_history.append(tot / num)
+                trial.averaged_metrics.set_history(name, avg_history)
 
     def on_trial_end(self, trial):
         # Update tracker of best metrics on Tuner
