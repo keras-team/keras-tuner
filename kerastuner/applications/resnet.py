@@ -58,8 +58,8 @@ class HyperResnet(hypermodel.HyperModel):
         x = layers.Conv2D(
             64, 7, strides=2, use_bias=use_bias, name='conv1_conv')(x)
         if preact is False:
-            x = layers.BatchNormalization(axis=bn_axis, epsilon=1.001e-5,
-                                        name='conv1_bn')(x)
+            x = layers.BatchNormalization(
+                axis=bn_axis, epsilon=1.001e-5, name='conv1_bn')(x)
             x = layers.Activation('relu', name='conv1_relu')(x)
         x = layers.ZeroPadding2D(padding=((1, 1), (1, 1)), name='pool1_pad')(x)
         x = layers.MaxPooling2D(3, strides=2, name='pool1_pool')(x)
@@ -83,13 +83,14 @@ class HyperResnet(hypermodel.HyperModel):
 
         # Top of the model.
         if preact is True:
-            x = layers.BatchNormalization(axis=bn_axis, epsilon=1.001e-5,
-                                        name='post_bn')(x)
+            x = layers.BatchNormalization(
+                axis=bn_axis, epsilon=1.001e-5, name='post_bn')(x)
             x = layers.Activation('relu', name='post_relu')(x)
 
         if self.include_top:
             x = layers.GlobalAveragePooling2D(name='avg_pool')(x)
-            x = layers.Dense(self.num_classes, activation='softmax', name='probs')(x)
+            x = layers.Dense(
+                self.num_classes, activation='softmax', name='probs')(x)
         else:
             pooling = hp.Choice('pooling', ['avg', 'max'], default='avg')
             if pooling == 'avg':
@@ -99,9 +100,11 @@ class HyperResnet(hypermodel.HyperModel):
 
         model = keras.Model(inputs, x, name='Resnet')
 
-        optimizer_name = hp.Choice('optimizer', ['adam', 'rmsprop', 'sgd'], default='adam')
+        optimizer_name = hp.Choice(
+            'optimizer', ['adam', 'rmsprop', 'sgd'], default='adam')
         optimizer = keras.optimizers.get(optimizer_name)
-        optimizer.learning_rate = hp.Choice('learning_rate', [0.1, 0.01, 0.001], default=0.01)
+        optimizer.learning_rate = hp.Choice(
+            'learning_rate', [0.1, 0.01, 0.001], default=0.01)
         model.compile(
             optimizer=optimizer,
             loss='categorical_crossentropy',

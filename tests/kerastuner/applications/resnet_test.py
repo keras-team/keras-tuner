@@ -49,7 +49,8 @@ def test_hyperparameter_existence_and_defaults():
 
 def test_include_top_false():
     hp = hp_module.HyperParameters()
-    hypermodel = resnet.HyperResnet(input_shape=(256, 256, 3), num_classes=10, include_top=False)
+    hypermodel = resnet.HyperResnet(
+        input_shape=(256, 256, 3), num_classes=10, include_top=False)
     model = hypermodel.build(hp)
     assert hp.get('pooling') == 'avg'
 
