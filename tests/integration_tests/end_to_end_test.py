@@ -52,7 +52,7 @@ def test_end_to_end_workflow(tmp_dir):
     tuner = kerastuner.tuners.RandomSearch(
         build_model,
         objective='val_accuracy',
-        max_trials=15,
+        max_trials=20,
         directory=tmp_dir)
 
     tuner.search_space_summary()
