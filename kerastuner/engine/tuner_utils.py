@@ -135,7 +135,7 @@ class Display(object):
                               self.host.results_dir)
             # TODO: final summary
         else:
-            display.highlight('%d/%d trial budget left' %
+            display.highlight('%d/%d trials left' %
                               (remaining_trials, max_trials))
 
     def on_epoch_begin(self, execution, model, epoch, logs=None):

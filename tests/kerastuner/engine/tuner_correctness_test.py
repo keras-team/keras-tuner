@@ -13,3 +13,9 @@
 # limitations under the License.
 
 import pytest
+
+"""
+- test oversized models
+- test invalid models
+- test invalid oracle
+"""
