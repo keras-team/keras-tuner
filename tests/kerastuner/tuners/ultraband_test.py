@@ -35,7 +35,7 @@ def test_ultraband_oracle(tmp_dir):
                hp_module.Choice('c', [5, 6], default=5),
                hp_module.Choice('d', [7, 8], default=7),
                hp_module.Choice('e', [9, 0], default=9)]
-    oracle = UltraBandOracle(trials=34)
+    oracle = UltraBandOracle(max_trials=34)
     assert oracle._num_brackets == 3
 
     oracle.populate_space('x', [])

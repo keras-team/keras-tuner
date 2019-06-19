@@ -23,24 +23,32 @@ from ..engine import oracle as oracle_module
 
 
 class UltraBandOracle(oracle_module.Oracle):
-    """ Oracle class for UltraBand.
+    """Oracle class for UltraBand.
 
-    # Attributes:
-        trails: An integer. The maximum number of trails allowed.
-        queue: An instance of Queue. The elements in the queue are neural network candidate indices.
-
+        Args:
+        max_trials: Int. Total number of trials
+            (model configurations) to test at most.
+            Note that the oracle may interrupt the search
+            before `max_trial` models have been tested.
+        seed: Int. The random seed. If None, it would use a random number.
+        factor: Int. The factor of the change of number of epochs and the number of models per bracket.
+        min_epochs: Int. The minimum number of epochs to train a model.
+        max_epochs: Int. The maximum number of epochs to train a model.
     """
 
     def __init__(self,
-                 trials=200,
+                 max_trials=200,
                  seed=None,
                  factor=3,
                  min_epochs=3,
                  max_epochs=10):
         super().__init__()
-        self.trials = trials
-        self.queue = queue.Queue()
+        self.trials = max_trials
         self.seed = seed or random.randint(1, 1e4)
+        self.factor = factor
+        self.min_epochs = min_epochs
+        self.max_epochs = max_epochs
+        self._queue = queue.Queue()
         self._bracket_index = 0
         self._trials_count = 0
         self._running = {}
@@ -51,29 +59,29 @@ class UltraBandOracle(oracle_module.Oracle):
         self._seed_state = self.seed
         self._tried_so_far = set()
         self._index_to_id = {}
-        self._num_brackets = self._get_num_brackets(factor, min_epochs, max_epochs)
-        self._model_sequence = self._get_model_sequence(factor, min_epochs, max_epochs)
-        self._epoch_sequence = self._get_epoch_sequence(factor, min_epochs, max_epochs)
+        self._num_brackets = self._get_num_brackets()
+        self._model_sequence = self._get_model_sequence()
+        self._epoch_sequence = self._get_epoch_sequence()
 
     def result(self, trial_id, score):
         self._running[trial_id] = False
         self._candidate_score[self._trial_id_to_candidate_index[trial_id]] = score
 
     def populate_space(self, trial_id, space):
-        if self._trials_count >= self.trials \
-                and not any([value for key, value in self._running.items()]):
+        if (self._trials_count >= self.trials and
+                not any([value for key, value in self._running.items()])):
             return {'status': 'EXIT'}
         if self._trials_count == 0:
             self._trials_count += 1
             return {'status': 'RUN', 'values': self._copy_values(space, {})}
 
         # queue not empty means it is in one bracket
-        if not self.queue.empty():
+        if not self._queue.empty():
             return self._run_values(space, trial_id)
 
         # check if the current batch ends
-        if self._bracket_index >= self._num_brackets \
-                and not any([value for key, value in self._running.items()]):
+        if (self._bracket_index >= self._num_brackets and
+                not any([value for key, value in self._running.items()])):
             self._bracket_index = 0
 
         # check if the band ends
@@ -93,14 +101,14 @@ class UltraBandOracle(oracle_module.Oracle):
     def _run_values(self, space, trial_id):
         self._trials_count += 1
         self._running[trial_id] = True
-        candidate_index = self.queue.get()
+        candidate_index = self._queue.get()
         if candidate_index not in self._index_to_id:
             self._index_to_id[candidate_index] = trial_id
         candidate = self._candidates[candidate_index]
         self._trial_id_to_candidate_index[trial_id] = candidate_index
         if candidate is not None:
             values = self._copy_values(space, candidate)
-            values['trial_id'] = self._index_to_id[candidate_index]
+            values['tuner/trial_id'] = self._index_to_id[candidate_index]
             return {'status': 'RUN', 'values': values}
         return {'status': 'EXIT'}
 
@@ -120,13 +128,13 @@ class UltraBandOracle(oracle_module.Oracle):
         num_models = self._model_sequence[0]
 
         for index in range(num_models):
-            instance = self._new_instance(space)
+            instance = self._new_trial(space)
             if instance is not None:
                 self._candidates.append(instance)
                 self._candidate_score.append(None)
 
         for index, instance in enumerate(self._candidates):
-            self.queue.put(index)
+            self._queue.put(index)
 
     def _select_candidates(self):
         for index in sorted(
@@ -134,16 +142,9 @@ class UltraBandOracle(oracle_module.Oracle):
                 key=lambda i: self._candidate_score[i],
                 reverse=True,
         )[:self._model_sequence[self._bracket_index]]:
-            self.queue.put(index)
+            self._queue.put(index)
 
-    @classmethod
-    def load(cls, filename):
-        pass
-
-    def save(self):
-        pass
-
-    def _new_instance(self, space):
+    def _new_trial(self, space):
         """Fill a given hyperparameter space with values.
 
         Args:
@@ -174,37 +175,36 @@ class UltraBandOracle(oracle_module.Oracle):
                 continue
             self._tried_so_far.add(values_hash)
             break
-        values['epochs'] = self._epoch_sequence[self._bracket_index]
+        values['tuner/epochs'] = self._epoch_sequence[self._bracket_index]
         return values
 
-    @staticmethod
-    def _get_num_brackets(factor, min_epochs, max_epochs):
+    def _get_num_brackets(self):
         """Compute the number of brackets based on the scaling factor"""
         n = 1
-        v = min_epochs
-        while v < max_epochs:
-            v *= factor
+        v = self.min_epochs
+        while v < self.max_epochs:
+            v *= self.factor
             n += 1
         return n
 
-    def _get_model_sequence(self, factor, min_epochs, max_epochs):
+    def _get_model_sequence(self):
         sizes = []
-        size = min_epochs
+        size = self.min_epochs
         for _ in range(self._num_brackets - 1):
             sizes.append(int(size))
-            size *= factor
-        sizes.append(max_epochs)
+            size *= self.factor
+        sizes.append(self.max_epochs)
         sizes.reverse()
         return sizes
 
-    def _get_epoch_sequence(self, factor, min_epochs, max_epochs):
+    def _get_epoch_sequence(self):
         """Compute the sequence of epochs per bracket."""
         sizes = []
-        size = min_epochs
+        size = self.min_epochs
         for _ in range(self._num_brackets - 1):
             sizes.append(int(size))
-            size *= factor
-        sizes.append(max_epochs)
+            size *= self.factor
+        sizes.append(self.max_epochs)
 
         previous_size = 0
         output_sizes = []
@@ -215,14 +215,35 @@ class UltraBandOracle(oracle_module.Oracle):
 
 
 class UltraBand(tuner_module.Tuner):
-    """Variation of HyperBand algorithm."""
+    """Variation of HyperBand algorithm.
+
+    Args:
+        oracle: Instance of Oracle class.
+        hypermodel: Instnace of HyperModel class
+            (or callable that takes hyperparameters
+            and returns a Model isntance).
+        objective: String. Name of model metric to minimize
+            or maximize, e.g. "val_accuracy".
+        max_trials: Int. Total number of trials
+            (model configurations) to test at most.
+            Note that the oracle may interrupt the search
+            before `max_trial` models have been tested.
+        seed: Int. The random seed. If None, it would use a random number.
+        factor: Int. The factor of the change of number of epochs and the number of models per bracket.
+        min_epochs: Int. The minimum number of epochs to train a model.
+        max_epochs: Int. The maximum number of epochs to train a model.
+    """
 
     def __init__(self,
                  hypermodel,
                  objective,
                  max_trials,
+                 seed=None,
+                 factor=3,
+                 min_epochs=3,
+                 max_epochs=10,
                  **kwargs):
-        oracle = UltraBandOracle()
+        oracle = UltraBandOracle(seed, factor, min_epochs, max_epochs)
         super(UltraBand, self).__init__(
             oracle,
             hypermodel,
@@ -263,10 +284,10 @@ class UltraBand(tuner_module.Tuner):
             # `self.on_batch_begin`, `self.on_batch_end`.
             fit_kwargs['callbacks'] = self._inject_callbacks(
                 original_callbacks, trial, execution)
-            if 'epochs' in hp.values:
-                fit_kwargs['epochs'] = hp.values['epochs']
-            if 'trial_id' in hp.values:
-                history_trial = self._get_trial(hp.values['trial_id'])
+            if 'tuner/epochs' in hp.values:
+                fit_kwargs['epochs'] = hp.values['tuner/epochs']
+            if 'tuner/trial_id' in hp.values:
+                history_trial = self._get_trial(hp.values['tuner/trial_id'])
                 if history_trial.executions[0].best_checkpoint is not None:
                     best_checkpoint = history_trial.executions[0].best_checkpoint + '-weights.h5'
                     model.load_weights(best_checkpoint)
@@ -278,6 +299,15 @@ class UltraBand(tuner_module.Tuner):
             if temp_trial.trial_id == trial_id:
                 return temp_trial
 
-    def report_status(self, trial_id, status):
-        pass
+    @classmethod
+    def load(cls, filename):
+        # TODO
+        raise NotImplementedError
 
+    def save(self):
+        # TODO
+        raise NotImplementedError
+
+    def report_status(self, trial_id, status):
+        # TODO
+        raise NotImplementedError
