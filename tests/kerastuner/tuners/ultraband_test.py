@@ -47,19 +47,22 @@ def test_ultraband_oracle(tmp_dir):
         oracle.result(str(trial_id), trial_id)
 
     for trial_id in range(oracle._model_sequence[1]):
-        assert oracle.populate_space('1_' + str(trial_id), hp_list)['status'] == 'RUN'
+        assert oracle.populate_space('1_' + str(trial_id),
+                                     hp_list)['status'] == 'RUN'
     assert oracle.populate_space('idle1', hp_list)['status'] == 'IDLE'
     for trial_id in range(oracle._model_sequence[1]):
         oracle.result('1_' + str(trial_id), trial_id)
 
     for trial_id in range(oracle._model_sequence[2]):
-        assert oracle.populate_space('2_' + str(trial_id), hp_list)['status'] == 'RUN'
+        assert oracle.populate_space('2_' + str(trial_id),
+                                     hp_list)['status'] == 'RUN'
     assert oracle.populate_space('idle2', hp_list)['status'] == 'IDLE'
     for trial_id in range(oracle._model_sequence[2]):
         oracle.result('2_' + str(trial_id), trial_id)
 
     for trial_id in range(oracle._model_sequence[0]):
-        assert oracle.populate_space('3_' + str(trial_id), hp_list)['status'] == 'RUN'
+        assert oracle.populate_space('3_' + str(trial_id),
+                                     hp_list)['status'] == 'RUN'
     assert oracle.populate_space('idle3', hp_list)['status'] == 'IDLE'
     for trial_id in range(oracle._model_sequence[0]):
         oracle.result('3_' + str(trial_id), trial_id)
@@ -73,7 +76,8 @@ def build_model(hp):
     model = tf.keras.Sequential()
     model.add(tf.keras.layers.Flatten(input_shape=(2, 2)))
     for i in range(3):
-        model.add(tf.keras.layers.Dense(units=hp.Range('units_' + str(i), 2, 4, 2),
+        model.add(tf.keras.layers.Dense(units=hp.Range('units_' + str(i),
+                                                       2, 4, 2),
                                         activation='relu'))
     model.add(tf.keras.layers.Dense(2, activation='softmax'))
     model.compile(
@@ -100,7 +104,9 @@ class UltraBandStub(UltraBand):
         super().__init__(hypermodel, objective, max_trials, **kwargs)
         hp = hyperparameters.HyperParameters()
         trial = trial_module.Trial('1', hp, 5, base_directory=self.directory)
-        trial.executions = [execution_module.Execution('a', 'b', 1, 3, base_directory=self.directory)]
+        trial.executions = [
+            execution_module.Execution('a', 'b', 1, 3,
+                                       base_directory=self.directory)]
         trial.executions[0].best_checkpoint = 'x'
         self.trials = [trial]
 
@@ -128,7 +134,8 @@ def test_ultraband_tuner(patch_fit, patch_load, tmp_dir):
     trial_id = '1'
     hp.values['tuner/trial_id'] = trial_id
 
-    tuner.run_trial(trial_module.Trial(trial_id, hp, 5, base_directory=tmp_dir), hp, [],
-                    {'x': x, 'y': y, 'epochs': 1, 'validation_data': (val_x, val_y)})
+    tuner.run_trial(
+        trial_module.Trial(trial_id, hp, 5, base_directory=tmp_dir), hp, [],
+        {'x': x, 'y': y, 'epochs': 1, 'validation_data': (val_x, val_y)})
     assert patch_fit.called
     assert patch_load.called

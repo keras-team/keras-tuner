@@ -31,7 +31,8 @@ class UltraBandOracle(oracle_module.Oracle):
             Note that the oracle may interrupt the search
             before `max_trial` models have been tested.
         seed: Int. The random seed. If None, it would use a random number.
-        factor: Int. The factor of the change of number of epochs and the number of models per bracket.
+        factor: Int. The factor of the change of number of epochs
+            and the number of models per bracket.
         min_epochs: Int. The minimum number of epochs to train a model.
         max_epochs: Int. The maximum number of epochs to train a model.
     """
@@ -69,7 +70,8 @@ class UltraBandOracle(oracle_module.Oracle):
 
     def result(self, trial_id, score):
         self._running[trial_id] = False
-        self._candidate_score[self._trial_id_to_candidate_index[trial_id]] = score
+        self._candidate_score[
+            self._trial_id_to_candidate_index[trial_id]] = score
 
     def populate_space(self, trial_id, space):
         if (self._trials_count >= self.trials and
@@ -121,7 +123,8 @@ class UltraBandOracle(oracle_module.Oracle):
         return_values = {}
         for hyperparameter in space:
             if hyperparameter.name in values:
-                return_values[hyperparameter.name] = values[hyperparameter.name]
+                return_values[
+                    hyperparameter.name] = values[hyperparameter.name]
             else:
                 return_values[hyperparameter.name] = hyperparameter.default
         return return_values
@@ -233,7 +236,8 @@ class UltraBand(tuner_module.Tuner):
             Note that the oracle may interrupt the search
             before `max_trial` models have been tested.
         seed: Int. The random seed. If None, it would use a random number.
-        factor: Int. The factor of the change of number of epochs and the number of models per bracket.
+        factor: Int. The factor of the change of number of epochs
+            and the number of models per bracket.
         min_epochs: Int. The minimum number of epochs to train a model.
         max_epochs: Int. The maximum number of epochs to train a model.
     """
@@ -265,7 +269,8 @@ class UltraBand(tuner_module.Tuner):
         if 'tuner/trial_id' in hp.values:
             history_trial = self._get_trial(hp.values['tuner/trial_id'])
             if history_trial.executions[0].best_checkpoint is not None:
-                best_checkpoint = history_trial.executions[0].best_checkpoint + '-weights.h5'
+                best_checkpoint = \
+                    history_trial.executions[0].best_checkpoint + '-weights.h5'
                 model.load_weights(best_checkpoint)
 
     def run_trial(self, trial, hp, fit_args, fit_kwargs):
