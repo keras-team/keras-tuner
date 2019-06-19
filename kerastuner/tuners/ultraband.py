@@ -74,7 +74,7 @@ class UltraBand(tuner_module.Tuner):
             if 'trial_id' in hp.values:
                 history_trial = self._get_trial(hp.values['trial_id'])
                 if history_trial.executions[0].best_checkpoint is not None:
-                    best_checkpoint = trial.executions[0].best_checkpoint + '-weights.h5'
+                    best_checkpoint = history_trial.executions[0].best_checkpoint + '-weights.h5'
                     model.load_weights(best_checkpoint)
             model.fit(*fit_args, **fit_kwargs)
             self.on_execution_end(trial, execution, model)

@@ -11,10 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from unittest import mock
 
 import numpy as np
 import tensorflow as tf
 
+import kerastuner
+from kerastuner.engine import hyperparameters
+from kerastuner.engine import execution as execution_module
+from kerastuner.engine import trial as trial_module
 from kerastuner.tuners.ultraband import UltraBand
 
 
@@ -33,25 +38,50 @@ def build_model(hp):
     return model
 
 
-def test_ultraband_tuner():
-    x = np.random.rand(10, 2, 2).astype('float32')
-    y = np.random.randint(0, 1, (10, ))
-    val_x = np.random.rand(10, 2, 2).astype('float32')
-    val_y = np.random.randint(0, 1, (10, ))
+def mock_fit(**kwargs):
+    assert kwargs['epochs'] == 10
 
-    tuner = UltraBand(
+
+def mock_load(best_checkpoint):
+    assert best_checkpoint == 'x-weights.h5'
+
+
+class UltraBandStub(UltraBand):
+    def on_execution_end(self, trial, execution, model):
+        pass
+
+    def __init__(self, hypermodel, objective, max_trials, **kwargs):
+        super().__init__(hypermodel, objective, max_trials, **kwargs)
+        hp = hyperparameters.HyperParameters()
+        trial = trial_module.Trial('1', hp, 5)
+        trial.executions = [execution_module.Execution('a', 'b', 1, 3)]
+        trial.executions[0].best_checkpoint = 'x'
+        self.trials = [trial]
+
+
+@mock.patch('tensorflow.keras.Model.fit', side_effect=mock_fit)
+@mock.patch('tensorflow.keras.Model.load_weights', side_effect=mock_load)
+def test_ultraband_tuner(patch_fit, patch_load):
+    x = np.random.rand(10, 2, 2).astype('float32')
+    y = np.random.randint(0, 1, (10,))
+    val_x = np.random.rand(10, 2, 2).astype('float32')
+    val_y = np.random.randint(0, 1, (10,))
+
+    tuner = UltraBandStub(
         build_model,
         objective='val_accuracy',
         max_trials=15,
         executions_per_trial=3,
         directory='test_dir')
 
-    tuner.search_space_summary()
+    hp = hyperparameters.HyperParameters()
+    hp.values['epochs'] = 10
+    trial_id = '1'
+    hp.values['trial_id'] = trial_id
 
-    tuner.search(x=x,
-                 y=y,
-                 epochs=1,
-                 validation_data=(val_x, val_y))
-
-    tuner.results_summary()
-
+    tuner.run_trial(trial_module.Trial(trial_id, hp, 5), hp, [], {'x': x,
+                                                                  'y': y,
+                                                                  'epochs': 1,
+                                                                  'validation_data': (val_x, val_y)})
+    assert patch_fit.called
+    assert patch_load.called
