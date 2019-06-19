@@ -92,8 +92,8 @@ class UltraBandStub(UltraBand):
     def __init__(self, hypermodel, objective, max_trials, **kwargs):
         super().__init__(hypermodel, objective, max_trials, **kwargs)
         hp = hyperparameters.HyperParameters()
-        trial = trial_module.Trial('1', hp, 5)
-        trial.executions = [execution_module.Execution('a', 'b', 1, 3)]
+        trial = trial_module.Trial('1', hp, 5, base_directory='test_dir')
+        trial.executions = [execution_module.Execution('a', 'b', 1, 3, base_directory='test_dir')]
         trial.executions[0].best_checkpoint = 'x'
         self.trials = [trial]
 
