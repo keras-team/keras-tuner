@@ -69,7 +69,7 @@ def test_end_to_end_workflow(tmp_dir):
     best_model = tuner.get_best_models(1)[0]
 
     val_loss, val_acc = best_model.evaluate(val_x, val_y)
-    assert val_acc > 0.96
+    assert val_acc > 0.955
 
 
 if __name__ == '__main__':
