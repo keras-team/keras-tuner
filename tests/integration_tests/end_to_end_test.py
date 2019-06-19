@@ -30,12 +30,12 @@ def build_model(hp):
         x = keras.layers.Dense(
             units=hp.Range('units_' + str(i), 32, 512, 32, default=128),
             activation='relu')(x)
-    x = keras.layers.Dropout(hp.Linear('dp', 0., 0.7, 0.1, default=0.5))(x)
+    x = keras.layers.Dropout(hp.Linear('dp', 0., 0.6, 0.1, default=0.5))(x)
     outputs = keras.layers.Dense(10, activation='softmax')(x)
     model = keras.Model(inputs, outputs)
     model.compile(
         optimizer=keras.optimizers.Adam(
-            hp.Choice('learning_rate', [1e-2, 1e-3, 1e-4])),
+            hp.Choice('learning_rate', [1e-2, 2e-3, 5e-4])),
         loss='sparse_categorical_crossentropy',
         metrics=['accuracy'])
     return model
@@ -46,10 +46,13 @@ def test_end_to_end_workflow(tmp_dir):
     x = x.astype('float32') / 255.
     val_x = val_x.astype('float32') / 255.
 
+    x = x[:20000]
+    y = y[:20000]
+
     tuner = kerastuner.tuners.RandomSearch(
         build_model,
         objective='val_accuracy',
-        max_trials=20,
+        max_trials=15,
         executions_per_trial=2,
         directory=tmp_dir)
 
@@ -67,4 +70,8 @@ def test_end_to_end_workflow(tmp_dir):
     best_model = tuner.get_best_models(1)[0]
 
     val_loss, val_acc = best_model.evaluate(val_x, val_y)
-    assert val_acc > 0.98
+    assert val_acc > 0.97
+
+
+if __name__ == '__main__':
+    test_end_to_end_workflow('test_dir')
