@@ -182,7 +182,8 @@ class Display(object):
 
         self.cpu_usage.append(int(host_status['cpu']['usage']))
         description += '[CPU:%3s%%]' % int(np.average(self.cpu_usage))
-        description += 'Epoch %s/%s' % (execution.current_epoch, execution.max_epochs)
+        description += 'Epoch %s/%s' % (execution.current_epoch,
+                                        execution.max_epochs)
         self.epoch_pbar.set_description(description)
 
     def _avg_metrics(self, metrics):
