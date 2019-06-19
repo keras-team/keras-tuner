@@ -501,7 +501,7 @@ class Tuner(object):
         sorted_trials = sorted(trials,
                                key=lambda x: x.score,
                                reverse=direction == 'max')
-        return trials[:num_trials]
+        return sorted_trials[:num_trials]
 
     def _build_model(self, hp):
         """Return a never seen before model instance, compiled.
