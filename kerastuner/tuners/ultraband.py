@@ -13,12 +13,9 @@
 # limitations under the License.
 
 
-import copy
 import queue
 import random
 from ..engine import tuner as tuner_module
-from ..engine import execution as execution_module
-from ..engine import tuner_utils
 from ..engine import oracle as oracle_module
 
 
@@ -269,8 +266,8 @@ class UltraBand(tuner_module.Tuner):
         if 'tuner/trial_id' in hp.values:
             history_trial = self._get_trial(hp.values['tuner/trial_id'])
             if history_trial.executions[0].best_checkpoint is not None:
-                best_checkpoint = \
-                    history_trial.executions[0].best_checkpoint + '-weights.h5'
+                checkpoint_prefix = history_trial.executions[0].best_checkpoint
+                best_checkpoint = checkpoint_prefix + '-weights.h5'
                 model.load_weights(best_checkpoint)
 
     def run_trial(self, trial, hp, fit_args, fit_kwargs):
