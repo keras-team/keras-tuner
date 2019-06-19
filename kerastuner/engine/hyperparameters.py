@@ -57,8 +57,10 @@ class Choice(HyperParameter):
         name: Str. Name of parameter. Must be unique.
         values: List of possible values.
             Any serializable type is allowed.
-        default: Default value to return for the
-            parameter.
+        default: Default value to return for the parameter.
+            If unspecified, the default value will be:
+            - None if None is one of the choices in `values`
+            - The first entry in `values` otherwise.
     """
 
     def __init__(self, name, values, default=None):
@@ -66,12 +68,18 @@ class Choice(HyperParameter):
         if not values:
             raise ValueError('`values` must be provided.')
         self.values = values
+        if default is not None and default not in values:
+            raise ValueError(
+                'The default value should be one of the choices. '
+                'You passed: values=%s, default=%s' % (values, default))
 
     @property
     def default_value(self):
-        if self.default is not None:
-            return self.default
-        return self.values[0]
+        if self.default is None:
+            if None in self.values:
+                return None
+            return self.values[0]
+        return self.default
 
     def random_sample(self, seed=None):
         random_state = random.Random(seed)
@@ -91,8 +99,9 @@ class Range(HyperParameter):
         min_value: Int. Lower limit of range (included).
         max_value: Int. Upper limite of range (excluded).
         step: Int. Step of range.
-        default: Default value to return for the
-            parameter.
+        default: Default value to return for the parameter.
+            If unspecified, the default value will be
+            `min_value`.
     """
 
     def __init__(self, name, min_value, max_value, step=1, default=None):
@@ -129,8 +138,9 @@ class Linear(HyperParameter):
         max_value: Float. Upper bound of the range.
         resolution: Float, e.g. 0.1.
             smallest meaningful distance between two values.
-        default: Default value to return for the
-            parameter.
+        default: Default value to return for the parameter.
+            If unspecified, the default value will be
+            `min_value`.
     """
 
     def __init__(self, name, min_value, max_value, resolution, default=None):
@@ -145,7 +155,7 @@ class Linear(HyperParameter):
             return self.default
         return self.min_value
 
-    def random_sample(self, seed):
+    def random_sample(self, seed=None):
         random_state = random.Random(seed)
         width = self.max_value - self.min_value
         value = self.min_value + float(random_state.random()) * width
@@ -161,6 +171,13 @@ class Linear(HyperParameter):
 
 
 class Fixed(HyperParameter):
+    """Fixed, untunable value.
+
+    Args:
+        name: Str. Name of parameter. Must be unique.
+        value: Value to use (can be any JSON-serializable
+            Python type).
+    """
 
     def __init__(self, name, value):
         self.name = name
@@ -191,7 +208,8 @@ class HyperParameters(object):
 
     def retrieve(self, name, type, config):
         if name in self.values:
-            # TODO: type compatibility check.
+            # TODO: type compatibility check,
+            # or name collision check.
             return self.values[name]
         return self.register(name, type, config)
 
@@ -255,3 +273,9 @@ def deserialize(config):
     module_objects = globals()
     return keras.utils.deserialize_keras_object(
         config, module_objects=module_objects)
+
+
+HyperParameters.Choice.__doc__ == Choice.__doc__
+HyperParameters.Range.__doc__ == Range.__doc__
+HyperParameters.Linear.__doc__ == Linear.__doc__
+HyperParameters.Fixed.__doc__ == Fixed.__doc__
