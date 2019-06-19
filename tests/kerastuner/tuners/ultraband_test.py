@@ -15,6 +15,7 @@
 from unittest import mock
 
 import numpy as np
+import pytest
 import tensorflow as tf
 
 from kerastuner.engine import hyperparameters
@@ -23,7 +24,12 @@ from kerastuner.engine import hyperparameters as hp_module
 from kerastuner.tuners.ultraband import *
 
 
-def test_ultraband_oracle():
+@pytest.fixture(scope='module')
+def tmp_dir(tmpdir_factory):
+    return tmpdir_factory.mktemp('integration_test')
+
+
+def test_ultraband_oracle(tmp_dir):
     hp_list = [hp_module.Choice('a', [1, 2], default=1),
                hp_module.Choice('b', [3, 4], default=3),
                hp_module.Choice('c', [5, 6], default=5),
@@ -62,6 +68,7 @@ def test_ultraband_oracle():
     oracle.result('last', 0)
     assert oracle.populate_space('exit', hp_list)['status'] == 'EXIT'
 
+
 def build_model(hp):
     model = tf.keras.Sequential()
     model.add(tf.keras.layers.Flatten(input_shape=(2, 2)))
@@ -92,15 +99,15 @@ class UltraBandStub(UltraBand):
     def __init__(self, hypermodel, objective, max_trials, **kwargs):
         super().__init__(hypermodel, objective, max_trials, **kwargs)
         hp = hyperparameters.HyperParameters()
-        trial = trial_module.Trial('1', hp, 5, base_directory='test_dir')
-        trial.executions = [execution_module.Execution('a', 'b', 1, 3, base_directory='test_dir')]
+        trial = trial_module.Trial('1', hp, 5, base_directory=self.directory)
+        trial.executions = [execution_module.Execution('a', 'b', 1, 3, base_directory=self.directory)]
         trial.executions[0].best_checkpoint = 'x'
         self.trials = [trial]
 
 
 @mock.patch('tensorflow.keras.Model.fit', side_effect=mock_fit)
 @mock.patch('tensorflow.keras.Model.load_weights', side_effect=mock_load)
-def test_ultraband_tuner(patch_fit, patch_load):
+def test_ultraband_tuner(patch_fit, patch_load, tmp_dir):
     x = np.random.rand(10, 2, 2).astype('float32')
     y = np.random.randint(0, 1, (10,))
     val_x = np.random.rand(10, 2, 2).astype('float32')
@@ -111,16 +118,14 @@ def test_ultraband_tuner(patch_fit, patch_load):
         objective='val_accuracy',
         max_trials=15,
         executions_per_trial=3,
-        directory='test_dir')
+        directory=tmp_dir)
 
     hp = hyperparameters.HyperParameters()
     hp.values['epochs'] = 10
     trial_id = '1'
     hp.values['trial_id'] = trial_id
 
-    tuner.run_trial(trial_module.Trial(trial_id, hp, 5), hp, [], {'x': x,
-                                                                  'y': y,
-                                                                  'epochs': 1,
-                                                                  'validation_data': (val_x, val_y)})
+    tuner.run_trial(trial_module.Trial(trial_id, hp, 5, base_directory=tmp_dir), hp, [],
+                    {'x': x, 'y': y, 'epochs': 1, 'validation_data': (val_x, val_y)})
     assert patch_fit.called
     assert patch_load.called
