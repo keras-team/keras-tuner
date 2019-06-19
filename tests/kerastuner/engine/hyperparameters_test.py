@@ -13,3 +13,33 @@
 # limitations under the License.
 
 import pytest
+
+from kerastuner.engine import hyperparameters as hp_module
+
+
+def test_hyperparameters():
+    pass
+
+
+def test_base_hyperparameter():
+    pass
+
+
+def test_Choice():
+    pass
+
+
+def test_Linear():
+    pass
+
+
+def test_Range():
+    pass
+
+
+def test_Fixed():
+    pass
+
+
+def test_collision():
+    pass

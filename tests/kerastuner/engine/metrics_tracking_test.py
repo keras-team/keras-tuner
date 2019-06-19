@@ -13,3 +13,46 @@
 # limitations under the License.
 
 import pytest
+
+from kerastuner.engine import metrics_tracking
+
+
+def test_register_from_metrics():
+    # As well as direction inference.
+    pass
+
+
+def test_register():
+    pass
+
+
+def test_exists():
+    pass
+
+
+def test_update():
+    pass
+
+
+def test_get_history():
+    pass
+
+
+def test_set_history():
+    pass
+
+
+def test_get_best_value():
+    pass
+
+
+def test_get_statistics():
+    pass
+
+
+def test_get_last_value():
+    pass
+
+
+def test_serialization():
+    pass
