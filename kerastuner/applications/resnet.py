@@ -1,25 +1,117 @@
 # Copyright 2019 The Keras Tuner Authors
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     https://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Basic network blocks that are used by Tunable Resnet.
+"""Hypertunable version of Resnet."""
 
-This code is based on https://github.com/keras-team/keras-applications.
-"""
-
-from tensorflow.keras import backend
+import tensorflow.keras as keras
 from tensorflow.keras import layers
-from tensorflow.keras import models
+from tensorflow.keras import optimizers
+from tensorflow.keras import backend
+
+from kerastuner.engine import hypermodel
+
+
+class HyperResnet(hypermodel.HyperModel):
+    """A ResNet HyperModel."""
+
+    def __init__(self, input_shape, num_classes, include_top=True):
+        self.input_shape = input_shape
+        self.num_classes = num_classes
+        self.include_top = include_top
+
+    def build(self, hp):
+        version = hp.Choice('version', ['v1', 'v2', 'next'], default='v2')
+
+        # Version-conditional hyperparameters.
+        with hp.name_scope(version):
+            conv3_depth = hp.Choice(
+                'conv3_depth',
+                [4] if version == 'next' else [4, 8],
+                default=4)
+            conv4_depth = hp.Choice(
+                'conv4_depth',
+                [6, 23] if version == 'next' else [6, 23, 36],
+                default=6)
+
+        # Version-conditional fixed parameters
+        preact = True if version == 'v2' else False
+        use_bias = False if version == 'next' else True
+
+
+        # Model definition.
+        bn_axis = 3 if backend.image_data_format() == 'channels_last' else 1
+        inputs = layers.Input(shape=self.input_shape)
+        x = inputs
+
+        # Initial conv2d block.
+        x = layers.ZeroPadding2D(padding=((3, 3), (3, 3)), name='conv1_pad')(x)
+        x = layers.Conv2D(
+            64,
+            7,
+            strides=2,
+            use_bias=use_bias,
+            name='conv1_conv')(x)
+        if preact is False:
+            x = layers.BatchNormalization(axis=bn_axis, epsilon=1.001e-5,
+                                        name='conv1_bn')(x)
+            x = layers.Activation('relu', name='conv1_relu')(x)
+        x = layers.ZeroPadding2D(padding=((1, 1), (1, 1)), name='pool1_pad')(x)
+        x = layers.MaxPooling2D(3, strides=2, name='pool1_pool')(x)
+
+        # Middle hypertunable stack.
+        if version == 'v1':
+            x = stack1(x, 64, 3, stride1=1, name='conv2')
+            x = stack1(x, 128, conv3_depth, name='conv3')
+            x = stack1(x, 256, conv4_depth, name='conv4')
+            x = stack1(x, 512, 3, name='conv5')
+        elif version == 'v2':
+            x = stack2(x, 64, 3, name='conv2')
+            x = stack2(x, 128, conv3_depth, name='conv3')
+            x = stack2(x, 256, conv4_depth, name='conv4')
+            x = stack2(x, 512, 3, stride1=1, name='conv5')
+        elif version == 'next':
+            x = stack3(x, 64, 3, name='conv2')
+            x = stack3(x, 256, conv3_depth, name='conv3')
+            x = stack3(x, 512, conv4_depth, name='conv4')
+            x = stack3(x, 1024, 3, stride1=1, name='conv5')
+
+        # Top of the model.
+        if preact is True:
+            x = layers.BatchNormalization(axis=bn_axis, epsilon=1.001e-5,
+                                        name='post_bn')(x)
+            x = layers.Activation('relu', name='post_relu')(x)
+
+        if self.include_top:
+            x = layers.GlobalAveragePooling2D(name='avg_pool')(x)
+            x = layers.Dense(self.num_classes, activation='softmax', name='probs')(x)
+        else:
+            pooling = hp.Choice('pooling', ['avg', 'max'], default='avg')
+            if pooling == 'avg':
+                x = layers.GlobalAveragePooling2D(name='avg_pool')(x)
+            elif pooling == 'max':
+                x = layers.GlobalMaxPooling2D(name='max_pool')(x)
+
+        model = keras.Model(inputs, x, name='Resnet')
+
+        optimizer_name = hp.Choice('optimizer', ['adam', 'rmsprop', 'sgd'], default='adam')
+        optimizer = keras.optimizers.get(optimizer_name)
+        optimizer.learning_rate = hp.Choice('learning_rate', [0.1, 0.01, 0.001], default=0.01)
+        model.compile(
+            optimizer=optimizer,
+            loss='categorical_crossentropy',
+            metrics=['accuracy'])
+        return model
 
 
 def block1(x, filters, kernel_size=3, stride=1,
