@@ -17,29 +17,87 @@ import pytest
 from kerastuner.engine import hyperparameters as hp_module
 
 
-def test_hyperparameters():
-    pass
-
-
 def test_base_hyperparameter():
+    base_param = hp_module.HyperParameter(name='base', default=0)
+    assert base_param.name == 'base'
+    assert base_param.default_value == 0
+    assert base_param.get_config() == {'name': 'base', 'default': 0}
+    base_param = hp_module.HyperParameter.from_config(
+        base_param.get_config())
+    assert base_param.name == 'base'
+    assert base_param.default_value == 0
+
+
+def test_hyperparameters():
+    hp = hp_module.HyperParameters()
+    assert hp.values == {}
+    assert hp.space == []
+    hp.Choice('choice', [1, 2, 3], default=2)
+    assert hp.values == {'choice': 2}
+    assert len(hp.space) == 1
+    assert hp.space[0].name == 'choice'
+    hp.values['choice'] = 3
+    assert hp.get('choice') == 3
+    hp = hp.copy()
+    assert hp.values == {'choice': 3}
+    assert len(hp.space) == 1
+    assert hp.space[0].name == 'choice'
+    with pytest.raises(ValueError, match='Unknown parameter'):
+        hp.get('wrong')
+
+
+def test_name_collision():
+    # TODO: figure out how name collision checks
+    # should work.
     pass
 
 
 def test_Choice():
-    pass
+    choice = hp_module.Choice('choice', [1, 2, 3], default=2)
+    choice = hp_module.Choice.from_config(choice.get_config())
+    assert choice.default_value == 2
+    assert choice.random_sample() in [1, 2, 3]
+    assert choice.random_sample(123) == choice.random_sample(123)
+    # No default
+    choice = hp_module.Choice('choice', [1, 2, 3])
+    assert choice.default_value == 1
+    # None default
+    choice = hp_module.Choice('choice', [1, None, 3])
+    assert choice.default_value is None
+    with pytest.raises(ValueError, match='default value should be'):
+        choice = hp_module.Choice('choice', [1, 2, 3], default=4)
 
 
 def test_Linear():
-    pass
+    linear = hp_module.Linear(
+        'linear', min_value=0.5, max_value=9.5, resolution=0.1, default=9.)
+    linear = hp_module.Linear.from_config(linear.get_config())
+    assert linear.default_value == 9.
+    assert 0.5 <= linear.random_sample() < 9.5
+    assert isinstance(linear.random_sample(), float)
+    assert linear.random_sample(123) == linear.random_sample(123)
+    # No default
+    linear = hp_module.Linear(
+        'linear', min_value=0.5, max_value=9.5, resolution=0.1)
+    assert linear.default_value == 0.5
 
 
 def test_Range():
-    pass
+    rg = hp_module.Range(
+        'rg', min_value=5, max_value=9, step=1, default=6)
+    rg = hp_module.Range.from_config(rg.get_config())
+    assert rg.default_value == 6
+    assert 5 <= rg.random_sample() < 9
+    assert isinstance(rg.random_sample(), int)
+    assert rg.random_sample(123) == rg.random_sample(123)
+    # No default
+    rg = hp_module.Range(
+        'rg', min_value=5, max_value=9, step=1)
+    assert rg.default_value == 5
 
 
 def test_Fixed():
-    pass
-
-
-def test_collision():
-    pass
+    fixed = hp_module.Fixed('fixed', 'value')
+    fixed = hp_module.Fixed.from_config(fixed.get_config())
+    assert fixed.default_value == 'value'
+    assert fixed.random_sample() == 'value'
