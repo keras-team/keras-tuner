@@ -32,6 +32,7 @@ class UltraBand(oracle_module.Oracle):
         self._max_collisions = 20
         self._seed_state = self.seed
         self._tried_so_far = set()
+        self._index_to_id = {}
         self._num_brackets = self._get_num_brackets(factor, min_epochs, max_epochs)
         self._model_sequence = self._get_model_sequence(factor, min_epochs, max_epochs)
         self._epoch_sequence = self._get_epoch_sequence(factor, min_epochs, max_epochs)
@@ -46,7 +47,7 @@ class UltraBand(oracle_module.Oracle):
             return {'status': 'EXIT'}
         if self._trials_count == 0:
             self._trials_count += 1
-            return {'status': 'RUN', 'values': self._default_values(space)}
+            return {'status': 'RUN', 'values': self._copy_values(space, {})}
 
         # queue not empty means it is in one bracket
         if not self.queue.empty():
@@ -61,6 +62,7 @@ class UltraBand(oracle_module.Oracle):
         if self._bracket_index == 0:
             # band ends
             self._generate_candidates(space)
+            self._index_to_id = {}
         else:
             # bracket ends
             if any([value for key, value in self._running.items()]):
@@ -74,10 +76,14 @@ class UltraBand(oracle_module.Oracle):
         self._trials_count += 1
         self._running[trial_id] = True
         candidate_index = self.queue.get()
+        if candidate_index not in self._index_to_id:
+            self._index_to_id[candidate_index] = trial_id
         candidate = self._candidates[candidate_index]
         self._trial_id_to_candidate_index[trial_id] = candidate_index
         if candidate is not None:
-            return {'status': 'RUN', 'values': self._copy_values(space, candidate)}
+            values = self._copy_values(space, candidate)
+            values['trial_id'] = self._index_to_id[candidate_index]
+            return {'status': 'RUN', 'values': values}
         return {'status': 'EXIT'}
 
     @staticmethod
@@ -117,9 +123,6 @@ class UltraBand(oracle_module.Oracle):
         pass
 
     def save(self):
-        pass
-
-    def _default_values(self, space):
         pass
 
     def _new_instance(self, space):
@@ -184,4 +187,10 @@ class UltraBand(oracle_module.Oracle):
             sizes.append(int(size))
             size *= factor
         sizes.append(max_epochs)
-        return sizes
+
+        previous_size = 0
+        output_sizes = []
+        for size in sizes:
+            output_sizes.append(size - previous_size)
+            previous_size = size
+        return output_sizes
