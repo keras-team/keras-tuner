@@ -49,7 +49,6 @@ setup(
         "tqdm",
         "requests",
         "psutil",
-        "sklearn"
     ],
     packages=find_packages()
 )
