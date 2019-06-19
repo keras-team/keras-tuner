@@ -261,6 +261,9 @@ class Tuner(object):
         self._display.on_execution_begin(trial, execution, model)
 
     def on_epoch_begin(self, execution, model, epoch, logs=None):
+        # reset per-batch history for the this epoch
+        execution.per_batch_metrics = metrics_tracking.MetricsTracker(
+            model.metrics)
         self._display.on_epoch_begin(execution, model, epoch, logs=logs)
 
     def on_batch_begin(self, execution, model, batch, logs):
@@ -287,10 +290,6 @@ class Tuner(object):
                     base_directory=execution.directory)
                 execution.best_checkpoint = fname
 
-        # reset per-batch history for the next epoch
-        execution.per_batch_metrics = metrics_tracking.MetricsTracker(
-            model.metrics)
-
         # update status
         self._report_execution_status(execution, force=True)
         self._display.on_epoch_end(execution, model, epoch, logs=logs)
@@ -300,15 +299,17 @@ class Tuner(object):
         # Update tracker of averaged metrics on Trial
         if len(trial.executions) == 1:
             for name in execution.per_epoch_metrics.names:
-                direction = execution.per_epoch_metrics.directions[name]
                 if not trial.averaged_metrics.exists(name):
+                    direction = execution.per_epoch_metrics.directions[name]
                     trial.averaged_metrics.register(name, direction)
                 trial.averaged_metrics.set_history(
                     name, execution.per_epoch_metrics.get_history(name))
         else:
             # Need to average.
             for name in execution.per_epoch_metrics.names:
-                direction = execution.per_epoch_metrics.directions[name]
+                if not trial.averaged_metrics.exists(name):
+                    direction = execution.per_epoch_metrics.directions[name]
+                    trial.averaged_metrics.register(name, direction)
                 histories = []
                 for execution in trial.executions:
                     histories.append(
@@ -567,6 +568,13 @@ class Tuner(object):
 
     def _compile_model(self, model):
         if not model.optimizer:
+            if not self.optimizer:
+                raise ValueError(
+                    'The hypermodel returned a model '
+                    'that was not compiled. In this case, you '
+                    'should pass the arguments `optimizer`, `loss`, '
+                    'and `metrics` to the Tuner constructor, so '
+                    'that the Tuner will able to compile the model.')
             model.compile(
                 optimizer=self.optimizer, loss=self.loss, metrics=self.metrics)
         elif self.optimizer or self.loss or self.metrics:
@@ -654,7 +662,7 @@ class Tuner(object):
                                 export_type='keras')
         except:
             traceback.print_exc()
-            write_log('Checkpoint failed.')
+            display.write_log('Checkpoint failed.')
             exit(0)
         return base_filename
 

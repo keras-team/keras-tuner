@@ -54,7 +54,7 @@ def get_max_epochs_and_steps(fit_args, fit_kwargs):
     if fit_args:
         x = tf.nest.flatten(fit_args)[0]
     else:
-        x = tf.nest.flatten(fit_kwargs['x'])[0]
+        x = tf.nest.flatten(fit_kwargs.get('x'))[0]
     batch_size = fit_kwargs.get('batch_size', 32)
     if hasattr(x, '__len__'):
         max_steps = math.ceil(float(len(x)) / batch_size)
