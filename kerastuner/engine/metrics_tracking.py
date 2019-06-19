@@ -47,8 +47,8 @@ class MetricsTracker(object):
                 # TODO: raise warning
         if direction not in {'min', 'max'}:
             raise ValueError(
-                '`direction` should one of '
-                '{"min", "max", but got: %s' % (direction,))
+                '`direction` should be one of '
+                '{"min", "max"}, but got: %s' % (direction,))
         if name in self.names:
             raise ValueError('Metric already exists: %s' % (name,))
         self.names.append(name)
@@ -101,8 +101,8 @@ class MetricsTracker(object):
             'max': float(np.max(history)),
             'mean': float(np.mean(history)),
             'median': float(np.median(history)),
-            'variance': float(np.var(history)),
-            'stddev': float(np.std(history))
+            'var': float(np.var(history)),
+            'std': float(np.std(history))
         }
 
     def get_last_value(self, name):
