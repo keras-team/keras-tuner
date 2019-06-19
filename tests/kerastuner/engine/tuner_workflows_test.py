@@ -351,6 +351,7 @@ def test_reparameterized_space(tmp_dir):
 
     tuner = kerastuner.tuners.RandomSearch(
         build_model,
+        seed=1337,
         objective='val_accuracy',
         max_trials=4,
         directory=tmp_dir,
