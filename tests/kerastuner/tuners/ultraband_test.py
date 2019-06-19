@@ -117,13 +117,16 @@ def test_ultraband_tuner(patch_fit, patch_load, tmp_dir):
         build_model,
         objective='val_accuracy',
         max_trials=15,
+        factor=2,
+        min_epochs=1,
+        max_epochs=2,
         executions_per_trial=3,
         directory=tmp_dir)
 
     hp = hyperparameters.HyperParameters()
-    hp.values['epochs'] = 10
+    hp.values['tuner/epochs'] = 10
     trial_id = '1'
-    hp.values['trial_id'] = trial_id
+    hp.values['tuner/trial_id'] = trial_id
 
     tuner.run_trial(trial_module.Trial(trial_id, hp, 5, base_directory=tmp_dir), hp, [],
                     {'x': x, 'y': y, 'epochs': 1, 'validation_data': (val_x, val_y)})
