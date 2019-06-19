@@ -1,11 +1,11 @@
 # Copyright 2019 The Keras Tuner Authors
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     https://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,8 +24,12 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
 
-from kerastuner.applications.tunable_xception.blocks import sep_conv, conv, dense, residual
-from kerastuner.applications.tunable_xception.hparams import default_fixed_hparams, default_hparams
+from kerastuner.applications.tunable_xception.blocks import sep_conv
+from kerastuner.applications.tunable_xception.blocks import conv
+from kerastuner.applications.tunable_xception.blocks import dense
+from kerastuner.applications.tunable_xception.blocks import residual
+from kerastuner.applications.tunable_xception.hparams import default_fixed_hparams
+from kerastuner.applications.tunable_xception.hparams import default_hparams
 
 
 def TunableXception(input_shape, num_classes, **hparams):
@@ -75,7 +79,7 @@ def _xception(input_shape, num_classes, **hparams):
     if hparams:
         hp.update(hparams)
 
-    ### Parameters ###
+    # Parameters
 
     # [general]
     kernel_size = hp["kernel_size"]
@@ -100,7 +104,7 @@ def _xception(input_shape, num_classes, **hparams):
     dropout_rate = hp["dropout_rate"]
     dense_use_bn = hp["dense_use_bn"]
 
-    ### Model ###
+    # Model
     # input
     inputs = keras.Input(shape=input_shape)
     x = inputs
@@ -128,7 +132,8 @@ def _xception(input_shape, num_classes, **hparams):
 
     # Dense
     for _ in range(num_dense_layers):
-        x = dense(x, num_classes, activation=activation, batchnorm=dense_use_bn,
+        x = dense(x, num_classes, activation=activation,
+                  batchnorm=dense_use_bn,
                   dropout_rate=dropout_rate)
     output = layers.Dense(num_classes, activation='softmax')(x)
     model = keras.Model(inputs, output)

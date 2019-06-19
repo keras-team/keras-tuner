@@ -7,7 +7,7 @@ matrix:
         - python: 3.6
           env: TEST_MODE=PEP8
         - python: 3.6
-          env: TEST_MODE=tf2
+          env: TEST_MODE=TF2
 install:
   # code below is taken from http://conda.pydata.org/docs/travis.html
   # We do this conditionally because it saves us some downloading if the
@@ -37,7 +37,7 @@ script:
   - if [[ "$TEST_MODE" == "INTEGRATION_TESTS" ]]; then
       PYTHONPATH=$PWD:$PYTHONPATH py.test tests/integration_tests;
     elif [[ "$TEST_MODE" == "PEP8" ]]; then
-      PYTHONPATH=$PWD:$PYTHONPATH py.test --pep8 -m pep8 -n0;
+      PYTHONPATH=$PWD:$PYTHONPATH py.test kerastuner/ --pep8;
     else
       PYTHONPATH=$PWD:$PYTHONPATH py.test tests/kerastuner --cov-config .coveragerc --cov=kerastuner;
     fi
