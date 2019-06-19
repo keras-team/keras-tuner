@@ -1,11 +1,11 @@
 # Copyright 2019 The Keras Tuner Authors
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     https://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,7 +24,8 @@ from tensorflow.keras import backend
 
 from kerastuner.applications.tunable_resnet import blocks
 
-from kerastuner.applications.tunable_resnet.hparams import default_fixed_hparams, default_hparams
+from kerastuner.applications.tunable_resnet.hparams import default_fixed_hparams
+from kerastuner.applications.tunable_resnet.hparams import default_hparams
 
 
 def TunableResNet(input_shape, num_classes, **hparams):
@@ -77,7 +78,7 @@ def _resnet(input_shape, num_classes, include_top=True, **hparams):
     if hparams:
         hp.update(hparams)
 
-    ### Parameters ###
+    # Parameters
 
     # [General]
     version = hp["version"]
@@ -89,7 +90,7 @@ def _resnet(input_shape, num_classes, include_top=True, **hparams):
     conv3_depth = hp["conv3_depth"]
     conv4_depth = hp["conv4_depth"]
 
-    ### Model ###
+    # Model
 
     bn_axis = 3 if backend.image_data_format() == 'channels_last' else 1
     inputs = layers.Input(shape=input_shape)
