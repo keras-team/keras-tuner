@@ -14,8 +14,13 @@
 
 "Variation of HyperBand algorithm."
 
-from ...oracles import ultraband
 from ...engine import tuner as tuner_module
+from ...engine import oracle as oracle_module
+
+
+class UltraBandOracle(oracle_module.Oracle):
+    # TODO
+    pass
 
 
 class UltraBand(tuner_module.Tuner):
@@ -25,7 +30,7 @@ class UltraBand(tuner_module.Tuner):
                  objective,
                  max_trials,
                  **kwargs):
-        oracle = ultraband.UltraBand()
+        oracle = UltraBandOracle()
         super(UltraBand, self).__init__(
             oracle,
             hypermodel,
