@@ -48,7 +48,6 @@ class HyperResnet(hypermodel.HyperModel):
         preact = True if version == 'v2' else False
         use_bias = False if version == 'next' else True
 
-
         # Model definition.
         bn_axis = 3 if backend.image_data_format() == 'channels_last' else 1
         inputs = layers.Input(shape=self.input_shape)
@@ -57,11 +56,7 @@ class HyperResnet(hypermodel.HyperModel):
         # Initial conv2d block.
         x = layers.ZeroPadding2D(padding=((3, 3), (3, 3)), name='conv1_pad')(x)
         x = layers.Conv2D(
-            64,
-            7,
-            strides=2,
-            use_bias=use_bias,
-            name='conv1_conv')(x)
+            64, 7, strides=2, use_bias=use_bias, name='conv1_conv')(x)
         if preact is False:
             x = layers.BatchNormalization(axis=bn_axis, epsilon=1.001e-5,
                                         name='conv1_bn')(x)

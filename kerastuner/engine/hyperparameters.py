@@ -206,15 +206,15 @@ class HyperParameters(object):
     def __init__(self):
         self.space = []
         self.values = {}
-        self.name_scopes = []
+        self._name_scopes = []
 
     @contextlib.contextmanager
     def name_scope(self, name):
-        self.name_scopes.append(name)
+        self._name_scopes.append(name)
         try:
             yield
         finally:
-            self.name_scopes.pop()
+            self._name_scopes.pop()
 
     def retrieve(self, name, type, config):
         full_name = self._get_full_name(name)
@@ -280,7 +280,7 @@ class HyperParameters(object):
         return HyperParameters.from_config(self.get_config())
 
     def _get_full_name(self, name):
-        return '/'.join(self.name_scopes + [name])
+        return '/'.join(self._name_scopes + [name])
 
 
 def deserialize(config):
