@@ -1,11 +1,11 @@
 # Copyright 2019 The Keras Tuner Authors
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     https://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -59,11 +59,14 @@ def residual(x, num_filters,
     return x
 
 
-def conv(x, num_filters, kernel_size=(3, 3), activation='relu', strides=(2, 2)):
+def conv(x, num_filters,
+         kernel_size=(3, 3), activation='relu', strides=(2, 2)):
     "2d convolution block."
     if activation == 'selu':
-        x = layers.Conv2D(num_filters, kernel_size, strides=strides, activation='selu',
-                          padding='same', kernel_initializer='lecun_normal', bias_initializer='zeros')(x)
+        x = layers.Conv2D(num_filters, kernel_size,
+                          strides=strides, activation='selu',
+                          padding='same', kernel_initializer='lecun_normal',
+                          bias_initializer='zeros')(x)
     elif activation == 'relu':
         x = layers.Conv2D(num_filters, kernel_size,
                           strides=strides, padding='same', use_bias=False)(x)
@@ -78,7 +81,8 @@ def conv(x, num_filters, kernel_size=(3, 3), activation='relu', strides=(2, 2)):
 def dense(x, dims, activation='relu', batchnorm=True, dropout_rate=0):
     if activation == 'selu':
         x = layers.Dense(dims,  activation='selu',
-                         kernel_initializer='lecun_normal', bias_initializer='zeros')(x)
+                         kernel_initializer='lecun_normal',
+                         bias_initializer='zeros')(x)
         if dropout_rate:
             x = layers.AlphaDropout(dropout_rate)(x)
     elif activation == 'relu':

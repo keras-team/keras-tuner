@@ -1,5 +1,5 @@
 # Copyright 2019 The Keras Tuner Authors
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -68,7 +68,8 @@ class GFileProxy(object):
                filesystem errors.
 
         Raises:
-            errors.OpError: Propagates any errors reported by the FileSystem API.
+            errors.OpError: Propagates any errors
+                reported by the FileSystem API.
         """
 
     @abstractmethod
@@ -90,7 +91,8 @@ class GFileProxy(object):
             pattern: string or iterable of strings. The glob pattern(s).
 
         Returns:
-            A list of strings containing filenames that match the given pattern(s).
+            A list of strings containing filenames that
+                match the given pattern(s).
 
         Raises:
             errors.OpError: If there are filesystem / directory listing errors.
@@ -104,7 +106,8 @@ class GFileProxy(object):
             path: string, a path
 
         Raises:
-            errors.OpError: Propagates any errors reported by the FileSystem API.
+            errors.OpError: Propagates any errors reported
+                by the FileSystem API.
         """
 
     @abstractmethod
@@ -114,8 +117,8 @@ class GFileProxy(object):
         Args:
             src: string, name of the file whose contents need to be copied
             dst: string, name of the file to which to copy to
-            overwrite: boolean, if false its an error for newpath to be occupied
-                by an existing file.
+            overwrite: boolean, if false its an error for
+                newpath to be occupied by an existing file.
 
         Raises:
             errors.OpError: If the operation fails.
@@ -167,7 +170,6 @@ class UtilsBase(object):
         self.tf_proxy = tf_proxy
 
     def compute_model_size(self, model):
-        "Compute the size of a given model, in terms of the number of parameters."
         params = [self.tf_proxy.keras.backend.count_params(
             p) for p in set(model.trainable_weights)]
         return int(np.sum(params))
@@ -181,8 +183,8 @@ class UtilsBase(object):
         Args:
             loss - One of the following:
                 (str): Name of one of the loss functions known to Keras.
-                (Callable): A function or callable object. Must be registered as a
-                Keras loss.
+                (Callable): A function or callable object.
+                    Must be registered as a Keras loss.
                 (dict): A dictionary mapping output nodes to loss functions in
                     string or callable form. Loss functions must be represented
                     as a str or Callable, as above.
@@ -233,8 +235,7 @@ class UtilsBase(object):
             saved_model_path,
             output_graph_path,
             output_tensor_names):
-        """
-        Create a frozen version of the specified saved model.
+        """Create a frozen version of the specified saved model.
 
         This cannot be done in the main session, as the names will conflict
         with the existing model. Rather than resorting to manipulating
@@ -467,8 +468,8 @@ class UtilsBase(object):
         if not self.tf_proxy.io.gfile.exists(path):
             self.tf_proxy.io.gfile.makedirs(path)
 
-        # If it does exist, and remove_existing it specified, the directory will be
-        # removed and recreated.
+        # If it does exist, and remove_existing it specified,
+        # the directory will be removed and recreated.
         elif remove_existing:
             self.tf_proxy.io.gfile.rmtree(path)
             self.tf_proxy.io.gfile.makedirs(path)

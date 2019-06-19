@@ -26,9 +26,9 @@ def tmp_dir(tmpdir_factory):
 def build_model(hp):
     inputs = keras.Input(shape=(28, 28))
     x = keras.layers.Reshape((28 * 28,))(inputs)
-    for i in range(hp.Range('num_layers', 1, 3)):
+    for i in range(hp.Range('num_layers', 1, 4)):
         x = keras.layers.Dense(
-            units=hp.Range('units_' + str(i), 32, 512, 32, default=128),
+            units=hp.Range('units_' + str(i), 128, 512, 32, default=256),
             activation='relu')(x)
     x = keras.layers.Dropout(hp.Linear('dp', 0., 0.6, 0.1, default=0.5))(x)
     outputs = keras.layers.Dense(10, activation='softmax')(x)
@@ -46,14 +46,13 @@ def test_end_to_end_workflow(tmp_dir):
     x = x.astype('float32') / 255.
     val_x = val_x.astype('float32') / 255.
 
-    x = x[:20000]
-    y = y[:20000]
+    x = x[:10000]
+    y = y[:10000]
 
     tuner = kerastuner.tuners.RandomSearch(
         build_model,
         objective='val_accuracy',
-        max_trials=15,
-        executions_per_trial=2,
+        max_trials=20,
         directory=tmp_dir)
 
     tuner.search_space_summary()
@@ -70,7 +69,7 @@ def test_end_to_end_workflow(tmp_dir):
     best_model = tuner.get_best_models(1)[0]
 
     val_loss, val_acc = best_model.evaluate(val_x, val_y)
-    assert val_acc > 0.97
+    assert val_acc > 0.955
 
 
 if __name__ == '__main__':
