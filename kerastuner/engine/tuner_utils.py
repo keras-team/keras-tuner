@@ -159,7 +159,6 @@ class Display(object):
         # epoch bar
         self.epoch_pbar.set_postfix(final_epoch_postfix)
         self.epoch_pbar.close()
-        execution.current_epoch += 1
 
     def on_batch_end(self, execution, model, batch, logs=None):
         logs = logs or {}
@@ -182,7 +181,7 @@ class Display(object):
 
         self.cpu_usage.append(int(host_status['cpu']['usage']))
         description += '[CPU:%3s%%]' % int(np.average(self.cpu_usage))
-        description += 'Epoch %s/%s' % (execution.current_epoch,
+        description += 'Epoch %s/%s' % (execution.epochs_seen + 1,
                                         execution.max_epochs)
         self.epoch_pbar.set_description(description)
 

@@ -193,7 +193,7 @@ class Tuner(object):
         self._log_file = os.path.join(self._host.results_dir, log_name)
 
         # Populate initial search space
-        if self.tune_new_entries:
+        if not self.hyperparameters.space and self.tune_new_entries:
             self._build_model(self.hyperparameters)
 
     def search(self, *fit_args, **fit_kwargs):
@@ -277,7 +277,7 @@ class Tuner(object):
         logs = logs or {}
         for name, value in logs.items():
             execution.per_batch_metrics.update(name, float(value))
-        self._report_execution_status(execution)
+        self._checkpoint_execution(execution)
         self._display.on_batch_end(execution, model, batch, logs=logs)
 
     def on_epoch_end(self, execution, model, epoch, logs=None):
@@ -295,7 +295,7 @@ class Tuner(object):
                 execution.best_checkpoint = fname
 
         # update status
-        self._report_execution_status(execution, force=True)
+        self._checkpoint_execution(execution, force=True)
         self._display.on_epoch_end(execution, model, epoch, logs=logs)
 
     def on_execution_end(self, trial, execution, model):
@@ -344,7 +344,7 @@ class Tuner(object):
                 name, trial.averaged_metrics.get_best_value(name))
         trial.score = trial.averaged_metrics.get_best_value(self.objective)
 
-        self._report_trial_status(trial)
+        self._checkpoint_trial(trial)
         self._display.on_trial_end(
             trial.averaged_metrics,
             self.best_metrics,
@@ -470,6 +470,25 @@ class Tuner(object):
     @property
     def remaining_trials(self):
         return self.max_trials - len(self.trials)
+
+    def save(self):
+        # TODO
+        state = {
+            'oracle': self.oracle.save(),
+            'best_metrics': self.best_metrics.get_config(),
+            'trials': [t.save() for t in self.trials],
+        }
+
+    def reload(cls, directory=None):
+        """Populate `self.trials` and `self.oracle` state.
+
+        Args:
+            directory: String. Where to load
+                trials from. Defaults to `self.directory`.
+        """
+        # TODO
+        if directory is None:
+            directory = self.directory
 
     def _call_oracle(self, trial_id):
         if not self.tune_new_entries:
@@ -670,19 +689,16 @@ class Tuner(object):
             exit(0)
         return base_filename
 
-    def _report_trial_status(self, trial):
+    def _checkpoint_trial(self, trial):
         # Write trial status to trial directory
-        status = trial.get_status()
-        status_json = json.dumps(status)
-        fname = os.path.join(trial.directory, 'trial_status.json')
-        tf_utils.write_file(fname, status_json)
-
+        trial.save()
         # Send status to cloudservice
         if self._cloudservice and self._cloudservice.enabled:
             # TODO
+            state = trial.get_state()
             self._cloudservice.send_trial_status(status)
 
-    def _report_execution_status(self, execution, force=False):
+    def _checkpoint_execution(self, execution, force=False):
         refresh_interval = 30
         if hasattr(self, '_last_execution_status_refresh'):
             elapsed = int(time.time()) - self._last_execution_status_refresh
@@ -691,12 +707,9 @@ class Tuner(object):
             self._last_execution_status_refresh = int(time.time())
 
         # Write execution status to execution directory
-        status = execution.get_status()
-        status_json = json.dumps(status)
-        fname = os.path.join(execution.directory, 'execution_status.json')
-        tf_utils.write_file(fname, status_json)
-
+        execution.save()
         # Send status to cloudservice
         if self._cloudservice and self._cloudservice.enabled:
             # TODO
-            self._cloudservice.send_execution_status(status)
+            state = execution.get_state()
+            self._cloudservice.send_execution_status(state)
