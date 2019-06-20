@@ -23,18 +23,18 @@ class HyperbandOracle(oracle_module.Oracle):
     """Oracle class for Hyperband.
 
     Args:
-        seed: Int. The random seed. If None, it would use a random number.
-        factor: Int. The factor of the change of number of epochs
-            and the number of models per bracket.
+        factor: Int. Reduction factor for the number of epochs
+            and number of models for each bracket.
         min_epochs: Int. The minimum number of epochs to train a model.
         max_epochs: Int. The maximum number of epochs to train a model.
+        seed: Int. Random seed.
     """
 
     def __init__(self,
-                 seed=None,
                  factor=3,
                  min_epochs=3,
-                 max_epochs=10):
+                 max_epochs=10,
+                 seed=None):
         super(HyperbandOracle, self).__init__()
         if min_epochs >= max_epochs:
             raise ValueError('max_epochs needs to be larger than min_epochs.')
@@ -225,15 +225,17 @@ class HyperbandOracle(oracle_module.Oracle):
 class Hyperband(tuner_module.Tuner):
     """Variation of HyperBand algorithm.
 
-    An implementation of the following paper.
-    Li, Lisha, and Kevin Jamieson.
-    "Hyperband: A Novel Bandit-Based Approach to Hyperparameter Optimization."
-    Journal of Machine Learning Research 18 (2018): 1-52.
-    http://jmlr.org/papers/v18/16-558.html
+    Reference:
+        Li, Lisha, and Kevin Jamieson.
+        ["Hyperband: A Novel Bandit-Based
+         Approach to Hyperparameter Optimization."
+        Journal of Machine Learning Research 18 (2018): 1-52](
+            http://jmlr.org/papers/v18/16-558.html).
+
 
     Args:
         oracle: Instance of Oracle class.
-        hypermodel: Instnace of HyperModel class
+        hypermodel: Instance of HyperModel class
             (or callable that takes hyperparameters
             and returns a Model isntance).
         objective: String. Name of model metric to minimize
@@ -242,21 +244,21 @@ class Hyperband(tuner_module.Tuner):
             (model configurations) to test at most.
             Note that the oracle may interrupt the search
             before `max_trial` models have been tested.
-        seed: Int. The random seed. If None, it would use a random number.
-        factor: Int. The factor of the change of number of epochs
-            and the number of models per bracket.
-        min_epochs: Int. The minimum number of epochs to train a model.
-        max_epochs: Int. The maximum number of epochs to train a model.
+        factor: Int. Reduction factor for the number of epochs
+            and number of models for each bracket.
+        min_epochs: Int. Minimum number of epochs to train a model.
+        max_epochs: Int. Maximum number of epochs to train a model.
+        seed: Int. Random seed.
     """
 
     def __init__(self,
                  hypermodel,
                  objective,
                  max_trials,
-                 seed=None,
                  factor=3,
                  min_epochs=3,
                  max_epochs=10,
+                 seed=None,
                  **kwargs):
         oracle = HyperbandOracle(seed=seed,
                                  factor=factor,
