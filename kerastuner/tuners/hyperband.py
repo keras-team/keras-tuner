@@ -92,7 +92,7 @@ class HyperbandOracle(oracle_module.Oracle):
         # check if the band ends
         if self._bracket_index == 0:
             # band ends
-            self._generate_candidates()
+            self._generate_candidates(space)
             self._index_to_id = {}
         else:
             # bracket ends
