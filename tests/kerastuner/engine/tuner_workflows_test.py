@@ -84,8 +84,8 @@ def test_basic_tuner_attributes(tmp_dir):
     assert tuner.executions_per_trial == 3
     assert tuner.directory == tmp_dir
     assert tuner.hypermodel.__class__.__name__ == 'DefaultHyperModel'
-    assert len(tuner.hyperparameters.space) == 0
-    assert len(tuner.hyperparameters.values) == 0
+    assert len(tuner.hyperparameters.space) == 3  # default search space
+    assert len(tuner.hyperparameters.values) == 3  # default search space
 
     tuner.search_space_summary()
 
@@ -305,6 +305,10 @@ def test_restricted_space_using_defaults(tmp_dir):
         tune_new_entries=False)
 
     assert len(tuner.hyperparameters.space) == 2
+    new_lr = [p for p in tuner.hyperparameters.space
+              if p.name == 'learning_rate'][0]
+    assert new_lr.values == [0.01, 0.001, 0.0001]
+
     tuner.search(
         x=TRAIN_INPUTS,
         y=TRAIN_TARGETS,
@@ -359,7 +363,7 @@ def test_reparameterized_space(tmp_dir):
         allow_new_entries=True,
         tune_new_entries=True)
 
-    assert len(tuner.hyperparameters.space) == 2
+    assert len(tuner.hyperparameters.space) == 4
     tuner.search(
         x=TRAIN_INPUTS,
         y=TRAIN_TARGETS,

@@ -192,6 +192,10 @@ class Tuner(object):
         log_name = '%s-%d.log' % (self.project_name, self._start_time)
         self._log_file = os.path.join(self._host.results_dir, log_name)
 
+        # Populate initial search space
+        if self.tune_new_entries:
+            self._build_model(self.hyperparameters)
+
     def search(self, *fit_args, **fit_kwargs):
         self.on_search_begin()
         for _ in range(self.max_trials):
@@ -394,7 +398,7 @@ class Tuner(object):
         """
         display.section('Search space summary')
         hp = self.hyperparameters.copy()
-        if self.allow_new_entries:
+        if not hp.space and self.tune_new_entries:
             # Attempt to populate the space
             # if it is expected to be dynamic.
             self.hypermodel.build(hp)

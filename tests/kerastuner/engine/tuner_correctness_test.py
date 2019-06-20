@@ -106,7 +106,9 @@ class MockHyperModel(kerastuner.HyperModel):
     mode_1_execution = [[13, 13, 13], [12, 12, 12], [11, 11, 11]]
 
     def __init__(self):
-        self.mode_0_execution_count = 0
+        # The first call to `build` in tuner __init__
+        # will reset this to 0
+        self.mode_0_execution_count = -1
 
     def build(self, hp):
         if hp.Choice('mode', [0, 1]) == 0:
@@ -118,13 +120,14 @@ class MockHyperModel(kerastuner.HyperModel):
         return MockModel(self.mode_1_execution)
 
 
-def test_tuning_correctness():
+def test_tuning_correctness(tmp_dir):
     tuner = kerastuner.RandomSearch(
         seed=1337,
         hypermodel=MockHyperModel(),
         max_trials=2,
         objective='loss',
         executions_per_trial=2,
+        directory=tmp_dir,
     )
     tuner.search()
     assert len(tuner.trials) == 2
@@ -163,7 +166,7 @@ def test_tuning_correctness():
     assert first_trial.averaged_metrics.metrics_history['loss'] == m0_epochs
 
 
-def test_tuner_errors():
+def test_tuner_errors(tmp_dir):
     # invalid oracle
     with pytest.raises(
             ValueError,
@@ -172,7 +175,8 @@ def test_tuner_errors():
             oracle='invalid',
             hypermodel=build_model,
             objective='val_accuracy',
-            max_trials=3)
+            max_trials=3,
+            directory=tmp_dir)
     # invalid hypermodel
     with pytest.raises(
             ValueError,
@@ -181,7 +185,8 @@ def test_tuner_errors():
             oracle=kerastuner.tuners.randomsearch.RandomSearchOracle(),
             hypermodel='build_model',
             objective='val_accuracy',
-            max_trials=3)
+            max_trials=3,
+            directory=tmp_dir)
     # oversize model
     with pytest.raises(
             RuntimeError,
@@ -191,7 +196,8 @@ def test_tuner_errors():
             hypermodel=build_model,
             objective='val_accuracy',
             max_trials=3,
-            max_model_size=4)
+            max_model_size=4,
+            directory=tmp_dir)
         tuner.search(TRAIN_INPUTS, TRAIN_TARGETS,
                      validation_data=(VAL_INPUTS, VAL_TARGETS))
     # TODO: test no optimizer
