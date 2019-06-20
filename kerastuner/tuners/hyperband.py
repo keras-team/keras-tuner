@@ -102,18 +102,16 @@ class HyperbandOracle(oracle_module.Oracle):
         self._trial_id_to_candidate_index[trial_id] = candidate_index
         if candidate is not None:
             values = self._copy_values(space, candidate)
-            values['tuner/trial_id'] = self._index_to_id[candidate_index]
+            if trial_id != self._index_to_id[candidate_index]:
+                values['tuner/trial_id'] = self._index_to_id[candidate_index]
             return {'status': 'RUN', 'values': values}
         return {'status': 'EXIT'}
 
     @staticmethod
     def _copy_values(space, values):
-        return_values = {}
+        return_values = values.copy()
         for hyperparameter in space:
-            if hyperparameter.name in values:
-                return_values[
-                    hyperparameter.name] = values[hyperparameter.name]
-            else:
+            if hyperparameter.name not in values:
                 return_values[hyperparameter.name] = hyperparameter.default
         return return_values
 
@@ -138,6 +136,8 @@ class HyperbandOracle(oracle_module.Oracle):
         num_selected_candidates = self._model_sequence[self._bracket_index]
         for index in sorted_candidates[:num_selected_candidates]:
             self._queue.put(index)
+            self._candidates[index]['tuner/epochs'] = self._epoch_sequence[
+                self._bracket_index]
 
     def _new_trial(self, space):
         """Fill a given hyperparameter space with values.
