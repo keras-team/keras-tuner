@@ -48,7 +48,7 @@ class Tuner(object):
 
     Args:
         oracle: Instance of Oracle class.
-        hypermodel: Instnace of HyperModel class
+        hypermodel: Instance of HyperModel class
             (or callable that takes hyperparameters
             and returns a Model isntance).
         objective: String. Name of model metric to minimize
