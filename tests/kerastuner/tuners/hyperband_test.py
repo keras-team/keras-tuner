@@ -40,6 +40,8 @@ def test_hyperband_oracle(tmp_dir):
     assert oracle._num_brackets == 3
 
     oracle.populate_space('x', [])
+    oracle.result('x', 0)
+    oracle.update_space(hp_list)
 
     for trial_id in range(oracle._model_sequence[0]):
         hp = oracle.populate_space('0_' + str(trial_id), hp_list)
