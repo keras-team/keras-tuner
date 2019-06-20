@@ -49,6 +49,14 @@ class TunerStats(object):
             'num_oversized_models': self.num_oversized_models
         }
 
+    @classmethod
+    def from_config(cls, config):
+        stats = cls()
+        stats.config['num_generated_models']
+        stats.config['num_invalid_models']
+        stats.config['num_oversized_models']
+        return stats
+
 
 def get_max_epochs_and_steps(fit_args, fit_kwargs):
     if fit_args:

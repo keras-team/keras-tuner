@@ -165,6 +165,8 @@ class Tuner(object):
         # Ops and metadata
         self.directory = directory or '.'
         self.project_name = project_name or 'untitled_project'
+        tf_utils.create_directory(
+            os.path.join(self.directory, self.project_name))
 
         # Public internal state
         self.trials = []
@@ -173,10 +175,7 @@ class Tuner(object):
         self._max_fail_streak = 5
         self._cloudservice = cloudservice_module.CloudService()
         self._stats = tuner_utils.TunerStats()
-        self._best_metrics = None
-        self._best_trial = None
-        self._start_time = int(time.time())
-        self._num_executions = 0
+        self.start_time = int(time.time())
 
         # Track history of best values per metric
         # (one timestep per trial).
@@ -189,8 +188,6 @@ class Tuner(object):
             export_dir=os.path.join(self.directory, 'export')
         )
         self._display = tuner_utils.Display(self._host)
-        log_name = '%s-%d.log' % (self.project_name, self._start_time)
-        self._log_file = os.path.join(self._host.results_dir, log_name)
 
         # Populate initial search space
         if not self.hyperparameters.space and self.tune_new_entries:
@@ -345,6 +342,7 @@ class Tuner(object):
         trial.score = trial.averaged_metrics.get_best_value(self.objective)
 
         self._checkpoint_trial(trial)
+        self._checkpoint_tuner()
         self._display.on_trial_end(
             trial.averaged_metrics,
             self.best_metrics,
@@ -442,53 +440,67 @@ class Tuner(object):
         """
         self.cloudservice.enable(api_key, url)
 
-    def get_status(self):
-        config = {
-            'project_name': self.project_name,
-            'objective': self.objective,
-            'start_time': self._start_time,
-            'max_trials': self.max_trials,
-            'executions_per_trial': self.executions_per_trial,
-            'eta': self._eta,
-            'remaining_trials': self.remaining_trials,
-        }
-
-        config['stats'] = self._stats.get_config()
-        config['host'] = self._host.get_config()
-        config['metrics'] = {}
-
-        best_trials = self._get_best_trials(1)
-        if best_trials:
-            config['aggregate_metrics'] = self.best_metrics.get_config()
-            best_trial = best_trials[0]
-            config['best_trial'] = best_trial.get_status()
-        else:
-            config['aggregate_metrics'] = []
-            config['best_trial'] = None
-        return config
-
     @property
     def remaining_trials(self):
         return self.max_trials - len(self.trials)
 
-    def save(self):
-        # TODO
+    def get_state(self):
+        try:
+            oracle_fname = os.path.join(
+                self.directory, self.project_name, 'oracle.json')
+            self.oracle.save(oracle_fname)
+            oracle_fname = str(oracle_fname)
+        except:
+            oracle_fname = None
         state = {
-            'oracle': self.oracle.save(),
+            'oracle': oracle_fname,
+            'objective': self.objective,
+            'start_time': self.start_time,
+            'max_trials': self.max_trials,
+            'executions_per_trial': self.executions_per_trial,
+            'max_model_size': self.max_model_size,
+            # Note that compilation args are not included.
+            'hyperparameters': self.hyperparameters.get_config(),
+            'tune_new_entries': self.tune_new_entries,
+            'allow_new_entries': self.allow_new_entries,
+            'directory': str(self.directory),
+            'project_name': self.project_name,
+            # Dynamic
             'best_metrics': self.best_metrics.get_config(),
             'trials': [t.save() for t in self.trials],
+            'start_time': self.start_time,
+            # Extra
+            'eta': self.eta,
+            'remaining_trials': self.remaining_trials,
+            'stats': self._stats.get_config(),
+            'host': self._host.get_config(),
         }
+        best_trials = self._get_best_trials(1)
+        if best_trials:
+            best_trial = best_trials[0]
+            state['best_trial'] = best_trial.get_state()
+        else:
+            state['best_trial'] = None
+        return state
 
-    def reload(cls, directory=None):
-        """Populate `self.trials` and `self.oracle` state.
+    def save(self):
+        fname = os.path.join(self.directory, self.project_name, 'tuner.json')
+        state = self.get_state()
+        print(state)
+        state_json = json.dumps(state)
+        tf_utils.write_file(fname, state_json)
+        return str(fname)
 
-        Args:
-            directory: String. Where to load
-                trials from. Defaults to `self.directory`.
-        """
-        # TODO
-        if directory is None:
-            directory = self.directory
+    def reload(self):
+        """Populate `self.trials` and `self.oracle` state."""
+        fname = os.path.join(self.directory, self.project_name, 'tuner.json')
+        state = json.load(fname)
+        self.oracle.reload(state['oracle'])
+        self.trials = [trial_module.Trial.load(f) for f in state['trials']]
+        self.hyperparameters = hp_module.HyperParameters.from_config(
+            state['hyperparameters'])
+        self.start_time = state['start_time']
+        self.stats = tuner_utils.TunerStats.from_config(state['stats'])
 
     def _call_oracle(self, trial_id):
         if not self.tune_new_entries:
@@ -632,14 +644,14 @@ class Tuner(object):
         # TODO: consider calling the oracle to update the space.
 
     @property
-    def _eta(self):
+    def eta(self):
         """Return search estimated completion time."""
         num_trials = len(self.trials)
         num_remaining_trials = self.max_trials - num_trials
         if num_remaining_trials < 1:
             return 0
         else:
-            elapsed_time = int(time.time() - self._start_time)
+            elapsed_time = int(time.time() - self.start_time)
             time_per_trial = elapsed_time / num_trials
             return int(num_remaining_trials * time_per_trial)
 
@@ -669,25 +681,14 @@ class Tuner(object):
         callbacks.append(tuner_utils.TunerCallback(self, trial, execution))
         return callbacks
 
-    def _checkpoint_model(self, model, trial_id, execution_id,
-                          base_directory='.'):
-        """Checkpoint model"""
-        file_prefix = '%s-%s' % (trial_id, execution_id)
-        base_filename = os.path.join(base_directory, file_prefix)
-
-        tmp_path = os.path.join(self._host.tmp_dir,
-                                file_prefix)
-
-        try:
-            tf_utils.save_model(model,
-                                base_filename,
-                                tmp_path=tmp_path,
-                                export_type='keras')
-        except:
-            traceback.print_exc()
-            display.write_log('Checkpoint failed.')
-            exit(0)
-        return base_filename
+    def _checkpoint_tuner(self):
+        # Write tuner status to tuner directory
+        self.save()
+        # Send status to cloudservice
+        if self._cloudservice and self._cloudservice.enabled:
+            # TODO
+            state = self.get_state()
+            self._cloudservice.send_tuner_status(status)
 
     def _checkpoint_trial(self, trial):
         # Write trial status to trial directory
@@ -713,3 +714,22 @@ class Tuner(object):
             # TODO
             state = execution.get_state()
             self._cloudservice.send_execution_status(state)
+
+    def _checkpoint_model(self, model, trial_id, execution_id,
+                          base_directory='.'):
+        file_prefix = '%s-%s' % (trial_id, execution_id)
+        base_filename = os.path.join(base_directory, file_prefix)
+
+        tmp_path = os.path.join(self._host.tmp_dir,
+                                file_prefix)
+
+        try:
+            tf_utils.save_model(model,
+                                base_filename,
+                                tmp_path=tmp_path,
+                                export_type='keras')
+        except:
+            traceback.print_exc()
+            display.write_log('Checkpoint failed.')
+            exit(0)
+        return base_filename

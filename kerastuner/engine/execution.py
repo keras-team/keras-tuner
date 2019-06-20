@@ -50,19 +50,8 @@ class Execution(object):
                                       'execution_' + execution_id)
         tf_utils.create_directory(self.directory)
 
-    def get_status(self):
+    def get_state(self):
         return {
-            'execution_id': self.execution_id,
-            'trial_id': self.trial_id,
-            'start_time': self.start_time,
-            'eta': self.eta,
-            'epochs_seen': self.epochs_seen,
-            'max_epochs': self.max_epochs,
-            'training_complete': self.training_complete
-        }
-
-    def save(self):
-        state = {
             'execution_id': self.execution_id,
             'trial_id': self.trial_id,
             'max_epochs': self.max_epochs,
@@ -76,10 +65,13 @@ class Execution(object):
             'base_directory': self.base_directory,
             'eta': self.eta,
         }
+
+    def save(self):
+        state = self.get_state()
         state_json = json.dumps(state)
         fname = os.path.join(self.directory, 'execution.json')
         tf_utils.write_file(fname, state_json)
-        return fname
+        return str(fname)
 
     @classmethod
     def load(cls, fname):

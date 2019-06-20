@@ -56,17 +56,8 @@ class Trial(object):
         if self.score:
             display.display_setting('Score: %.4f' % self.score)
 
-    def get_status(self):
+    def get_state(self):
         return {
-            'trial_id': self.trial_id,
-            'hyperparameters': self.hyperparameters.get_config(),
-            'executions_seen': len(self.executions),
-            'max_executions': self.max_executions,
-            'score': self.score
-        }
-
-    def save(self):
-        state = {
             'trial_id': self.trial_id,
             'hyperparameters': self.hyperparameters.get_config(),
             'max_executions': self.max_executions,
@@ -77,10 +68,13 @@ class Trial(object):
                 e.save() for e in self.executions
                 if e.training_complete]
         }
+
+    def save(self):
+        state = self.get_state()
         state_json = json.dumps(state)
         fname = os.path.join(self.directory, 'execution.json')
         tf_utils.write_file(fname, state_json)
-        return fname
+        return str(fname)
 
     @classmethod
     def load(cls, fname):
