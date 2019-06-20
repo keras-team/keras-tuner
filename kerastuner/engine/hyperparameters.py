@@ -33,14 +33,14 @@ class HyperParameter(object):
 
     def __init__(self, name, default=None):
         self.name = name
-        self.default = default
+        self._default = default
 
     def get_config(self):
         return {'name': self.name, 'default': self.default}
 
     @property
-    def default_value(self):
-        return self.default
+    def default(self):
+        return self._default
 
     def random_sample(self, seed=None):
         raise NotImplementedError
@@ -74,12 +74,12 @@ class Choice(HyperParameter):
                 'You passed: values=%s, default=%s' % (values, default))
 
     @property
-    def default_value(self):
-        if self.default is None:
+    def default(self):
+        if self._default is None:
             if None in self.values:
                 return None
             return self.values[0]
-        return self.default
+        return self._default
 
     def random_sample(self, seed=None):
         random_state = random.Random(seed)
@@ -116,9 +116,9 @@ class Range(HyperParameter):
         return random_state.choice(self._values)
 
     @property
-    def default_value(self):
-        if self.default is not None:
-            return self.default
+    def default(self):
+        if self._default is not None:
+            return self._default
         return self.min_value
 
     def get_config(self):
@@ -150,9 +150,9 @@ class Linear(HyperParameter):
         self.resolution = float(resolution)
 
     @property
-    def default_value(self):
-        if self.default is not None:
-            return self.default
+    def default(self):
+        if self._default is not None:
+            return self._default
         return self.min_value
 
     def random_sample(self, seed=None):
@@ -187,7 +187,7 @@ class Fixed(HyperParameter):
         return self.value
 
     @property
-    def default_value(self):
+    def default(self):
         return self.value
 
     def get_config(self):
@@ -218,7 +218,7 @@ class HyperParameters(object):
         config = {'class_name': type, 'config': config}
         p = deserialize(config)
         self.space.append(p)
-        value = p.default_value
+        value = p.default
         self.values[name] = value
         return value
 
