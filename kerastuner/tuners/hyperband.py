@@ -67,7 +67,16 @@ class HyperbandOracle(oracle_module.Oracle):
     def populate_space(self, trial_id, space):
         if self._trials_count == 0:
             self._trials_count += 1
-            return {'status': 'RUN', 'values': self._copy_values(space, {})}
+            values = self._copy_values(space,
+                                       {'tuner/epochs': self._epoch_sequence[0]})
+            self._candidates = [values]
+            self._candidate_score = [None]
+            self._trial_id_to_candidate_index[trial_id] = 0
+            return {'status': 'RUN', 'values': values}
+
+        # wait till the space is updated.
+        if not self.space:
+            return {'status': 'IDLE'}
 
         # queue not empty means it is in one bracket
         if not self._queue.empty():
@@ -76,6 +85,8 @@ class HyperbandOracle(oracle_module.Oracle):
         # check if the current batch ends
         if (self._bracket_index >= self._num_brackets and
                 not any([value for key, value in self._running.items()])):
+            self._candidates = []
+            self._candidate_score = []
             self._bracket_index = 0
 
         # check if the band ends
@@ -102,25 +113,21 @@ class HyperbandOracle(oracle_module.Oracle):
         self._trial_id_to_candidate_index[trial_id] = candidate_index
         if candidate is not None:
             values = self._copy_values(space, candidate)
-            values['tuner/trial_id'] = self._index_to_id[candidate_index]
+            if trial_id != self._index_to_id[candidate_index]:
+                values['tuner/trial_id'] = self._index_to_id[candidate_index]
             return {'status': 'RUN', 'values': values}
         return {'status': 'EXIT'}
 
     @staticmethod
     def _copy_values(space, values):
-        return_values = {}
+        return_values = values.copy()
         for hyperparameter in space:
-            if hyperparameter.name in values:
-                return_values[
-                    hyperparameter.name] = values[hyperparameter.name]
-            else:
+            if hyperparameter.name not in values:
                 return_values[hyperparameter.name] = hyperparameter.default
         return return_values
 
     def _generate_candidates(self, space):
-        self._candidates = []
-        self._candidate_score = []
-        num_models = self._model_sequence[0]
+        num_models = self._model_sequence[0] - len(self._candidates)
 
         for index in range(num_models):
             instance = self._new_trial(space)
@@ -138,13 +145,11 @@ class HyperbandOracle(oracle_module.Oracle):
         num_selected_candidates = self._model_sequence[self._bracket_index]
         for index in sorted_candidates[:num_selected_candidates]:
             self._queue.put(index)
+            self._candidates[index]['tuner/epochs'] = self._epoch_sequence[
+                self._bracket_index]
 
     def _new_trial(self, space):
         """Fill a given hyperparameter space with values.
-
-        Args:
-            space: A list of HyperParameter objects
-                to provide values for.
 
         Returns:
             A dictionary mapping parameter names to suggested values.
@@ -157,7 +162,7 @@ class HyperbandOracle(oracle_module.Oracle):
         while 1:
             # Generate a set of random values.
             values = {}
-            for p in space:
+            for p in self.space:
                 values[p.name] = p.random_sample(self._seed_state)
                 self._seed_state += 1
             # Keep trying until the set of values is unique,
