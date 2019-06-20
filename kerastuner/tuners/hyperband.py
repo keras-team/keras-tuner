@@ -19,8 +19,8 @@ from ..engine import tuner as tuner_module
 from ..engine import oracle as oracle_module
 
 
-class UltraBandOracle(oracle_module.Oracle):
-    """Oracle class for UltraBand.
+class HyperbandOracle(oracle_module.Oracle):
+    """Oracle class for Hyperband.
 
     Args:
         seed: Int. The random seed. If None, it would use a random number.
@@ -35,7 +35,7 @@ class UltraBandOracle(oracle_module.Oracle):
                  factor=3,
                  min_epochs=3,
                  max_epochs=10):
-        super(UltraBandOracle, self).__init__()
+        super(HyperbandOracle, self).__init__()
         if min_epochs >= max_epochs:
             raise ValueError('max_epochs needs to be larger than min_epochs.')
         if factor < 2:
@@ -222,8 +222,14 @@ class UltraBandOracle(oracle_module.Oracle):
         raise NotImplementedError
 
 
-class UltraBand(tuner_module.Tuner):
+class Hyperband(tuner_module.Tuner):
     """Variation of HyperBand algorithm.
+
+    An implementation of the following paper.
+    Li, Lisha, and Kevin Jamieson.
+    "Hyperband: A Novel Bandit-Based Approach to Hyperparameter Optimization."
+    Journal of Machine Learning Research 18 (2018): 1-52.
+    http://jmlr.org/papers/v18/16-558.html
 
     Args:
         oracle: Instance of Oracle class.
@@ -252,11 +258,11 @@ class UltraBand(tuner_module.Tuner):
                  min_epochs=3,
                  max_epochs=10,
                  **kwargs):
-        oracle = UltraBandOracle(seed=seed,
+        oracle = HyperbandOracle(seed=seed,
                                  factor=factor,
                                  min_epochs=min_epochs,
                                  max_epochs=max_epochs)
-        super(UltraBand, self).__init__(
+        super(Hyperband, self).__init__(
             oracle=oracle,
             hypermodel=hypermodel,
             objective=objective,
@@ -264,7 +270,7 @@ class UltraBand(tuner_module.Tuner):
             **kwargs)
 
     def on_execution_begin(self, trial, execution, model):
-        super(UltraBand, self).on_execution_begin(trial, execution, model)
+        super(Hyperband, self).on_execution_begin(trial, execution, model)
         hp = trial.hyperparameters
         if 'tuner/trial_id' in hp.values:
             history_trial = self._get_trial(hp.values['tuner/trial_id'])
@@ -276,7 +282,7 @@ class UltraBand(tuner_module.Tuner):
     def run_trial(self, trial, hp, fit_args, fit_kwargs):
         if 'tuner/epochs' in hp.values:
             fit_kwargs['epochs'] = hp.values['tuner/epochs']
-        super(UltraBand, self).run_trial(trial, hp, fit_args, fit_kwargs)
+        super(Hyperband, self).run_trial(trial, hp, fit_args, fit_kwargs)
 
     def _get_trial(self, trial_id):
         for temp_trial in self.trials:

@@ -22,7 +22,7 @@ from kerastuner.engine import hyperparameters
 from kerastuner.engine import execution as execution_module
 from kerastuner.engine import trial as trial_module
 from kerastuner.engine import hyperparameters as hp_module
-from kerastuner.tuners import ultraband as ultraband_module
+from kerastuner.tuners import hyperband as hyperband_module
 
 
 @pytest.fixture(scope='module')
@@ -30,13 +30,13 @@ def tmp_dir(tmpdir_factory):
     return tmpdir_factory.mktemp('integration_test')
 
 
-def test_ultraband_oracle(tmp_dir):
+def test_hyperband_oracle(tmp_dir):
     hp_list = [hp_module.Choice('a', [1, 2], default=1),
                hp_module.Choice('b', [3, 4], default=3),
                hp_module.Choice('c', [5, 6], default=5),
                hp_module.Choice('d', [7, 8], default=7),
                hp_module.Choice('e', [9, 0], default=9)]
-    oracle = ultraband_module.UltraBandOracle()
+    oracle = hyperband_module.HyperbandOracle()
     assert oracle._num_brackets == 3
 
     oracle.populate_space('x', [])
@@ -95,7 +95,7 @@ def mock_load(best_checkpoint):
     assert best_checkpoint == 'x-weights.h5'
 
 
-class UltraBandStub(ultraband_module.UltraBand):
+class HyperbandStub(hyperband_module.Hyperband):
     def on_execution_end(self, trial, execution, model):
         pass
 
@@ -112,13 +112,13 @@ class UltraBandStub(ultraband_module.UltraBand):
 
 @mock.patch('tensorflow.keras.Model.fit', side_effect=mock_fit)
 @mock.patch('tensorflow.keras.Model.load_weights', side_effect=mock_load)
-def test_ultraband_tuner(patch_fit, patch_load, tmp_dir):
+def test_hyperband_tuner(patch_fit, patch_load, tmp_dir):
     x = np.random.rand(10, 2, 2).astype('float32')
     y = np.random.randint(0, 1, (10,))
     val_x = np.random.rand(10, 2, 2).astype('float32')
     val_y = np.random.randint(0, 1, (10,))
 
-    tuner = UltraBandStub(
+    tuner = HyperbandStub(
         build_model,
         objective='val_accuracy',
         max_trials=15,
