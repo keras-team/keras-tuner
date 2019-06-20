@@ -1,5 +1,7 @@
 dist: trusty
 language: python
+env:
+  TRAVIS=True
 matrix:
     include:
         - python: 3.6
