@@ -123,7 +123,7 @@ class HyperbandOracle(oracle_module.Oracle):
         return_values = values.copy()
         for hyperparameter in space:
             if hyperparameter.name not in values:
-                return_values[hyperparameter.name] = hyperparameter.default_value
+                return_values[hyperparameter.name] = hyperparameter.default
         return return_values
 
     def _generate_candidates(self, space):
