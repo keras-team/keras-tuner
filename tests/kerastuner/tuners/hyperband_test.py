@@ -82,6 +82,21 @@ def test_hyperband_oracle(tmp_dir):
     assert oracle.populate_space('last', hp_list)['status'] == 'RUN'
 
 
+def test_hyperband_dynamic_space(tmp_dir):
+    hp_list = [hp_module.Choice('a', [1, 2], default=1)]
+    oracle = hyperband_module.HyperbandOracle()
+    hp_list.append(hp_module.Choice('b', [3, 4], default=3))
+    values = oracle.populate_space('0', hp_list)['values']
+    assert 'b' in values
+    oracle.update_space(hp_list)
+    hp_list.append(hp_module.Choice('c', [5, 6], default=5))
+    assert 'c' in oracle.populate_space('1', hp_list)['values']
+    hp_list.append(hp_module.Choice('d', [7, 8], default=7))
+    assert 'd' in oracle.populate_space('2', hp_list)['values']
+    hp_list.append(hp_module.Choice('e', [9, 0], default=9))
+    assert 'e' in oracle.populate_space('3', hp_list)['values']
+
+
 def build_model(hp):
     model = tf.keras.Sequential()
     model.add(tf.keras.layers.Flatten(input_shape=(2, 2)))
