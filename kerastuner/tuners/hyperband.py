@@ -126,11 +126,11 @@ class HyperbandOracle(oracle_module.Oracle):
                 return_values[hyperparameter.name] = hyperparameter.default
         return return_values
 
-    def _generate_candidates(self):
+    def _generate_candidates(self, space):
         num_models = self._model_sequence[0] - len(self._candidates)
 
         for index in range(num_models):
-            instance = self._new_trial()
+            instance = self._new_trial(space)
             if instance is not None:
                 self._candidates.append(instance)
                 self._candidate_score.append(None)
@@ -148,7 +148,7 @@ class HyperbandOracle(oracle_module.Oracle):
             self._candidates[index]['tuner/epochs'] = self._epoch_sequence[
                 self._bracket_index]
 
-    def _new_trial(self):
+    def _new_trial(self, space):
         """Fill a given hyperparameter space with values.
 
         Returns:
@@ -157,7 +157,7 @@ class HyperbandOracle(oracle_module.Oracle):
             space, it may return values for more parameters
             than what was listed in `space`.
         """
-        self.update_space(self.space)
+        self.update_space(space)
         collisions = 0
         while 1:
             # Generate a set of random values.
