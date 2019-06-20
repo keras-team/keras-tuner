@@ -73,6 +73,20 @@ class RandomSearchOracle(oracle_module.Oracle):
 
 
 class RandomSearch(tuner_module.Tuner):
+    """Random search tuner.
+
+    Args:
+        hypermodel: Instance of HyperModel class
+            (or callable that takes hyperparameters
+            and returns a Model isntance).
+        objective: String. Name of model metric to minimize
+            or maximize, e.g. "val_accuracy".
+        max_trials: Int. Total number of trials
+            (model configurations) to test at most.
+            Note that the oracle may interrupt the search
+            before `max_trial` models have been tested.
+        seed: Int. Random seed.
+    """
 
     def __init__(self,
                  hypermodel,

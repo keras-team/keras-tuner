@@ -52,7 +52,7 @@ def test_end_to_end_workflow(tmp_dir):
     tuner = kerastuner.tuners.RandomSearch(
         build_model,
         objective='val_accuracy',
-        max_trials=15,
+        max_trials=20,
         directory=tmp_dir)
 
     tuner.search_space_summary()
@@ -69,7 +69,7 @@ def test_end_to_end_workflow(tmp_dir):
     best_model = tuner.get_best_models(1)[0]
 
     val_loss, val_acc = best_model.evaluate(val_x, val_y)
-    assert val_acc > 0.96
+    assert val_acc > 0.955
 
 
 if __name__ == '__main__':
