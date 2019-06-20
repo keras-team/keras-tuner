@@ -22,7 +22,7 @@ from kerastuner.engine import hyperparameters
 from kerastuner.engine import execution as execution_module
 from kerastuner.engine import trial as trial_module
 from kerastuner.engine import hyperparameters as hp_module
-from kerastuner.tuners.ultraband import *
+from kerastuner.tuners import ultraband as ultraband_module
 
 
 @pytest.fixture(scope='module')
@@ -36,7 +36,7 @@ def test_ultraband_oracle(tmp_dir):
                hp_module.Choice('c', [5, 6], default=5),
                hp_module.Choice('d', [7, 8], default=7),
                hp_module.Choice('e', [9, 0], default=9)]
-    oracle = UltraBandOracle(max_trials=34)
+    oracle = ultraband_module.UltraBandOracle()
     assert oracle._num_brackets == 3
 
     oracle.populate_space('x', [])
@@ -69,8 +69,6 @@ def test_ultraband_oracle(tmp_dir):
         oracle.result('3_' + str(trial_id), trial_id)
 
     assert oracle.populate_space('last', hp_list)['status'] == 'RUN'
-    oracle.result('last', 0)
-    assert oracle.populate_space('exit', hp_list)['status'] == 'EXIT'
 
 
 def build_model(hp):
@@ -97,7 +95,7 @@ def mock_load(best_checkpoint):
     assert best_checkpoint == 'x-weights.h5'
 
 
-class UltraBandStub(UltraBand):
+class UltraBandStub(ultraband_module.UltraBand):
     def on_execution_end(self, trial, execution, model):
         pass
 

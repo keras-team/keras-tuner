@@ -22,11 +22,7 @@ from ..engine import oracle as oracle_module
 class UltraBandOracle(oracle_module.Oracle):
     """Oracle class for UltraBand.
 
-        Args:
-        max_trials: Int. Total number of trials
-            (model configurations) to test at most.
-            Note that the oracle may interrupt the search
-            before `max_trial` models have been tested.
+    Args:
         seed: Int. The random seed. If None, it would use a random number.
         factor: Int. The factor of the change of number of epochs
             and the number of models per bracket.
@@ -35,17 +31,15 @@ class UltraBandOracle(oracle_module.Oracle):
     """
 
     def __init__(self,
-                 max_trials=200,
                  seed=None,
                  factor=3,
                  min_epochs=3,
                  max_epochs=10):
-        super().__init__()
+        super(UltraBandOracle, self).__init__()
         if min_epochs >= max_epochs:
             raise ValueError('max_epochs needs to be larger than min_epochs.')
         if factor < 2:
             raise ValueError('factor needs to be a int larger than 1.')
-        self.trials = max_trials
         self.seed = seed or random.randint(1, 1e4)
         self.factor = factor
         self.min_epochs = min_epochs
@@ -71,9 +65,6 @@ class UltraBandOracle(oracle_module.Oracle):
             self._trial_id_to_candidate_index[trial_id]] = score
 
     def populate_space(self, trial_id, space):
-        if (self._trials_count >= self.trials and
-                not any([value for key, value in self._running.items()])):
-            return {'status': 'EXIT'}
         if self._trials_count == 0:
             self._trials_count += 1
             return {'status': 'RUN', 'values': self._copy_values(space, {})}
@@ -141,11 +132,11 @@ class UltraBandOracle(oracle_module.Oracle):
             self._queue.put(index)
 
     def _select_candidates(self):
-        for index in sorted(
-                list(range(len(self._candidates))),
-                key=lambda i: self._candidate_score[i],
-                reverse=True,
-        )[:self._model_sequence[self._bracket_index]]:
+        sorted_candidates = sorted(list(range(len(self._candidates))),
+                                   key=lambda i: self._candidate_score[i],
+                                   reverse=True)
+        num_selected_candidates = self._model_sequence[self._bracket_index]
+        for index in sorted_candidates[:num_selected_candidates]:
             self._queue.put(index)
 
     def _new_trial(self, space):
@@ -217,6 +208,19 @@ class UltraBandOracle(oracle_module.Oracle):
             previous_size = size
         return output_sizes
 
+    @classmethod
+    def load(cls, filename):
+        # TODO
+        raise NotImplementedError
+
+    def save(self):
+        # TODO
+        raise NotImplementedError
+
+    def report_status(self, trial_id, status):
+        # TODO
+        raise NotImplementedError
+
 
 class UltraBand(tuner_module.Tuner):
     """Variation of HyperBand algorithm.
@@ -248,16 +252,15 @@ class UltraBand(tuner_module.Tuner):
                  min_epochs=3,
                  max_epochs=10,
                  **kwargs):
-        oracle = UltraBandOracle(max_trials,
-                                 seed,
-                                 factor,
-                                 min_epochs,
-                                 max_epochs)
+        oracle = UltraBandOracle(seed=seed,
+                                 factor=factor,
+                                 min_epochs=min_epochs,
+                                 max_epochs=max_epochs)
         super(UltraBand, self).__init__(
-            oracle,
-            hypermodel,
-            objective,
-            max_trials,
+            oracle=oracle,
+            hypermodel=hypermodel,
+            objective=objective,
+            max_trials=max_trials,
             **kwargs)
 
     def on_execution_begin(self, trial, execution, model):
@@ -279,16 +282,3 @@ class UltraBand(tuner_module.Tuner):
         for temp_trial in self.trials:
             if temp_trial.trial_id == trial_id:
                 return temp_trial
-
-    @classmethod
-    def load(cls, filename):
-        # TODO
-        raise NotImplementedError
-
-    def save(self):
-        # TODO
-        raise NotImplementedError
-
-    def report_status(self, trial_id, status):
-        # TODO
-        raise NotImplementedError
