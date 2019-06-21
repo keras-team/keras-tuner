@@ -13,4 +13,6 @@ tmp/
 .ipynb_checkpoints/
 tmp.py
 .coverage
+.coverage.*
+htmlcov
 old_code/
