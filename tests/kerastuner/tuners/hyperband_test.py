@@ -15,6 +15,7 @@
 from unittest import mock
 
 import numpy as np
+import os
 import pytest
 import tensorflow as tf
 
@@ -91,6 +92,32 @@ def test_hyperband_dynamic_space(tmp_dir):
     assert 'd' in oracle.populate_space('2', hp_list)['values']
     hp_list.append(hp_module.Choice('e', [9, 0], default=9))
     assert 'e' in oracle.populate_space('3', hp_list)['values']
+
+
+def test_hyperband_save_load(tmp_dir):
+    hp_list = [hp_module.Choice('a', [1, 2], default=1),
+               hp_module.Choice('b', [3, 4], default=3),
+               hp_module.Choice('c', [5, 6], default=5),
+               hp_module.Choice('d', [7, 8], default=7),
+               hp_module.Choice('e', [9, 0], default=9)]
+    oracle = hyperband_module.HyperbandOracle()
+
+    for trial_id in range(3):
+        oracle.populate_space('0_' + str(trial_id), hp_list)
+    for trial_id in range(2):
+        oracle.result('0_' + str(trial_id), trial_id)
+
+    fname = os.path.join(tmp_dir, 'oracle')
+    oracle.save(fname)
+    oracle = hyperband_module.HyperbandOracle()
+    oracle.reload(fname)
+
+    for trial_id in range(oracle._model_sequence[0] - 2):
+        hp = oracle.populate_space('1_' + str(trial_id), hp_list)
+        assert hp['status'] == 'RUN'
+    assert oracle.populate_space('idle', hp_list)['status'] == 'IDLE'
+    for trial_id in range(oracle._model_sequence[0] - 2):
+        oracle.result('1_' + str(trial_id), trial_id)
 
 
 def build_model(hp):
