@@ -433,3 +433,9 @@ def test_saving_and_reloading(tmp_dir):
     new_trial3_execution1 = new_trial3.executions[1]
     assert (old_trial3_execution1.per_epoch_metrics.metrics_history ==
             new_trial3_execution1.per_epoch_metrics.metrics_history)
+
+    new_tuner.search(
+        x=TRAIN_INPUTS,
+        y=TRAIN_TARGETS,
+        epochs=2,
+        validation_data=(VAL_INPUTS, VAL_TARGETS))
