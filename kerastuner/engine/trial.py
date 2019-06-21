@@ -78,7 +78,8 @@ class Trial(object):
 
     @classmethod
     def load(cls, fname):
-        state = json.load(fname)
+        state_data = tf_utils.read_file(fname)
+        state = json.loads(state_data)
         hp = hp_module.HyperParameters.from_config(
             state['hyperparameters']
         )
@@ -90,7 +91,7 @@ class Trial(object):
         )
         trial.score = state['score']
         metrics = metrics_tracking.MetricsTracker.from_config(
-            [state['averaged_metrics']])
+            state['averaged_metrics'])
         trial.averaged_metrics = metrics
         trial.executions = [
             execution_module.Execution.load(f)

@@ -75,7 +75,8 @@ class Execution(object):
 
     @classmethod
     def load(cls, fname):
-        state = json.load(fname)
+        state_data = tf_utils.read_file(fname)
+        state = json.loads(state_data)
         execution = cls(
             execution_id=state['execution_id'],
             trial_id=state['trial_id'],

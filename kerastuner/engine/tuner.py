@@ -445,13 +445,11 @@ class Tuner(object):
         return self.max_trials - len(self.trials)
 
     def get_state(self):
-        try:
-            oracle_fname = os.path.join(
-                self.directory, self.project_name, 'oracle.json')
-            self.oracle.save(oracle_fname)
-            oracle_fname = str(oracle_fname)
-        except:
-            oracle_fname = None
+        oracle_fname = os.path.join(
+            self.directory, self.project_name, 'oracle.json')
+        self.oracle.save(oracle_fname)
+        oracle_fname = str(oracle_fname)
+
         state = {
             'oracle': oracle_fname,
             'objective': self.objective,
@@ -494,11 +492,15 @@ class Tuner(object):
     def reload(self):
         """Populate `self.trials` and `self.oracle` state."""
         fname = os.path.join(self.directory, self.project_name, 'tuner.json')
-        state = json.load(fname)
+        state_data = tf_utils.read_file(fname)
+        state = json.loads(state_data)
         self.oracle.reload(state['oracle'])
-        self.trials = [trial_module.Trial.load(f) for f in state['trials']]
+
         self.hyperparameters = hp_module.HyperParameters.from_config(
             state['hyperparameters'])
+        self.best_metrics = metrics_tracking.MetricsTracker.from_config(
+            state['best_metrics'])
+        self.trials = [trial_module.Trial.load(f) for f in state['trials']]
         self.start_time = state['start_time']
         self.stats = tuner_utils.TunerStats.from_config(state['stats'])
 

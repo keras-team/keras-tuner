@@ -52,9 +52,9 @@ class TunerStats(object):
     @classmethod
     def from_config(cls, config):
         stats = cls()
-        stats.config['num_generated_models']
-        stats.config['num_invalid_models']
-        stats.config['num_oversized_models']
+        stats.num_generated_models = config['num_generated_models']
+        stats.num_invalid_models = config['num_invalid_models']
+        stats.num_oversized_models = config['num_oversized_models']
         return stats
 
 
