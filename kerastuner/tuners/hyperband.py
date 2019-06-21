@@ -251,6 +251,7 @@ class HyperbandOracle(oracle_module.Oracle):
         self._model_sequence = state['model_sequence']
         self._epoch_sequence = state['epoch_sequence']
 
+        # Put the unfinished trials back into the queue to be trained again.
         for trial_id, value in self._running.items():
             if value:
                 self._queue.put(self._trial_id_to_candidate_index[trial_id])
