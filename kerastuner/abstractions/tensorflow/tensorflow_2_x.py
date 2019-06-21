@@ -1,11 +1,11 @@
 # Copyright 2019 The Keras Tuner Authors
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     https://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,7 +35,8 @@ class GFileProxy_2_x(proxy.GFileProxy):
 
         Args:
             name (str): name of the file
-            mode (str): one of 'r', 'w', 'a', 'r+', 'w+', 'a+'. Append 'b' for bytes mode.
+            mode (str): one of 'r', 'w', 'a', 'r+', 'w+', 'a+'.
+                Append 'b' for bytes mode.
 
         Returns:
             GFile - a GFile object representing the opened file.
@@ -62,10 +63,12 @@ class GFileProxy_2_x(proxy.GFileProxy):
 
         Returns:
             True if the path exists, whether it's a file or a directory.
-            False if the path does not exist and there are no filesystem errors.
+            False if the path does not exist and there
+                are no filesystem errors.
 
         Raises:
-            errors.OpError: Propagates any errors reported by the FileSystem API.
+            errors.OpError: Propagates any errors reported
+                by the FileSystem API.
         """
         return tf.io.gfile.exists(path)
 
@@ -101,8 +104,8 @@ class GFileProxy_2_x(proxy.GFileProxy):
         path: string, a path
 
         Raises:
-        errors.OpError: Propagates any errors reported by the FileSystem API.  E.g.,
-        NotFoundError if the path does not exist.
+        errors.OpError: Propagates any errors reported by the FileSystem API.
+            E.g., NotFoundError if the path does not exist.
         """
         return tf.io.gfile.remove(path)
 
@@ -112,8 +115,8 @@ class GFileProxy_2_x(proxy.GFileProxy):
         Args:
         src: string, name of the file whose contents need to be copied
         dst: string, name of the file to which to copy to
-        overwrite: boolean, if false its an error for newpath to be occupied by an
-            existing file.
+        overwrite: boolean, if false its an error for newpath
+            to be occupied by an existing file.
 
         Raises:
         errors.OpError: If the operation fails.
@@ -174,9 +177,14 @@ class Utils_2_x(proxy.UtilsBase):
         self.save_keras_bundle_model(
             model, keras_bundle_path, tmp_keras_bundle_path)
         self.convert_to_tflite(
-            model, keras_bundle_path, path, post_training_quantize=post_training_quantize)
+            model, keras_bundle_path, path,
+            post_training_quantize=post_training_quantize)
 
-    def convert_to_tflite(self, model, savedmodel_path, output_path, post_training_quantize):
+    def convert_to_tflite(self,
+                          model,
+                          savedmodel_path,
+                          output_path,
+                          post_training_quantize):
         output_file = os.path.join(output_path, "optimized_model.tflite")
 
         command = [
@@ -190,14 +198,19 @@ class Utils_2_x(proxy.UtilsBase):
         process = subprocess.Popen(command)
         process.wait()
 
-    def optimize_graph(self, frozen_model_path, input_ops, output_ops, input_types, toco_compatible):
+    def optimize_graph(self,
+                       frozen_model_path,
+                       input_ops,
+                       output_ops,
+                       input_types,
+                       toco_compatible):
         # Parse the GraphDef, and determine the inputs and outputs
         with tf.io.gfile.GFile(frozen_model_path, "rb") as f:
             graph_def = GraphDef()
             graph_def.ParseFromString(f.read())
 
-        # Convert the tensorflow dtypes into the enumeration values, as expected
-        # by optimize_for_inference
+        # Convert the tensorflow dtypes into the enumeration values,
+        # as expected by optimize_for_inference
         input_types = [type.as_datatype_enum for type in input_types]
 
         transformed_graph_def = optimize_for_inference_lib.optimize_for_inference(

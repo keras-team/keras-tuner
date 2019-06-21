@@ -13,43 +13,39 @@
 # limitations under the License.
 
 """Setup script."""
+
 from __future__ import absolute_import
 
 from setuptools import find_packages
 from setuptools import setup
 import time
 
-version = "0.8.3"
+version = '0.9.0'
 stub = str(int(time.time()))  # Used to increase version automagically.
 version = version + '.' + stub
 
 setup(
-    name="Kerastuner",
+    name='Keras Tuner',
     version=version,
-    description="Hypertuner for Keras",
-    author='Elie Bursztein',
+    description='Hypertuner for Keras',
+    author='The Keras Tuner authors',
     author_email='kerastuner@google.com',
-    url='https://fixme',
     license='Apache License 2.0',
-    entry_points='''
-        [console_scripts]
-        kerastuner-summary=kerastuner.tools.summary:summary
-        kerastuner-status=kerastuner.tools.status:status
-    ''',
     install_requires=[
-        "art",
-        "attrs",
-        "etaprogress",
-        "numpy",
-        "pathlib",
-        "tabulate",
-        "terminaltables",
-        "termcolor",
-        "colorama",
-        "tqdm",
-        "requests",
-        "psutil",
-        "sklearn"
+        'tensorflow>=2.0.0-beta1',
+        'numpy',
+        'tabulate',
+        'terminaltables',
+        'colorama',
+        'tqdm',
+        'requests',
+        'psutil',
     ],
+    extras_require={
+        'tests': ['pytest',
+                  'pytest-pep8',
+                  'pytest-xdist',
+                  'pytest-cov'],
+    },
     packages=find_packages(exclude=('tests',))
 )

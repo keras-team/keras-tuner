@@ -13,6 +13,7 @@
 # limitations under the License.
 
 "Compute hardware statistics"
+
 import os
 from time import time
 import psutil
@@ -23,6 +24,7 @@ from time import time
 import tensorflow as tf
 import kerastuner as kt
 from .display import subsection, display_settings, display_setting
+from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 
 
 class Host():
@@ -33,7 +35,7 @@ class Host():
 
     """
 
-    def __init__(self):
+    def __init__(self, results_dir, tmp_dir, export_dir):
 
         # caching
         self.cached_status = None
@@ -57,8 +59,20 @@ class Host():
             self.tf_can_use_gpu = False
         self._get_gpu_usage()  # to get gpu driver info > before get software
 
-        # keep it last
         self.software = self._get_software()
+
+        self.results_dir = results_dir or 'results'
+        self.tmp_dir = tmp_dir or 'tmp_dir'
+        self.export_dir = export_dir or 'export'
+
+        # ensure the user don't shoot himself in the foot
+        if self.results_dir == self.tmp_dir:
+            fatal('Result dir and tmp dir must be different')
+
+        # create directory if needed
+        tf_utils.create_directory(self.results_dir)
+        tf_utils.create_directory(self.tmp_dir, remove_existing=True)
+        tf_utils.create_directory(self.export_dir)
 
     def get_status(self, no_cach=False):
         """
@@ -140,7 +154,7 @@ class Host():
                 display_setting('gpu', indent_level=indent - 1)
                 display_settings(gpu, indent_level=indent)
 
-    def to_config(self):
+    def get_config(self):
         """
         Return various hardware counters as dict
 

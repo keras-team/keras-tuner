@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from __future__ import absolute_import
-from ..engine import Tuner
+
 from .randomsearch import RandomSearch
-from .ultraband import UltraBand
-from .gridsearch import GridSearch
+from .hyperband import Hyperband

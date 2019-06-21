@@ -1,18 +1,19 @@
 # Copyright 2019 The Keras Tuner Authors
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     https://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"Backend related function"
+"Cloud service related functionality."
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -46,8 +47,8 @@ def _normalize_data_to_send(info):
     # Remove the parts of the data that are unbounded in size.
     info = copy.deepcopy(info)
     for key in ['model_config', 'epoch_history']:
-      if key in info:
-        del info[key]
+        if key in info:
+            del info[key]
     return info
 
 
@@ -89,9 +90,9 @@ class CloudService():
     """ Cloud service reporting mechanism"""
 
     def __init__(self):
-        self.is_enable = False
+        self.enabled = False
         self.status = "disable"
-        self.base_url= 'https://us-central1-kerastuner-prod.cloudfunctions.net/api/'  # nopep8
+        self.base_url = 'https://us-central1-kerastuner-prod.cloudfunctions.net/api/'  # nopep8
         self.api_key = None
         self.log_interval = 5
         self.last_update = -1
@@ -101,16 +102,16 @@ class CloudService():
         """enable cloud service by setting API key"""
         self.api_key = api_key
         if url:
-          self.base_url = url
+            self.base_url = url
         if self._check_access():
             info("Cloud service enabled - Go to https://.. to track your "
                  "tuning results in realtime.")
             self.status = OK
-            self.is_enable = True
+            self.enabled = True
         else:
             warning("Invalid cloud API key")
             self.status = AUTH_ERROR
-            self.is_enable = False
+            self.enabled = False
 
     def complete(self):
         """Makes sure that all cloud requests have been sent."""
@@ -152,7 +153,7 @@ class CloudService():
 
     def _send_nonblocking(self, info_type, info):
 
-        if not self.is_enable:
+        if not self.enabled:
             return
 
         url = self._url_join(self.base_url, 'v1/update')
@@ -168,7 +169,7 @@ class CloudService():
         """
 
         # skip if API key don't work or service down
-        if not self.is_enable:
+        if not self.enabled:
             return 'disabled'
 
         url = self._url_join(self.base_url, 'v1/update')
@@ -196,10 +197,10 @@ class CloudService():
             }
         display_settings(info)
 
-    def to_config(self):
+    def get_config(self):
         # !DO NOT record API key
         res = {
-            "is_enable": self.is_enable,
+            "enabled": self.enabled,
             "status": self.status,
             "last_update": self.last_update
         }

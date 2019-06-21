@@ -1,11 +1,11 @@
 # Copyright 2019 The Keras Tuner Authors
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     https://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,15 +18,17 @@ import os
 from kerastuner.abstractions.display import warning
 import json
 
+
 def Open(name, mode):
     """Open a file.
 
     Args:
         name (str): name of the file
-        mode (str): one of 'r', 'w', 'a', 'r+', 'w+', 'a+'. Append 'b' for bytes mode.
+        mode (str): one of 'r', 'w', 'a', 'r+', 'w+', 'a+'.
+          Append 'b' for bytes mode.
 
     Returns:
-        GFile - a GFile object representing the opened file.      
+        GFile - a GFile object representing the opened file.
     """
     return tf.io.gfile.Open(name, mode)
 
@@ -94,7 +96,7 @@ def remove(path):
       path: string, a path
 
     Raises:
-      errors.OpError: Propagates any errors reported by the FileSystem API.  E.g.,
+      errors.OpError: Propagates any errors reported by the FileSystem API.
       NotFoundError if the path does not exist.
     """
     return tf.io.gfile.remove(path)
@@ -106,8 +108,8 @@ def copy(src, dst, overwrite=False):
     Args:
       src: string, name of the file whose contents need to be copied
       dst: string, name of the file to which to copy to
-      overwrite: boolean, if false its an error for newpath to be occupied by an
-        existing file.
+      overwrite: boolean, if false it is an error
+        for newpath to be occupied by an existing file.
 
     Raises:
       errors.OpError: If the operation fails.
@@ -162,12 +164,14 @@ def create_directory(path, remove_existing=False):
 
 
 def get_config_filename(tuner_state, instance_state, execution_state):
-    """ Get the filename containing the model configuration for the given instance/execution.
+    """Get the filename containing the model config.
 
     Args:
       tuner_state: TunerState, state of the tuner.
-      instance: Instance, the instance for which we are getting the configuration.
-      execution: Execution, the execution for which we are getting the configuration.
+      instance: Instance, the instance for which
+        we are getting the configuration.
+      execution: Execution, the execution for which
+        we are getting the configuration.
 
     Returns:
       str, the file which holds the model configuration.
@@ -184,7 +188,7 @@ def get_config_filename(tuner_state, instance_state, execution_state):
 
 
 def get_weights_filename(tuner_state, instance_state, execution_state):
-    """ Get the filename containing the model weights for the given instance/execution.
+    """ Get the filename containing the model weights.
 
     Args:
       tuner_state: TunerState, state of the tuner.
@@ -206,7 +210,7 @@ def get_weights_filename(tuner_state, instance_state, execution_state):
 
 
 def get_results_filename(tuner_state, instance_state):
-    """ Get the filename containing the results metadata for the given instance.
+    """ Get the filename containing the results metadata.
 
     Args:
       tuner_state: TunerState, state of the tuner.
