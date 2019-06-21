@@ -12,10 +12,85 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras import layers
-from tensorflow.keras.layers import *
+
+from kerastuner.engine import hypermodel
+
+
+class HyperXception(hypermodel.HyperModel):
+    """An Xception HyperModel."""
+
+    def __init__(self, input_shape, num_classes, include_top=True):
+        super(HyperXception, self).__init__()
+        self.input_shape = input_shape
+        self.num_classes = num_classes
+        self.include_top = include_top
+
+    def build(self, hp):
+        activation = hp.Choice('activation', ['relu', 'selu'])
+
+        # Model definition.
+        inputs = keras.Input(shape=self.input_shape)
+        x = inputs
+
+        # Initial conv2d.
+        conv2d_num_filters = hp.Choice(
+            'conv2d_num_filters', [32, 64, 128], default=64)
+        kernel_size = hp.Choice('kernel_size', [3, 5])
+        initial_strides = hp.Choice('initial_strides', [2])
+        x = conv(x,
+                 conv2d_num_filters,
+                 kernel_size=kernel_size,
+                 activation=activation,
+                 strides=initial_strides)
+
+        # Separable convs.
+        sep_num_filters = hp.Range(
+            'sep_num_filters', 128, 768, step=128, default=256)
+        num_residual_blocks = hp.Range('num_residual_blocks', 2, 8, default=4)
+        for _ in range(num_residual_blocks):
+            x = residual(x,
+                         sep_num_filters,
+                         activation=activation,
+                         max_pooling=False)
+        # Exit flow.
+        x = residual(x,
+                     2*sep_num_filters,
+                     activation=activation,
+                     max_pooling=True)
+
+        pooling = hp.Choice('pooling', ['avg', 'flatten', 'max'])
+        if pooling == 'flatten':
+            x = layers.Flatten()(x)
+        elif pooling == 'avg':
+            x = layers.GlobalAveragePooling2D()(x)
+        else:
+            x = layers.GlobalMaxPooling2D()(x)
+
+        if self.include_top:
+            # Dense
+            num_dense_layers = hp.Range('num_dense_layers', 1, 3)
+            dropout_rate = hp.Linear(
+                'dropout_rate', 0.0, 0.6, resolution=0.1, default=0.5)
+            dense_use_bn = hp.Choice('dense_use_bn', [True, False])
+            for _ in range(num_dense_layers):
+                x = dense(x,
+                          self.num_classes,
+                          activation=activation,
+                          batchnorm=dense_use_bn,
+                          dropout_rate=dropout_rate)
+            output = layers.Dense(self.num_classes, activation='softmax')(x)
+            model = keras.Model(inputs, output, name='Xception')
+
+            model.compile(
+                optimizer=keras.optimizers.Adam(
+                    hp.Choice('learning_rate', [1e-3, 1e-4, 1e-5])),
+                loss='categorical_crossentropy',
+                metrics=['accuracy'])
+            return model
+        else:
+            return keras.Model(inputs, x, name='Xception')
 
 
 def sep_conv(x, num_filters, kernel_size=(3, 3), activation='relu'):

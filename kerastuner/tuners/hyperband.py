@@ -45,7 +45,6 @@ class HyperbandOracle(oracle_module.Oracle):
         self.min_epochs = min_epochs
         self.max_epochs = max_epochs
         self._queue = queue.Queue()
-        self._bracket_index = 0
         self._trials_count = 0
         self._running = {}
         self._trial_id_to_candidate_index = {}
@@ -56,6 +55,7 @@ class HyperbandOracle(oracle_module.Oracle):
         self._tried_so_far = set()
         self._index_to_id = {}
         self._num_brackets = self._get_num_brackets()
+        self._bracket_index = self._num_brackets
         self._model_sequence = self._get_model_sequence()
         self._epoch_sequence = self._get_epoch_sequence()
 
@@ -65,30 +65,23 @@ class HyperbandOracle(oracle_module.Oracle):
             self._trial_id_to_candidate_index[trial_id]] = score
 
     def populate_space(self, trial_id, space):
-        if self._trials_count == 0:
-            self._trials_count += 1
-            return {'status': 'RUN', 'values': self._copy_values(space, {})}
-
-        # queue not empty means it is in one bracket
+        # Queue is not empty means it is in one bracket.
         if not self._queue.empty():
             return self._run_values(space, trial_id)
 
-        # check if the current batch ends
-        if (self._bracket_index >= self._num_brackets and
-                not any([value for key, value in self._running.items()])):
-            self._bracket_index = 0
+        # Wait the current bracket to finish
+        if any([value for key, value in self._running.items()]):
+            return {'status': 'IDLE'}
 
-        # check if the band ends
-        if self._bracket_index == 0:
-            # band ends
+        # Start the next bracket if not end of bandit.
+        if self._bracket_index + 1 < self._num_brackets:
+            self._bracket_index += 1
+            self._select_candidates()
+        # If the current band ends
+        else:
+            self._bracket_index = 0
             self._generate_candidates(space)
             self._index_to_id = {}
-        else:
-            # bracket ends
-            if any([value for key, value in self._running.items()]):
-                return {'status': 'IDLE'}
-            self._select_candidates()
-        self._bracket_index += 1
 
         return self._run_values(space, trial_id)
 
@@ -102,18 +95,17 @@ class HyperbandOracle(oracle_module.Oracle):
         self._trial_id_to_candidate_index[trial_id] = candidate_index
         if candidate is not None:
             values = self._copy_values(space, candidate)
-            values['tuner/trial_id'] = self._index_to_id[candidate_index]
+            if trial_id != self._index_to_id[candidate_index]:
+                values['tuner/trial_id'] = self._index_to_id[candidate_index]
+            values['tuner/epochs'] = self._epoch_sequence[self._bracket_index]
             return {'status': 'RUN', 'values': values}
         return {'status': 'EXIT'}
 
     @staticmethod
     def _copy_values(space, values):
-        return_values = {}
+        return_values = values.copy()
         for hyperparameter in space:
-            if hyperparameter.name in values:
-                return_values[
-                    hyperparameter.name] = values[hyperparameter.name]
-            else:
+            if hyperparameter.name not in values:
                 return_values[hyperparameter.name] = hyperparameter.default
         return return_values
 
@@ -142,10 +134,6 @@ class HyperbandOracle(oracle_module.Oracle):
     def _new_trial(self, space):
         """Fill a given hyperparameter space with values.
 
-        Args:
-            space: A list of HyperParameter objects
-                to provide values for.
-
         Returns:
             A dictionary mapping parameter names to suggested values.
             Note that if the Oracle is keeping tracking of a large
@@ -157,7 +145,7 @@ class HyperbandOracle(oracle_module.Oracle):
         while 1:
             # Generate a set of random values.
             values = {}
-            for p in space:
+            for p in self.space:
                 values[p.name] = p.random_sample(self._seed_state)
                 self._seed_state += 1
             # Keep trying until the set of values is unique,
@@ -170,7 +158,6 @@ class HyperbandOracle(oracle_module.Oracle):
                 continue
             self._tried_so_far.add(values_hash)
             break
-        values['tuner/epochs'] = self._epoch_sequence[self._bracket_index]
         return values
 
     def _get_num_brackets(self):

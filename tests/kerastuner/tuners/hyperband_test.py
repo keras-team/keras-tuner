@@ -39,36 +39,58 @@ def test_hyperband_oracle(tmp_dir):
     oracle = hyperband_module.HyperbandOracle()
     assert oracle._num_brackets == 3
 
-    oracle.populate_space('x', [])
-
     for trial_id in range(oracle._model_sequence[0]):
-        assert oracle.populate_space(str(trial_id), hp_list)['status'] == 'RUN'
+        hp = oracle.populate_space('0_' + str(trial_id), hp_list)
+        assert hp['status'] == 'RUN'
+        assert hp['values']['tuner/epochs'] == oracle._epoch_sequence[0]
+        assert 'tuner/trial_id' not in hp['values']
     assert oracle.populate_space('idle0', hp_list)['status'] == 'IDLE'
     for trial_id in range(oracle._model_sequence[0]):
-        oracle.result(str(trial_id), trial_id)
+        oracle.result('0_' + str(trial_id), trial_id)
 
     for trial_id in range(oracle._model_sequence[1]):
-        assert oracle.populate_space('1_' + str(trial_id),
-                                     hp_list)['status'] == 'RUN'
+        hp = oracle.populate_space('1_' + str(trial_id), hp_list)
+        assert hp['status'] == 'RUN'
+        assert hp['values']['tuner/epochs'] == oracle._epoch_sequence[1]
+        assert 'tuner/trial_id' in hp['values']
     assert oracle.populate_space('idle1', hp_list)['status'] == 'IDLE'
     for trial_id in range(oracle._model_sequence[1]):
         oracle.result('1_' + str(trial_id), trial_id)
 
     for trial_id in range(oracle._model_sequence[2]):
-        assert oracle.populate_space('2_' + str(trial_id),
-                                     hp_list)['status'] == 'RUN'
+        hp = oracle.populate_space('2_' + str(trial_id), hp_list)
+        assert hp['status'] == 'RUN'
+        assert hp['values']['tuner/epochs'] == oracle._epoch_sequence[2]
+        assert 'tuner/trial_id' in hp['values']
     assert oracle.populate_space('idle2', hp_list)['status'] == 'IDLE'
     for trial_id in range(oracle._model_sequence[2]):
         oracle.result('2_' + str(trial_id), trial_id)
 
     for trial_id in range(oracle._model_sequence[0]):
-        assert oracle.populate_space('3_' + str(trial_id),
-                                     hp_list)['status'] == 'RUN'
+        hp = oracle.populate_space('3_' + str(trial_id), hp_list)
+        assert hp['status'] == 'RUN'
+        assert hp['values']['tuner/epochs'] == oracle._epoch_sequence[0]
+        assert 'tuner/trial_id' not in hp['values']
     assert oracle.populate_space('idle3', hp_list)['status'] == 'IDLE'
     for trial_id in range(oracle._model_sequence[0]):
         oracle.result('3_' + str(trial_id), trial_id)
 
     assert oracle.populate_space('last', hp_list)['status'] == 'RUN'
+
+
+def test_hyperband_dynamic_space(tmp_dir):
+    hp_list = [hp_module.Choice('a', [1, 2], default=1)]
+    oracle = hyperband_module.HyperbandOracle()
+    hp_list.append(hp_module.Choice('b', [3, 4], default=3))
+    values = oracle.populate_space('0', hp_list)['values']
+    assert 'b' in values
+    oracle.update_space(hp_list)
+    hp_list.append(hp_module.Choice('c', [5, 6], default=5))
+    assert 'c' in oracle.populate_space('1', hp_list)['values']
+    hp_list.append(hp_module.Choice('d', [7, 8], default=7))
+    assert 'd' in oracle.populate_space('2', hp_list)['values']
+    hp_list.append(hp_module.Choice('e', [9, 0], default=9))
+    assert 'e' in oracle.populate_space('3', hp_list)['values']
 
 
 def build_model(hp):

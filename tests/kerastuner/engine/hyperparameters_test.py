@@ -52,6 +52,22 @@ def test_name_collision():
     pass
 
 
+def test_name_scope():
+    hp = hp_module.HyperParameters()
+    hp.Choice('choice', [1, 2, 3], default=2)
+    with hp.name_scope('scope1'):
+        hp.Choice('choice', [4, 5, 6], default=5)
+        with hp.name_scope('scope2'):
+            hp.Choice('choice', [7, 8, 9], default=8)
+        hp.Range('range', min_value=0, max_value=10, step=1, default=0)
+    assert hp.values == {
+        'choice': 2,
+        'scope1/choice': 5,
+        'scope1/scope2/choice': 8,
+        'scope1/range': 0
+    }
+
+
 def test_Choice():
     choice = hp_module.Choice('choice', [1, 2, 3], default=2)
     choice = hp_module.Choice.from_config(choice.get_config())
