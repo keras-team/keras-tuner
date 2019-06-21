@@ -14,6 +14,7 @@
 
 import pytest
 
+import tensorflow as tf
 from tensorflow import keras
 import kerastuner
 
@@ -41,7 +42,9 @@ def build_model(hp):
     return model
 
 
-def test_end_to_end_workflow(tmp_dir):
+@pytest.mark.parametrize('distribution_strategy', [None, tf.distribute.OneDeviceStrategy('/cpu:0')])
+def test_end_to_end_workflow(distribution_strategy):
+    tmp_dir = 'test_dir'
     (x, y), (val_x, val_y) = keras.datasets.mnist.load_data()
     x = x.astype('float32') / 255.
     val_x = val_x.astype('float32') / 255.
@@ -53,6 +56,7 @@ def test_end_to_end_workflow(tmp_dir):
         build_model,
         objective='val_accuracy',
         max_trials=20,
+        distribution_strategy=distribution_strategy,
         directory=tmp_dir)
 
     tuner.search_space_summary()
@@ -73,4 +77,4 @@ def test_end_to_end_workflow(tmp_dir):
 
 
 if __name__ == '__main__':
-    test_end_to_end_workflow('test_dir')
+    test_end_to_end_workflow()

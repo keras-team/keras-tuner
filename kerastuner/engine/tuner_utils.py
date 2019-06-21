@@ -17,6 +17,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import contextlib
 import math
 from collections import defaultdict
 import numpy as np
@@ -213,3 +214,12 @@ def format_execution_id(i, executions_per_trial):
     execution_id_template = '%0' + str(execution_id_length) + 'd'
     execution_id = execution_id_template % i
     return execution_id
+
+
+@contextlib.contextmanager
+def maybe_distribute(distribution_strategy):
+    if distribution_strategy is None:
+        yield
+    else:
+        with distribution_strategy.scope():
+            yield

@@ -97,6 +97,12 @@ class Tuner(object):
         allow_new_entries: Whether the hypermodel is allowed
             to request hyperparameter entries not listed in
             `hyperparameters`.
+        distribution_strategy: Optional. A TensorFlow
+            `tf.distribute` DistributionStrategy instance. If
+            specified, each execution will run under this scope. For
+            example, `tf.distribute.MirroredStrategy(['/gpu:0, /'gpu:1])`
+            will run each execution on two GPUs. Currently only
+            single-worker strategies are supported.
         directory: String. Path to the working directory (relative).
         project_name: Name to use as prefix for files saved
             by this Tuner.
@@ -115,6 +121,7 @@ class Tuner(object):
                  hyperparameters=None,
                  tune_new_entries=True,
                  allow_new_entries=True,
+                 distribution_strategy=None,
                  directory=None,
                  project_name=None):
         if not isinstance(oracle, oracle_module.Oracle):
@@ -136,6 +143,7 @@ class Tuner(object):
         self.max_trials = max_trials
         self.executions_per_trial = executions_per_trial
         self.max_model_size = max_model_size
+        self.distribution_strategy = distribution_strategy
 
         # Compilation options
         self.optimizer = optimizer
@@ -229,27 +237,32 @@ class Tuner(object):
             # Get model; this will reset the Keras session
             if not self.tune_new_entries:
                 hp = hp.copy()
-            model = self._build_model(hp)
-            self._compile_model(model)
 
-            # Start execution
-            execution = execution_module.Execution(
-                execution_id=execution_id,
-                trial_id=trial.trial_id,
-                max_epochs=max_epochs,
-                max_steps=max_steps,
-                base_directory=trial.directory)
-            trial.executions.append(execution)
-            self.on_execution_begin(trial, execution, model)
+            with tuner_utils.maybe_distribute(self.distribution_strategy):
+                model = self._build_model(hp)
+                self._compile_model(model)
 
-            # During model `fit`,
-            # the patched callbacks call
-            # `self.on_epoch_begin`, `self.on_epoch_end`,
-            # `self.on_batch_begin`, `self.on_batch_end`.
-            fit_kwargs['callbacks'] = self._inject_callbacks(
-                original_callbacks, trial, execution)
-            model.fit(*fit_args, **fit_kwargs)
-            self.on_execution_end(trial, execution, model)
+                # Start execution
+                execution = execution_module.Execution(
+                    execution_id=execution_id,
+                    trial_id=trial.trial_id,
+                    max_epochs=max_epochs,
+                    max_steps=max_steps,
+                    base_directory=trial.directory)
+                trial.executions.append(execution)
+                self.on_execution_begin(trial, execution, model)
+
+                # During model `fit`,
+                # the patched callbacks call
+                # `self.on_epoch_begin`, `self.on_epoch_end`,
+                # `self.on_batch_begin`, `self.on_batch_end`.
+                fit_kwargs['callbacks'] = self._inject_callbacks(
+                    original_callbacks, trial, execution)
+                model.fit(*fit_args, **fit_kwargs)
+                self.on_execution_end(trial, execution, model)
+
+            # clean-up TF graph from previously stored (defunct) graph
+            utils.clear_tf_session()
 
     def on_search_begin(self):
         pass
@@ -560,8 +573,6 @@ class Tuner(object):
         oversized_streak = 0
 
         while 1:
-            # clean-up TF graph from previously stored (defunct) graph
-            utils.clear_tf_session()
             self._stats.num_generated_models += 1
             fail_streak += 1
             try:
