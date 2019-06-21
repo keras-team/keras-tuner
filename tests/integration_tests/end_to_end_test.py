@@ -24,6 +24,16 @@ def tmp_dir(tmpdir_factory):
     return tmpdir_factory.mktemp('integration_test')
 
 
+mnist_data = None
+
+
+def get_data():
+    global mnist_data
+    if not mnist_data:
+        mnist_data = keras.datasets.mnist.load_data()
+    return mnist_data
+
+
 def build_model(hp):
     inputs = keras.Input(shape=(28, 28))
     x = keras.layers.Reshape((28 * 28,))(inputs)
@@ -42,9 +52,11 @@ def build_model(hp):
     return model
 
 
-@pytest.mark.parametrize('distribution_strategy', [None, tf.distribute.OneDeviceStrategy('/cpu:0')])
+@pytest.mark.parametrize(
+    'distribution_strategy',
+    [None, tf.distribute.OneDeviceStrategy('/cpu:0')])
 def test_end_to_end_workflow(distribution_strategy):
-    (x, y), (val_x, val_y) = keras.datasets.mnist.load_data()
+    (x, y), (val_x, val_y) = get_data()
     x = x.astype('float32') / 255.
     val_x = val_x.astype('float32') / 255.
 
