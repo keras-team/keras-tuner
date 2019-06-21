@@ -77,11 +77,10 @@ class Oracle(object):
         """
         raise NotImplementedError
 
-    def save(self):
+    def save(self, fname):
         raise NotImplementedError
 
-    @classmethod
-    def load(self, filename):
+    def reload(self, fname):
         raise NotImplementedError
 
     def _compute_values_hash(self, values):

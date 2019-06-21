@@ -147,8 +147,8 @@ def test_tuning_correctness(tmp_dir):
         tuner.trials, key=lambda x: x.score)
     assert first_trial.score == min(m0_epochs)
     assert second_trial.score == min(m1_epochs)
-    status = tuner.get_status()
-    assert status['best_trial']['score'] == min(m0_epochs)
+    state = tuner.get_state()
+    assert state['best_trial']['score'] == min(m0_epochs)
     assert tuner._get_best_trials(1)[0] == first_trial
 
     # Metrics tracking correctness
