@@ -11,12 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
+import copy
 import queue
 import random
+import json
 from ..engine import tuner as tuner_module
 from ..engine import oracle as oracle_module
+from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
+
+
+def queue_to_list(queue):
+    ret_list = []
+    while not queue.empty():
+        ret_list.append(queue.get())
+    return ret_list
 
 
 class HyperbandOracle(oracle_module.Oracle):
@@ -45,7 +53,7 @@ class HyperbandOracle(oracle_module.Oracle):
         self.min_epochs = min_epochs
         self.max_epochs = max_epochs
         self._queue = queue.Queue()
-        self._trials_count = 0
+        self._trial_count = 0
         self._running = {}
         self._trial_id_to_candidate_index = {}
         self._candidates = None
@@ -65,6 +73,7 @@ class HyperbandOracle(oracle_module.Oracle):
             self._trial_id_to_candidate_index[trial_id]] = score
 
     def populate_space(self, trial_id, space):
+        self.update_space(space)
         # Queue is not empty means it is in one bracket.
         if not self._queue.empty():
             return self._run_values(space, trial_id)
@@ -80,13 +89,13 @@ class HyperbandOracle(oracle_module.Oracle):
         # If the current band ends
         else:
             self._bracket_index = 0
-            self._generate_candidates(space)
+            self._generate_candidates()
             self._index_to_id = {}
 
         return self._run_values(space, trial_id)
 
     def _run_values(self, space, trial_id):
-        self._trials_count += 1
+        self._trial_count += 1
         self._running[trial_id] = True
         candidate_index = self._queue.get()
         if candidate_index not in self._index_to_id:
@@ -109,13 +118,13 @@ class HyperbandOracle(oracle_module.Oracle):
                 return_values[hyperparameter.name] = hyperparameter.default
         return return_values
 
-    def _generate_candidates(self, space):
+    def _generate_candidates(self):
         self._candidates = []
         self._candidate_score = []
         num_models = self._model_sequence[0]
 
         for index in range(num_models):
-            instance = self._new_trial(space)
+            instance = self._new_trial()
             if instance is not None:
                 self._candidates.append(instance)
                 self._candidate_score.append(None)
@@ -125,13 +134,12 @@ class HyperbandOracle(oracle_module.Oracle):
 
     def _select_candidates(self):
         sorted_candidates = sorted(list(range(len(self._candidates))),
-                                   key=lambda i: self._candidate_score[i],
-                                   reverse=True)
+                                   key=lambda i: self._candidate_score[i])
         num_selected_candidates = self._model_sequence[self._bracket_index]
         for index in sorted_candidates[:num_selected_candidates]:
             self._queue.put(index)
 
-    def _new_trial(self, space):
+    def _new_trial(self):
         """Fill a given hyperparameter space with values.
 
         Returns:
@@ -140,7 +148,6 @@ class HyperbandOracle(oracle_module.Oracle):
             space, it may return values for more parameters
             than what was listed in `space`.
         """
-        self.update_space(space)
         collisions = 0
         while 1:
             # Generate a set of random values.
@@ -195,14 +202,59 @@ class HyperbandOracle(oracle_module.Oracle):
             previous_size = size
         return output_sizes
 
-    @classmethod
-    def load(cls, filename):
-        # TODO
-        raise NotImplementedError
+    def save(self, fname):
+        state = {
+            'seed': self.seed,
+            'factor': self.factor,
+            'min_epochs': self.min_epochs,
+            'max_epochs': self.max_epochs,
+            'queue': queue_to_list(copy.copy(self._queue)),
+            'trial_count': self._trial_count,
+            'running': self._running,
+            'trial_id_to_candidate_index': self._trial_id_to_candidate_index,
+            'candidates': self._candidates,
+            'candidate_score': self._candidate_score,
+            'max_collisions': self._max_collisions,
+            'seed_state': self._seed_state,
+            'tried_so_far': list(self._tried_so_far),
+            'index_to_id': self._index_to_id,
+            'num_brackets': self._num_brackets,
+            'bracket_index': self._bracket_index,
+            'model_sequence': self._model_sequence,
+            'epoch_sequence': self._epoch_sequence
+        }
+        state_json = json.dumps(state)
+        tf_utils.write_file(fname, state_json)
 
-    def save(self):
-        # TODO
-        raise NotImplementedError
+    def reload(self, fname):
+        state_data = tf_utils.read_file(fname)
+        state = json.loads(state_data)
+        self.seed = state['seed']
+        self.factor = state['factor']
+        self.min_epochs = state['min_epochs']
+        self.max_epochs = state['max_epochs']
+        self._queue = queue.Queue()
+        for elem in state['queue']:
+            self._queue.put(elem)
+        self._trial_count = state['trial_count']
+        self._running = state['running']
+        self._trial_id_to_candidate_index = state['trial_id_to_candidate_index']
+        self._candidates = state['candidates']
+        self._candidate_score = state['candidate_score']
+        self._max_collisions = state['max_collisions']
+        self._seed_state = state['seed_state']
+        self._tried_so_far = set(state['tried_so_far'])
+        self._index_to_id = state['index_to_id']
+        self._num_brackets = state['num_brackets']
+        self._bracket_index = state['bracket_index']
+        self._model_sequence = state['model_sequence']
+        self._epoch_sequence = state['epoch_sequence']
+
+        # Put the unfinished trials back into the queue to be trained again.
+        for trial_id, value in self._running.items():
+            if value:
+                self._queue.put(self._trial_id_to_candidate_index[trial_id])
+                self._running[trial_id] = False
 
     def report_status(self, trial_id, status):
         # TODO

@@ -77,7 +77,7 @@ class Oracle(object):
         """
         raise NotImplementedError
 
-    def save(self):
+    def save(self, fname):
         raise NotImplementedError
 
     def reload(self, fname):
