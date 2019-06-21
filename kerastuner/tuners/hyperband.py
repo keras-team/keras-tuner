@@ -53,7 +53,7 @@ class HyperbandOracle(oracle_module.Oracle):
         self.min_epochs = min_epochs
         self.max_epochs = max_epochs
         self._queue = queue.Queue()
-        self._trials_count = 0
+        self._trial_count = 0
         self._running = {}
         self._trial_id_to_candidate_index = {}
         self._candidates = None
@@ -95,7 +95,7 @@ class HyperbandOracle(oracle_module.Oracle):
         return self._run_values(space, trial_id)
 
     def _run_values(self, space, trial_id):
-        self._trials_count += 1
+        self._trial_count += 1
         self._running[trial_id] = True
         candidate_index = self._queue.get()
         if candidate_index not in self._index_to_id:
@@ -210,7 +210,7 @@ class HyperbandOracle(oracle_module.Oracle):
             'min_epochs': self.min_epochs,
             'max_epochs': self.max_epochs,
             'queue': queue_to_list(copy.copy(self._queue)),
-            'trial_count': self._trials_count,
+            'trial_count': self._trial_count,
             'running': self._running,
             'trial_id_to_candidate_index': self._trial_id_to_candidate_index,
             'candidates': self._candidates,
@@ -237,7 +237,7 @@ class HyperbandOracle(oracle_module.Oracle):
         self._queue = queue.Queue()
         for elem in state['queue']:
             self._queue.put(elem)
-        self._trials_count = state['trial_count']
+        self._trial_count = state['trial_count']
         self._running = state['running']
         self._trial_id_to_candidate_index = state['trial_id_to_candidate_index']
         self._candidates = state['candidates']
