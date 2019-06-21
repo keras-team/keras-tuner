@@ -26,6 +26,8 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         self._num_trials = 0
         self._score = {}
         self._values = {}
+        self._x = None
+        self._y = None
         self.gpr = gaussian_process.GaussianProcessRegressor(
             kernel=gaussian_process.kernels.ConstantKernel(1.0),
             alpha=self.alpha)
@@ -39,11 +41,11 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             self._values[trial_id] = values
             return {'status': 'RUN', 'values': values}
 
-        x, y = self._training_data()
+        self._training_data()
         # Update Gaussian process with existing samples
-        self.gpr.fit(x, y)
+        self.gpr.fit(self._x, self._y)
 
-        values = self.propose_location(x.shape[1])
+        values = self.propose_location(self._x.shape[1])
         return self._convert(values)
 
     def report_status(self, trial_id, status):
@@ -110,7 +112,8 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             x.append(vector)
             y.append(score)
 
-        return np.array(x), np.array(y)
+        self._x = np.array(x)
+        self._y = np.array(y)
 
     def _convert(self, vector):
         values = {}
@@ -129,7 +132,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                 return index
         return None
 
-    def expected_improvement(self, X, X_sample):
+    def expected_improvement(self, X):
         """Computes the EI at points X based on existing samples X_sample and
         Y_sample using a Gaussian process surrogate model.
 
@@ -141,22 +144,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             Expected improvements at points X.
         """
         mu, sigma = self.gpr.predict(X, return_std=True)
-        mu_sample = self.gpr.predict(X_sample)
-
-        sigma = sigma.reshape(-1, X_sample.shape[1])
-
-        # Needed for noise-based model,
-        # otherwise use np.max(Y_sample).
-        # See also section 2.4 in [...]
-        mu_sample_opt = np.max(mu_sample)
-
-        with np.errstate(divide='warn'):
-            imp = mu - mu_sample_opt - self.beta
-            Z = imp / sigma
-            ei = imp * scipy_stats.norm.cdf(Z) + sigma * scipy_stats.norm.pdf(Z)
-            ei[sigma == 0.0] = 0.0
-
-        return ei
+        return mu +
 
     def propose_location(self, dim):
         """ Proposes the next sampling point by optimizing the acquisition function.
@@ -181,7 +169,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
 
         def min_obj(x):
             # Minimization objective is the negative acquisition function
-            return -self.expected_improvement(x.reshape(-1, dim), x)
+            return -self.expected_improvement(x.reshape(-1, dim))
 
         # Find the best optimum by starting from n_restart different random points.
         n_restarts = 25
