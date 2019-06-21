@@ -38,3 +38,4 @@ def test_bayesian_optimization_tuner():
         max_trials=15,
     )
     assert isinstance(tuner.oracle, bo_module.BayesianOptimizationOracle)
+
