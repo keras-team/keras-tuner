@@ -17,6 +17,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import contextlib
 import random
 
 from tensorflow import keras
@@ -205,13 +206,23 @@ class HyperParameters(object):
     def __init__(self):
         self.space = []
         self.values = {}
+        self._name_scopes = []
+
+    @contextlib.contextmanager
+    def name_scope(self, name):
+        self._name_scopes.append(name)
+        try:
+            yield
+        finally:
+            self._name_scopes.pop()
 
     def retrieve(self, name, type, config):
-        if name in self.values:
+        full_name = self._get_full_name(name)
+        if full_name in self.values:
             # TODO: type compatibility check,
             # or name collision check.
-            return self.values[name]
-        return self.register(name, type, config)
+            return self.values[full_name]
+        return self.register(full_name, type, config)
 
     def register(self, name, type, config):
         config['name'] = name
@@ -267,6 +278,9 @@ class HyperParameters(object):
 
     def copy(self):
         return HyperParameters.from_config(self.get_config())
+
+    def _get_full_name(self, name):
+        return '/'.join(self._name_scopes + [name])
 
 
 def deserialize(config):

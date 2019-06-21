@@ -19,6 +19,7 @@ from __future__ import print_function
 
 import time
 import os
+import json
 
 from . import metrics_tracking
 from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
@@ -36,7 +37,7 @@ class Execution(object):
         self.trial_id = trial_id
         self.max_epochs = max_epochs
         self.max_steps = max_steps
-        self.current_epoch = 0
+        self.base_directory = base_directory
 
         self.per_epoch_metrics = metrics_tracking.MetricsTracker()
         self.per_batch_metrics = metrics_tracking.MetricsTracker()
@@ -49,17 +50,51 @@ class Execution(object):
                                       'execution_' + execution_id)
         tf_utils.create_directory(self.directory)
 
-    def get_status(self):
+    def get_state(self):
         return {
             'execution_id': self.execution_id,
             'trial_id': self.trial_id,
-            'start_time': self.start_time,
-            'per_epoch_metrics': self.per_epoch_metrics.get_config(),
-            'eta': self.eta,
-            'epochs_seen': self.epochs_seen,
             'max_epochs': self.max_epochs,
-            'training_complete': self.training_complete
+            'max_steps': self.max_steps,
+            'per_epoch_metrics': self.per_epoch_metrics.get_config(),
+            'per_batch_metrics': self.per_batch_metrics.get_config(),
+            'epochs_seen': self.epochs_seen,
+            'best_checkpoint': self.best_checkpoint,
+            'training_complete': self.training_complete,
+            'start_time': self.start_time,
+            'base_directory': self.base_directory,
+            'eta': self.eta,
         }
+
+    def save(self):
+        state = self.get_state()
+        state_json = json.dumps(state)
+        fname = os.path.join(self.directory, 'execution.json')
+        tf_utils.write_file(fname, state_json)
+        return str(fname)
+
+    @classmethod
+    def load(cls, fname):
+        state_data = tf_utils.read_file(fname)
+        state = json.loads(state_data)
+        execution = cls(
+            execution_id=state['execution_id'],
+            trial_id=state['trial_id'],
+            max_epochs=state['max_epochs'],
+            max_steps=state['max_steps'],
+            base_directory=state['base_directory']
+        )
+        per_epoch = metrics_tracking.MetricsTracker.from_config(
+            state['per_epoch_metrics'])
+        execution.per_epoch_metrics = per_epoch
+        per_batch = metrics_tracking.MetricsTracker.from_config(
+            state['per_batch_metrics'])
+        execution.per_batch_metrics = per_batch
+        execution.epochs_seen = state['epochs_seen']
+        execution.best_checkpoint = state['best_checkpoint']
+        execution.training_complete = state['training_complete']
+        execution.start_time = state['start_time']
+        return execution
 
     @property
     def eta(self):

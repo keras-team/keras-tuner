@@ -49,6 +49,14 @@ class TunerStats(object):
             'num_oversized_models': self.num_oversized_models
         }
 
+    @classmethod
+    def from_config(cls, config):
+        stats = cls()
+        stats.num_generated_models = config['num_generated_models']
+        stats.num_invalid_models = config['num_invalid_models']
+        stats.num_oversized_models = config['num_oversized_models']
+        return stats
+
 
 def get_max_epochs_and_steps(fit_args, fit_kwargs):
     if fit_args:
@@ -159,7 +167,6 @@ class Display(object):
         # epoch bar
         self.epoch_pbar.set_postfix(final_epoch_postfix)
         self.epoch_pbar.close()
-        execution.current_epoch += 1
 
     def on_batch_end(self, execution, model, batch, logs=None):
         logs = logs or {}
@@ -182,7 +189,7 @@ class Display(object):
 
         self.cpu_usage.append(int(host_status['cpu']['usage']))
         description += '[CPU:%3s%%]' % int(np.average(self.cpu_usage))
-        description += 'Epoch %s/%s' % (execution.current_epoch,
+        description += 'Epoch %s/%s' % (execution.epochs_seen + 1,
                                         execution.max_epochs)
         self.epoch_pbar.set_description(description)
 

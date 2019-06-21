@@ -21,8 +21,10 @@ from __future__ import print_function
 from ..engine import tuner as tuner_module
 from ..engine import oracle as oracle_module
 from ..engine import hyperparameters as hp_module
+from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 
 import random
+import json
 
 
 class RandomSearchOracle(oracle_module.Oracle):
@@ -70,6 +72,22 @@ class RandomSearchOracle(oracle_module.Oracle):
             self._tried_so_far.add(values_hash)
             break
         return {'values': values, 'status': 'RUN'}
+
+    def save(self, fname):
+        state = {
+            'seed': self.seed,
+            'seed_state': self._seed_state,
+            'tried_so_far': list(self._tried_so_far),
+        }
+        state_json = json.dumps(state)
+        tf_utils.write_file(fname, state_json)
+
+    def reload(self, fname):
+        state_data = tf_utils.read_file(fname)
+        state = json.loads(state_data)
+        self.seed = state['seed']
+        self._seed_state = state['seed_state']
+        self._tried_so_far = set(state['tried_so_far'])
 
 
 class RandomSearch(tuner_module.Tuner):
