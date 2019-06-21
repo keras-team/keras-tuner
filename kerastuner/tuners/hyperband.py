@@ -134,8 +134,7 @@ class HyperbandOracle(oracle_module.Oracle):
 
     def _select_candidates(self):
         sorted_candidates = sorted(list(range(len(self._candidates))),
-                                   key=lambda i: self._candidate_score[i],
-                                   reverse=True)
+                                   key=lambda i: self._candidate_score[i])
         num_selected_candidates = self._model_sequence[self._bracket_index]
         for index in sorted_candidates[:num_selected_candidates]:
             self._queue.put(index)
