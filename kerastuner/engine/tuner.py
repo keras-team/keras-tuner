@@ -238,31 +238,28 @@ class Tuner(object):
             if not self.tune_new_entries:
                 hp = hp.copy()
 
-            with tuner_utils.maybe_distribute(self.distribution_strategy):
-                model = self._build_model(hp)
-                self._compile_model(model)
+            model = self._build_model(hp)
+            self._compile_model(model)
 
-                # Start execution
-                execution = execution_module.Execution(
-                    execution_id=execution_id,
-                    trial_id=trial.trial_id,
-                    max_epochs=max_epochs,
-                    max_steps=max_steps,
-                    base_directory=trial.directory)
-                trial.executions.append(execution)
-                self.on_execution_begin(trial, execution, model)
+            # Start execution
+            execution = execution_module.Execution(
+                execution_id=execution_id,
+                trial_id=trial.trial_id,
+                max_epochs=max_epochs,
+                max_steps=max_steps,
+                base_directory=trial.directory)
+            trial.executions.append(execution)
+            self.on_execution_begin(trial, execution, model)
 
-                # During model `fit`,
-                # the patched callbacks call
-                # `self.on_epoch_begin`, `self.on_epoch_end`,
-                # `self.on_batch_begin`, `self.on_batch_end`.
-                fit_kwargs['callbacks'] = self._inject_callbacks(
-                    original_callbacks, trial, execution)
-                model.fit(*fit_args, **fit_kwargs)
-                self.on_execution_end(trial, execution, model)
+            # During model `fit`,
+            # the patched callbacks call
+            # `self.on_epoch_begin`, `self.on_epoch_end`,
+            # `self.on_batch_begin`, `self.on_batch_end`.
+            fit_kwargs['callbacks'] = self._inject_callbacks(
+                original_callbacks, trial, execution)
+            model.fit(*fit_args, **fit_kwargs)
+            self.on_execution_end(trial, execution, model)
 
-            # clean-up TF graph from previously stored (defunct) graph
-            utils.clear_tf_session()
 
     def on_search_begin(self):
         pass
@@ -573,10 +570,13 @@ class Tuner(object):
         oversized_streak = 0
 
         while 1:
+            # clean-up TF graph from previously stored (defunct) graph
+            utils.clear_tf_session()
             self._stats.num_generated_models += 1
             fail_streak += 1
             try:
-                model = self.hypermodel.build(hp)
+                with tuner_utils.maybe_distribute(self.distribution_strategy):
+                    model = self.hypermodel.build(hp)
             except:
                 if config.DEBUG:
                     traceback.print_exc()
@@ -615,30 +615,31 @@ class Tuner(object):
         return self._compile_model(model)
 
     def _compile_model(self, model):
-        if not model.optimizer:
-            if not self.optimizer:
-                raise ValueError(
-                    'The hypermodel returned a model '
-                    'that was not compiled. In this case, you '
-                    'should pass the arguments `optimizer`, `loss`, '
-                    'and `metrics` to the Tuner constructor, so '
-                    'that the Tuner will able to compile the model.')
-            model.compile(
-                optimizer=self.optimizer, loss=self.loss, metrics=self.metrics)
-        elif self.optimizer or self.loss or self.metrics:
-            compile_kwargs = {
-                'optimizer': model.optimizer,
-                'loss': model.loss,
-                'metrics': model.metrics,
-            }
-            if self.loss:
-                compile_kwargs['loss'] = self.loss
-            if self.optimizer:
-                compile_kwargs['optimizer'] = self.optimizer
-            if self.metrics:
-                compile_kwargs['metrics'] = self.metrics
-            model.compile(**compile_kwargs)
-        return model
+        with tuner_utils.maybe_distribute(self.distribution_strategy):
+            if not model.optimizer:
+                if not self.optimizer:
+                    raise ValueError(
+                        'The hypermodel returned a model '
+                        'that was not compiled. In this case, you '
+                        'should pass the arguments `optimizer`, `loss`, '
+                        'and `metrics` to the Tuner constructor, so '
+                        'that the Tuner will able to compile the model.')
+                model.compile(
+                    optimizer=self.optimizer, loss=self.loss, metrics=self.metrics)
+            elif self.optimizer or self.loss or self.metrics:
+                compile_kwargs = {
+                    'optimizer': model.optimizer,
+                    'loss': model.loss,
+                    'metrics': model.metrics,
+                }
+                if self.loss:
+                    compile_kwargs['loss'] = self.loss
+                if self.optimizer:
+                    compile_kwargs['optimizer'] = self.optimizer
+                if self.metrics:
+                    compile_kwargs['metrics'] = self.metrics
+                model.compile(**compile_kwargs)
+            return model
 
     def _check_space_consistency(self, hp):
         # Optionally disallow hyperparameters defined on the fly.

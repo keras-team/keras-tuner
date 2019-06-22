@@ -55,7 +55,7 @@ def build_model(hp):
 @pytest.mark.parametrize(
     'distribution_strategy',
     [None, tf.distribute.OneDeviceStrategy('/cpu:0')])
-def test_end_to_end_workflow(distribution_strategy):
+def test_end_to_end_workflow(tmp_dir, distribution_strategy):
     (x, y), (val_x, val_y) = get_data()
     x = x.astype('float32') / 255.
     val_x = val_x.astype('float32') / 255.
@@ -68,7 +68,7 @@ def test_end_to_end_workflow(distribution_strategy):
         objective='val_accuracy',
         max_trials=20,
         distribution_strategy=distribution_strategy,
-        directory='test_dir')
+        directory=tmp_dir)
 
     tuner.search_space_summary()
 
@@ -88,4 +88,4 @@ def test_end_to_end_workflow(distribution_strategy):
 
 
 if __name__ == '__main__':
-    test_end_to_end_workflow()
+    test_end_to_end_workflow('test_dir')
