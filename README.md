@@ -60,7 +60,7 @@ tuner = RandomSearch(
 You can print a summary of the search space:
 
 ```python
-tuner.search_space_sumnmary()
+tuner.search_space_summary()
 ```
 
 Then, start the search for the best hyperparameter configuration.
