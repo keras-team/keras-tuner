@@ -1,7 +1,6 @@
 import numpy as np
 import random
 from scipy import optimize as scipy_optimize
-from scipy import stats as scipy_stats
 from sklearn import gaussian_process
 
 from ..engine import tuner as tuner_module
@@ -10,10 +9,25 @@ from ..engine import hyperparameters as hp_module
 
 
 class BayesianOptimizationOracle(oracle_module.Oracle):
+    """Bayesian optimization oracle.
+
+    It uses Bayesian optimization with a underlying Gaussian process model.
+    The acquisition function used is upper confidence bound (UCB).
+
+    Attributes:
+        init_samples: Int. The number of randomly generated samples as initial
+            training data for Bayesian optmization.
+        alpha: Float or array-like. Value added to the diagonal of
+            the kernel matrix during fitting.
+        beta: Float. The balancing factor of exploration and exploitation.
+            The larger it is, the more explorative it is.
+        seed: Int. Random seed.
+
+    """
     def __init__(self,
                  init_samples=2,
-                 alpha=0.04,
-                 beta=0.01,
+                 alpha=1e-10,
+                 beta=2.6,
                  seed=None):
         super(BayesianOptimizationOracle, self).__init__()
         self.init_samples = init_samples
@@ -45,19 +59,18 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         # Update Gaussian process with existing samples
         self.gpr.fit(self._x, self._y)
 
-        values = self.propose_location(self._x.shape[1])
+        values = self._generate_vector()
         return self._convert(values)
 
     def report_status(self, trial_id, status):
         # TODO
         raise NotImplementedError
 
-    def save(self):
+    def save(self, fname):
         # TODO
         raise NotImplementedError
 
-    @classmethod
-    def load(cls, filename):
+    def reload(self, fname):
         # TODO
         raise NotImplementedError
 
@@ -120,7 +133,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         for index, value in enumerate(vector):
             hp = self.space[index]
             if isinstance(hp, hp_module.Choice):
-                value = hp.values[value]
+                value = hp.values[int(value)]
             elif isinstance(hp, hp_module.Fixed):
                 value = hp.value
             values[hp.name] = value
@@ -132,28 +145,12 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                 return index
         return None
 
-    def expected_improvement(self, X):
-        """Computes the EI at points X based on existing samples X_sample and
-        Y_sample using a Gaussian process surrogate model.
+    def _upper_confidence_bound(self, x):
+        mu, sigma = self.gpr.predict(x, return_std=True)
+        return mu - self.beta * sigma
 
-        Args:
-            X: Points at which EI shall be computed (m x d).
-            X_sample: Sample locations (n x d).
-
-        Returns:
-            Expected improvements at points X.
-        """
-        mu, sigma = self.gpr.predict(X, return_std=True)
-        return mu +
-
-    def propose_location(self, dim):
-        """ Proposes the next sampling point by optimizing the acquisition function.
-
-        Args:
-            dim: Int. x.shape[1]
-        Returns:
-            Location of the acquisition function maximum.
-        """
+    def _generate_vector(self, ):
+        dim = self._x.shape[1]
         min_val = 1
         min_x = None
         bounds = []
@@ -169,7 +166,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
 
         def min_obj(x):
             # Minimization objective is the negative acquisition function
-            return -self.expected_improvement(x.reshape(-1, dim))
+            return -self._upper_confidence_bound(x.reshape(-1, dim))
 
         # Find the best optimum by starting from n_restart different random points.
         n_restarts = 25
@@ -185,6 +182,26 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
 
 
 class BayesianOptimization(tuner_module.Tuner):
+    """BayesianOptimization tuning with Gaussian process.
+
+    Args:
+        hypermodel: Instance of HyperModel class
+            (or callable that takes hyperparameters
+            and returns a Model isntance).
+        objective: String. Name of model metric to minimize
+            or maximize, e.g. "val_accuracy".
+        max_trials: Int. Total number of trials
+            (model configurations) to test at most.
+            Note that the oracle may interrupt the search
+            before `max_trial` models have been tested.
+        init_samples: Int. The number of randomly generated samples as initial
+            training data for Bayesian optmization.
+        alpha: Float or array-like. Value added to the diagonal of
+            the kernel matrix during fitting.
+        beta: Float. The balancing factor of exploration and exploitation.
+            The larger it is, the more explorative it is.
+        seed: Int. Random seed.
+    """
     def __init__(self,
                  hypermodel,
                  objective,
@@ -192,7 +209,9 @@ class BayesianOptimization(tuner_module.Tuner):
                  init_samples=2,
                  seed=None,
                  **kwargs):
-        oracle = BayesianOptimizationOracle(init_samples, seed)
+        oracle = BayesianOptimizationOracle(init_samples=init_samples,
+
+                                            seed=seed)
         super(BayesianOptimization, self, ).__init__(oracle=oracle,
                                                      hypermodel=hypermodel,
                                                      objective=objective,
