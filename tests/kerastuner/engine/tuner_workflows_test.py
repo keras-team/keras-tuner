@@ -99,7 +99,7 @@ def test_basic_tuner_attributes(tmp_dir):
     assert len(tuner.trials) == 2
     assert len(tuner.trials[0].executions) == 3
     assert len(tuner.trials[1].executions) == 3
-    assert os.path.exists(os.path.join(tmp_dir, 'results'))
+    assert os.path.exists(os.path.join(tmp_dir, 'untitled_project'))
 
 
 def test_callbacks_in_fit_kwargs(tmp_dir):
