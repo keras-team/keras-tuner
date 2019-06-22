@@ -206,8 +206,7 @@ class Tuner(object):
                 trial_id=trial_id,
                 hyperparameters=hp.copy(),
                 max_executions=self.executions_per_trial,
-                base_directory=os.path.join(
-                    self._host.results_dir, self.project_name)
+                base_directory=self._host.results_dir
             )
             self.trials.append(trial)
             self.on_trial_begin(trial)
