@@ -260,7 +260,6 @@ class Tuner(object):
             model.fit(*fit_args, **fit_kwargs)
             self.on_execution_end(trial, execution, model)
 
-
     def on_search_begin(self):
         pass
 
