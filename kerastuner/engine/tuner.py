@@ -183,7 +183,7 @@ class Tuner(object):
 
         # Logs etc
         self._host = host_module.Host(
-            results_dir=os.path.join(self.directory, 'results'),
+            results_dir=os.path.join(self.directory, self.project_name),
             tmp_dir=os.path.join(self.directory, 'tmp'),
             export_dir=os.path.join(self.directory, 'export')
         )
@@ -484,7 +484,6 @@ class Tuner(object):
     def save(self):
         fname = os.path.join(self.directory, self.project_name, 'tuner.json')
         state = self.get_state()
-        print(state)
         state_json = json.dumps(state)
         tf_utils.write_file(fname, state_json)
         return str(fname)

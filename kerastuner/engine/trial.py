@@ -72,7 +72,7 @@ class Trial(object):
     def save(self):
         state = self.get_state()
         state_json = json.dumps(state)
-        fname = os.path.join(self.directory, 'execution.json')
+        fname = os.path.join(self.directory, 'trial.json')
         tf_utils.write_file(fname, state_json)
         return str(fname)
 
