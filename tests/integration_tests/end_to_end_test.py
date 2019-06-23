@@ -14,6 +14,7 @@
 
 import pytest
 
+import tensorflow as tf
 from tensorflow import keras
 import kerastuner
 
@@ -21,6 +22,16 @@ import kerastuner
 @pytest.fixture(scope='module')
 def tmp_dir(tmpdir_factory):
     return tmpdir_factory.mktemp('integration_test')
+
+
+mnist_data = None
+
+
+def get_data():
+    global mnist_data
+    if not mnist_data:
+        mnist_data = keras.datasets.mnist.load_data()
+    return mnist_data
 
 
 def build_model(hp):
@@ -41,8 +52,11 @@ def build_model(hp):
     return model
 
 
-def test_end_to_end_workflow(tmp_dir):
-    (x, y), (val_x, val_y) = keras.datasets.mnist.load_data()
+@pytest.mark.parametrize(
+    'distribution_strategy',
+    [None, tf.distribute.OneDeviceStrategy('/cpu:0')])
+def test_end_to_end_workflow(tmp_dir, distribution_strategy):
+    (x, y), (val_x, val_y) = get_data()
     x = x.astype('float32') / 255.
     val_x = val_x.astype('float32') / 255.
 
@@ -53,6 +67,7 @@ def test_end_to_end_workflow(tmp_dir):
         build_model,
         objective='val_accuracy',
         max_trials=20,
+        distribution_strategy=distribution_strategy,
         directory=tmp_dir)
 
     tuner.search_space_summary()

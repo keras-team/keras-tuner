@@ -97,6 +97,12 @@ class Tuner(object):
         allow_new_entries: Whether the hypermodel is allowed
             to request hyperparameter entries not listed in
             `hyperparameters`.
+        distribution_strategy: Optional. A TensorFlow
+            `tf.distribute` DistributionStrategy instance. If
+            specified, each execution will run under this scope. For
+            example, `tf.distribute.MirroredStrategy(['/gpu:0, /'gpu:1])`
+            will run each execution on two GPUs. Currently only
+            single-worker strategies are supported.
         directory: String. Path to the working directory (relative).
         project_name: Name to use as prefix for files saved
             by this Tuner.
@@ -115,6 +121,7 @@ class Tuner(object):
                  hyperparameters=None,
                  tune_new_entries=True,
                  allow_new_entries=True,
+                 distribution_strategy=None,
                  directory=None,
                  project_name=None):
         if not isinstance(oracle, oracle_module.Oracle):
@@ -136,6 +143,7 @@ class Tuner(object):
         self.max_trials = max_trials
         self.executions_per_trial = executions_per_trial
         self.max_model_size = max_model_size
+        self.distribution_strategy = distribution_strategy
 
         # Compilation options
         self.optimizer = optimizer
@@ -228,6 +236,7 @@ class Tuner(object):
             # Get model; this will reset the Keras session
             if not self.tune_new_entries:
                 hp = hp.copy()
+
             model = self._build_model(hp)
             self._compile_model(model)
 
@@ -563,7 +572,8 @@ class Tuner(object):
             self._stats.num_generated_models += 1
             fail_streak += 1
             try:
-                model = self.hypermodel.build(hp)
+                with tuner_utils.maybe_distribute(self.distribution_strategy):
+                    model = self.hypermodel.build(hp)
             except:
                 if config.DEBUG:
                     traceback.print_exc()
@@ -602,30 +612,31 @@ class Tuner(object):
         return self._compile_model(model)
 
     def _compile_model(self, model):
-        if not model.optimizer:
-            if not self.optimizer:
-                raise ValueError(
-                    'The hypermodel returned a model '
-                    'that was not compiled. In this case, you '
-                    'should pass the arguments `optimizer`, `loss`, '
-                    'and `metrics` to the Tuner constructor, so '
-                    'that the Tuner will able to compile the model.')
-            model.compile(
-                optimizer=self.optimizer, loss=self.loss, metrics=self.metrics)
-        elif self.optimizer or self.loss or self.metrics:
-            compile_kwargs = {
-                'optimizer': model.optimizer,
-                'loss': model.loss,
-                'metrics': model.metrics,
-            }
-            if self.loss:
-                compile_kwargs['loss'] = self.loss
-            if self.optimizer:
-                compile_kwargs['optimizer'] = self.optimizer
-            if self.metrics:
-                compile_kwargs['metrics'] = self.metrics
-            model.compile(**compile_kwargs)
-        return model
+        with tuner_utils.maybe_distribute(self.distribution_strategy):
+            if not model.optimizer:
+                if not self.optimizer:
+                    raise ValueError(
+                        'The hypermodel returned a model '
+                        'that was not compiled. In this case, you '
+                        'should pass the arguments `optimizer`, `loss`, '
+                        'and `metrics` to the Tuner constructor, so '
+                        'that the Tuner will able to compile the model.')
+                model.compile(
+                    optimizer=self.optimizer, loss=self.loss, metrics=self.metrics)
+            elif self.optimizer or self.loss or self.metrics:
+                compile_kwargs = {
+                    'optimizer': model.optimizer,
+                    'loss': model.loss,
+                    'metrics': model.metrics,
+                }
+                if self.loss:
+                    compile_kwargs['loss'] = self.loss
+                if self.optimizer:
+                    compile_kwargs['optimizer'] = self.optimizer
+                if self.metrics:
+                    compile_kwargs['metrics'] = self.metrics
+                model.compile(**compile_kwargs)
+            return model
 
     def _check_space_consistency(self, hp):
         # Optionally disallow hyperparameters defined on the fly.

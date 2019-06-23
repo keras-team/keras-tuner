@@ -19,7 +19,7 @@ import subprocess
 import sys
 
 import tensorflow as tf
-from tensorflow.io import gfile
+from tensorflow.compat.v1.io import gfile
 from tensorflow.python import ConfigProto, GraphDef, Session
 from tensorflow.keras.models import model_from_json, load_model
 from kerastuner.abstractions.display import write_log
@@ -41,7 +41,7 @@ class GFileProxy_2_x(proxy.GFileProxy):
         Returns:
             GFile - a GFile object representing the opened file.
         """
-        return tf.io.gfile.GFile(name, mode)
+        return tf.compat.v1.io.gfile.GFile(name, mode)
 
     def makedirs(self, path):
         """Creates a directory and all parent/intermediate directories.
@@ -54,7 +54,7 @@ class GFileProxy_2_x(proxy.GFileProxy):
         Raises:
             errors.OpError: If the operation fails.
         """
-        return tf.io.gfile.makedirs(path)
+        return tf.compat.v1.io.gfile.makedirs(path)
 
     def exists(self, path):
         """Determines whether a path exists or not.
@@ -70,7 +70,7 @@ class GFileProxy_2_x(proxy.GFileProxy):
             errors.OpError: Propagates any errors reported
                 by the FileSystem API.
         """
-        return tf.io.gfile.exists(path)
+        return tf.compat.v1.io.gfile.exists(path)
 
     def rmtree(self, path):
         """Deletes everything under path recursively.
@@ -81,7 +81,7 @@ class GFileProxy_2_x(proxy.GFileProxy):
         Raises:
         errors.OpError: If the operation fails.
         """
-        return tf.io.gfile.rmtree(path)
+        return tf.compat.v1.io.gfile.rmtree(path)
 
     def glob(self, pattern):
         """Returns a list of files that match the given pattern(s).
@@ -95,7 +95,7 @@ class GFileProxy_2_x(proxy.GFileProxy):
         Raises:
         errors.OpError: If there are filesystem / directory listing errors.
         """
-        return tf.io.gfile.glob(pattern)
+        return tf.compat.v1.io.gfile.glob(pattern)
 
     def remove(self, path):
         """Deletes the path located at 'path'.
@@ -107,7 +107,7 @@ class GFileProxy_2_x(proxy.GFileProxy):
         errors.OpError: Propagates any errors reported by the FileSystem API.
             E.g., NotFoundError if the path does not exist.
         """
-        return tf.io.gfile.remove(path)
+        return tf.compat.v1.io.gfile.remove(path)
 
     def copy(self, src, dst, overwrite=False):
         """Copies data from src to dst.
@@ -121,7 +121,7 @@ class GFileProxy_2_x(proxy.GFileProxy):
         Raises:
         errors.OpError: If the operation fails.
         """
-        return tf.io.gfile.copy(src, dst, overwrite=overwrite)
+        return tf.compat.v1.io.gfile.copy(src, dst, overwrite=overwrite)
 
     def __getattr__(self, name):
         return getattr(gfile, name)
@@ -159,15 +159,15 @@ class Utils_2_x(proxy.UtilsBase):
         model.save_weights(weights_tmp, overwrite=True)
 
         # Move the file, potentially across filesystems.
-        tf.io.gfile.copy(weights_tmp, weights_path, overwrite=True)
+        tf.compat.v1.io.gfile.copy(weights_tmp, weights_path, overwrite=True)
         write_log("Moving weights to %s" % weights_path)
-        tf.io.gfile.remove(weights_tmp)
+        tf.compat.v1.io.gfile.remove(weights_tmp)
 
     def save_keras_bundle_model(self, model, path, tmp_path):
         path += ".keras_bundle.h5"
         model.save(tmp_path)
-        tf.io.gfile.copy(tmp_path, path, overwrite=True)
-        tf.io.gfile.remove(tmp_path)
+        tf.compat.v1.io.gfile.copy(tmp_path, path, overwrite=True)
+        tf.compat.v1.io.gfile.remove(tmp_path)
 
     def save_tflite(self, model, path, tmp_path, post_training_quantize=True):
         # First, create a SavedModel in the temporary directory
@@ -205,7 +205,7 @@ class Utils_2_x(proxy.UtilsBase):
                        input_types,
                        toco_compatible):
         # Parse the GraphDef, and determine the inputs and outputs
-        with tf.io.gfile.GFile(frozen_model_path, "rb") as f:
+        with tf.compat.v1.io.gfile.GFile(frozen_model_path, "rb") as f:
             graph_def = GraphDef()
             graph_def.ParseFromString(f.read())
 
@@ -239,7 +239,7 @@ class Utils_2_x(proxy.UtilsBase):
         """
         saved_model_pb_file = os.path.join(saved_model_path, "saved_model.pb")
 
-        with tf.io.gfile.GFile(saved_model_pb_file, "rb") as f:
+        with tf.compat.v1.io.gfile.GFile(saved_model_pb_file, "rb") as f:
             graph_bytes = f.read()
 
         sm = SavedModel()
