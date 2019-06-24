@@ -184,7 +184,7 @@ tuner.search(x, y,
 
 ## Keras Tuner includes pre-made tunable applications: HyperResNet and HyperXception
 
-These are read-to-use hypermodels for computer vision.
+These are ready-to-use hypermodels for computer vision.
 
 They come pre-compiled with `loss="categorical_crossentropy"` and `metrics=["accuracy"]`.
 
