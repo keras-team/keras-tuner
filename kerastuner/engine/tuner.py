@@ -348,6 +348,7 @@ class Tuner(object):
             self.best_metrics.update(
                 name, trial.averaged_metrics.get_best_value(name))
         trial.score = trial.averaged_metrics.get_best_value(self.objective)
+        self.oracle.result(trial.trial_id, trial.score)
 
         self._checkpoint_trial(trial)
         self._checkpoint_tuner()
