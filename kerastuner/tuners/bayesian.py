@@ -29,7 +29,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
 
     def __init__(self,
                  init_samples=2,
-                 alpha=1e-10,
+                 alpha=1e-4,
                  beta=2.6,
                  seed=None):
         super(BayesianOptimizationOracle, self).__init__()
@@ -62,8 +62,9 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         # Update Gaussian process with existing samples
         self.gpr.fit(self._x, self._y)
 
-        values = self._generate_vector()
-        return {'status': 'RUN', 'values': self._convert(values)}
+        values = self._convert(self._generate_vector())
+        self._values[trial_id] = values
+        return {'status': 'RUN', 'values': values}
 
     def report_status(self, trial_id, status):
         # TODO
@@ -102,10 +103,12 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         self._values = state['values']
         self._x = state['x']
         self._y = state['y']
+        # Remove the unfinished trial_id.
+        for key in [key for key in self._values if key not in self._score]:
+            self._values.pop(key)
         self.gpr = gaussian_process.GaussianProcessRegressor(
             kernel=gaussian_process.kernels.ConstantKernel(1.0),
             alpha=self.alpha)
-        raise NotImplementedError
 
     def result(self, trial_id, score):
         self._score[trial_id] = score
@@ -143,9 +146,11 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         y = []
         for trial_id in self._values:
             values = self._values[trial_id]
+            if trial_id not in self._score:
+                continue
             score = self._score[trial_id]
 
-            vector = [None] * len(values)
+            vector = [0] * len(self.space)
             for name, value in values.items():
                 index = self._get_hp_index(name)
                 hp = self.space[index]
@@ -153,23 +158,43 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                     value = hp.values.index(value)
                 elif isinstance(hp, hp_module.Fixed):
                     value = 0
+                elif isinstance(hp, hp_module.Range):
+                    value = value
+                elif isinstance(hp, hp_module.Linear):
+                    value = value
                 vector[index] = value
 
-            x.append(vector)
+            # Exclude the fixed value from the vector
+            no_fixed_vector = []
+            for index, value in enumerate(vector):
+                if not isinstance(self.space[index], hp_module.Fixed):
+                    no_fixed_vector.append(value)
+            x.append(no_fixed_vector)
             y.append(score)
 
         self._x = np.array(x)
-        self._y = np.array(y)
+        self._y = np.array(y) / np.max(y)
 
     def _convert(self, vector):
         values = {}
-        for index, value in enumerate(vector):
+        vector_index = 0
+        for index, hp in enumerate(self.space):
             hp = self.space[index]
+            if isinstance(hp, hp_module.Fixed):
+                values[hp.name] = hp.value
+                continue
+
+            value = vector[vector_index]
+            vector_index += 1
+
             if isinstance(hp, hp_module.Choice):
                 value = hp.values[int(value)]
-            elif isinstance(hp, hp_module.Fixed):
-                value = hp.value
+            elif isinstance(hp, hp_module.Linear):
+                value = value[0]
+            elif isinstance(hp, hp_module.Range):
+                value = value[0]
             values[hp.name] = value
+
         return values
 
     def _get_hp_index(self, name):
@@ -179,21 +204,28 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         return None
 
     def _upper_confidence_bound(self, x):
-        dim = len(self.space)
-        x = x.reshape(-1, dim)
-        mu, sigma = self.gpr.predict(x, return_std=True)
+        x = x.reshape(-1, self._dim)
+        try:
+            mu, sigma = self.gpr.predict(x, return_std=True)
+        except UserWarning:
+            mu = np.array([1.0] * len(x), dtype=np.float64)
+            sigma = np.array([0.1] * len(x), dtype=np.float64)
         return mu - self.beta * sigma
 
+    @property
+    def _dim(self):
+        return len([hp for hp in self.space if not isinstance(hp, hp_module.Fixed)])
+
     def _generate_vector(self, ):
-        dim = len(self.space)
-        min_val = 1
+        min_val = float('inf')
         min_x = None
         bounds = []
         for hp in self.space:
             if isinstance(hp, hp_module.Choice):
                 bound = [0, len(hp.values)]
             elif isinstance(hp, hp_module.Fixed):
-                bound = [0, 0]
+                # Fixed values are excluded form the vector.
+                continue
             else:
                 bound = [hp.min_value, hp.max_value]
             bounds.append(bound)
@@ -201,10 +233,10 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
 
         # Find the best optimum by starting from n_restart different random points.
         n_restarts = 25
-        for x0 in np.random.uniform(bounds[:, 0], bounds[:, 1],
-                                    size=(n_restarts, dim)):
+        for x in np.random.uniform(bounds[:, 0], bounds[:, 1],
+                                   size=(n_restarts, self._dim)):
             res = scipy_optimize.minimize(self._upper_confidence_bound,
-                                          x0=x0, bounds=bounds,
+                                          x0=x, bounds=bounds,
                                           method='L-BFGS-B')
             if res.fun < min_val:
                 min_val = res.fun[0]
