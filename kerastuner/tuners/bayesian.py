@@ -18,9 +18,9 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
 
     Attributes:
         init_samples: Int. The number of randomly generated samples as initial
-            training data for Bayesian optmization.
-        alpha: Float or array-like. Value added to the diagonal of
-            the kernel matrix during fitting.
+            training data for Bayesian optimization.
+        alpha: Float. Value added to the diagonal of the kernel matrix
+            during fitting.
         beta: Float. The balancing factor of exploration and exploitation.
             The larger it is, the more explorative it is.
         seed: Int. Random seed.
