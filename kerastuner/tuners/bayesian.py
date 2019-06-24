@@ -105,6 +105,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         self._y = state['y']
         # Remove the unfinished trial_id.
         for key in [key for key in self._values if key not in self._score]:
+            self._tried_so_far.remove(self._compute_values_hash(self._values[key]))
             self._values.pop(key)
         self.gpr = gaussian_process.GaussianProcessRegressor(
             kernel=gaussian_process.kernels.ConstantKernel(1.0),
