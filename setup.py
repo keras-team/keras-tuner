@@ -40,6 +40,7 @@ setup(
         'tqdm',
         'requests',
         'psutil',
+        'scipy'
     ],
     extras_require={
         'tests': ['pytest',
