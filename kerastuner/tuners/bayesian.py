@@ -1,8 +1,10 @@
 import numpy as np
 import random
+import json
 from scipy import optimize as scipy_optimize
 from sklearn import gaussian_process
 
+from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 from ..engine import tuner as tuner_module
 from ..engine import oracle as oracle_module
 from ..engine import hyperparameters as hp_module
@@ -24,6 +26,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         seed: Int. Random seed.
 
     """
+
     def __init__(self,
                  init_samples=2,
                  alpha=1e-10,
@@ -67,11 +70,41 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         raise NotImplementedError
 
     def save(self, fname):
-        # TODO
-        raise NotImplementedError
+        state = {
+            'init_samples': self.init_samples,
+            'alpha': self.alpha,
+            'beta': self.beta,
+            'seed': self.seed,
+            'seed_state': self._seed_state,
+            'tried_so_far': list(self._tried_so_far),
+            'max_collisions': self._max_collisions,
+            'num_trials': self._num_trials,
+            'score': self._score,
+            'values': self._values,
+            'x': self._x,
+            'y': self._y,
+        }
+        state_json = json.dumps(state)
+        tf_utils.write_file(fname, state_json)
 
     def reload(self, fname):
-        # TODO
+        state_data = tf_utils.read_file(fname)
+        state = json.loads(state_data)
+        self.init_samples = state['init_samples']
+        self.alpha = state['alpha']
+        self.beta = state['beta']
+        self.seed = state['seed']
+        self._seed_state = state['seed_state']
+        self._tried_so_far = set(state['tried_so_far'])
+        self._max_collisions = state['max_collisions']
+        self._num_trials = state['num_trials']
+        self._score = state['score']
+        self._values = state['values']
+        self._x = state['x']
+        self._y = state['y']
+        self.gpr = gaussian_process.GaussianProcessRegressor(
+            kernel=gaussian_process.kernels.ConstantKernel(1.0),
+            alpha=self.alpha)
         raise NotImplementedError
 
     def result(self, trial_id, score):
@@ -202,6 +235,7 @@ class BayesianOptimization(tuner_module.Tuner):
             The larger it is, the more explorative it is.
         seed: Int. Random seed.
     """
+
     def __init__(self,
                  hypermodel,
                  objective,

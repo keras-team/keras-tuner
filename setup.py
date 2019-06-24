@@ -40,7 +40,8 @@ setup(
         'tqdm',
         'requests',
         'psutil',
-        'scipy'
+        'scipy',
+        'scikit-learn'
     ],
     extras_require={
         'tests': ['pytest',
