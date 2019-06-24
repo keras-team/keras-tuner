@@ -28,7 +28,7 @@ from kerastuner.tuners import hyperband as hyperband_module
 
 @pytest.fixture(scope='module')
 def tmp_dir(tmpdir_factory):
-    return tmpdir_factory.mktemp('integration_test')
+    return tmpdir_factory.mktemp('hyperband_test')
 
 
 def test_hyperband_oracle(tmp_dir):

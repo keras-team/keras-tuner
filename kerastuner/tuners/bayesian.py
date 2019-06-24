@@ -63,7 +63,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         self.gpr.fit(self._x, self._y)
 
         values = self._generate_vector()
-        return self._convert(values)
+        return {'status': 'RUN', 'values': self._convert(values)}
 
     def report_status(self, trial_id, status):
         # TODO
@@ -179,11 +179,13 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         return None
 
     def _upper_confidence_bound(self, x):
+        dim = len(self.space)
+        x = x.reshape(-1, dim)
         mu, sigma = self.gpr.predict(x, return_std=True)
         return mu - self.beta * sigma
 
     def _generate_vector(self, ):
-        dim = self._x.shape[1]
+        dim = len(self.space)
         min_val = 1
         min_x = None
         bounds = []
@@ -197,15 +199,12 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             bounds.append(bound)
         bounds = np.array(bounds)
 
-        def min_obj(x):
-            # Minimization objective is the negative acquisition function
-            return -self._upper_confidence_bound(x.reshape(-1, dim))
-
         # Find the best optimum by starting from n_restart different random points.
         n_restarts = 25
         for x0 in np.random.uniform(bounds[:, 0], bounds[:, 1],
                                     size=(n_restarts, dim)):
-            res = scipy_optimize.minimize(min_obj, x0=x0, bounds=bounds,
+            res = scipy_optimize.minimize(self._upper_confidence_bound,
+                                          x0=x0, bounds=bounds,
                                           method='L-BFGS-B')
             if res.fun < min_val:
                 min_val = res.fun[0]
