@@ -116,8 +116,8 @@ class Range(HyperParameter):
         self._values = list(range(min_value, max_value, step))
 
     def __repr__(self):
-        return (f"Range(name: {self.name!r}, min_value: {self.min_value}, "
-                + f"max_value: {self.max_value}, step: {self.step})")
+        return (f"Range(name: {self.name!r}, min_value: {self.min_value}," +
+                f" max_value: {self.max_value}, step: {self.step})")
 
     def random_sample(self, seed=None):
         random_state = random.Random(seed)
@@ -158,9 +158,9 @@ class Linear(HyperParameter):
         self.resolution = float(resolution)
 
     def __repr__(self):
-        return (f"Linear(name: {self.name!r}, min_value: {self.min_value}, "
-                + f"max_value: {self.max_value}, "
-                + f"resolution: {self.resolution})")
+        return (f"Linear(name: {self.name!r}, min_value: {self.min_value}," +
+                f" max_value: {self.max_value}," +
+                f" resolution: {self.resolution})")
 
     @property
     def default(self):
