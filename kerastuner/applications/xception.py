@@ -21,10 +21,14 @@ from kerastuner.engine import hypermodel
 class HyperXception(hypermodel.HyperModel):
     """An Xception HyperModel."""
 
-    def __init__(self, input_shape, num_classes, include_top=True):
+    def __init__(self,
+                 include_top=True,
+                 input_shape=None,
+                 input_tensor=None,
+                 classes=None):
         super(HyperXception, self).__init__()
         self.input_shape = input_shape
-        self.num_classes = num_classes
+        self.classes = classes
         self.include_top = include_top
 
     def build(self, hp):
@@ -76,11 +80,11 @@ class HyperXception(hypermodel.HyperModel):
             dense_use_bn = hp.Choice('dense_use_bn', [True, False])
             for _ in range(num_dense_layers):
                 x = dense(x,
-                          self.num_classes,
+                          self.classes,
                           activation=activation,
                           batchnorm=dense_use_bn,
                           dropout_rate=dropout_rate)
-            output = layers.Dense(self.num_classes, activation='softmax')(x)
+            output = layers.Dense(self.classes, activation='softmax')(x)
             model = keras.Model(inputs, output, name='Xception')
 
             model.compile(

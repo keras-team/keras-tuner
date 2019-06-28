@@ -11,11 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for HyperResnet Model."""
+"""Tests for HyperResNet Model."""
 
 import numpy as np
 import os
 import pytest
+import tensorflow as tf
 
 from kerastuner.applications import resnet
 from kerastuner.engine import hyperparameters as hp_module
@@ -26,11 +27,11 @@ from kerastuner.engine import hyperparameters as hp_module
 def test_model_construction(version):
     hp = hp_module.HyperParameters()
     hp.Choice('version', [version])
-    hypermodel = resnet.HyperResnet(input_shape=(128, 128, 3), num_classes=10)
+    hypermodel = resnet.HyperResNet(input_shape=(128, 128, 3), classes=10)
     model = hypermodel.build(hp)
     assert hp.values['version'] == version
     assert model.layers
-    assert model.name == 'Resnet'
+    assert model.name == 'ResNet'
     assert model.output_shape == (None, 10)
     model.train_on_batch(np.ones((1, 128, 128, 3)), np.ones((1, 10)))
     out = model.predict(np.ones((1, 128, 128, 3)))
@@ -39,7 +40,7 @@ def test_model_construction(version):
 
 def test_hyperparameter_existence_and_defaults():
     hp = hp_module.HyperParameters()
-    hypermodel = resnet.HyperResnet(input_shape=(256, 256, 3), num_classes=10)
+    hypermodel = resnet.HyperResNet(input_shape=(256, 256, 3), classes=10)
     model = hypermodel.build(hp)
     assert hp.get('version') == 'v2'
     assert hp.get('v2/conv3_depth') == 4
@@ -50,8 +51,8 @@ def test_hyperparameter_existence_and_defaults():
 
 def test_include_top_false():
     hp = hp_module.HyperParameters()
-    hypermodel = resnet.HyperResnet(
-        input_shape=(256, 256, 3), num_classes=10, include_top=False)
+    hypermodel = resnet.HyperResNet(
+        input_shape=(256, 256, 3), classes=10, include_top=False)
     model = hypermodel.build(hp)
     # Check that model wasn't compiled.
     assert not model.optimizer
@@ -60,8 +61,15 @@ def test_include_top_false():
 def test_hyperparameter_override():
     hp = hp_module.HyperParameters()
     hp.Choice('version', ['v1'])
-    hypermodel = resnet.HyperResnet(input_shape=(256, 256, 3), num_classes=10)
+    hypermodel = resnet.HyperResNet(input_shape=(256, 256, 3), classes=10)
     model = hypermodel.build(hp)
     assert hp.get('version') == 'v1'
     assert hp.get('v1/conv3_depth') == 4
     assert hp.get('v1/conv4_depth') == 6
+
+def test_input_tensors():
+    hp = hp_module.HyperParameters()
+    inputs = tf.keras.Input(shape=(256, 256, 3))
+    hypermodel = resnet.HyperResNet(input_tensor=inputs, include_top=False)
+    model = hypermodel.build(hp)
+    assert model.inputs == [inputs]

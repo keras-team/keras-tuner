@@ -16,6 +16,7 @@
 import numpy as np
 import os
 import pytest
+import tensorflow as tf
 
 from kerastuner.applications import xception
 from kerastuner.engine import hyperparameters as hp_module
@@ -27,7 +28,7 @@ def test_model_construction(pooling):
     hp = hp_module.HyperParameters()
     hp.Choice('pooling', [pooling])
     hypermodel = xception.HyperXception(
-        input_shape=(128, 128, 3), num_classes=10)
+        input_shape=(128, 128, 3), classes=10)
     model = hypermodel.build(hp)
     assert hp.values['pooling'] == pooling
     assert model.layers
@@ -41,7 +42,7 @@ def test_model_construction(pooling):
 def test_hyperparameter_existence_and_defaults():
     hp = hp_module.HyperParameters()
     hypermodel = xception.HyperXception(
-        input_shape=(256, 256, 3), num_classes=10)
+        input_shape=(256, 256, 3), classes=10)
     model = hypermodel.build(hp)
     assert hp.values == {
         'activation': 'relu',
@@ -61,7 +62,7 @@ def test_hyperparameter_existence_and_defaults():
 def test_include_top_false():
     hp = hp_module.HyperParameters()
     hypermodel = xception.HyperXception(
-        input_shape=(256, 256, 3), num_classes=10, include_top=False)
+        input_shape=(256, 256, 3), classes=10, include_top=False)
     model = hypermodel.build(hp)
     assert not model.optimizer
 
@@ -71,7 +72,17 @@ def test_hyperparameter_override():
     hp.Choice('pooling', ['flatten'])
     hp.Choice('num_dense_layers', [2])
     hypermodel = xception.HyperXception(
-        input_shape=(256, 256, 3), num_classes=10)
+        input_shape=(256, 256, 3), classes=10)
     model = hypermodel.build(hp)
     assert hp.get('pooling') == 'flatten'
     assert hp.get('num_dense_layers') == 2
+
+
+def test_input_tensor():
+    hp = hp_module.HyperParameters()
+    inputs = tf.keras.Input(shape=(256, 256, 3))
+    hypermodel = xception.HyperXception(
+        input_tensor=inputs, include_top=False)
+    model = hypermodel.build(hp)
+    assert model.inputs == [inputs]
+        
