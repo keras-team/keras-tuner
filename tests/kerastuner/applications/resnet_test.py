@@ -67,7 +67,8 @@ def test_hyperparameter_override():
     assert hp.get('v1/conv3_depth') == 4
     assert hp.get('v1/conv4_depth') == 6
 
-def test_input_tensors():
+
+def test_input_tensor():
     hp = hp_module.HyperParameters()
     inputs = tf.keras.Input(shape=(256, 256, 3))
     hypermodel = resnet.HyperResNet(input_tensor=inputs, include_top=False)

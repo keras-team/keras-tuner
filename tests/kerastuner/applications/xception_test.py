@@ -80,9 +80,8 @@ def test_hyperparameter_override():
 
 def test_input_tensor():
     hp = hp_module.HyperParameters()
-    inputs = tf.keras.Input(shape=(256, 256, 3))
+    inputs = tf.keras.Input((256, 256, 3))
     hypermodel = xception.HyperXception(
         input_tensor=inputs, include_top=False)
     model = hypermodel.build(hp)
     assert model.inputs == [inputs]
-        

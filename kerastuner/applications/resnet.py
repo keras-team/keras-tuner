@@ -14,6 +14,7 @@
 
 """Hypertunable version of ResNet."""
 
+import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras import layers
 from tensorflow.keras import optimizers
@@ -66,7 +67,7 @@ class HyperResNet(hypermodel.HyperModel):
         # Model definition.
         bn_axis = 3 if backend.image_data_format() == 'channels_last' else 1
 
-        if self.input_tensor:
+        if self.input_tensor is not None:
             inputs = tf.keras.utils.get_source_inputs(self.input_tensor)
             x = self.input_tensor
         else:
