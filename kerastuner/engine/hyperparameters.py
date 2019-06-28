@@ -75,7 +75,8 @@ class Choice(HyperParameter):
                 'You passed: values=%s, default=%s' % (values, default))
 
     def __repr__(self):
-        return f"Choice(name: {self.name!r}, values: {self.values}"
+        return (f'Choice(name: {self.name!r}, values: {self.values},'
+                f' default: {self.default})')
 
     @property
     def default(self):
@@ -116,8 +117,9 @@ class Range(HyperParameter):
         self._values = list(range(min_value, max_value, step))
 
     def __repr__(self):
-        return (f"Range(name: {self.name!r}, min_value: {self.min_value}," +
-                f" max_value: {self.max_value}, step: {self.step})")
+        return (f'Range(name: {self.name!r}, min_value: {self.min_value},'
+                f' max_value: {self.max_value}, step: {self.step},'
+                f' default: {self.default})')
 
     def random_sample(self, seed=None):
         random_state = random.Random(seed)
@@ -158,9 +160,9 @@ class Linear(HyperParameter):
         self.resolution = float(resolution)
 
     def __repr__(self):
-        return (f"Linear(name: {self.name!r}, min_value: {self.min_value}," +
-                f" max_value: {self.max_value}," +
-                f" resolution: {self.resolution})")
+        return (f'Linear(name: {self.name!r}, min_value: {self.min_value},'
+                f' max_value: {self.max_value}, resolution: {self.resolution},'
+                f' default: {self.default})')
 
     @property
     def default(self):
@@ -197,7 +199,7 @@ class Fixed(HyperParameter):
         self.value = value
 
     def __repr__(self):
-        return f"Fixed(name: {self.name!r}, value: {self.value}"
+        return f'Fixed(name: {self.name!r}, value: {self.value})'
 
     def random_sample(self, seed=None):
         return self.value
