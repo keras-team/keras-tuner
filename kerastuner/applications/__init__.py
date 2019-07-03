@@ -14,5 +14,5 @@
 
 from __future__ import absolute_import
 
-from .resnet import HyperResnet
+from .resnet import HyperResNet
 from .xception import HyperXception
