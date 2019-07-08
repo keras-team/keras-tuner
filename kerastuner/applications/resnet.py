@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Hypertunable version of Resnet."""
+"""Hypertunable version of ResNet."""
 
+import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras import layers
 from tensorflow.keras import optimizers
@@ -22,13 +23,28 @@ from tensorflow.keras import backend
 from kerastuner.engine import hypermodel
 
 
-class HyperResnet(hypermodel.HyperModel):
+class HyperResNet(hypermodel.HyperModel):
     """A ResNet HyperModel."""
 
-    def __init__(self, input_shape, num_classes, include_top=True):
-        self.input_shape = input_shape
-        self.num_classes = num_classes
+    def __init__(self,
+                 include_top=True,
+                 input_shape=None,
+                 input_tensor=None,
+                 classes=None):
+
+        super(HyperResNet, self).__init__()
+        if include_top and classes is None:
+            raise ValueError('You must specify `classes` when '
+                             '`include_top=True`')
+
+        if input_shape is None and input_tensor is None:
+            raise ValueError('You must specify either `input_shape` '
+                             'or `input_tensor`.')
+
         self.include_top = include_top
+        self.input_shape = input_shape
+        self.input_tensor = input_tensor
+        self.classes = classes
 
     def build(self, hp):
         version = hp.Choice('version', ['v1', 'v2', 'next'], default='v2')
@@ -50,8 +66,13 @@ class HyperResnet(hypermodel.HyperModel):
 
         # Model definition.
         bn_axis = 3 if backend.image_data_format() == 'channels_last' else 1
-        inputs = layers.Input(shape=self.input_shape)
-        x = inputs
+
+        if self.input_tensor is not None:
+            inputs = tf.keras.utils.get_source_inputs(self.input_tensor)
+            x = self.input_tensor
+        else:
+            inputs = layers.Input(shape=self.input_shape)
+            x = inputs
 
         # Initial conv2d block.
         x = layers.ZeroPadding2D(padding=((3, 3), (3, 3)), name='conv1_pad')(x)
@@ -95,8 +116,8 @@ class HyperResnet(hypermodel.HyperModel):
 
         if self.include_top:
             x = layers.Dense(
-                self.num_classes, activation='softmax', name='probs')(x)
-            model = keras.Model(inputs, x, name='Resnet')
+                self.classes, activation='softmax', name='probs')(x)
+            model = keras.Model(inputs, x, name='ResNet')
             optimizer_name = hp.Choice(
                 'optimizer', ['adam', 'rmsprop', 'sgd'], default='adam')
             optimizer = keras.optimizers.get(optimizer_name)
@@ -108,7 +129,7 @@ class HyperResnet(hypermodel.HyperModel):
                 metrics=['accuracy'])
             return model
         else:
-            return keras.Model(inputs, x, name='Resnet')
+            return keras.Model(inputs, x, name='ResNet')
 
 
 def block1(x, filters, kernel_size=3, stride=1,
