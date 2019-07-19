@@ -60,14 +60,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             values = self._new_trial()
             self._values[trial_id] = values
             return {'status': 'RUN', 'values': values}
-
-        # Update Gaussian process with existing samples
-        x, y = self._get_training_data()
-        self.gpr.fit(x, y)
-        self._x = x
-        self._y = y
-
-        values = self._convert(self._generate_vector())
+        values = self._to_hp_dict(self._generate_vector())
         self._values[trial_id] = values
         return {'status': 'RUN', 'values': values}
 
@@ -87,8 +80,8 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             'num_trials': self._num_trials,
             'score': self._score,
             'values': self._values,
-            'x': self._x,
-            'y': self._y,
+            'x': self._x.tolist(),
+            'y': self._y.tolist(),
         }
         state_json = json.dumps(state)
         tf_utils.write_file(fname, state_json)
@@ -118,6 +111,12 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
 
     def result(self, trial_id, score):
         self._score[trial_id] = score
+        # Update Gaussian process with existing samples
+        if len(self._score) >= self.num_initial_points:
+            x, y = self._get_training_data()
+            self.gpr.fit(x, y)
+            self._x = x
+            self._y = y
 
     def _new_trial(self):
         """Fill a given hyperparameter space with values.
@@ -178,10 +177,12 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             x.append(no_fixed_vector)
             y.append(score)
         x = np.array(x)
-        y = np.array(y) / np.max(y)
+        max_score = np.max(np.abs(y))
+        if max_score > 0:
+            y = np.array(y) / max_score
         return x, y
 
-    def _convert(self, vector):
+    def _to_hp_dict(self, vector):
         values = {}
         vector_index = 0
         for index, hp in enumerate(self.space):
@@ -211,18 +212,14 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
 
     def _upper_confidence_bound(self, x):
         x = x.reshape(-1, self._dim)
-        try:
-            mu, sigma = self.gpr.predict(x, return_std=True)
-        except UserWarning:
-            mu = np.array([1.0] * len(x), dtype=np.float64)
-            sigma = np.array([0.1] * len(x), dtype=np.float64)
+        mu, sigma = self.gpr.predict(x, return_std=True)
         return mu - self.beta * sigma
 
     @property
     def _dim(self):
         return len([hp for hp in self.space if not isinstance(hp, hp_module.Fixed)])
 
-    def _generate_vector(self, ):
+    def _generate_vector(self):
         min_val = float('inf')
         min_x = None
         bounds = []
@@ -264,7 +261,7 @@ class BayesianOptimization(tuner_module.Tuner):
             (model configurations) to test at most.
             Note that the oracle may interrupt the search
             before `max_trial` models have been tested.
-        init_samples: Int. The number of randomly generated samples as initial
+        num_initial_points: Int. The number of randomly generated samples as initial
             training data for Bayesian optimization.
         alpha: Float or array-like. Value added to the diagonal of
             the kernel matrix during fitting.
@@ -277,10 +274,10 @@ class BayesianOptimization(tuner_module.Tuner):
                  hypermodel,
                  objective,
                  max_trials,
-                 init_samples=2,
+                 num_initial_points=2,
                  seed=None,
                  **kwargs):
-        oracle = BayesianOptimizationOracle(num_initial_points=init_samples,
+        oracle = BayesianOptimizationOracle(num_initial_points=num_initial_points,
                                             seed=seed)
         super(BayesianOptimization, self, ).__init__(oracle=oracle,
                                                      hypermodel=hypermodel,

@@ -38,6 +38,18 @@ def test_bayesian_oracle(tmp_dir):
         oracle.result(str(i), i)
 
 
+def test_bayesian_oracle_with_zero_y(tmp_dir):
+    hp_list = [hp_module.Choice('a', [1, 2], default=1),
+               hp_module.Range('b', 3, 10, default=3),
+               hp_module.Linear('c', 0, 1, 0.1, default=0),
+               hp_module.Fixed('d', 7),
+               hp_module.Choice('e', [9, 0], default=9)]
+    oracle = bo_module.BayesianOptimizationOracle()
+    for i in range(100):
+        oracle.populate_space(str(i), hp_list)
+        oracle.result(str(i), 0)
+
+
 def test_bayesian_dynamic_space(tmp_dir):
     hp_list = [hp_module.Choice('a', [1, 2], default=1)]
     oracle = bo_module.BayesianOptimizationOracle()
