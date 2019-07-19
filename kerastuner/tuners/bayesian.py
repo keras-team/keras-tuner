@@ -1,13 +1,14 @@
-import numpy as np
-import random
 import json
+import random
+
+import numpy as np
 from scipy import optimize as scipy_optimize
 from sklearn import gaussian_process
 
 from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
-from ..engine import tuner as tuner_module
-from ..engine import oracle as oracle_module
 from ..engine import hyperparameters as hp_module
+from ..engine import oracle as oracle_module
+from ..engine import tuner as tuner_module
 
 
 class BayesianOptimizationOracle(oracle_module.Oracle):
