@@ -188,6 +188,8 @@ class Host():
         """Returns disk usage"""
         partitions = []
         for partition in self.partitions:
+            if partition.opts.upper() in ('CDROM', 'REMOVABLE'):
+              continue
             name = partition.mountpoint
             usage = psutil.disk_usage(name)
             info = {
