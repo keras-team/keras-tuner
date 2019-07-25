@@ -28,7 +28,7 @@ y_test = to_categorical(y_test, NUM_CLASSES)
 # Import an hypertunable version of Resnet.
 hypermodel = HyperResNet(
     input_shape=x_train.shape[1:],
-    num_classes=NUM_CLASSES)
+    classes=NUM_CLASSES)
 
 # Initialize the hypertuner: we should find the model that maximixes the
 # validation accuracy, using 40 trials in total.
