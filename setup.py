@@ -43,7 +43,7 @@ setup(
     ],
     extras_require={
         'tests': ['pytest',
-                  'pytest-pep8',
+                  'flake8',
                   'pytest-xdist',
                   'pytest-cov'],
     },

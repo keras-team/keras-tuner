@@ -7,7 +7,7 @@ matrix:
         - python: 3.6
           env: TEST_MODE=INTEGRATION_TESTS
         - python: 3.6
-          env: TEST_MODE=PEP8
+          env: TEST_MODE=FLAKE8
         - python: 3.6
           env: TEST_MODE=TF2
 install:
@@ -38,8 +38,8 @@ install:
 script:
   - if [[ "$TEST_MODE" == "INTEGRATION_TESTS" ]]; then
       PYTHONPATH=$PWD:$PYTHONPATH py.test tests/integration_tests;
-    elif [[ "$TEST_MODE" == "PEP8" ]]; then
-      PYTHONPATH=$PWD:$PYTHONPATH py.test kerastuner/ --pep8;
+    elif [[ "$TEST_MODE" == "FLAKE8" ]]; then
+      flake8;
     else
       PYTHONPATH=$PWD:$PYTHONPATH py.test tests/kerastuner --cov-config .coveragerc --cov=kerastuner;
     fi

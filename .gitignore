@@ -7,7 +7,7 @@ dist/
 bigquery/
 export/
 logs/
-Kerastuner.egg-info/
+Keras_Tuner.egg-info/
 results/
 tmp/
 .ipynb_checkpoints/

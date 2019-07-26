@@ -128,9 +128,8 @@ class Host():
             display_setting('software', idx=1)
             display_settings(status['software'], indent_level=2)
 
-            # ram
-            s = "ram: %s/%s%s" % (status['ram']['used'], status['ram']['total'],  # nopep8
-                                  status['ram']['unit'])
+            ram = status['ram']
+            s = "ram: %s/%s%s" % (ram['used'], ram['total'], ram['unit'])
             display_setting(s, idx=2)
 
             # disk
@@ -243,7 +242,9 @@ class Host():
             # try to find it from system drive with default installation path
             nvidia_smi = spawn.find_executable('nvidia-smi')
             if nvidia_smi is None:
-                nvidia_smi = "%s\\Program Files\\NVIDIA Corporation\\NVSMI\\nvidia-smi.exe" % os.environ['systemdrive']  # nopep8
+                nvidia_smi = ("{}\\Program Files\\NVIDIA Corporation"
+                              "\\NVSMI\\nvidia-smi.exe")
+                nvidia_smi.format(os.environ['systemdrive'])
         else:
             nvidia_smi = "nvidia-smi"
         return nvidia_smi

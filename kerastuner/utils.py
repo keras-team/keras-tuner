@@ -14,8 +14,8 @@
 
 import gc
 import numpy as np
-from tensorflow.python import Session, ConfigProto  # nopep8 pylint: disable=no-name-in-module
-import tensorflow.keras.backend as K  # pylint: disable=import-error
+from tensorflow.python import Session, ConfigProto
+from tensorflow.python.keras import backend as K
 
 
 def compute_model_size(model):
