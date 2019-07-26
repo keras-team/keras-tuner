@@ -188,8 +188,10 @@ class Host():
         """Returns disk usage"""
         partitions = []
         for partition in self.partitions:
-            if partition.opts.upper() in ('CDROM', 'REMOVABLE'):
-              continue
+            if os.name == 'nt':
+                if 'cdrom' in partition.opts or partition.fstype == '':
+                    # skip cd-rom drives on windows machines (will throw error)s
+                    continue
             name = partition.mountpoint
             usage = psutil.disk_usage(name)
             info = {
