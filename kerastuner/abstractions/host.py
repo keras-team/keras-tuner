@@ -190,7 +190,7 @@ class Host():
         for partition in self.partitions:
             if os.name == 'nt':
                 if 'cdrom' in partition.opts or partition.fstype == '':
-                    # skip cd-rom drives on windows machines (will throw error)s
+                    # skip cd-rom drives on windows machines (will throw error)
                     continue
             name = partition.mountpoint
             usage = psutil.disk_usage(name)
