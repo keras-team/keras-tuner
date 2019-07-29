@@ -2,7 +2,7 @@
 
 An hyperparameter tuner for [Keras](https://keras.io), specifically for `tf.keras` with TensorFlow 2.0.
 
-**Status: pre-alpha.**
+**Status: Alpha.**
 
 ## Installation
 
