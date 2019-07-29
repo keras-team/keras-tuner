@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras import layers
 
@@ -21,18 +22,35 @@ from kerastuner.engine import hypermodel
 class HyperXception(hypermodel.HyperModel):
     """An Xception HyperModel."""
 
-    def __init__(self, input_shape, num_classes, include_top=True):
+    def __init__(self,
+                 include_top=True,
+                 input_shape=None,
+                 input_tensor=None,
+                 classes=None):
         super(HyperXception, self).__init__()
-        self.input_shape = input_shape
-        self.num_classes = num_classes
+        if include_top and classes is None:
+            raise ValueError('You must specify `classes` when '
+                             '`include_top=True`')
+
+        if input_shape is None and input_tensor is None:
+            raise ValueError('You must specify either `input_shape` '
+                             'or `input_tensor`.')
+
         self.include_top = include_top
+        self.input_shape = input_shape
+        self.input_tensor = input_tensor
+        self.classes = classes
 
     def build(self, hp):
         activation = hp.Choice('activation', ['relu', 'selu'])
 
         # Model definition.
-        inputs = keras.Input(shape=self.input_shape)
-        x = inputs
+        if self.input_tensor is not None:
+            inputs = tf.keras.utils.get_source_inputs(self.input_tensor)
+            x = self.input_tensor
+        else:
+            inputs = layers.Input(shape=self.input_shape)
+            x = inputs
 
         # Initial conv2d.
         conv2d_num_filters = hp.Choice(
@@ -76,11 +94,11 @@ class HyperXception(hypermodel.HyperModel):
             dense_use_bn = hp.Choice('dense_use_bn', [True, False])
             for _ in range(num_dense_layers):
                 x = dense(x,
-                          self.num_classes,
+                          self.classes,
                           activation=activation,
                           batchnorm=dense_use_bn,
                           dropout_rate=dropout_rate)
-            output = layers.Dense(self.num_classes, activation='softmax')(x)
+            output = layers.Dense(self.classes, activation='softmax')(x)
             model = keras.Model(inputs, output, name='Xception')
 
             model.compile(
