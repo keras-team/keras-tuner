@@ -1,6 +1,6 @@
 attrs
 cprint
-numpy
+numpy==1.16.1
 tabulate
 termcolor
 tqdm
