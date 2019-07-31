@@ -90,7 +90,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
     def reload(self, fname):
         state_data = tf_utils.read_file(fname)
         state = json.loads(state_data)
-        self.num_initial_points = state['init_samples']
+        self.num_initial_points = state['num_initial_points']
         self.alpha = state['alpha']
         self.beta = state['beta']
         self.seed = state['seed']
