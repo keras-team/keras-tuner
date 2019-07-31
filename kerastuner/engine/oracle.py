@@ -58,9 +58,9 @@ class Oracle(object):
         raise NotImplementedError
 
     def result(self, trial_id, score):
-        """Record the neasured objective for a set of parameter values.
+        """Record the measured objective for a set of parameter values.
 
-        If not overriden, this method does nothing.
+        If not overridden, this method does nothing.
 
         Args:
             trial_id: String. Unique id for this trial.

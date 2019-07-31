@@ -124,7 +124,7 @@ def sep_conv(x, num_filters, kernel_size=(3, 3), activation='relu'):
         x = layers.BatchNormalization()(x)
         x = layers.Activation('relu')(x)
     else:
-        ValueError('Unkown activation function: %s' % (activation,))
+        ValueError('Unknown activation function: %s' % (activation,))
     return x
 
 
@@ -166,7 +166,7 @@ def conv(x, num_filters,
         x = layers.BatchNormalization()(x)
         x = layers.Activation('relu')(x)
     else:
-        msg = 'Unkown activation function: %s' % activation
+        msg = 'Unknown activation function: %s' % activation
         ValueError(msg)
     return x
 
@@ -185,6 +185,6 @@ def dense(x, dims, activation='relu', batchnorm=True, dropout_rate=0):
         if dropout_rate:
             x = layers.Dropout(dropout_rate)(x)
     else:
-        msg = 'Unkown activation function: %s' % activation
+        msg = 'Unknown activation function: %s' % activation
         ValueError(msg)
     return x

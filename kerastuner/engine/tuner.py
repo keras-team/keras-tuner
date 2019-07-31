@@ -50,7 +50,7 @@ class Tuner(object):
         oracle: Instance of Oracle class.
         hypermodel: Instance of HyperModel class
             (or callable that takes hyperparameters
-            and returns a Model isntance).
+            and returns a Model instance).
         objective: String. Name of model metric to minimize
             or maximize, e.g. "val_accuracy".
         max_trials: Int. Total number of trials
