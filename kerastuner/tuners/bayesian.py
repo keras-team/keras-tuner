@@ -71,7 +71,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
 
     def save(self, fname):
         state = {
-            'init_samples': self.num_initial_points,
+            'num_initial_points': self.num_initial_points,
             'alpha': self.alpha,
             'beta': self.beta,
             'seed': self.seed,
