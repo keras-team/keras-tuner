@@ -33,13 +33,15 @@ setup(
     license='Apache License 2.0',
     install_requires=[
         'tensorflow>=2.0.0-beta1',
-        'numpy',
+        'numpy==1.16.1',
         'tabulate',
         'terminaltables',
         'colorama',
         'tqdm',
         'requests',
         'psutil',
+        'scipy',
+        'scikit-learn'
     ],
     extras_require={
         'tests': ['pytest',
