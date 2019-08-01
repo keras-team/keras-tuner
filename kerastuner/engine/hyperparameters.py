@@ -102,7 +102,7 @@ class Range(HyperParameter):
     Args:
         name: Str. Name of parameter. Must be unique.
         min_value: Int. Lower limit of range (included).
-        max_value: Int. Upper limite of range (excluded).
+        max_value: Int. Upper limit of range (excluded).
         step: Int. Step of range.
         default: Default value to return for the parameter.
             If unspecified, the default value will be
