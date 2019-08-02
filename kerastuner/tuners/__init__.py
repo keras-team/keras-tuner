@@ -14,5 +14,6 @@
 
 from __future__ import absolute_import
 
-from .randomsearch import RandomSearch
+from .bayesian import BayesianOptimization
 from .hyperband import Hyperband
+from .randomsearch import RandomSearch
