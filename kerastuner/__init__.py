@@ -23,7 +23,8 @@ from kerastuner.engine.hyperparameters import HyperParameter
 from kerastuner.engine.hypermodel import HyperModel
 from kerastuner.engine.tuner import Tuner
 from kerastuner.engine.oracle import Oracle
-from kerastuner.tuners import RandomSearch
+from kerastuner.tuners import BayesianOptimization
 from kerastuner.tuners import Hyperband
+from kerastuner.tuners import RandomSearch
 
 __version__ = '0.9.0'
