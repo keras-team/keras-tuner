@@ -96,3 +96,15 @@ def test_bayesian_optimization_tuner(tmp_dir):
         max_trials=15,
     )
     assert isinstance(tuner.oracle, bo_module.BayesianOptimizationOracle)
+
+
+def test_save_before_result(tmp_dir):
+    hp_list = [hp_module.Choice('a', [1, 2], default=1),
+               hp_module.Range('b', 3, 10, default=3),
+               hp_module.Linear('c', 0, 1, 0.1, default=0),
+               hp_module.Fixed('d', 7),
+               hp_module.Choice('e', [9, 0], default=9)]
+    oracle = bo_module.BayesianOptimizationOracle()
+    oracle.populate_space(str(1), hp_list)
+    oracle.save(os.path.join(tmp_dir, 'temp_oracle'))
+    oracle.result(str(1), 0)
