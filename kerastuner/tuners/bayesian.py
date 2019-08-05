@@ -81,8 +81,8 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             'num_trials': self._num_trials,
             'score': self._score,
             'values': self._values,
-            'x': self._x.tolist(),
-            'y': self._y.tolist(),
+            'x': self._x.tolist() if isinstance(self._x, np.ndarray) else self._x,
+            'y': self._y.tolist() if isinstance(self._y, np.ndarray) else self._y,
         }
         state_json = json.dumps(state)
         tf_utils.write_file(fname, state_json)
