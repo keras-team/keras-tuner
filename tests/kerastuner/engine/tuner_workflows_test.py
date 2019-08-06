@@ -292,7 +292,7 @@ def test_static_space_errors(tmp_dir):
 
 def test_restricted_space_using_defaults(tmp_dir):
     hp = kerastuner.HyperParameters()
-    hp.Range('num_layers', 1, 3, 1, default=2)
+    hp.Range('num_layers', 1, 5, 1, default=2)
     hp.Choice('learning_rate', [0.01, 0.001, 0.0001])
 
     tuner = kerastuner.tuners.RandomSearch(

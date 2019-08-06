@@ -33,7 +33,7 @@ setup(
     license='Apache License 2.0',
     install_requires=[
         'tensorflow>=2.0.0-beta1',
-        'numpy==1.16.1',
+        'numpy',
         'tabulate',
         'terminaltables',
         'colorama',
