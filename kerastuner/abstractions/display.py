@@ -24,7 +24,7 @@ from kerastuner import config
 from terminaltables import SingleTable, AsciiTable
 from tabulate import tabulate
 from colorama import init, Fore, Back, Style
-from tensorflow.python.lib.io import file_io  # nopep8 pylint: disable=no-name-in-module
+from tensorflow.python.lib.io import file_io
 
 init()  # colorama init
 

@@ -475,7 +475,6 @@ class Tuner(object):
             # Dynamic
             'best_metrics': self.best_metrics.get_config(),
             'trials': [t.save() for t in self.trials],
-            'start_time': self.start_time,
             # Extra
             'eta': self.eta,
             'remaining_trials': self.remaining_trials,

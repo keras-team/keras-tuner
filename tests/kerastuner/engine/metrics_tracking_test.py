@@ -109,7 +109,7 @@ def test_get_last_value():
     tracker.register('new_metric', 'min')
     assert tracker.get_last_value('new_metric') is None
     tracker.set_history('new_metric', [1., 2., 3.])
-    assert tracker.get_last_value('new_metric') is 3.
+    assert tracker.get_last_value('new_metric') == 3.
 
 
 def test_serialization():
