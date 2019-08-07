@@ -23,8 +23,6 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import python as tf_python
 
-from abc import abstractmethod
-
 
 class GFileProxy(object):
     """Provides a subset of the tensorflow-2.0 API and proxies the
