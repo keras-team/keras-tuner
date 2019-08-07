@@ -15,9 +15,8 @@
 from __future__ import absolute_import
 
 from .state import State
-from ..abstractions.host import Host
 from ..abstractions.display import fatal, subsection, warning
-from ..abstractions.display import display_settings, fatal
+from ..abstractions.display import display_settings
 from ..abstractions.tensorflow import TENSORFLOW as tf
 from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 from .. import config

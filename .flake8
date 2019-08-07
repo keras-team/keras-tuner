@@ -19,8 +19,6 @@ ignore =
     N811
     # local variable is assigned to but never used
     F841
-    # redefinition of unused ...
-    F811
     # variable ... in function should be lowercase
     N806
     # blank line at end of file

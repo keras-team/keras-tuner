@@ -18,7 +18,7 @@ import os
 import tensorflow as tf
 
 from tensorflow.keras import backend as K
-from tensorflow.python import Graph, GraphDef, Session, ConfigProto
+from tensorflow.python import Session, ConfigProto
 from tensorflow.tools.graph_transforms import TransformGraph
 
 from kerastuner.abstractions.tensorflow import proxy

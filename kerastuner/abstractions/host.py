@@ -15,7 +15,6 @@
 "Compute hardware statistics"
 
 import os
-from time import time
 import psutil
 import platform
 from subprocess import Popen, PIPE
