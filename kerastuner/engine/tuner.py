@@ -238,7 +238,6 @@ class Tuner(object):
                 hp = hp.copy()
 
             model = self._build_model(hp)
-            self._compile_model(model)
 
             # Start execution
             execution = execution_module.Execution(
