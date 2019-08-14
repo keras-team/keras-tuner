@@ -31,7 +31,6 @@ from . import hypermodel as hm_module
 from . import oracle as oracle_module
 from . import trial as trial_module
 from . import execution as execution_module
-from . import cloudservice as cloudservice_module
 from . import tuner_utils
 from .. import config
 from .. import utils
@@ -106,6 +105,8 @@ class Tuner(object):
         directory: String. Path to the working directory (relative).
         project_name: Name to use as prefix for files saved
             by this Tuner.
+        logger: Optional. Instance of Logger class, used for streaming data
+            to Cloud Service for monitoring.
     """
 
     def __init__(self,
@@ -123,7 +124,8 @@ class Tuner(object):
                  allow_new_entries=True,
                  distribution_strategy=None,
                  directory=None,
-                 project_name=None):
+                 project_name=None,
+                 logger=None):
         if not isinstance(oracle, oracle_module.Oracle):
             raise ValueError('Expected oracle to be '
                              'an instance of Oracle, got: %s' % (oracle,))
@@ -181,7 +183,7 @@ class Tuner(object):
 
         # Private internal state
         self._max_fail_streak = 5
-        self._cloudservice = cloudservice_module.CloudService()
+        self.logger = logger
         self._stats = tuner_utils.TunerStats()
         self.start_time = int(time.time())
 
@@ -260,14 +262,19 @@ class Tuner(object):
             self.on_execution_end(trial, execution, model)
 
     def on_search_begin(self):
-        pass
+        if self.logger:
+            self.logger.register_tuner(self.get_state())
 
     def on_trial_begin(self, trial):
-        pass
+        if self.logger:
+            self.logger.register_trial(trial.trial_id, trial.get_state())
 
     def on_execution_begin(self, trial, execution, model):
         execution.per_epoch_metrics.register_metrics(model.metrics)
         self._display.on_execution_begin(trial, execution, model)
+        if self.logger:
+            self.logger.register_execution(execution.execution_id,
+                                           execution.get_state())
 
     def on_epoch_begin(self, execution, model, epoch, logs=None):
         # reset per-batch history for the this epoch
@@ -360,7 +367,8 @@ class Tuner(object):
             max_trials=self.max_trials)
 
     def on_search_end(self):
-        pass
+        if self.logger:
+            self.logger.exit()
 
     def get_best_models(self, num_models=1):
         """Returns the best model(s), as determined by the tuner's objective.
@@ -439,15 +447,6 @@ class Tuner(object):
             'Best %s: %.4f' % (self.objective,
                                self.best_metrics.get_best_value(
                                    self.objective)))
-
-    def enable_cloud(self, api_key, url=None):
-        """Enable cloud service reporting
-
-        Args:
-            api_key (str): The backend API access token.
-            url (str, optional): The backend base URL.
-        """
-        self.cloudservice.enable(api_key, url)
 
     @property
     def remaining_trials(self):
@@ -662,9 +661,12 @@ class Tuner(object):
         if num_remaining_trials < 1:
             return 0
         else:
-            elapsed_time = int(time.time() - self.start_time)
-            time_per_trial = elapsed_time / num_trials
-            return int(num_remaining_trials * time_per_trial)
+            if num_trials:
+                elapsed_time = int(time.time() - self.start_time)
+                time_per_trial = elapsed_time / num_trials
+                return int(num_remaining_trials * time_per_trial)
+            else:
+                return -1
 
     def _inject_callbacks(self, callbacks, trial, execution):
         # Deepcopy and patch callbacks if needed
@@ -695,20 +697,16 @@ class Tuner(object):
     def _checkpoint_tuner(self):
         # Write tuner status to tuner directory
         self.save()
-        # Send status to cloudservice
-        if self._cloudservice and self._cloudservice.enabled:
-            # TODO
-            state = self.get_state()
-            self._cloudservice.send_tuner_status(status)
+        # Send status to Logger
+        if self.logger:
+            self.logger.report_tuner_state(self.get_state())
 
     def _checkpoint_trial(self, trial):
         # Write trial status to trial directory
         trial.save()
-        # Send status to cloudservice
-        if self._cloudservice and self._cloudservice.enabled:
-            # TODO
-            state = trial.get_state()
-            self._cloudservice.send_trial_status(status)
+        # Send status to Logger
+        if self.logger:
+            self.logger.report_trial_state(trial.trial_id, trial.get_state())
 
     def _checkpoint_execution(self, execution, force=False):
         refresh_interval = 30
@@ -720,11 +718,10 @@ class Tuner(object):
 
         # Write execution status to execution directory
         execution.save()
-        # Send status to cloudservice
-        if self._cloudservice and self._cloudservice.enabled:
-            # TODO
-            state = execution.get_state()
-            self._cloudservice.send_execution_status(state)
+        # Send status to Logger
+        if self.logger:
+            self.logger.report_execution_state(execution.execution_id,
+                                               execution.get_state())
 
     def _checkpoint_model(self, model, trial_id, execution_id,
                           base_directory='.'):

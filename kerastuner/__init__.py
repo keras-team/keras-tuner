@@ -23,6 +23,8 @@ from kerastuner.engine.hyperparameters import HyperParameter
 from kerastuner.engine.hypermodel import HyperModel
 from kerastuner.engine.tuner import Tuner
 from kerastuner.engine.oracle import Oracle
+from kerastuner.engine.logger import Logger
+from kerastuner.engine.logger import CloudLogger
 from kerastuner.tuners import BayesianOptimization
 from kerastuner.tuners import Hyperband
 from kerastuner.tuners import RandomSearch
