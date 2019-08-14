@@ -21,6 +21,10 @@ UPLOAD_ERROR = 4
 
 class Logger(object):
 
+    def register_tuner(self, tuner_state):
+        """Informs the logger that a new search is starting."""
+        raise NotImplementedError
+
     def register_trial(self, trial_id, trial_state):
         """Informs the logger that a new Trial is starting."""
         raise NotImplementedError
@@ -29,16 +33,16 @@ class Logger(object):
         """Informs the logger that a new Execution is starting."""
         raise NotImplementedError
 
+    def report_tuner_state(self, tuner_state):
+        """Gives the logger information about search status."""
+        raise NotImplementedError
+
     def report_trial_state(self, trial_id, trial_state):
-          """Gives the logger information about trial status."""
-          raise NotImplementedError
+        """Gives the logger information about trial status."""
+        raise NotImplementedError
 
     def report_execution_state(self, execution_id, execution_state):
         """Gives the logger information about execution status."""
-        raise NotImplementedError
-
-    def report_tuner_state(self, tuner_state):
-        """Gives the logger information about search status."""
         raise NotImplementedError
 
     def exit(self):
