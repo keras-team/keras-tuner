@@ -136,6 +136,7 @@ class Range(HyperParameter):
         config['min_value'] = self.min_value
         config['max_value'] = self.max_value
         config['step'] = self.step
+        config['default'] = self._default
         return config
 
 
@@ -183,6 +184,31 @@ class Linear(HyperParameter):
         config['max_value'] = self.max_value
         config['resolution'] = self.resolution
         return config
+
+
+class Boolean(HyperParameter):
+    """Choice between True and False.
+
+    Args:
+        name: Str. Name of parameter. Must be unique.
+        default: Default value to return for the parameter.
+            If unspecified, the default value will be False.
+    """
+
+    def __init__(self, name, default=False):
+        super(Boolean, self).__init__(name=name, default=default)
+        if not default in {True, False}:
+            raise ValueError(
+                '`default` must be a Python boolean. '
+                'You passed: default=%s' % (default,))
+
+    def __repr__(self):
+        return (f'Boolean(name: {self.name!r}, '
+                f' default: {self.default})')
+
+    def random_sample(self, seed=None):
+        random_state = random.Random(seed)
+        return random_state.choice((True, False))
 
 
 class Fixed(HyperParameter):
@@ -233,7 +259,7 @@ class HyperParameters(object):
         finally:
             self._name_scopes.pop()
 
-    def retrieve(self, name, type, config):
+    def _retrieve(self, name, type, config):
         full_name = self._get_full_name(name)
         if full_name in self.values:
             # TODO: type compatibility check,
@@ -257,27 +283,31 @@ class HyperParameters(object):
             raise ValueError('Unknown parameter: {name}'.format(name=name))
 
     def Choice(self, name, values, default=None):
-        return self.retrieve(name, 'Choice',
-                             config={'values': values,
-                                     'default': default})
+        return self._retrieve(name, 'Choice',
+                              config={'values': values,
+                                      'default': default})
 
     def Range(self, name, min_value, max_value, step=1, default=None):
-        return self.retrieve(name, 'Range',
-                             config={'min_value': min_value,
-                                     'max_value': max_value,
-                                     'step': step,
-                                     'default': default})
+        return self._retrieve(name, 'Range',
+                              config={'min_value': min_value,
+                                      'max_value': max_value,
+                                      'step': step,
+                                      'default': default})
 
     def Linear(self, name, min_value, max_value, resolution, default=None):
-        return self.retrieve(name, 'Linear',
-                             config={'min_value': min_value,
-                                     'max_value': max_value,
-                                     'resolution': resolution,
-                                     'default': default})
+        return self._retrieve(name, 'Linear',
+                              config={'min_value': min_value,
+                                      'max_value': max_value,
+                                      'resolution': resolution,
+                                      'default': default})
+
+    def Boolean(self, name, default=False):
+        return self._retrieve(name, 'Boolean',
+                              config={'default': default})
 
     def Fixed(self, name, value):
-        return self.retrieve(name, 'Fixed',
-                             config={'value': value})
+        return self._retrieve(name, 'Fixed',
+                              config={'value': value})
 
     def get_config(self):
         return {
