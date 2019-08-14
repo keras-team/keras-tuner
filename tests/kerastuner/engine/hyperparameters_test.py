@@ -115,17 +115,17 @@ def test_Range():
 def test_Boolean():
     # Test default default
     boolean = hp_module.Boolean('bool')
-    assert boolean.default == False
+    assert boolean.default is False
     # Test default setting
     boolean = hp_module.Boolean('bool', default=True)
-    assert boolean.default == True
+    assert boolean.default is True
     # Wrong default type
     with pytest.raises(ValueError, match='must be a Python boolean'):
         hp_module.Boolean('bool', default=None)
     # Test serialization
     boolean = hp_module.Boolean('bool', default=True)
     boolean = hp_module.Boolean.from_config(boolean.get_config())
-    assert boolean.default == True
+    assert boolean.default is True
     assert boolean.name == 'bool'
 
     # Test random_sample
