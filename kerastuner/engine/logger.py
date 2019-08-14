@@ -28,7 +28,7 @@ class Logger(object):
     def register_trial(self, trial_id, trial_state):
         """Informs the logger that a new Trial is starting."""
         raise NotImplementedError
-  
+
     def register_execution(self, execution_id, execution_state):
         """Informs the logger that a new Execution is starting."""
         raise NotImplementedError
@@ -51,7 +51,6 @@ class Logger(object):
 
 def url_join(*parts):
     return '/'.join(map(lambda fragment: fragment.rstrip('/'), parts))
-
 
 
 def send_to_backend(url, data, key):
@@ -77,7 +76,6 @@ def send_to_backend(url, data, key):
         return ERROR
     else:
         return OK
-
 
 
 class CloudLogger(Logger):
