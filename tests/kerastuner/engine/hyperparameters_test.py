@@ -15,6 +15,7 @@
 import pytest
 
 from kerastuner.engine import hyperparameters as hp_module
+from tensorflow import keras
 
 
 def test_base_hyperparameter():
@@ -65,6 +66,58 @@ def test_name_scope():
         'scope1/choice': 5,
         'scope1/scope2/choice': 8,
         'scope1/range': 0
+    }
+
+
+def test_conditional_scope():
+    hp = hp_module.HyperParameters()
+    hp.Choice('choice', [1, 2, 3], default=2)
+    with hp.conditional_scope('choice', [1, 3]):
+        child1 = hp.Choice('child_choice', [4, 5, 6])
+    with hp.conditional_scope('choice', 2):
+        child2 = hp.Choice('child_choice', [7, 8, 9])
+    assert hp.values == {
+        'choice': 2,
+        'choice=1/child_choice': 4,
+        'choice=3/child_choice': 4,
+        'choice=2/child_choice': 7
+    }
+    # Assignment to a non-active conditional hyperparameter returns `None`.
+    assert child1 is None
+    # Assignment to an active conditional hyperparameter returns the value
+    # that corresponds to the parent's current value.
+    assert child2 is 7
+
+
+def test_build_with_conditional_scope():
+
+    def build_model(hp):
+        model = hp.Choice('model', ['v1', 'v2'])
+        with hp.conditional_scope('model', 'v1'):
+            v1_params = {'layers': hp.Range('layers', 1, 3),
+                         'units': hp.Range('units', 16, 32)}
+        with hp.conditional_scope('model', 'v2'):
+            v2_params = {'layers': hp.Range('layers', 2, 4),
+                         'units': hp.Range('units', 32, 64)}
+
+        params = v1_params if model == 'v1' else v2_params
+        inputs = keras.Input(10)
+        x = inputs
+        for _ in range(params['layers']):
+            x = keras.layers.Dense(params['units'])(x)
+        outputs = keras.layers.Dense(1)(x)
+        model = keras.Model(inputs, outputs)
+        model.compile('sgd', 'mse')
+        return model
+
+    hp = hp_module.HyperParameters()
+    model = build_model(hp)
+    assert hp.values == {
+        'model': 'v1',
+        'model=v1/layers': 1,
+        'model=v1/units': 16,
+        'model=v2/layers': 2,
+        'model=v2/units': 32
     }
 
 

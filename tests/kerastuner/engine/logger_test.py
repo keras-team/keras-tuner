@@ -84,5 +84,3 @@ def test_cloud_logger(tmp_dir):
             if key in url:
                 actual_count += 1
         assert count == actual_count
-
-

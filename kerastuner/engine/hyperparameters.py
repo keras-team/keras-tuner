@@ -250,6 +250,7 @@ class HyperParameters(object):
         self.space = []
         self.values = {}
         self._name_scopes = []
+        self._conditional_scope = None
 
     @contextlib.contextmanager
     def name_scope(self, name):
@@ -259,53 +260,136 @@ class HyperParameters(object):
         finally:
             self._name_scopes.pop()
 
-    def _retrieve(self, name, type, config):
+    @contextlib.contextmanager
+    def conditional_scope(self, parent_name, parent_values):
+        if self._conditional_scope is not None:
+            raise RuntimeError('`conditional_scope`s cannot be nested.')
+        self._conditional_scope = {
+            'parent_name': self._get_full_name(parent_name),
+            'parent_values': parent_values}
+        try:
+            yield
+        finally:
+            self._conditional_scope = None
+
+    def _retrieve(self,
+                  name,
+                  type,
+                  config,
+                  parent_name=None,
+                  parent_values=None):
+        if '/' in name or '=' in name:
+            raise ValueError(
+                '`HyperParameter` names cannot contain "/" or "=" characters.')
+
+        if parent_name:
+            parent_name = self._get_full_name(parent_name)
+
+        if not parent_name and self._conditional_scope:
+            parent_name = self._conditional_scope['parent_name']
+            parent_values = self._conditional_scope['parent_values']
+
+        if parent_name:
+            if parent_name not in self.values:
+                raise ValueError(
+                    '`HyperParameter` named: ' + parent_name + ' not defined.')
+
+            if not isinstance(parent_values, (list, tuple)):
+                parent_values = [parent_values]
+
+            retrieved_values = {}
+            for parent_value in parent_values:
+                with self.name_scope(parent_name + '=' + str(parent_value)):
+                    retrieved_values[parent_value] = self._retrieve_single(
+                        name, type, config)
+
+            current_parent_value = self.values[parent_name]
+            if current_parent_value in retrieved_values:
+                return retrieved_values[current_parent_value]
+
+            # Sanity check that a conditional HP that is not currently active
+            # is not being used downstream in the model building function.
+            return None
+
+        return self._retrieve_single(name, type, config)
+
+    def _retrieve_single(self, name, type, config):
         full_name = self._get_full_name(name)
         if full_name in self.values:
             # TODO: type compatibility check,
             # or name collision check.
             return self.values[full_name]
-        return self.register(full_name, type, config)
+        return self.register(name, type, config)
 
     def register(self, name, type, config):
-        config['name'] = name
+        full_name = self._get_full_name(name)
+        config['name'] = full_name
         config = {'class_name': type, 'config': config}
         p = deserialize(config)
         self.space.append(p)
         value = p.default
-        self.values[name] = value
+        self.values[full_name] = value
         return value
 
     def get(self, name):
-        if name in self.values:
-            return self.values[name]
+        full_name = self._get_full_name(name)
+        if full_name in self.values:
+            return self.values[full_name]
         else:
-            raise ValueError('Unknown parameter: {name}'.format(name=name))
+            raise ValueError(
+                'Unknown parameter: {name}'.format(name=full_name))
 
-    def Choice(self, name, values, default=None):
+    def Choice(self,
+               name,
+               values,
+               default=None,
+               parent_name=None,
+               parent_values=None):
         return self._retrieve(name, 'Choice',
                               config={'values': values,
                                       'default': default})
 
-    def Range(self, name, min_value, max_value, step=1, default=None):
+    def Range(self,
+              name,
+              min_value,
+              max_value,
+              step=1,
+              default=None,
+              parent_name=None,
+              parent_values=None):
         return self._retrieve(name, 'Range',
                               config={'min_value': min_value,
                                       'max_value': max_value,
                                       'step': step,
                                       'default': default})
 
-    def Linear(self, name, min_value, max_value, resolution, default=None):
+    def Linear(self,
+               name,
+               min_value,
+               max_value,
+               resolution,
+               default=None,
+               parent_name=None,
+               parent_values=None):
         return self._retrieve(name, 'Linear',
                               config={'min_value': min_value,
                                       'max_value': max_value,
                                       'resolution': resolution,
                                       'default': default})
 
-    def Boolean(self, name, default=False):
+    def Boolean(self,
+                name,
+                default=False,
+                parent_name=None,
+                parent_values=None):
         return self._retrieve(name, 'Boolean',
                               config={'default': default})
 
-    def Fixed(self, name, value):
+    def Fixed(self,
+              name,
+              value,
+              parent_name=None,
+              parent_values=None):
         return self._retrieve(name, 'Fixed',
                               config={'value': value})
 
