@@ -86,7 +86,7 @@ def test_conditional_scope():
     assert child1 is None
     # Assignment to an active conditional hyperparameter returns the value
     # that corresponds to the parent's current value.
-    assert child2 is 7
+    assert child2 == 7
 
 
 def test_build_with_conditional_scope():
