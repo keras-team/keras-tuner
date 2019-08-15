@@ -262,6 +262,24 @@ class HyperParameters(object):
 
     @contextlib.contextmanager
     def conditional_scope(self, parent_name, parent_values):
+        """Opens a scope to create conditional HyperParameters.
+
+        All HyperParameters created under this scope will only be active
+        when the parent HyperParameter specified by `parent_name` is
+        equal to one of the values passed in `parent_values`.
+
+        When the condition is not met, creating a HyperParameter under
+        this scope will register the HyperParameter, but will return
+        `None` rather than a concrete value.
+
+        Note that any Python code under this scope will execute
+        regardless of whether the condition is met.
+
+        Arguments:
+          parent_name: The name of the HyperParameter to condition on.
+          parent_values: Values of the parent HyperParameter for which
+            HyperParameters under this scope should be considered valid.
+        """
         if self._conditional_scope is not None:
             raise RuntimeError('`conditional_scope`s cannot be nested.')
         self._conditional_scope = {
