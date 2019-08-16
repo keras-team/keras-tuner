@@ -330,7 +330,8 @@ class HyperParameters(object):
             # TODO: type compatibility check,
             # or name collision check.
             retrieved_value = self.values[full_name]
-        retrieved_value = self.register(name, type, config)
+        else:
+            retrieved_value = self.register(name, type, config)
 
         if self._conditions_are_active():
             return retrieved_value
