@@ -78,14 +78,12 @@ def test_conditional_scope():
         child2 = hp.Choice('child_choice', [7, 8, 9])
     assert hp.values == {
         'choice': 2,
-        'choice=1/child_choice': 4,
-        'choice=3/child_choice': 4,
+        'choice=1|3/child_choice': 4,
         'choice=2/child_choice': 7
     }
     # Assignment to a non-active conditional hyperparameter returns `None`.
     assert child1 is None
-    # Assignment to an active conditional hyperparameter returns the value
-    # that corresponds to the parent's current value.
+    # Assignment to an active conditional hyperparameter returns the value.
     assert child2 == 7
 
 
