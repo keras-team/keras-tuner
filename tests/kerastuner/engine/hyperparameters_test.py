@@ -119,6 +119,34 @@ def test_build_with_conditional_scope():
     }
 
 
+def test_nested_conditional_scopes_and_name_scopes():
+    hp = hp_module.HyperParameters()
+    a = hp.Choice('a', [1, 2, 3], default=2)
+    with hp.conditional_scope('a', [1, 3]):
+        b = hp.Choice('b', [4, 5, 6])
+        with hp.conditional_scope('b', 6):
+            c = hp.Choice('c', [7, 8, 9])
+            with hp.name_scope('d'):
+                e = hp.Choice('e', [10, 11, 12])
+    with hp.conditional_scope('a', 2):
+        f = hp.Choice('f', [13, 14, 15])
+
+    assert hp.values == {
+        'a': 2,
+        'a=1|3/b': 4,
+        'a=1|3/b=6/c': 7,
+        'a=1|3/b=6/d/e': 10,
+        'a=2/f': 13
+    }
+    # Assignment to an active conditional hyperparameter returns the value.
+    assert a == 2
+    assert f == 13
+    # Assignment to a non-active conditional hyperparameter returns `None`.
+    assert b is None
+    assert c is None
+    assert e is None
+
+
 def test_Choice():
     choice = hp_module.Choice('choice', [1, 2, 3], default=2)
     choice = hp_module.Choice.from_config(choice.get_config())
