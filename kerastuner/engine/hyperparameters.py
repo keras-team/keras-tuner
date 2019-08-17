@@ -249,15 +249,15 @@ class HyperParameters(object):
     def __init__(self):
         self.space = []
         self.values = {}
-        self._name_scopes = []
+        self._scopes = []
 
     @contextlib.contextmanager
     def name_scope(self, name):
-        self._name_scopes.append(name)
+        self._scopes.append(name)
         try:
             yield
         finally:
-            self._name_scopes.pop()
+            self._scopes.pop()
 
     @contextlib.contextmanager
     def conditional_scope(self, parent_name, parent_values):
@@ -279,7 +279,7 @@ class HyperParameters(object):
           parent_values: Values of the parent HyperParameter for which
             HyperParameters under this scope should be considered valid.
         """
-        full_parent_name = self._get_full_name(parent_name)
+        full_parent_name = self._get_name(parent_name)
         if full_parent_name not in self.values:
             raise ValueError(
                 '`HyperParameter` named: ' + full_parent_name + ' '
@@ -288,24 +288,28 @@ class HyperParameters(object):
         if not isinstance(parent_values, (list, tuple)):
             parent_values = [parent_values]
 
-        self._name_scopes.append({'parent_name': parent_name,
-                                  'parent_values': parent_values})
+        parent_values = [str(v) for v in parent_values]
+
+        self._scopes.append({'parent_name': parent_name,
+                             'parent_values': parent_values})
         try:
             yield
         finally:
-            self._name_scopes.pop()
+            self._scopes.pop()
 
-    def _conditions_are_active(self):
-        name_scopes = []
-        for scope in self._name_scopes:
-            # Conditional scope.
-            if isinstance(scope, dict):
+    def _conditions_are_active(self, scopes=None):
+        if scopes is None:
+            scopes = self._scopes
+
+        partial_scopes = []
+        for scope in scopes:
+            if self._is_conditional_scope(scope):
                 full_name = self._get_name(
-                    name_scopes,
-                    scope['parent_name'])
-                if self.values[full_name] not in scope['parent_values']:
+                    scope['parent_name'],
+                    partial_scopes)
+                if str(self.values[full_name]) not in scope['parent_values']:
                     return False
-            name_scopes.append(scope)
+            partial_scopes.append(scope)
         return True
 
     def _retrieve(self,
@@ -314,17 +318,15 @@ class HyperParameters(object):
                   config,
                   parent_name=None,
                   parent_values=None):
-        if '/' in name or '=' in name or '|' in name:
-            raise ValueError(
-                '`HyperParameter` names cannot contain "/" or "=" characters.')
-
+        """Gets or creates a `HyperParameter`,"""
         if parent_name:
             with self.conditional_scope(parent_name, parent_values):
                 return self._retrieve_helper(name, type, config)
         return self._retrieve_helper(name, type, config)
 
     def _retrieve_helper(self, name, type, config):
-        full_name = self._get_full_name(name)
+        self._check_name_is_valid(name)
+        full_name = self._get_name(name)
 
         if full_name in self.values:
             # TODO: type compatibility check,
@@ -341,7 +343,7 @@ class HyperParameters(object):
         return None
 
     def register(self, name, type, config):
-        full_name = self._get_full_name(name)
+        full_name = self._get_name(name)
         config['name'] = full_name
         config = {'class_name': type, 'config': config}
         p = deserialize(config)
@@ -351,12 +353,43 @@ class HyperParameters(object):
         return value
 
     def get(self, name):
-        full_name = self._get_full_name(name)
+        """Return the current value of this HyperParameter."""
+
+        # Most common case: not attempting to access a conditional parent
+        # or conditional child.
+        full_name = self._get_name(name)
         if full_name in self.values:
-            return self.values[full_name]
-        else:
-            raise ValueError(
-                'Unknown parameter: {name}'.format(name=full_name))
+            if self._conditions_are_active():
+                return self.values[full_name]
+            else:
+                # Sanity check for conditional HP usage.
+                return None
+
+        # Check parent/child conditions.
+        found_inactive = False
+        # Remove conditional scopes from name.
+        full_name_no_cond = '/'.join([
+            p for p in self._get_name_parts(full_name) if
+            not self._is_conditional_scope(p)])
+        for hp_name in self.values.keys():
+            hp_parts = self._get_name_parts(hp_name)
+            # Remove conditional scopes from name.
+            hp_name_no_cond = '/'.join(
+                [p for p in hp_parts
+                 if not self._is_conditional_scope(p)])
+            if hp_name_no_cond == full_name_no_cond:
+                # Check that this HP is active for this Trial.
+                if self._conditions_are_active(hp_parts):
+                    return self.values[hp_name]
+                else:
+                    found_inactive = True
+
+        if found_inactive:
+            # Sanity check, found only inactive conditional HPs.
+            return None
+
+        raise ValueError(
+            'Unknown parameter: {}'.format(full_name_no_cond))
 
     def Choice(self,
                name,
@@ -429,19 +462,16 @@ class HyperParameters(object):
     def copy(self):
         return HyperParameters.from_config(self.get_config())
 
-    def _get_full_name(self, name):
-        """Return a fully qualified name based on active name scopes."""
-        return self._get_name(self._name_scopes, name)
-
-    def _get_name(self, name_scopes, name):
+    def _get_name(self, name, scopes=None):
         """Returns a name qualified by `name_scopes`."""
+        if scopes is None:
+            scopes = self._scopes
+
         scope_strings = []
-        for scope in name_scopes:
-            if isinstance(scope, str):
-                # Simple name scope.
+        for scope in scopes:
+            if self._is_name_scope(scope):
                 scope_strings.append(scope)
-            else:
-                # Conditional scope.
+            elif self._is_conditional_scope(scope):
                 parent_name = scope['parent_name']
                 parent_values = scope['parent_values']
                 scope_string = '{name}={vals}'.format(
@@ -449,6 +479,45 @@ class HyperParameters(object):
                     vals='|'.join([str(val) for val in parent_values]))
                 scope_strings.append(scope_string)
         return '/'.join(scope_strings + [name])
+
+    def _get_name_parts(self, full_name):
+        """Splits `full_name` into its scopes and leaf name."""
+        str_parts = full_name.split('/')
+        parts = []
+
+        for part in str_parts:
+            if '=' in part:
+                parent_name, parent_values = part.split('=')
+                parent_values = parent_values.split('|')
+                parts.append({'parent_name': parent_name,
+                              'parent_values': parent_values})
+            else:
+                parts.append(part)
+
+        return parts
+
+    def _check_name_is_valid(self, name):
+        if '/' in name or '=' in name or '|' in name:
+            raise ValueError(
+                '`HyperParameter` names cannot contain "/" or "=" characters.')
+
+        for scope in self._scopes[::-1]:
+            if self._is_conditional_scope(scope):
+                if name == scope['parent_name']:
+                    raise ValueError(
+                        'A conditional `HyperParameter` cannot have the same '
+                        'name as its parent. Found: ' + str(name) + ' and '
+                        'parent_name: ' + str(parent_name))
+            else:
+                # Names only have to be unique up to the last `name_scope`.
+                break
+
+    def _is_name_scope(self, scope):
+        return isinstance(scope, str)
+
+    def _is_conditional_scope(self, scope):
+        return (isinstance(scope, dict) and
+                'parent_name' in scope and 'parent_values' in scope)
 
 
 def deserialize(config):

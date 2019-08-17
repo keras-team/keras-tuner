@@ -147,6 +147,23 @@ def test_nested_conditional_scopes_and_name_scopes():
     assert e is None
 
 
+def test_get_with_conditional_scopes():
+    hp = hp_module.HyperParameters()
+    a = hp.Choice('a', [1, 2, 3], default=2)
+    assert hp.get('a') == 2
+    with hp.conditional_scope('a', 2):
+        hp.Fixed('b', 4)
+        assert hp.get('b') == 4
+        assert hp.get('a') == 2
+    with hp.conditional_scope('a', 3):
+        hp.Fixed('b', 5)
+        # This b is not currently active.
+        assert hp.get('b') == None
+
+    # Value corresponding to the currently active condition is returned.
+    assert hp.get('b') == 4
+
+
 def test_Choice():
     choice = hp_module.Choice('choice', [1, 2, 3], default=2)
     choice = hp_module.Choice.from_config(choice.get_config())
