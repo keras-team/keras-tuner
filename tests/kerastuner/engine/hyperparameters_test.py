@@ -158,7 +158,7 @@ def test_get_with_conditional_scopes():
     with hp.conditional_scope('a', 3):
         hp.Fixed('b', 5)
         # This b is not currently active.
-        assert hp.get('b') == None
+        assert hp.get('b') is None
 
     # Value corresponding to the currently active condition is returned.
     assert hp.get('b') == 4
