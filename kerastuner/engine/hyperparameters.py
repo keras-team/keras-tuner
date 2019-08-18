@@ -58,17 +58,23 @@ class Choice(HyperParameter):
         name: Str. Name of parameter. Must be unique.
         values: List of possible values.
             Any serializable type is allowed.
+        ordered: Whether the values passed should be considered to
+            have an ordering. This defaults to `True` for float/int
+            values and `False` for any other values.
         default: Default value to return for the parameter.
             If unspecified, the default value will be:
             - None if None is one of the choices in `values`
             - The first entry in `values` otherwise.
     """
 
-    def __init__(self, name, values, default=None):
+    def __init__(self, name, values, ordered=None, default=None):
         super(Choice, self).__init__(name=name, default=default)
         if not values:
             raise ValueError('`values` must be provided.')
         self.values = values
+        self.ordered = ordered
+        if self.ordered is None:
+            self.ordered = isinstance(values[0], (int, float))
         if default is not None and default not in values:
             raise ValueError(
                 'The default value should be one of the choices. '
@@ -76,7 +82,7 @@ class Choice(HyperParameter):
 
     def __repr__(self):
         return (f'Choice(name: {self.name!r}, values: {self.values},'
-                f' default: {self.default})')
+                f' ordered: {self.ordered}, default: {self.default})')
 
     @property
     def default(self):
@@ -93,6 +99,7 @@ class Choice(HyperParameter):
     def get_config(self):
         config = super(Choice, self).get_config()
         config['values'] = self.values
+        config['ordered'] = self.ordered
         return config
 
 
@@ -282,9 +289,10 @@ class HyperParameters(object):
         else:
             raise ValueError('Unknown parameter: {name}'.format(name=name))
 
-    def Choice(self, name, values, default=None):
+    def Choice(self, name, values, ordered=None, default=None):
         return self._retrieve(name, 'Choice',
                               config={'values': values,
+                                      'ordered': ordered,
                                       'default': default})
 
     def Range(self, name, min_value, max_value, step=1, default=None):

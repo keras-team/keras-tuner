@@ -84,6 +84,21 @@ def test_Choice():
         choice = hp_module.Choice('choice', [1, 2, 3], default=4)
 
 
+@pytest.mark.parametrize(
+    "values,ordered_arg,ordered_val", 
+    [([1, 2, 3], True, True),
+     ([1, 2, 3], False, False),
+     ([1, 2, 3], None, True),
+     (['a', 'b', 'c'], True, True),
+     (['a', 'b', 'c'], False, False),
+     (['a', 'b', 'c'], None, False)])
+def test_Choice_ordered(values, ordered_arg, ordered_val):
+    choice = hp_module.Choice('choice', values, ordered=ordered_arg)
+    assert choice.ordered == ordered_val
+    choice_new = hp_module.Choice(**choice.get_config())
+    assert choice_new.ordered == ordered_val
+
+
 def test_Linear():
     linear = hp_module.Linear(
         'linear', min_value=0.5, max_value=9.5, resolution=0.1, default=9.)
