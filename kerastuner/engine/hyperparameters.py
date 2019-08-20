@@ -78,12 +78,14 @@ class Choice(HyperParameter):
         unsupported_types = types - {int, float, str, bool}
         if unsupported_types:
             raise TypeError(
-                'A `Choice` can contain only `int`, `float`, '
-                '`str`, or `bool`, found: {}'.format(unsupported_types))
+                'A `Choice` can contain only `int`, `float`, `str`, or '
+                '`bool`, found values: ' + str(values) + 'with '
+                'types: ' + str(unsupported_types))
+
         if len(types) > 1:
             raise TypeError(
-                'A `Choice` can contain only one type of value, '
-                'found: {}'.format(types))
+                'A `Choice` can contain only one type of value, found '
+                'values: ' + str(values) + ' with types ' + str(types))
         self._type = types.pop()
 
         # Get or infer ordered.
