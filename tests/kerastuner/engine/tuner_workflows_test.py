@@ -38,9 +38,9 @@ def tmp_dir(tmpdir_factory):
 def build_model(hp):
     inputs = keras.Input(shape=(INPUT_DIM,))
     x = inputs
-    for i in range(hp.Range('num_layers', 1, 4)):
+    for i in range(hp.Int('num_layers', 1, 4)):
         x = keras.layers.Dense(
-            units=hp.Range('units_' + str(i), 5, 9, 1, default=6),
+            units=hp.Int('units_' + str(i), 5, 9, 1, default=6),
             activation='relu')(x)
     outputs = keras.layers.Dense(NUM_CLASSES, activation='softmax')(x)
     model = keras.Model(inputs, outputs)
@@ -57,9 +57,9 @@ class ExampleHyperModel(kerastuner.HyperModel):
     def build(self, hp):
         inputs = keras.Input(shape=(INPUT_DIM,))
         x = inputs
-        for i in range(hp.Range('num_layers', 1, 4)):
+        for i in range(hp.Int('num_layers', 1, 4)):
             x = keras.layers.Dense(
-                units=hp.Range('units_' + str(i), 5, 9, 1, default=6),
+                units=hp.Int('units_' + str(i), 5, 9, 1, default=6),
                 activation='relu')(x)
         outputs = keras.layers.Dense(NUM_CLASSES, activation='softmax')(x)
         model = keras.Model(inputs, outputs)
@@ -198,9 +198,9 @@ def test_static_space(tmp_dir):
         return model
 
     hp = kerastuner.HyperParameters()
-    hp.Range('num_layers', 1, 3, 1, default=2)
-    hp.Range('units_0', 4, 6, 1, default=5)
-    hp.Range('units_1', 4, 6, 1, default=5)
+    hp.Int('num_layers', 1, 3, 1, default=2)
+    hp.Int('units_0', 4, 6, 1, default=5)
+    hp.Int('units_1', 4, 6, 1, default=5)
     hp.Choice('learning_rate', [0.01, 0.001])
     tuner = kerastuner.tuners.RandomSearch(
         build_model_static,
@@ -240,9 +240,9 @@ def test_static_space_errors(tmp_dir):
         return model
 
     hp = kerastuner.HyperParameters()
-    hp.Range('num_layers', 1, 3, 1, default=2)
-    hp.Range('units_0', 4, 6, 1, default=5)
-    hp.Range('units_1', 4, 6, 1, default=5)
+    hp.Int('num_layers', 1, 3, 1, default=2)
+    hp.Int('units_0', 4, 6, 1, default=5)
+    hp.Int('units_1', 4, 6, 1, default=5)
 
     with pytest.raises(RuntimeError, match='Too many failed attempts'):
         tuner = kerastuner.tuners.RandomSearch(
@@ -269,7 +269,7 @@ def test_static_space_errors(tmp_dir):
         model = keras.Model(inputs, outputs)
         model.compile(
             optimizer=keras.optimizers.Adam(
-                hp.Linear('learning_rate', 0.001, 0.008, 0.001)),
+                hp.Float('learning_rate', 0.001, 0.008, 0.001)),
             loss='sparse_categorical_crossentropy',
             metrics=['accuracy'])
         return model
@@ -292,7 +292,7 @@ def test_static_space_errors(tmp_dir):
 
 def test_restricted_space_using_defaults(tmp_dir):
     hp = kerastuner.HyperParameters()
-    hp.Range('num_layers', 1, 5, 1, default=2)
+    hp.Int('num_layers', 1, 5, 1, default=2)
     hp.Choice('learning_rate', [0.01, 0.001, 0.0001])
 
     tuner = kerastuner.tuners.RandomSearch(
@@ -323,7 +323,7 @@ def test_restricted_space_using_defaults(tmp_dir):
 
 def test_restricted_space_with_custom_defaults(tmp_dir):
     hp = kerastuner.HyperParameters()
-    hp.Range('num_layers', 1, 3, 1, default=2)
+    hp.Int('num_layers', 1, 3, 1, default=2)
     hp.Choice('learning_rate', [0.01, 0.001, 0.0001])
     hp.Fixed('units_0', 4)
     hp.Fixed('units_1', 3)
@@ -350,7 +350,7 @@ def test_restricted_space_with_custom_defaults(tmp_dir):
 
 def test_reparameterized_space(tmp_dir):
     hp = kerastuner.HyperParameters()
-    hp.Range('num_layers', 1, 3, 1, default=2)
+    hp.Int('num_layers', 1, 3, 1, default=2)
     hp.Choice('learning_rate', [0.01, 0.001, 0.0001])
 
     tuner = kerastuner.tuners.RandomSearch(

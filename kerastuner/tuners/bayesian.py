@@ -164,9 +164,9 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                     value = hp.values.index(value)
                 elif isinstance(hp, hp_module.Fixed):
                     value = 0
-                elif isinstance(hp, hp_module.Range):
+                elif isinstance(hp, hp_module.Int):
                     value = value
-                elif isinstance(hp, hp_module.Linear):
+                elif isinstance(hp, hp_module.Float):
                     value = value
                 vector[index] = value
 
@@ -197,9 +197,9 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
 
             if isinstance(hp, hp_module.Choice):
                 value = hp.values[int(value)]
-            elif isinstance(hp, hp_module.Linear):
+            elif isinstance(hp, hp_module.Float):
                 value = value[0]
-            elif isinstance(hp, hp_module.Range):
+            elif isinstance(hp, hp_module.Int):
                 value = value[0]
             values[hp.name] = value
 
