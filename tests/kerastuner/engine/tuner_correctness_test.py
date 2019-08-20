@@ -36,7 +36,7 @@ def tmp_dir(tmpdir_factory):
 
 def build_model(hp):
     model = keras.Sequential([
-        keras.layers.Dense(hp.Range('units', 100, 1000, 100),
+        keras.layers.Dense(hp.Int('units', 100, 1000, 100),
                            input_shape=(INPUT_DIM,),
                            activation='relu'),
         keras.layers.Dense(NUM_CLASSES, activation='softmax')

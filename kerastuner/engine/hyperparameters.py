@@ -96,7 +96,7 @@ class Choice(HyperParameter):
         return config
 
 
-class Range(HyperParameter):
+class Int(HyperParameter):
     """Integer range.
 
     Args:
@@ -110,14 +110,14 @@ class Range(HyperParameter):
     """
 
     def __init__(self, name, min_value, max_value, step=1, default=None):
-        super(Range, self).__init__(name=name, default=default)
+        super(Int, self).__init__(name=name, default=default)
         self.max_value = int(max_value)
         self.min_value = int(min_value)
         self.step = int(step)
         self._values = list(range(min_value, max_value, step))
 
     def __repr__(self):
-        return (f'Range(name: {self.name!r}, min_value: {self.min_value},'
+        return (f'Int(name: {self.name!r}, min_value: {self.min_value},'
                 f' max_value: {self.max_value}, step: {self.step},'
                 f' default: {self.default})')
 
@@ -132,7 +132,7 @@ class Range(HyperParameter):
         return self.min_value
 
     def get_config(self):
-        config = super(Range, self).get_config()
+        config = super(Int, self).get_config()
         config['min_value'] = self.min_value
         config['max_value'] = self.max_value
         config['step'] = self.step
@@ -140,29 +140,32 @@ class Range(HyperParameter):
         return config
 
 
-class Linear(HyperParameter):
+class Float(HyperParameter):
     """Floating point range, evenly divided.
 
     Args:
         name: Str. Name of parameter. Must be unique.
         min_value: Float. Lower bound of the range.
         max_value: Float. Upper bound of the range.
-        resolution: Float, e.g. 0.1.
+        step: Optional. Float, e.g. 0.1.
             smallest meaningful distance between two values.
         default: Default value to return for the parameter.
             If unspecified, the default value will be
             `min_value`.
     """
 
-    def __init__(self, name, min_value, max_value, resolution, default=None):
-        super(Linear, self).__init__(name=name, default=default)
+    def __init__(self, name, min_value, max_value, step=None, default=None):
+        super(Float, self).__init__(name=name, default=default)
         self.max_value = float(max_value)
         self.min_value = float(min_value)
-        self.resolution = float(resolution)
+        if step is not None:
+            self.step = float(step)
+        else:
+            self.step = None
 
     def __repr__(self):
-        return (f'Linear(name: {self.name!r}, min_value: {self.min_value},'
-                f' max_value: {self.max_value}, resolution: {self.resolution},'
+        return (f'Float(name: {self.name!r}, min_value: {self.min_value},'
+                f' max_value: {self.max_value}, step: {self.step},'
                 f' default: {self.default})')
 
     @property
@@ -173,16 +176,19 @@ class Linear(HyperParameter):
 
     def random_sample(self, seed=None):
         random_state = random.Random(seed)
-        width = self.max_value - self.min_value
-        value = self.min_value + float(random_state.random()) * width
-        quantized_value = round(value / self.resolution) * self.resolution
-        return quantized_value
+        if self.step is not None:
+            width = self.max_value - self.min_value
+            value = self.min_value + float(random_state.random()) * width
+            quantized_value = round(value / self.step) * self.step
+            return quantized_value
+        else:
+            return random_state.uniform(self.min_value, self.max_value)
 
     def get_config(self):
-        config = super(Linear, self).get_config()
+        config = super(Float, self).get_config()
         config['min_value'] = self.min_value
         config['max_value'] = self.max_value
-        config['resolution'] = self.resolution
+        config['step'] = self.step
         return config
 
 
@@ -399,35 +405,41 @@ class HyperParameters(object):
                parent_values=None):
         return self._retrieve(name, 'Choice',
                               config={'values': values,
-                                      'default': default})
+                                      'default': default},
+                              parent_name=parent_name,
+                              parent_values=parent_values)
 
-    def Range(self,
-              name,
-              min_value,
-              max_value,
-              step=1,
-              default=None,
-              parent_name=None,
-              parent_values=None):
-        return self._retrieve(name, 'Range',
+    def Int(self,
+            name,
+            min_value,
+            max_value,
+            step=1,
+            default=None,
+            parent_name=None,
+            parent_values=None):
+        return self._retrieve(name, 'Int',
                               config={'min_value': min_value,
                                       'max_value': max_value,
                                       'step': step,
-                                      'default': default})
+                                      'default': default},
+                              parent_name=parent_name,
+                              parent_values=parent_values)
 
-    def Linear(self,
-               name,
-               min_value,
-               max_value,
-               resolution,
-               default=None,
-               parent_name=None,
-               parent_values=None):
-        return self._retrieve(name, 'Linear',
+    def Float(self,
+              name,
+              min_value,
+              max_value,
+              step=None,
+              default=None,
+              parent_name=None,
+              parent_values=None):
+        return self._retrieve(name, 'Float',
                               config={'min_value': min_value,
                                       'max_value': max_value,
-                                      'resolution': resolution,
-                                      'default': default})
+                                      'step': step,
+                                      'default': default},
+                              parent_name=parent_name,
+                              parent_values=parent_values)
 
     def Boolean(self,
                 name,
@@ -435,7 +447,9 @@ class HyperParameters(object):
                 parent_name=None,
                 parent_values=None):
         return self._retrieve(name, 'Boolean',
-                              config={'default': default})
+                              config={'default': default},
+                              parent_name=parent_name,
+                              parent_values=parent_values)
 
     def Fixed(self,
               name,
@@ -443,7 +457,9 @@ class HyperParameters(object):
               parent_name=None,
               parent_values=None):
         return self._retrieve(name, 'Fixed',
-                              config={'value': value})
+                              config={'value': value},
+                              parent_name=parent_name,
+                              parent_values=parent_values)
 
     def get_config(self):
         return {
@@ -528,6 +544,6 @@ def deserialize(config):
 
 
 HyperParameters.Choice.__doc__ == Choice.__doc__
-HyperParameters.Range.__doc__ == Range.__doc__
-HyperParameters.Linear.__doc__ == Linear.__doc__
+HyperParameters.Int.__doc__ == Int.__doc__
+HyperParameters.Float.__doc__ == Float.__doc__
 HyperParameters.Fixed.__doc__ == Fixed.__doc__

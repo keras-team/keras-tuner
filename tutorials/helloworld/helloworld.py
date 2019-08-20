@@ -29,17 +29,17 @@ x_val = np.expand_dims(x_val, -1)
 # Define a function that returns a compiled model.
 # The functions gets a `hp` argument which is used
 # to query hyperparameters, such as
-# `hp.Range('num_layers', 2, 8)`.
+# `hp.Int('num_layers', 2, 8)`.
 
 
 def build_model(hp):
     inputs = keras.Input(shape=(28, 28, 1))
     x = inputs
-    for i in range(hp.Range('num_layers', 2, 8, default=6)):
+    for i in range(hp.Int('num_layers', 2, 8, default=6)):
         x = layers.Conv2D(
-            filters=hp.Range('units_' + str(i), 32, 256,
-                             step=32,
-                             default=64),
+            filters=hp.Int('units_' + str(i), 32, 256,
+                           step=32,
+                           default=64),
             kernel_size=3,
             activation='relu',
             padding='same',

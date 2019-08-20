@@ -40,9 +40,9 @@ def tmp_dir(tmpdir_factory):
 def build_model(hp):
     inputs = keras.Input(shape=(INPUT_DIM,))
     x = inputs
-    for i in range(hp.Range('num_layers', 1, 4)):
+    for i in range(hp.Int('num_layers', 1, 4)):
         x = keras.layers.Dense(
-            units=hp.Range('units_' + str(i), 5, 9, 1, default=6),
+            units=hp.Int('units_' + str(i), 5, 9, 1, default=6),
             activation='relu')(x)
     outputs = keras.layers.Dense(NUM_CLASSES, activation='softmax')(x)
     model = keras.Model(inputs, outputs)

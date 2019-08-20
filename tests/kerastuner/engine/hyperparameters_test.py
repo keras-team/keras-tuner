@@ -60,12 +60,28 @@ def test_name_scope():
         hp.Choice('choice', [4, 5, 6], default=5)
         with hp.name_scope('scope2'):
             hp.Choice('choice', [7, 8, 9], default=8)
-        hp.Range('range', min_value=0, max_value=10, step=1, default=0)
+        hp.Int('range', min_value=0, max_value=10, step=1, default=0)
     assert hp.values == {
         'choice': 2,
         'scope1/choice': 5,
         'scope1/scope2/choice': 8,
         'scope1/range': 0
+    }
+
+
+def test_parent_name():
+    hp = hp_module.HyperParameters()
+    hp.Choice('a', [1, 2, 3], default=2)
+    b1 = hp.Int(
+        'b', 0, 10, parent_name='a', parent_values=1, default=5)
+    b2 = hp.Int(
+        'b', 0, 100, parent_name='a', parent_values=2, default=4)
+    assert b1 is None
+    assert b2 == 4
+    assert hp.values == {
+        'a': 2,
+        'a=1/b': 5,
+        'a=2/b': 4
     }
 
 
@@ -92,11 +108,11 @@ def test_build_with_conditional_scope():
     def build_model(hp):
         model = hp.Choice('model', ['v1', 'v2'])
         with hp.conditional_scope('model', 'v1'):
-            v1_params = {'layers': hp.Range('layers', 1, 3),
-                         'units': hp.Range('units', 16, 32)}
+            v1_params = {'layers': hp.Int('layers', 1, 3),
+                         'units': hp.Int('units', 16, 32)}
         with hp.conditional_scope('model', 'v2'):
-            v2_params = {'layers': hp.Range('layers', 2, 4),
-                         'units': hp.Range('units', 32, 64)}
+            v2_params = {'layers': hp.Int('layers', 2, 4),
+                         'units': hp.Int('units', 32, 64)}
 
         params = v1_params if model == 'v1' else v2_params
         inputs = keras.Input(10)
@@ -180,30 +196,41 @@ def test_Choice():
         choice = hp_module.Choice('choice', [1, 2, 3], default=4)
 
 
-def test_Linear():
-    linear = hp_module.Linear(
-        'linear', min_value=0.5, max_value=9.5, resolution=0.1, default=9.)
-    linear = hp_module.Linear.from_config(linear.get_config())
+def test_Float():
+    # Test with step arg
+    linear = hp_module.Float(
+        'linear', min_value=0.5, max_value=9.5, step=0.1, default=9.)
+    linear = hp_module.Float.from_config(linear.get_config())
     assert linear.default == 9.
     assert 0.5 <= linear.random_sample() < 9.5
     assert isinstance(linear.random_sample(), float)
     assert linear.random_sample(123) == linear.random_sample(123)
+
+    # Test without step arg
+    linear = hp_module.Float(
+        'linear', min_value=0.5, max_value=6.5, default=2.)
+    linear = hp_module.Float.from_config(linear.get_config())
+    assert linear.default == 2.
+    assert 0.5 <= linear.random_sample() < 6.5
+    assert isinstance(linear.random_sample(), float)
+    assert linear.random_sample(123) == linear.random_sample(123)
+
     # No default
-    linear = hp_module.Linear(
-        'linear', min_value=0.5, max_value=9.5, resolution=0.1)
+    linear = hp_module.Float(
+        'linear', min_value=0.5, max_value=9.5, step=0.1)
     assert linear.default == 0.5
 
 
-def test_Range():
-    rg = hp_module.Range(
+def test_Int():
+    rg = hp_module.Int(
         'rg', min_value=5, max_value=9, step=1, default=6)
-    rg = hp_module.Range.from_config(rg.get_config())
+    rg = hp_module.Int.from_config(rg.get_config())
     assert rg.default == 6
     assert 5 <= rg.random_sample() < 9
     assert isinstance(rg.random_sample(), int)
     assert rg.random_sample(123) == rg.random_sample(123)
     # No default
-    rg = hp_module.Range(
+    rg = hp_module.Int(
         'rg', min_value=5, max_value=9, step=1)
     assert rg.default == 5
 

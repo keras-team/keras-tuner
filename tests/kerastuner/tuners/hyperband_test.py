@@ -215,8 +215,8 @@ def build_model(hp):
     model = tf.keras.Sequential()
     model.add(tf.keras.layers.Flatten(input_shape=(2, 2)))
     for i in range(3):
-        model.add(tf.keras.layers.Dense(units=hp.Range('units_' + str(i),
-                                                       2, 4, 2),
+        model.add(tf.keras.layers.Dense(units=hp.Int('units_' + str(i),
+                                                     2, 4, 2),
                                         activation='relu'))
     model.add(tf.keras.layers.Dense(2, activation='softmax'))
     model.compile(
