@@ -56,11 +56,11 @@ class Choice(HyperParameter):
 
     Args:
         name: Str. Name of parameter. Must be unique.
-        values: List of possible values.
-            Any serializable type is allowed.
+        values: List of possible values. Values must be int, float,
+            str, or bool. All values must be of the same type.
         ordered: Whether the values passed should be considered to
             have an ordering. This defaults to `True` for float/int
-            values and `False` for any other values.
+            values. Must be `False` for any other values.
         default: Default value to return for the parameter.
             If unspecified, the default value will be:
             - None if None is one of the choices in `values`
@@ -72,9 +72,29 @@ class Choice(HyperParameter):
         if not values:
             raise ValueError('`values` must be provided.')
         self.values = values
+
+        # Type checking.
+        types = set(type(v) for v in values)
+        unsupported_types = types - {int, float, str, bool}
+        if unsupported_types:
+            raise TypeError(
+                'A `Choice` can contain only `int`, `float`, '
+                '`str`, or `bool`, found: {}'.format(unsupported_types))
+        if len(types) > 1:
+            raise TypeError(
+                'A `Choice` can contain only one type of value, '
+                'found: {}'.format(types))
+        self._type = types.pop()
+
+        # Get or infer ordered.
         self.ordered = ordered
+        orderable_types = {int, float}
+        if self.ordered and self._type not in orderable_types:
+            raise ValueError('`ordered` must be `False` for non-numeric '
+                             'types.')
         if self.ordered is None:
-            self.ordered = isinstance(values[0], (int, float))
+            self.ordered = self._type in orderable_types
+
         if default is not None and default not in values:
             raise ValueError(
                 'The default value should be one of the choices. '

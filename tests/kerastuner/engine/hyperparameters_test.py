@@ -77,9 +77,6 @@ def test_Choice():
     # No default
     choice = hp_module.Choice('choice', [1, 2, 3])
     assert choice.default == 1
-    # None default
-    choice = hp_module.Choice('choice', [1, None, 3])
-    assert choice.default is None
     with pytest.raises(ValueError, match='default value should be'):
         choice = hp_module.Choice('choice', [1, 2, 3], default=4)
 
@@ -89,7 +86,6 @@ def test_Choice():
     [([1, 2, 3], True, True),
      ([1, 2, 3], False, False),
      ([1, 2, 3], None, True),
-     (['a', 'b', 'c'], True, True),
      (['a', 'b', 'c'], False, False),
      (['a', 'b', 'c'], None, False)])
 def test_Choice_ordered(values, ordered_arg, ordered_val):
@@ -97,6 +93,20 @@ def test_Choice_ordered(values, ordered_arg, ordered_val):
     assert choice.ordered == ordered_val
     choice_new = hp_module.Choice(**choice.get_config())
     assert choice_new.ordered == ordered_val
+
+
+def test_Choice_ordered_invalid():
+    with pytest.raises(ValueError, match='must be `False`'):
+        choice = hp_module.Choice('a', ['a', 'b'], ordered=True)
+
+
+def test_Choice_types():
+    values1 = ['a', 'b', 0]
+    with pytest.raises(TypeError, match='can contain only one'):
+        hp_module.Choice('a', values1)
+    values2 = [{'a': 1}, {'a': 2}]
+    with pytest.raises(TypeError, match='can contain only `int`'):
+        hp_module.Choice('a', values2)
 
 
 def test_Linear():
