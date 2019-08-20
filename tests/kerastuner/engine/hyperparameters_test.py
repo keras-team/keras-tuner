@@ -81,7 +81,6 @@ def test_Choice():
         choice = hp_module.Choice('choice', [1, 2, 3], default=4)
 
 
-<<<<<<< HEAD
 @pytest.mark.parametrize(
     "values,ordered_arg,ordered_val", 
     [([1, 2, 3], True, True),
