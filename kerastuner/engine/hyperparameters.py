@@ -318,7 +318,7 @@ class HyperParameters(object):
                   config,
                   parent_name=None,
                   parent_values=None):
-        """Gets or creates a `HyperParameter`,"""
+        """Gets or creates a `HyperParameter`."""
         if parent_name:
             with self.conditional_scope(parent_name, parent_values):
                 return self._retrieve_helper(name, type, config)
@@ -476,7 +476,7 @@ class HyperParameters(object):
                 parent_values = scope['parent_values']
                 scope_string = '{name}={vals}'.format(
                     name=parent_name,
-                    vals='|'.join([str(val) for val in parent_values]))
+                    vals=','.join([str(val) for val in parent_values]))
                 scope_strings.append(scope_string)
         return '/'.join(scope_strings + [name])
 
@@ -488,7 +488,7 @@ class HyperParameters(object):
         for part in str_parts:
             if '=' in part:
                 parent_name, parent_values = part.split('=')
-                parent_values = parent_values.split('|')
+                parent_values = parent_values.split(',')
                 parts.append({'parent_name': parent_name,
                               'parent_values': parent_values})
             else:
@@ -497,9 +497,10 @@ class HyperParameters(object):
         return parts
 
     def _check_name_is_valid(self, name):
-        if '/' in name or '=' in name or '|' in name:
+        if '/' in name or '=' in name or ',' in name:
             raise ValueError(
-                '`HyperParameter` names cannot contain "/" or "=" characters.')
+                '`HyperParameter` names cannot contain "/", "=" or "," ' 
+                'characters.')
 
         for scope in self._scopes[::-1]:
             if self._is_conditional_scope(scope):

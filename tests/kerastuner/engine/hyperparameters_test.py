@@ -78,7 +78,7 @@ def test_conditional_scope():
         child2 = hp.Choice('child_choice', [7, 8, 9])
     assert hp.values == {
         'choice': 2,
-        'choice=1|3/child_choice': 4,
+        'choice=1,3/child_choice': 4,
         'choice=2/child_choice': 7
     }
     # Assignment to a non-active conditional hyperparameter returns `None`.
@@ -133,9 +133,9 @@ def test_nested_conditional_scopes_and_name_scopes():
 
     assert hp.values == {
         'a': 2,
-        'a=1|3/b': 4,
-        'a=1|3/b=6/c': 7,
-        'a=1|3/b=6/d/e': 10,
+        'a=1,3/b': 4,
+        'a=1,3/b=6/c': 7,
+        'a=1,3/b=6/d/e': 10,
         'a=2/f': 13
     }
     # Assignment to an active conditional hyperparameter returns the value.
