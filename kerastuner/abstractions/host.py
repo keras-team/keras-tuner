@@ -22,7 +22,7 @@ from distutils import spawn
 from time import time
 import tensorflow as tf
 import kerastuner as kt
-from .display import subsection, display_settings, display_setting
+from .display import subsection, display_settings, display_setting, fatal
 from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 
 
