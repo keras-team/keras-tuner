@@ -26,8 +26,8 @@ y = y[:10000]
 def build_model(hp):
     model = keras.Sequential()
     model.add(layers.Flatten(input_shape=(28, 28)))
-    for i in range(hp.Range('num_layers', 2, 20)):
-        model.add(layers.Dense(units=hp.Range('units_' + str(i), 32, 512, 32),
+    for i in range(hp.Int('num_layers', 2, 20)):
+        model.add(layers.Dense(units=hp.Int('units_' + str(i), 32, 512, 32),
                                activation='relu'))
     model.add(layers.Dense(10, activation='softmax'))
     model.compile(
@@ -86,8 +86,8 @@ class MyHyperModel(HyperModel):
     def build(self, hp):
         model = keras.Sequential()
         model.add(layers.Flatten(input_shape=self.img_size))
-        for i in range(hp.Range('num_layers', 2, 20)):
-            model.add(layers.Dense(units=hp.Range('units_' + str(i), 32, 512, 32),
+        for i in range(hp.Int('num_layers', 2, 20)):
+            model.add(layers.Dense(units=hp.Int('units_' + str(i), 32, 512, 32),
                                    activation='relu'))
         model.add(layers.Dense(self.num_classes, activation='softmax'))
         model.compile(
@@ -177,7 +177,7 @@ tuner.search(x=x,
 
 hp = HyperParameters()
 hp.Choice('learning_rate', [1e-1, 1e-3])
-hp.Range('num_layers', 2, 20)
+hp.Int('num_layers', 2, 20)
 
 
 def build_model(hp):
