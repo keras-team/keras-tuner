@@ -15,6 +15,7 @@
 import pytest
 
 from kerastuner.engine import hyperparameters as hp_module
+from tensorflow import keras
 
 
 def test_base_hyperparameter():
@@ -66,6 +67,117 @@ def test_name_scope():
         'scope1/scope2/choice': 8,
         'scope1/range': 0
     }
+
+
+def test_parent_name():
+    hp = hp_module.HyperParameters()
+    hp.Choice('a', [1, 2, 3], default=2)
+    b1 = hp.Int(
+        'b', 0, 10, parent_name='a', parent_values=1, default=5)
+    b2 = hp.Int(
+        'b', 0, 100, parent_name='a', parent_values=2, default=4)
+    assert b1 is None
+    assert b2 == 4
+    assert hp.values == {
+        'a': 2,
+        'a=1/b': 5,
+        'a=2/b': 4
+    }
+
+
+def test_conditional_scope():
+    hp = hp_module.HyperParameters()
+    hp.Choice('choice', [1, 2, 3], default=2)
+    with hp.conditional_scope('choice', [1, 3]):
+        child1 = hp.Choice('child_choice', [4, 5, 6])
+    with hp.conditional_scope('choice', 2):
+        child2 = hp.Choice('child_choice', [7, 8, 9])
+    assert hp.values == {
+        'choice': 2,
+        'choice=1,3/child_choice': 4,
+        'choice=2/child_choice': 7
+    }
+    # Assignment to a non-active conditional hyperparameter returns `None`.
+    assert child1 is None
+    # Assignment to an active conditional hyperparameter returns the value.
+    assert child2 == 7
+
+
+def test_build_with_conditional_scope():
+
+    def build_model(hp):
+        model = hp.Choice('model', ['v1', 'v2'])
+        with hp.conditional_scope('model', 'v1'):
+            v1_params = {'layers': hp.Int('layers', 1, 3),
+                         'units': hp.Int('units', 16, 32)}
+        with hp.conditional_scope('model', 'v2'):
+            v2_params = {'layers': hp.Int('layers', 2, 4),
+                         'units': hp.Int('units', 32, 64)}
+
+        params = v1_params if model == 'v1' else v2_params
+        inputs = keras.Input(10)
+        x = inputs
+        for _ in range(params['layers']):
+            x = keras.layers.Dense(params['units'])(x)
+        outputs = keras.layers.Dense(1)(x)
+        model = keras.Model(inputs, outputs)
+        model.compile('sgd', 'mse')
+        return model
+
+    hp = hp_module.HyperParameters()
+    model = build_model(hp)
+    assert hp.values == {
+        'model': 'v1',
+        'model=v1/layers': 1,
+        'model=v1/units': 16,
+        'model=v2/layers': 2,
+        'model=v2/units': 32
+    }
+
+
+def test_nested_conditional_scopes_and_name_scopes():
+    hp = hp_module.HyperParameters()
+    a = hp.Choice('a', [1, 2, 3], default=2)
+    with hp.conditional_scope('a', [1, 3]):
+        b = hp.Choice('b', [4, 5, 6])
+        with hp.conditional_scope('b', 6):
+            c = hp.Choice('c', [7, 8, 9])
+            with hp.name_scope('d'):
+                e = hp.Choice('e', [10, 11, 12])
+    with hp.conditional_scope('a', 2):
+        f = hp.Choice('f', [13, 14, 15])
+
+    assert hp.values == {
+        'a': 2,
+        'a=1,3/b': 4,
+        'a=1,3/b=6/c': 7,
+        'a=1,3/b=6/d/e': 10,
+        'a=2/f': 13
+    }
+    # Assignment to an active conditional hyperparameter returns the value.
+    assert a == 2
+    assert f == 13
+    # Assignment to a non-active conditional hyperparameter returns `None`.
+    assert b is None
+    assert c is None
+    assert e is None
+
+
+def test_get_with_conditional_scopes():
+    hp = hp_module.HyperParameters()
+    a = hp.Choice('a', [1, 2, 3], default=2)
+    assert hp.get('a') == 2
+    with hp.conditional_scope('a', 2):
+        hp.Fixed('b', 4)
+        assert hp.get('b') == 4
+        assert hp.get('a') == 2
+    with hp.conditional_scope('a', 3):
+        hp.Fixed('b', 5)
+        # This b is not currently active.
+        assert hp.get('b') is None
+
+    # Value corresponding to the currently active condition is returned.
+    assert hp.get('b') == 4
 
 
 def test_Choice():
