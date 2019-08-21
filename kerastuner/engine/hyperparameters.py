@@ -36,6 +36,14 @@ def _check_sampling_arg(sampling):
     return sampling
 
 
+def _check_int(val, arg):
+    int_val = int(val)
+    if int_val != val:
+        raise ValueError(
+            arg + ' must be an int, found: ' + str(val))
+    return int_val
+
+
 class HyperParameter(object):
     """HyperParameter base class.
 
@@ -164,9 +172,9 @@ class Int(HyperParameter):
                  sampling=None,
                  default=None):
         super(Int, self).__init__(name=name, default=default)
-        self.max_value = int(max_value)
-        self.min_value = int(min_value)
-        self.step = int(step)
+        self.max_value = _check_int(max_value, arg='max_value')
+        self.min_value = _check_int(min_value, arg='min_value')
+        self.step = _check_int(step, arg='step')
         self.sampling = _check_sampling_arg(sampling)
         self._values = list(range(min_value, max_value, step))
 
