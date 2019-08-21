@@ -18,7 +18,6 @@ from __future__ import division
 from __future__ import print_function
 
 import contextlib
-import enum
 import random
 
 from tensorflow import keras
