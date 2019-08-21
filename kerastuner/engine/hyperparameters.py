@@ -56,19 +56,47 @@ class Choice(HyperParameter):
 
     Args:
         name: Str. Name of parameter. Must be unique.
-        values: List of possible values.
-            Any serializable type is allowed.
+        values: List of possible values. Values must be int, float,
+            str, or bool. All values must be of the same type.
+        ordered: Whether the values passed should be considered to
+            have an ordering. This defaults to `True` for float/int
+            values. Must be `False` for any other values.
         default: Default value to return for the parameter.
             If unspecified, the default value will be:
             - None if None is one of the choices in `values`
             - The first entry in `values` otherwise.
     """
 
-    def __init__(self, name, values, default=None):
+    def __init__(self, name, values, ordered=None, default=None):
         super(Choice, self).__init__(name=name, default=default)
         if not values:
             raise ValueError('`values` must be provided.')
         self.values = values
+
+        # Type checking.
+        types = set(type(v) for v in values)
+        unsupported_types = types - {int, float, str, bool}
+        if unsupported_types:
+            raise TypeError(
+                'A `Choice` can contain only `int`, `float`, `str`, or '
+                '`bool`, found values: ' + str(values) + 'with '
+                'types: ' + str(unsupported_types))
+
+        if len(types) > 1:
+            raise TypeError(
+                'A `Choice` can contain only one type of value, found '
+                'values: ' + str(values) + ' with types ' + str(types))
+        self._type = types.pop()
+
+        # Get or infer ordered.
+        self.ordered = ordered
+        orderable_types = {int, float}
+        if self.ordered and self._type not in orderable_types:
+            raise ValueError('`ordered` must be `False` for non-numeric '
+                             'types.')
+        if self.ordered is None:
+            self.ordered = self._type in orderable_types
+
         if default is not None and default not in values:
             raise ValueError(
                 'The default value should be one of the choices. '
@@ -76,7 +104,7 @@ class Choice(HyperParameter):
 
     def __repr__(self):
         return (f'Choice(name: {self.name!r}, values: {self.values},'
-                f' default: {self.default})')
+                f' ordered: {self.ordered}, default: {self.default})')
 
     @property
     def default(self):
@@ -93,6 +121,7 @@ class Choice(HyperParameter):
     def get_config(self):
         config = super(Choice, self).get_config()
         config['values'] = self.values
+        config['ordered'] = self.ordered
         return config
 
 
@@ -400,11 +429,13 @@ class HyperParameters(object):
     def Choice(self,
                name,
                values,
+               ordered=None,
                default=None,
                parent_name=None,
                parent_values=None):
         return self._retrieve(name, 'Choice',
                               config={'values': values,
+                                      'ordered': ordered,
                                       'default': default},
                               parent_name=parent_name,
                               parent_values=parent_values)
