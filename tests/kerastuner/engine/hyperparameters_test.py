@@ -246,6 +246,19 @@ def test_Float():
     assert linear.default == 0.5
 
 
+def test_sampling_arg():
+    f = hp_module.Float('f', 0, 10, sampling='log')
+    f = hp_module.Float.from_config(f.get_config())
+    assert f.sampling == 'log'
+
+    i = hp_module.Int('i', 0, 10, sampling='linear')
+    i = hp_module.Int.from_config(i.get_config())
+    assert i.sampling == 'linear'
+
+    with pytest.raises(ValueError, match='`sampling` must be one of'):
+        hp_module.Int('j', 0, 10, sampling='invalid')
+
+
 def test_Int():
     rg = hp_module.Int(
         'rg', min_value=5, max_value=9, step=1, default=6)
