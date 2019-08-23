@@ -21,7 +21,7 @@ from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 from .. import config
 
 
-class Host:
+class Host(object):
     """Track underlying Host state
 
     Args:
