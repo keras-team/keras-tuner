@@ -63,6 +63,10 @@ def build_subclass_model(hp):
             return self.layer(x)
 
         # Currently necessary, because we save the model.
+        # Note that this model is not written w/ best practices,
+        # because the hp.Float value of the best model cannot be
+        # inferred from `get_config()`. The best practice is to pass
+        # HPs as __init__ arguments to subclass Layers and Models.
         def get_config(self):
             return {}
 
