@@ -25,7 +25,7 @@ pip install .
 Here's how to perform hyperparameter tuning for a single-layer dense neural network using random search.
 
 First, we define a model-building function. It takes an argument `hp` from which you can
-sample hyperparameters, such as `hp.Range('units', min_value=32, max_value=512, step=32)`
+sample hyperparameters, such as `hp.Int('units', min_value=32, max_value=512, step=32)`
 (an integer from a certain range).
 
 This function returns a compiled model.
@@ -38,10 +38,10 @@ from kerastuner.tuners import RandomSearch
 
 def build_model(hp):
     model = keras.Sequential()
-    model.add(layers.Dense(units=hp.Range('units',
-                                          min_value=32,
-                                          max_value=512,
-                                          step=32),
+    model.add(layers.Dense(units=hp.Int('units',
+                                        min_value=32,
+                                        max_value=512,
+                                        step=32),
                            activation='relu'))
     model.add(layers.Dense(10, activation='softmax'))
     model.compile(
@@ -121,11 +121,11 @@ we name the inner parameters `'units_' + str(i)`).
 ```python
 def build_model(hp):
     model = keras.Sequential()
-    for i in range(hp.Range('num_layers', 2, 20)):
-        model.add(layers.Dense(units=hp.Range('units_' + str(i),
-                                              min_value=32,
-                                              max_value=512,
-                                              step=32),
+    for i in range(hp.Int('num_layers', 2, 20)):
+        model.add(layers.Dense(units=hp.Int('units_' + str(i),
+                                            min_value=32,
+                                            max_value=512,
+                                            step=32),
                                activation='relu'))
     model.add(layers.Dense(10, activation='softmax'))
     model.compile(
@@ -153,10 +153,10 @@ class MyHyperModel(HyperModel):
 
     def build(self, hp):
         model = keras.Sequential()
-        model.add(layers.Dense(units=hp.Range('units',
-                                              min_value=32,
-                                              max_value=512,
-                                              step=32),
+        model.add(layers.Dense(units=hp.Int('units',
+                                            min_value=32,
+                                            max_value=512,
+                                            step=32),
                                activation='relu'))
         model.add(layers.Dense(self.num_classes, activation='softmax'))
         model.compile(
@@ -248,14 +248,14 @@ Whenever you register a hyperparameter inside a model-building function or the `
 you can specify a default value:
 
 ```python
-hp.Range('units',
-         min_value=32,
-         max_value=512,
-         step=32,
-         default=128)
+hp.Int('units',
+       min_value=32,
+       max_value=512,
+       step=32,
+       default=128)
 ```
 
-If you don't, hyperparameters always have a default default (for `Range`, it is equal to `min_value`).
+If you don't, hyperparameters always have a default default (for `Int`, it is equal to `min_value`).
 
 
 ## Fixing values in a hypermodel

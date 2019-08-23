@@ -64,9 +64,9 @@ class HyperXception(hypermodel.HyperModel):
                  strides=initial_strides)
 
         # Separable convs.
-        sep_num_filters = hp.Range(
+        sep_num_filters = hp.Int(
             'sep_num_filters', 128, 768, step=128, default=256)
-        num_residual_blocks = hp.Range('num_residual_blocks', 2, 8, default=4)
+        num_residual_blocks = hp.Int('num_residual_blocks', 2, 8, default=4)
         for _ in range(num_residual_blocks):
             x = residual(x,
                          sep_num_filters,
@@ -88,9 +88,9 @@ class HyperXception(hypermodel.HyperModel):
 
         if self.include_top:
             # Dense
-            num_dense_layers = hp.Range('num_dense_layers', 1, 3)
-            dropout_rate = hp.Linear(
-                'dropout_rate', 0.0, 0.6, resolution=0.1, default=0.5)
+            num_dense_layers = hp.Int('num_dense_layers', 1, 3)
+            dropout_rate = hp.Float(
+                'dropout_rate', 0.0, 0.6, step=0.1, default=0.5)
             dense_use_bn = hp.Choice('dense_use_bn', [True, False])
             for _ in range(num_dense_layers):
                 x = dense(x,
