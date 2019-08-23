@@ -555,7 +555,7 @@ class HyperParameters(object):
                     raise ValueError(
                         'A conditional `HyperParameter` cannot have the same '
                         'name as its parent. Found: ' + str(name) + ' and '
-                        'parent_name: ' + str(parent_name))
+                        'parent_name: ' + str(scope['parent_name']))
             else:
                 # Names only have to be unique up to the last `name_scope`.
                 break
