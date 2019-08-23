@@ -20,7 +20,7 @@ from tensorflow.python.keras import backend as K
 
 def compute_model_size(model):
     "comput the size of a given model"
-    params = [K.count_params(p) for p in set(model.trainable_weights)]
+    params = [K.count_params(p) for p in model.trainable_weights]
     return int(np.sum(params))
 
 
