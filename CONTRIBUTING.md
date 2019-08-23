@@ -22,6 +22,14 @@ use GitHub pull requests for this purpose. Consult
 [GitHub Help](https://help.github.com/articles/about-pull-requests/) for more
 information on using pull requests.
 
+## Supported Python versions:
+
+This project necessitate Python 3.6 or above to run. But we might decide 
+to make the codebase compatible with Python 2.7 in the future. For this 
+reason, we ask contributors to try to think about backward compatibility 
+when it's not too demanding. For example, always remember to 
+subclass `òbject` when creating a class and avoid using f-string formatting.
+
 ## Community Guidelines
 
 This project follows [Google's Open Source Community
