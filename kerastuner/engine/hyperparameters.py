@@ -18,21 +18,36 @@ from __future__ import division
 from __future__ import print_function
 
 import contextlib
+import math
 import random
 
 from tensorflow import keras
 
 
-_SAMPLING_VALUES = {'linear', 'log', 'reverse_log'}
-
-
-def _check_sampling_arg(sampling):
+def _check_sampling_arg(sampling,
+                        step,
+                        min_value,
+                        max_value,
+                        hp_type='int'):
     if sampling is None:
         return None
+    if hp_type == 'int' and step != 1:
+        raise ValueError(
+            '`sampling` can only be set on an `Int` when `step=1`.')
+    if hp_type != 'int' and step is not None:
+        raise ValueError(
+            '`sampling` and `step` cannot both be set, found '
+            '`sampling`: ' + str(sampling) + ', `step`: ' + str(step))
+
+    _SAMPLING_VALUES = {'linear', 'log', 'reverse_log'}
     sampling = sampling.lower()
     if sampling not in _SAMPLING_VALUES:
         raise ValueError(
             '`sampling` must be one of ' + str(_SAMPLING_VALUES))
+    if sampling in {'log', 'reverse_log'} and min_value <= 0:
+        raise ValueError(
+            '`sampling="' + str(sampling) + '" is not supported for '
+            'negative values, found `min_value`: ' + str(min_value))
     return sampling
 
 
@@ -175,7 +190,8 @@ class Int(HyperParameter):
         self.max_value = _check_int(max_value, arg='max_value')
         self.min_value = _check_int(min_value, arg='min_value')
         self.step = _check_int(step, arg='step')
-        self.sampling = _check_sampling_arg(sampling)
+        self.sampling = _check_sampling_arg(
+            sampling, step, min_value, max_value, hp_type='int')
         self._values = list(range(min_value, max_value, step))
 
     def __repr__(self):
@@ -185,6 +201,16 @@ class Int(HyperParameter):
 
     def random_sample(self, seed=None):
         random_state = random.Random(seed)
+        if self.sampling in {'log', 'reverse_log'}:
+            cdf = float(random_state.random())
+            if self.sampling == 'log':
+                random_sample = _log_sample(
+                    cdf, self.min_value, self.max_value)
+            elif self.sampling == 'reverse_log':
+                random_sample = _reverse_log_sample(
+                    cdf, self.min_value, self.max_value)
+            return int(random_sample)
+
         return random_state.choice(self._values)
 
     @property
@@ -236,7 +262,8 @@ class Float(HyperParameter):
             self.step = float(step)
         else:
             self.step = None
-        self.sampling = _check_sampling_arg(sampling)
+        self.sampling = _check_sampling_arg(
+            sampling, step, min_value, max_value, hp_type='float')
 
     def __repr__(self):
         return (f'Float(name: {self.name!r}, min_value: {self.min_value},'
@@ -256,8 +283,16 @@ class Float(HyperParameter):
             value = self.min_value + float(random_state.random()) * width
             quantized_value = round(value / self.step) * self.step
             return quantized_value
-        else:
-            return random_state.uniform(self.min_value, self.max_value)
+        elif self.sampling in {'log', 'reverse_log'}:
+            cdf = float(random_state.random())
+            if self.sampling == 'log':
+                random_sample = _log_sample(
+                    cdf, self.min_value, self.max_value)
+            elif self.sampling == 'reverse_log':
+                random_sample = _reverse_log_sample(
+                    cdf, self.min_value, self.max_value)
+            return random_sample
+        return random_state.uniform(self.min_value, self.max_value)
 
     def get_config(self):
         config = super(Float, self).get_config()
@@ -629,3 +664,13 @@ HyperParameters.Choice.__doc__ == Choice.__doc__
 HyperParameters.Int.__doc__ == Int.__doc__
 HyperParameters.Float.__doc__ == Float.__doc__
 HyperParameters.Fixed.__doc__ == Fixed.__doc__
+
+
+def _log_sample(x, min_value, max_value, seed=None):
+    """Applies log scale to a value in range [0, 1]."""
+    return min_value*math.pow(max_value/min_value, x)
+
+
+def _reverse_log_sample(x, min_value, max_value, seed=None):
+    """Applies reverse log scale to a value in range [0, 1]."""
+    return max_value + min_value - min_value*math.pow(max_value/min_value, 1 - x)

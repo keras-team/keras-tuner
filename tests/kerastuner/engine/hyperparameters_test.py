@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import math
+import numpy as np
 import pytest
 
 from kerastuner.engine import hyperparameters as hp_module
@@ -247,7 +249,7 @@ def test_Float():
 
 
 def test_sampling_arg():
-    f = hp_module.Float('f', 0, 10, sampling='log')
+    f = hp_module.Float('f', 1e-20, 1e10, sampling='log')
     f = hp_module.Float.from_config(f.get_config())
     assert f.sampling == 'log'
 
@@ -257,6 +259,39 @@ def test_sampling_arg():
 
     with pytest.raises(ValueError, match='`sampling` must be one of'):
         hp_module.Int('j', 0, 10, sampling='invalid')
+
+
+def test_sampling_random_state():
+    f = hp_module.Float('f', 1e-3, 1e3, sampling='log')
+    rand_sample = f.random_sample()
+    assert rand_sample >= f.min_value
+    assert rand_sample <= f.max_value
+
+    def log_scale(x, min_value, max_value):
+        return math.log(x/min_value) / math.log(max_value/min_value)
+
+    x = 1e-1
+    min_value, max_value = 1e-10, 1e10
+    # Scale x to [0, 1].
+    x_scaled = log_scale(x, min_value, max_value)
+    # Scale back.
+    x_rescaled = hp_module._log_sample(x_scaled, min_value, max_value)
+    assert np.allclose(x, x_rescaled)
+
+    f = hp_module.Float('f', 1e-3, 1e3, sampling='reverse_log')
+    rand_sample = f.random_sample()
+    assert rand_sample >= f.min_value
+    assert rand_sample <= f.max_value
+
+    def reverse_log_scale(x, a, b):
+        return 1 - math.log((b + a - x) / a) / math.log(b/a)
+
+    x = 1e5
+    min_value, max_value = 1e-10, 1e10
+    x_scaled = reverse_log_scale(x, min_value, max_value)
+    x_rescaled = hp_module._reverse_log_sample(
+        x_scaled, min_value, max_value)
+    assert np.allclose(x, x_rescaled)
 
 
 def test_Int():
