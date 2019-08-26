@@ -671,9 +671,9 @@ HyperParameters.Fixed.__doc__ == Fixed.__doc__
 
 def _log_sample(x, min_value, max_value, seed=None):
     """Applies log scale to a value in range [0, 1]."""
-    return min_value*math.pow(max_value/min_value, x)
+    return min_value * math.pow(max_value / min_value, x)
 
 
 def _reverse_log_sample(x, min_value, max_value, seed=None):
     """Applies reverse log scale to a value in range [0, 1]."""
-    return max_value + min_value - min_value*math.pow(max_value/min_value, 1 - x)
+    return max_value + min_value - min_value * math.pow(max_value / min_value, 1 - x)
