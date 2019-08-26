@@ -597,7 +597,7 @@ class Tuner(object):
                     'a valid Model instance.')
 
             # Check model size.
-            size = utils.compute_model_size(model)
+            size = utils.maybe_compute_model_size(model)
             if self.max_model_size and size > self.max_model_size:
                 oversized_streak += 1
                 self._stats.num_oversized_models += 1

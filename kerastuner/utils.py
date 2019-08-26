@@ -18,14 +18,16 @@ from tensorflow.python import Session, ConfigProto
 from tensorflow.python.keras import backend as K
 
 
-def compute_model_size(model):
-    "comput the size of a given model"
-    params = [K.count_params(p) for p in model.trainable_weights]
-    return int(np.sum(params))
+def maybe_compute_model_size(model):
+    """Compute the size of a given model, if it has been built."""
+    if model.built:
+        params = [K.count_params(p) for p in model.trainable_weights]
+        return int(np.sum(params))
+    return 0
 
 
 def clear_tf_session():
-    "Clear tensorflow graph to avoid OOM issues"
+    """Clear tensorflow graph to avoid OOM issues"""
     K.clear_session()
     # K.get_session().close() # unsure if it is needed
     gc.collect()

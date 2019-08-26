@@ -641,7 +641,7 @@ class HyperParameters(object):
                     raise ValueError(
                         'A conditional `HyperParameter` cannot have the same '
                         'name as its parent. Found: ' + str(name) + ' and '
-                        'parent_name: ' + str(parent_name))
+                        'parent_name: ' + str(scope['parent_name']))
             else:
                 # Names only have to be unique up to the last `name_scope`.
                 break
@@ -655,7 +655,10 @@ class HyperParameters(object):
 
 
 def deserialize(config):
-    module_objects = globals()
+    # Autograph messes with globals(), so in order to support HPs inside `call` we
+    # have to enumerate them manually here.
+    objects = [HyperParameter, Fixed, Float, Int, Choice, Boolean, HyperParameters]
+    module_objects = {cls.__name__: cls for cls in objects}
     return keras.utils.deserialize_keras_object(
         config, module_objects=module_objects)
 
