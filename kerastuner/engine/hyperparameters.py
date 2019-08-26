@@ -18,9 +18,45 @@ from __future__ import division
 from __future__ import print_function
 
 import contextlib
+import math
 import random
 
 from tensorflow import keras
+
+
+def _check_sampling_arg(sampling,
+                        step,
+                        min_value,
+                        max_value,
+                        hp_type='int'):
+    if sampling is None:
+        return None
+    if hp_type == 'int' and step != 1:
+        raise ValueError(
+            '`sampling` can only be set on an `Int` when `step=1`.')
+    if hp_type != 'int' and step is not None:
+        raise ValueError(
+            '`sampling` and `step` cannot both be set, found '
+            '`sampling`: ' + str(sampling) + ', `step`: ' + str(step))
+
+    _SAMPLING_VALUES = {'linear', 'log', 'reverse_log'}
+    sampling = sampling.lower()
+    if sampling not in _SAMPLING_VALUES:
+        raise ValueError(
+            '`sampling` must be one of ' + str(_SAMPLING_VALUES))
+    if sampling in {'log', 'reverse_log'} and min_value <= 0:
+        raise ValueError(
+            '`sampling="' + str(sampling) + '" is not supported for '
+            'negative values, found `min_value`: ' + str(min_value))
+    return sampling
+
+
+def _check_int(val, arg):
+    int_val = int(val)
+    if int_val != val:
+        raise ValueError(
+            arg + ' must be an int, found: ' + str(val))
+    return int_val
 
 
 class HyperParameter(object):
@@ -133,25 +169,48 @@ class Int(HyperParameter):
         min_value: Int. Lower limit of range (included).
         max_value: Int. Upper limit of range (excluded).
         step: Int. Step of range.
+        sampling: Optional. One of "linear", "log",
+            "reverse_log". Acts as a hint for an initial prior
+            probability distribution for how this value should
+            be sampled, e.g. "log" will assign equal
+            probabilities to each order of magnitude range.
         default: Default value to return for the parameter.
             If unspecified, the default value will be
             `min_value`.
     """
 
-    def __init__(self, name, min_value, max_value, step=1, default=None):
+    def __init__(self,
+                 name,
+                 min_value,
+                 max_value,
+                 step=1,
+                 sampling=None,
+                 default=None):
         super(Int, self).__init__(name=name, default=default)
-        self.max_value = int(max_value)
-        self.min_value = int(min_value)
-        self.step = int(step)
+        self.max_value = _check_int(max_value, arg='max_value')
+        self.min_value = _check_int(min_value, arg='min_value')
+        self.step = _check_int(step, arg='step')
+        self.sampling = _check_sampling_arg(
+            sampling, step, min_value, max_value, hp_type='int')
         self._values = list(range(min_value, max_value, step))
 
     def __repr__(self):
         return (f'Int(name: {self.name!r}, min_value: {self.min_value},'
                 f' max_value: {self.max_value}, step: {self.step},'
-                f' default: {self.default})')
+                f' sampling: {self.sampling}, default: {self.default})')
 
     def random_sample(self, seed=None):
         random_state = random.Random(seed)
+        if self.sampling in {'log', 'reverse_log'}:
+            cdf = float(random_state.random())
+            if self.sampling == 'log':
+                random_sample = _log_sample(
+                    cdf, self.min_value, self.max_value)
+            elif self.sampling == 'reverse_log':
+                random_sample = _reverse_log_sample(
+                    cdf, self.min_value, self.max_value)
+            return int(random_sample)
+
         return random_state.choice(self._values)
 
     @property
@@ -165,6 +224,7 @@ class Int(HyperParameter):
         config['min_value'] = self.min_value
         config['max_value'] = self.max_value
         config['step'] = self.step
+        config['sampling'] = self.sampling
         config['default'] = self._default
         return config
 
@@ -178,12 +238,23 @@ class Float(HyperParameter):
         max_value: Float. Upper bound of the range.
         step: Optional. Float, e.g. 0.1.
             smallest meaningful distance between two values.
+        sampling: Optional. One of "linear", "log",
+            "reverse_log". Acts as a hint for an initial prior
+            probability distribution for how this value should
+            be sampled, e.g. "log" will assign equal
+            probabilities to each order of magnitude range.
         default: Default value to return for the parameter.
             If unspecified, the default value will be
             `min_value`.
     """
 
-    def __init__(self, name, min_value, max_value, step=None, default=None):
+    def __init__(self,
+                 name,
+                 min_value,
+                 max_value,
+                 step=None,
+                 sampling=None,
+                 default=None):
         super(Float, self).__init__(name=name, default=default)
         self.max_value = float(max_value)
         self.min_value = float(min_value)
@@ -191,11 +262,13 @@ class Float(HyperParameter):
             self.step = float(step)
         else:
             self.step = None
+        self.sampling = _check_sampling_arg(
+            sampling, step, min_value, max_value, hp_type='float')
 
     def __repr__(self):
         return (f'Float(name: {self.name!r}, min_value: {self.min_value},'
                 f' max_value: {self.max_value}, step: {self.step},'
-                f' default: {self.default})')
+                f' sampling: {self.sampling}, default: {self.default})')
 
     @property
     def default(self):
@@ -210,14 +283,23 @@ class Float(HyperParameter):
             value = self.min_value + float(random_state.random()) * width
             quantized_value = round(value / self.step) * self.step
             return quantized_value
-        else:
-            return random_state.uniform(self.min_value, self.max_value)
+        elif self.sampling in {'log', 'reverse_log'}:
+            cdf = float(random_state.random())
+            if self.sampling == 'log':
+                random_sample = _log_sample(
+                    cdf, self.min_value, self.max_value)
+            elif self.sampling == 'reverse_log':
+                random_sample = _reverse_log_sample(
+                    cdf, self.min_value, self.max_value)
+            return random_sample
+        return random_state.uniform(self.min_value, self.max_value)
 
     def get_config(self):
         config = super(Float, self).get_config()
         config['min_value'] = self.min_value
         config['max_value'] = self.max_value
         config['step'] = self.step
+        config['sampling'] = self.sampling
         return config
 
 
@@ -445,6 +527,7 @@ class HyperParameters(object):
             min_value,
             max_value,
             step=1,
+            sampling=None,
             default=None,
             parent_name=None,
             parent_values=None):
@@ -452,6 +535,7 @@ class HyperParameters(object):
                               config={'min_value': min_value,
                                       'max_value': max_value,
                                       'step': step,
+                                      'sampling': sampling,
                                       'default': default},
                               parent_name=parent_name,
                               parent_values=parent_values)
@@ -461,6 +545,7 @@ class HyperParameters(object):
               min_value,
               max_value,
               step=None,
+              sampling=None,
               default=None,
               parent_name=None,
               parent_values=None):
@@ -468,6 +553,7 @@ class HyperParameters(object):
                               config={'min_value': min_value,
                                       'max_value': max_value,
                                       'step': step,
+                                      'sampling': sampling,
                                       'default': default},
                               parent_name=parent_name,
                               parent_values=parent_values)
@@ -581,3 +667,13 @@ HyperParameters.Choice.__doc__ == Choice.__doc__
 HyperParameters.Int.__doc__ == Int.__doc__
 HyperParameters.Float.__doc__ == Float.__doc__
 HyperParameters.Fixed.__doc__ == Fixed.__doc__
+
+
+def _log_sample(x, min_value, max_value, seed=None):
+    """Applies log scale to a value in range [0, 1]."""
+    return min_value * math.pow(max_value / min_value, x)
+
+
+def _reverse_log_sample(x, min_value, max_value, seed=None):
+    """Applies reverse log scale to a value in range [0, 1]."""
+    return max_value + min_value - min_value * math.pow(max_value / min_value, 1 - x)
