@@ -43,6 +43,7 @@ except NameError:
 if IS_NOTEBOOK:
     from tqdm import tqdm_notebook as tqdm
     from IPython.display import HTML
+    display = HTML
 else:
     from tqdm import tqdm
     display = print
@@ -285,8 +286,9 @@ def cprint(text, color, bg_color=None, brightness='normal'):
 
     # HTMLify if needed
     if IS_NOTEBOOK and isinstance(text, str):
-        text = HTML(text)
-    display(text)
+        HTML(text)
+    else:
+        display(text)
 
 
 def colorize_row(row, color, bg_color=None, brightness='normal'):
