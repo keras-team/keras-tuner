@@ -18,7 +18,6 @@ from ..abstractions.display import fatal, subsection, warning
 from ..abstractions.display import display_settings
 from ..abstractions.tensorflow import TENSORFLOW as tf
 from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
-from .. import config
 
 
 class Host(object):
@@ -45,9 +44,8 @@ class Host(object):
         tf_utils.create_directory(self.tmp_dir, remove_existing=True)
         tf_utils.create_directory(self.export_dir)
 
-        # init _HOST
-        config._Host = Host()
-        status = config._Host.get_status()
+        self._Host = Host()
+        status = self._Host.get_status()
         tf_version = status['software']['tensorflow']
         if tf_version:
             major, minor, rev = tf_version.split('.')
@@ -69,7 +67,7 @@ class Host(object):
         }
         display_settings(settings)
         if extended:
-            config._Host.summary(extended=extended)
+            self._Host.summary(extended=extended)
 
     def get_config(self):
         res = {}
@@ -78,6 +76,6 @@ class Host(object):
             res[name] = getattr(self, name)
 
         # adding host hardware & software information
-        res.update(config._Host.to_config())
+        res.update(self._Host.to_config())
 
         return res

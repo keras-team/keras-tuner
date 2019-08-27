@@ -32,7 +32,7 @@ from . import oracle as oracle_module
 from . import trial as trial_module
 from . import execution as execution_module
 from . import tuner_utils
-from .. import config
+from .. import config as config_module
 from .. import utils
 from ..abstractions import display
 from ..abstractions import host as host_module
@@ -574,7 +574,7 @@ class Tuner(object):
                 with tuner_utils.maybe_distribute(self.distribution_strategy):
                     model = self.hypermodel.build(hp)
             except:
-                if config.DEBUG:
+                if config_module.DEBUG:
                     traceback.print_exc()
 
                 self._stats.num_invalid_models += 1
@@ -730,14 +730,8 @@ class Tuner(object):
 
         tmp_path = os.path.join(self._host.tmp_dir,
                                 file_prefix)
-
-        try:
-            tf_utils.save_model(model,
-                                base_filename,
-                                tmp_path=tmp_path,
-                                export_type='keras')
-        except:
-            traceback.print_exc()
-            display.write_log('Checkpoint failed.')
-            exit(0)
+        tf_utils.save_model(model,
+                            base_filename,
+                            tmp_path=tmp_path,
+                            export_type='keras')
         return base_filename

@@ -13,8 +13,3 @@
 # limitations under the License.
 
 DEBUG = True
-
-# Tuner global variables
-_HOST = None  # initialized in stats/hoststate.py HostState.init()
-_LOG = None  # initialized in states/tunerstate.init()
-_TENSORFLOW = None  # initialized in stats/hoststate.py HostState.init()

@@ -73,16 +73,6 @@ styles = {
 }
 
 
-# Log functions
-def set_log(filename):
-    config._LOG = file_io.FileIO(filename, 'w')
-
-
-def write_log(text):
-    if config._LOG and not IS_NOTEBOOK:
-        config._LOG.write(text + "\n")
-
-
 # Shorthand functions
 def info(text, render=1):
     """ display a info
@@ -97,7 +87,6 @@ def info(text, render=1):
     color = 'blue'
     s = "[Info] %s" % text
 
-    write_log(s)
     if render:
         cprint(s, color)
     else:
@@ -117,7 +106,6 @@ def warning(text, render=1):
     color = 'yellow'
     s = "[Warning] %s" % text
 
-    write_log(s)
     if render:
         cprint(s, color)
     else:
@@ -138,7 +126,6 @@ def fatal(text, render=True, raise_exception=True):
     bgcolor = 'red'
     s = "[FATAL] %s" % text
 
-    write_log(s)
     if render:
         cprint(s, color, bgcolor)
         if raise_exception:
@@ -158,7 +145,6 @@ def section(text):
     else:
         section = '[' + text + ']'
         cprint(section, 'yellow')
-        write_log(section)
 
 
 def subsection(text):
@@ -173,7 +159,6 @@ def subsection(text):
     else:
         section = ' > ' + text + ''
         cprint(section, 'magenta', brightness='dim')
-        write_log(section)
 
 
 def display_setting(text, indent_level=1, idx=0, render=True):
@@ -195,7 +180,6 @@ def display_setting(text, indent_level=1, idx=0, render=True):
     else:
         color = 'cyan'
 
-    write_log(s)
     if render:
         cprint(s, color)
     return colorize(s + '\n', color)
@@ -226,7 +210,6 @@ def highlight(text):
         text = '<span style="font-size:14px"><b>' + text + '</b></span>'
         cprint(text, '#64DD17')
     else:
-        write_log(text)
         cprint(text, 'green', brightness="bright")
 
 # Charts
@@ -388,8 +371,6 @@ def display_table(rows, title=None, indent=0):
         for line in table.split("\n"):
             out.append(indent + line)
         table = "\n".join(out)
-
-    write_log(table)
     display(table)
 
 
@@ -460,7 +441,6 @@ def display_combined_table(array_rows):
         array_rows (list(list)): Array of tables rows to combine
     """
     table = make_combined_table(array_rows)
-    write_log(table)
     display(table)
 
 
