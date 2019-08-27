@@ -88,4 +88,4 @@ def test_end_to_end_workflow(tmp_dir, distribution_strategy):
 
 
 if __name__ == '__main__':
-    test_end_to_end_workflow('test_dir')
+    test_end_to_end_workflow('test_dir', None)

@@ -139,8 +139,8 @@ class Choice(HyperParameter):
                 'You passed: values=%s, default=%s' % (values, default))
 
     def __repr__(self):
-        return (f'Choice(name: {self.name!r}, values: {self.values},'
-                f' ordered: {self.ordered}, default: {self.default})')
+        return 'Choice(name: "{}", values: {}, ordered: {}, default: {})'.format(
+            self.name, self.values, self.ordered, self.default)
 
     @property
     def default(self):
@@ -195,9 +195,14 @@ class Int(HyperParameter):
         self._values = list(range(min_value, max_value, step))
 
     def __repr__(self):
-        return (f'Int(name: {self.name!r}, min_value: {self.min_value},'
-                f' max_value: {self.max_value}, step: {self.step},'
-                f' sampling: {self.sampling}, default: {self.default})')
+        return ('Int(name: "{}", min_value: {}, max_value: {}, step: {}, '
+                'sampling: {}, default: {})').format(
+                    self.name,
+                    self.min_value,
+                    self.max_value,
+                    self.step,
+                    self.sampling,
+                    self.default)
 
     def random_sample(self, seed=None):
         random_state = random.Random(seed)
@@ -268,9 +273,14 @@ class Float(HyperParameter):
             sampling, step, min_value, max_value, hp_type='float')
 
     def __repr__(self):
-        return (f'Float(name: {self.name!r}, min_value: {self.min_value},'
-                f' max_value: {self.max_value}, step: {self.step},'
-                f' sampling: {self.sampling}, default: {self.default})')
+        return ('Float(name: "{}", min_value: {}, max_value: {}, step: {}, '
+                'sampling: {}, default: {})').format(
+                    self.name,
+                    self.min_value,
+                    self.max_value,
+                    self.step,
+                    self.sampling,
+                    self.default)
 
     @property
     def default(self):
@@ -322,8 +332,8 @@ class Boolean(HyperParameter):
                 'You passed: default=%s' % (default,))
 
     def __repr__(self):
-        return (f'Boolean(name: {self.name!r}, '
-                f' default: {self.default})')
+        return 'Boolean(name: "{}", default: {})'.format(
+            self.name, self.default)
 
     def random_sample(self, seed=None):
         random_state = random.Random(seed)
@@ -344,7 +354,8 @@ class Fixed(HyperParameter):
         self.value = value
 
     def __repr__(self):
-        return f'Fixed(name: {self.name!r}, value: {self.value})'
+        return 'Fixed(name: {}, value: {})'.format(
+            self.name, self.value)
 
     def random_sample(self, seed=None):
         return self.value
