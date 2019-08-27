@@ -14,7 +14,6 @@
 
 from __future__ import absolute_import
 
-from .state import State
 from ..abstractions.display import fatal, subsection, warning
 from ..abstractions.display import display_settings
 from ..abstractions.tensorflow import TENSORFLOW as tf
@@ -31,8 +30,7 @@ class Host(object):
         Defaults to tmp/.
         export_dir (str, optional): Export model dir. Defaults to export/.
     """
-    def __init__(self, **kwargs):
-        super(HostState, self).__init__(**kwargs)
+    def __init__(self):
 
         self.results_dir = self._register('results_dir', 'results/', True)
         self.tmp_dir = self._register('tmp_dir', 'tmp/')

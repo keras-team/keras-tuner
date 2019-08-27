@@ -52,6 +52,33 @@ def build_model(hp):
     return model
 
 
+def build_subclass_model(hp):
+    class MyModel(keras.Model):
+        def build(self, _):
+            self.layer = keras.layers.Dense(
+                NUM_CLASSES, activation='softmax')
+
+        def call(self, x):
+            x = x + hp.Float('bias', 0, 10)
+            return self.layer(x)
+
+        # Currently necessary, because we save the model.
+        # Note that this model is not written w/ best practices,
+        # because the hp.Float value of the best model cannot be
+        # inferred from `get_config()`. The best practice is to pass
+        # HPs as __init__ arguments to subclass Layers and Models.
+        def get_config(self):
+            return {}
+
+    model = MyModel()
+    model.compile(
+        optimizer=keras.optimizers.Adam(
+            hp.Choice('learning_rate', [1e-2, 1e-3, 1e-4])),
+        loss='sparse_categorical_crossentropy',
+        metrics=['accuracy'])
+    return model
+
+
 class ExampleHyperModel(kerastuner.HyperModel):
 
     def build(self, hp):
@@ -439,3 +466,25 @@ def test_saving_and_reloading(tmp_dir):
         y=TRAIN_TARGETS,
         epochs=2,
         validation_data=(VAL_INPUTS, VAL_TARGETS))
+
+
+def test_subclass_model(tmp_dir):
+    tuner = kerastuner.tuners.RandomSearch(
+        build_subclass_model,
+        objective='val_accuracy',
+        max_trials=2,
+        executions_per_trial=3,
+        directory=tmp_dir)
+
+    tuner.search_space_summary()
+
+    tuner.search(x=TRAIN_INPUTS,
+                 y=TRAIN_TARGETS,
+                 epochs=2,
+                 validation_data=(VAL_INPUTS, VAL_TARGETS))
+
+    tuner.results_summary()
+
+    assert len(tuner.trials) == 2
+    assert len(tuner.trials[0].executions) == 3
+    assert len(tuner.trials[1].executions) == 3

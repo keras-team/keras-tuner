@@ -22,6 +22,7 @@ import tensorflow as tf
 from tensorflow.compat.v1.io import gfile
 from tensorflow.python import ConfigProto, GraphDef, Session
 from tensorflow.keras.models import model_from_json, load_model
+from tensorflow.python.tools import optimize_for_inference_lib
 from kerastuner.abstractions.display import write_log
 from kerastuner.abstractions.tensorflow import proxy
 from tensorflow.core.protobuf.saved_model_pb2 import SavedModel
