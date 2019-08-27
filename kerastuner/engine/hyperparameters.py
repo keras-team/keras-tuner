@@ -230,7 +230,7 @@ class Int(HyperParameter):
 
 
 class Float(HyperParameter):
-    """Floating point range, evenly divided.
+    """Floating point range, can be evenly divided.
 
     Args:
         name: Str. Name of parameter. Must be unique.
@@ -238,6 +238,8 @@ class Float(HyperParameter):
         max_value: Float. Upper bound of the range.
         step: Optional. Float, e.g. 0.1.
             smallest meaningful distance between two values.
+            Whether step should be specified is Oracle dependent,
+            since some Oracles can infer an optimal step automatically.
         sampling: Optional. One of "linear", "log",
             "reverse_log". Acts as a hint for an initial prior
             probability distribution for how this value should
