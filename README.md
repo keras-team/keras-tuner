@@ -2,14 +2,14 @@
 
 An hyperparameter tuner for [Keras](https://keras.io), specifically for `tf.keras` with TensorFlow 2.0.
 
-**Status: Alpha.**
+**Status: Beta.**
 
 ## Installation
 
 Requirements:
 
 - Python 3.6
-- TensorFlow 2.0 Beta
+- TensorFlow 2.0 (Beta-1 release or higher)
 
 Installation process:
 
