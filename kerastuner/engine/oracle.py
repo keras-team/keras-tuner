@@ -75,8 +75,8 @@ class Oracle(object):
         Args:
             trial_id: A previously seen trial id.
             status: String, one of "RUNNING", "CANCELLED". A status of
-                "CANCELLED" will be passed when a trial has crashed or been
-                deemed infeasible.
+                "CANCELLED" means a trial has crashed or been deemed
+                infeasible.
             score: (Optional) Float. The current, intermediate value of the
                 trial's objective.
             t: (Optional) Float. The current value in a timeseries representing
