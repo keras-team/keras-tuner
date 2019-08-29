@@ -23,7 +23,7 @@ import time
 version = '0.9.1'
 
 setup(
-    name='Keras Tuner',
+    name='keras-tuner',
     version=version,
     description='Hypertuner for Keras',
     author='The Keras Tuner authors',
