@@ -17,6 +17,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import enum
 import hashlib
 
 
@@ -68,14 +69,25 @@ class Oracle(object):
         """
         pass
 
-    def report_status(self, trial_id, status):
+    def report_status(self, trial_id, status, score=None, t=None):
         """Used by a worker to report the current status of a trial.
 
         Args:
             trial_id: A previously seen trial id.
-            status: String, one of "RUNNING", "CANCELLED"
+            status: String, one of "RUNNING", "CANCELLED". A status of
+                "CANCELLED" means a trial has crashed or been deemed
+                infeasible.
+            score: (Optional) Float. The current, intermediate value of the
+                trial's objective.
+            t: (Optional) Float. The current value in a timeseries representing
+                the state of the trial. This is the value that `score` will be
+                associated with.
+
+        Returns:
+            `OracleResponse.STOP` if the trial should be stopped, otherwise 
+            `OracleResponse.OK`.
         """
-        raise NotImplementedError
+        return OracleResponse.OK
 
     def save(self, fname):
         raise NotImplementedError
@@ -87,3 +99,8 @@ class Oracle(object):
         keys = sorted(values.keys())
         s = ''.join(str(k) + '=' + str(values[k]) for k in keys)
         return hashlib.sha256(s.encode('utf-8')).hexdigest()[:32]
+
+
+class OracleResponse(enum.Enum):
+    OK = 0
+    STOP = 1

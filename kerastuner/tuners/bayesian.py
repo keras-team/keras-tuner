@@ -65,9 +65,9 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         self._values[trial_id] = values
         return {'status': 'RUN', 'values': values}
 
-    def report_status(self, trial_id, status):
+    def report_status(self, trial_id, status, score=None, t=None):
         # TODO
-        raise NotImplementedError
+        pass
 
     def save(self, fname):
         state = {

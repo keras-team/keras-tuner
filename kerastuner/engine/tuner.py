@@ -310,6 +310,16 @@ class Tuner(object):
         self._checkpoint_execution(execution, force=True)
         self._display.on_epoch_end(execution, model, epoch, logs=logs)
 
+        # report intermediate result to the `Oracle`.
+        if self.objective in logs:
+            oracle_response = self.oracle.report_status(
+                execution.trial_id,
+                "RUNNING",
+                score=logs[self.objective],
+                t=epoch)
+            if oracle_response == oracle_module.OracleResponse.STOP:
+                model.stop_training = True
+
     def on_execution_end(self, trial, execution, model):
         execution.training_complete = True
         # Update tracker of averaged metrics on Trial
