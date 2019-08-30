@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import pytest
+import collections
 import os
 
 import numpy as np
@@ -488,3 +489,44 @@ def test_subclass_model(tmp_dir):
     assert len(tuner.trials) == 2
     assert len(tuner.trials[0].executions) == 3
     assert len(tuner.trials[1].executions) == 3
+
+
+def test_report_status_to_oracle(tmp_dir):
+    class MyOracle(kerastuner.Oracle):
+        def __init__(self):
+            super(MyOracle, self).__init__()
+            self.trials = collections.defaultdict(list)
+
+        def populate_space(self, trial_id, space):
+            values = {p.name: p.random_sample() for p in space}
+            return {'values': values, 'status': 'RUN'}
+
+        def report_status(self, trial_id, status, score=None, t=None):
+            self.trials[trial_id].append((score, t))
+            if t == 2:
+                return kerastuner.engine.oracle.OracleResponse.STOP
+            return kerastuner.engine.oracle.OracleResponse.OK
+
+        def save(self, fname):
+            return {}
+
+    my_oracle = MyOracle()
+    tuner = kerastuner.Tuner(
+        oracle=my_oracle,
+        hypermodel=build_model,
+        objective='val_accuracy',
+        max_trials=2,
+        executions_per_trial=1,
+        directory=tmp_dir)
+    tuner.search(x=TRAIN_INPUTS,
+                 y=TRAIN_TARGETS,
+                 epochs=5,
+                 validation_data=(VAL_INPUTS, VAL_TARGETS))
+
+    oracle_trial_ids = set(my_oracle.trials.keys())
+    tuner_trial_ids = set(trial.trial_id for trial in tuner.trials)
+    assert oracle_trial_ids == tuner_trial_ids
+
+    for trial_id, scores in my_oracle.trials.items():
+        # Test that early stopping worked.
+        assert len(scores) == 3

@@ -256,9 +256,9 @@ class HyperbandOracle(oracle_module.Oracle):
                 self._queue.put(self._trial_id_to_candidate_index[trial_id])
                 self._running[trial_id] = False
 
-    def report_status(self, trial_id, status):
+    def report_status(self, trial_id, status, score=None, t=None):
         # TODO
-        raise NotImplementedError
+        pass
 
 
 class Hyperband(tuner_module.Tuner):
