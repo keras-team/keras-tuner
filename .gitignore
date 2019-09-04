@@ -11,6 +11,7 @@ Keras_Tuner.egg-info/
 results/
 tmp/
 .ipynb_checkpoints/
+*_tutorial_results/
 tmp.py
 .coverage
 .coverage.*
