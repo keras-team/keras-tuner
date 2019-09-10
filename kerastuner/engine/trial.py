@@ -30,21 +30,13 @@ from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 class Trial(object):
 
     def __init__(self,
-                 trial_id,
                  hyperparameters,
-                 max_executions,
-                 base_directory='.'):
-        self.trial_id = trial_id
+                 trial_id=None):
         self.hyperparameters = hyperparameters
-        self.max_executions = max_executions
-        self.base_directory = base_directory
+        self.trial_id = _generate_trial_id() if trial_id is None else trial_id
 
-        self.averaged_metrics = metrics_tracking.MetricsTracker()
-        self.score = None
-        self.executions = []
-
-        self.directory = os.path.join(base_directory, 'trial_' + trial_id)
-        tf_utils.create_directory(self.directory)
+        self.metrics = metrics_tracking.MetricsTracker()
+        self.status = "OK"
 
     def summary(self):
         display.section('Trial summary')
@@ -60,19 +52,16 @@ class Trial(object):
         return {
             'trial_id': self.trial_id,
             'hyperparameters': self.hyperparameters.get_config(),
-            'max_executions': self.max_executions,
-            'base_directory': self.base_directory,
-            'averaged_metrics': self.averaged_metrics.get_config(),
-            'score': self.score,
-            'executions': [
-                e.save() for e in self.executions
-                if e.training_complete]
+            'metrics': self.metrics.get_config(),
+            'status': self.status
         }
 
-    def save(self):
+    def save(self, base_directory):
+        directory = os.path.join(base_directory, 'trial_' + trial_id)
+        tf_utils.create_directory(directory)
         state = self.get_state()
         state_json = json.dumps(state)
-        fname = os.path.join(self.directory, 'trial.json')
+        fname = os.path.join(directory, 'trial.json')
         tf_utils.write_file(fname, state_json)
         return str(fname)
 
@@ -84,17 +73,16 @@ class Trial(object):
             state['hyperparameters']
         )
         trial = cls(
-            trial_id=state['trial_id'],
             hyperparameters=hp,
-            max_executions=state['max_executions'],
-            base_directory=state['base_directory']
+            trial_id=state['trial_id'],
         )
-        trial.score = state['score']
         metrics = metrics_tracking.MetricsTracker.from_config(
-            state['averaged_metrics'])
-        trial.averaged_metrics = metrics
-        trial.executions = [
-            execution_module.Execution.load(f)
-            for f in state['executions']
-        ]
+            state['metrics'])
+        trial.metrics = metrics
+        trial.status = state['status']
         return trial
+
+
+def _generate_trial_id():
+    s = str(time.time()) + str(random.randint(1, 1e7))
+    return hashlib.sha256(s.encode('utf-8')).hexdigest()[:32]

@@ -203,11 +203,6 @@ class Display(object):
         return agg_metrics
 
 
-def generate_trial_id():
-    s = str(time.time()) + str(random.randint(1, 1e7))
-    return hashlib.sha256(s.encode('utf-8')).hexdigest()[:32]
-
-
 def format_execution_id(i, executions_per_trial):
     execution_id_length = math.ceil(
         math.log(executions_per_trial, 10))

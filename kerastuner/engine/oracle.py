@@ -20,11 +20,29 @@ from __future__ import print_function
 import enum
 import hashlib
 
+from kerastuner.engine import trial as trial_lib
+
 
 class Oracle(object):
 
-    def __init__(self):
-        self.space = []
+    def __init__(self,
+                 objective,
+                 max_trials,
+                 hyperparameters=None,
+                 allow_new_entries=True,
+                 tune_new_entries=True):
+        self.objective = objective
+        self.max_trials = max_trials
+        self.hyperparameters = hyperparameters
+        self.allow_new_entries = allow_new_entries
+        self.tune_new_entries = tune_new_entries
+        # trial_id -> Trial
+        self.trials = {}
+        # tuner_id -> Trial
+        self.ongoing_trials = {}
+
+    def get_space(self):
+        return self.hyperparameters
 
     def update_space(self, new_entries):
         """Add new hyperparameters to the tracking space.
@@ -34,60 +52,74 @@ class Oracle(object):
         Args:
             new_entries: A list of HyperParameter objects to track.
         """
-        ref_names = {p.name for p in self.space}
-        for p in new_entries:
-            if p.name not in ref_names:
-                self.space.append(p)
+        ref_names = {hp.name for hp in self.hyperparameters.space}
+        new_hps = [hp for hp in new_entries if hp.name not in ref_names]
 
-    def populate_space(self, trial_id, space):
-        """Fill a given hyperparameter space with values.
+        if new_hps and not self.allow_new_entries:
+            raise ValueError('`allow_new_entries` is `False`, but found '
+                             'new entries {}'.format(new_hps))
 
-        Args:
-            trial_id: String. Unique id for this trial.
-            space: A list of HyperParameter objects
-                to provide values for.
+        if not self.tune_new_entries:
+            # New entries should always use the default value.
+            return
+
+        for hp in new_hps:
+            self.hyperparameters.register(
+                hp.name, type(hp), hp.get_config())
+
+    def populate_space(self):
+        """Fill the hyperparameter space with values for a trial.
 
         Returns:
-            A dictionary with keys:
-                - status: string, one of "RUN", "IDLE", "EXIT"
-                - values: Only included if status is "RUN".
-                    Dict mapping parameter names to suggested values.
-                    Note that if the Oracle is keeping tracking of a large
-                    space, it may return values for more parameters
-                    than what was listed in `space`.
+          HyperParameters object.
         """
         raise NotImplementedError
 
-    def result(self, trial_id, score):
-        """Record the measured objective for a set of parameter values.
+    def create_trial(self, tuner_id):
+        # Allow for multi-worker DistributionStrategy within a Trial.
+        if tuner_id in self.ongoing_trials:
+            return self.ongoing_trials[tuner_id]
 
-        If not overridden, this method does nothing.
+        trial = trial_lib.Trial(hyperparameters=self.populate_space())
+        self.ongoing_trials[tuner_id] = trial
+        self.trials[trial.trial_id] = trial
+        return trial
+
+    def end_trial(self, trial_id, status):
+        """Record the measured objective for a set of parameter values.
 
         Args:
             trial_id: String. Unique id for this trial.
-            score: Scalar. Lower is better.
+            status: String, one of "OK", "INVALID". A status of
+                "INVALID" means a trial has crashed or been deemed
+                infeasible.
         """
-        pass
+        trial = self.trials[trial_id]
+        trial.status = status
+        self.ongoing_trials.pop(trial)
 
-    def report_status(self, trial_id, status, score=None, t=None):
-        """Used by a worker to report the current status of a trial.
+    def update_trial(self, trial_id, metrics, t=None):
+        """Used by a worker to report the status of a trial.
 
         Args:
             trial_id: A previously seen trial id.
-            status: String, one of "RUNNING", "CANCELLED". A status of
-                "CANCELLED" means a trial has crashed or been deemed
-                infeasible.
-            score: (Optional) Float. The current, intermediate value of the
-                trial's objective.
-            t: (Optional) Float. The current value in a timeseries representing
-                the state of the trial. This is the value that `score` will be
-                associated with.
+            metrics: Dict of float. The current value of the
+                trial's metrics.
+            t: (Optional) Float. Used to report intermediate results. The
+                current value in a timeseries representing the state of the
+                trial. This is the value that `metrics` will be associated with.
 
         Returns:
-            `OracleResponse.STOP` if the trial should be stopped, otherwise 
+            `OracleResponse.STOP` if the trial should be stopped, otherwise
             `OracleResponse.OK`.
         """
-        return OracleResponse.OK
+        trial = self.trials[trial_id]
+        for metric_name, metric_value in metrics.items():
+            # TODO: handle `t` in metrics tracker.
+            trial.metrics.update(metric_name, metric_value)
+
+    def get_best_trials(self, n):
+        raise NotImplementedError
 
     def save(self, fname):
         raise NotImplementedError
