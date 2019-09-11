@@ -96,8 +96,10 @@ class Oracle(object):
           `trial_id`: The id for this Trial.
 
         Returns:
-          Dict mapping hyperparameter names to values, or `None` if
-          the search should stop.
+            A dictionary with keys "values" and "status", where "values" is
+            a mapping of parameter names to suggested values, and "status"
+            is the TrialStatus that should be returned for this trial (one
+            of "RUNNING", "IDLE", or "STOPPED").
         """
         raise NotImplementedError
 
@@ -108,24 +110,25 @@ class Oracle(object):
 
         trial_id = trial_lib.generate_trial_id()
 
-        # Stop search if max_trials is reached or no valid HyperParameters found.
-        stop_search = False
         if len(self.trials.items()) >= self.max_trials:
-            stop_search = True
-        values = self.populate_space(trial_id)
-        if values is None:
-            stop_search = True
-        if stop_search:
-            trial = trial_lib.Trial(
-                hyperparameters=None,
-                status=trial_lib.TrialStatus.STOPPED)
-            return trial
+            status = trial_lib.TrialStatus.STOPPED
+            values = None
+        else:
+            response = self.populate_space(trial_id)
+            status = response['status']
+            values = response['values'] if 'values' in response else None
 
         hyperparameters = self.hyperparameters.copy()
         hyperparameters.values = values
-        trial = trial_lib.Trial(hyperparameters=hyperparameters)
-        self.ongoing_trials[tuner_id] = trial
-        self.trials[trial.trial_id] = trial
+        trial = trial_lib.Trial(
+            hyperparameters=hyperparameters,
+            trial_id=trial_id,
+            status=status)
+
+        if status == trial_lib.TrialStatus.RUNNING:
+            self.ongoing_trials[tuner_id] = trial
+            self.trials[trial.trial_id] = trial
+
         return trial
 
     def end_trial(self, trial_id, status):
@@ -133,21 +136,23 @@ class Oracle(object):
 
         Args:
             trial_id: String. Unique id for this trial.
-            status: String, one of "OK", "INVALID". A status of
+            status: String, one of "COMPLETED", "INVALID". A status of
                 "INVALID" means a trial has crashed or been deemed
                 infeasible.
         """
-        trial_found = False
+        trial = None
         for tuner_id, ongoing_trial in self.ongoing_trials.items():
             if ongoing_trial.trial_id == trial_id:
-                ongoing_trial.status = status
-                self.ongoing_trials.pop(tuner_id)
-                trial_found = True
+                trial = self.ongoing_trials.pop(tuner_id)
                 break
 
-        if not trial_found:
+        if not trial:
             raise ValueError(
                 'Ongoing trial with id: {} not found.'.format(trial_id))
+
+        trial.status = status
+        if status == trial_lib.TrialStatus.COMPLETED:
+            trial.score = self.score_trial(trial)
 
     def update_trial(self, trial_id, metrics, t=0):
         """Used by a worker to report the status of a trial.

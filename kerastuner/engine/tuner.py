@@ -151,6 +151,9 @@ class Tuner(object):
             if trial.status == trial_module.TrialStatus.STOPPED:
                 # Oracle triggered exit
                 break
+            if trial.status == trial_module.TrialStatus.IDLE:
+                # Oracle is calculating, resend request.
+                continue
             self.on_trial_begin(trial)
             self.run_trial(trial, fit_args, fit_kwargs)
             self.on_trial_end(trial)

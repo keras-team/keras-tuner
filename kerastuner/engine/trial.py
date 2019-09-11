@@ -32,6 +32,7 @@ from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 
 class TrialStatus:
     RUNNING = "RUNNING"
+    IDLE = "IDLE"
     INVALID = "INVALID"
     STOPPED = "STOPPED"
     COMPLETED = "COMPLETED"

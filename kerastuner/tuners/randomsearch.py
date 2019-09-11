@@ -18,6 +18,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from ..engine import trial as trial_lib
 from ..engine import tuner as tuner_module
 from ..engine import oracle as oracle_module
 from ..engine import hyperparameters as hp_module
@@ -48,8 +49,14 @@ class RandomSearchOracle(oracle_module.Oracle):
     def populate_space(self, _):
         """Fill the hyperparameter space with values.
 
+        Args:
+          `trial_id`: The id for this Trial.
+
         Returns:
-            A dictionary mapping parameter names to suggested values.
+            A dictionary with keys "values" and "status", where "values" is
+            a mapping of parameter names to suggested values, and "status"
+            is the TrialStatus that should be returned for this trial (one
+            of "RUNNING", "IDLE", or "STOPPED").
         """
         collisions = 0
         while 1:
@@ -64,11 +71,13 @@ class RandomSearchOracle(oracle_module.Oracle):
             if values_hash in self._tried_so_far:
                 collisions += 1
                 if collisions > self._max_collisions:
-                    return None
+                    return {'status': trial_lib.TrialStatus.STOPPED,
+                            'values': None}
                 continue
             self._tried_so_far.add(values_hash)
             break
-        return values
+        return {'status': trial_lib.TrialStatus.RUNNING,
+                'values': values}
 
     def save(self, fname):
         state = {

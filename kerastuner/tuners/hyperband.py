@@ -15,6 +15,7 @@ import copy
 import queue
 import random
 import json
+from ..engine import trial as trial_lib
 from ..engine import tuner as tuner_module
 from ..engine import oracle as oracle_module
 from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
@@ -39,11 +40,14 @@ class HyperbandOracle(oracle_module.Oracle):
     """
 
     def __init__(self,
+                 objective,
+                 max_trials,
                  factor=3,
                  min_epochs=3,
                  max_epochs=10,
-                 seed=None):
-        super(HyperbandOracle, self).__init__()
+                 seed=None,
+                 **kwargs):
+        super(HyperbandOracle, self).__init__(objective, max_trials, **kwargs)
         if min_epochs >= max_epochs:
             raise ValueError('max_epochs needs to be larger than min_epochs.')
         if factor < 2:
@@ -72,15 +76,15 @@ class HyperbandOracle(oracle_module.Oracle):
         self._candidate_score[
             self._trial_id_to_candidate_index[trial_id]] = score
 
-    def populate_space(self, trial_id, space):
-        self.update_space(space)
+    def populate_space(self, trial_id):
+        space = self.hyperparameters.space
         # Queue is not empty means it is in one bracket.
         if not self._queue.empty():
             return self._run_values(space, trial_id)
 
         # Wait the current bracket to finish
         if any([value for key, value in self._running.items()]):
-            return {'status': 'IDLE'}
+            return {'status': trial_lib.TrialStatus.IDLE}
 
         # Start the next bracket if not end of bandit.
         if self._bracket_index + 1 < self._num_brackets:
@@ -107,8 +111,9 @@ class HyperbandOracle(oracle_module.Oracle):
             if trial_id != self._index_to_id[candidate_index]:
                 values['tuner/trial_id'] = self._index_to_id[candidate_index]
             values['tuner/epochs'] = self._epoch_sequence[self._bracket_index]
-            return {'status': 'RUN', 'values': values}
-        return {'status': 'EXIT'}
+            return {'status': trial_lib.TrialStatus.RUNNING,
+                    'values': values}
+        return {'status': trial_lib.TrialStatus.STOPPED}
 
     @staticmethod
     def _copy_values(space, values):
@@ -152,7 +157,7 @@ class HyperbandOracle(oracle_module.Oracle):
         while 1:
             # Generate a set of random values.
             values = {}
-            for p in self.space:
+            for p in self.hyperparameters.space:
                 values[p.name] = p.random_sample(self._seed_state)
                 self._seed_state += 1
             # Keep trying until the set of values is unique,
@@ -299,31 +304,36 @@ class Hyperband(tuner_module.Tuner):
                  max_epochs=10,
                  seed=None,
                  **kwargs):
-        oracle = HyperbandOracle(seed=seed,
-                                 factor=factor,
-                                 min_epochs=min_epochs,
-                                 max_epochs=max_epochs)
+        oracle = HyperbandOracle(
+            objective,
+            max_trials,
+            seed=seed,
+            factor=factor,
+            min_epochs=min_epochs,
+            max_epochs=max_epochs,
+            hyperparameters=kwargs.pop('hyperparameters', None),
+            tune_new_entries=kwargs.pop('tune_new_entries', True),
+            allow_new_entries=kwargs.pop('allow_new_entries', True))
         super(Hyperband, self).__init__(
             oracle=oracle,
             hypermodel=hypermodel,
-            objective=objective,
-            max_trials=max_trials,
             **kwargs)
 
-    def on_execution_begin(self, trial, execution, model):
-        super(Hyperband, self).on_execution_begin(trial, execution, model)
+    def run_trial(self, trial, fit_args, fit_kwargs):
         hp = trial.hyperparameters
-        if 'tuner/trial_id' in hp.values:
-            history_trial = self._get_trial(hp.values['tuner/trial_id'])
-            if history_trial.executions[0].best_checkpoint is not None:
-                checkpoint_prefix = history_trial.executions[0].best_checkpoint
-                best_checkpoint = checkpoint_prefix + '-weights.h5'
-                model.load_weights(best_checkpoint)
-
-    def run_trial(self, trial, hp, fit_args, fit_kwargs):
         if 'tuner/epochs' in hp.values:
             fit_kwargs['epochs'] = hp.values['tuner/epochs']
-        super(Hyperband, self).run_trial(trial, hp, fit_args, fit_kwargs)
+        super(Hyperband, self).run_trial(trial, fit_args, fit_kwargs)
+
+    def _build_model(self, hp):
+        model = super(Hyperband, self)._build_model(hp)
+        if 'tuner/trial_id' in hp.values:
+            trial_id = hp.values['tuner/trial_id']
+            history_trial = self.oracle.get_trial(trial_id)
+            # Load best checkpoint from this trial.
+            model.load_weights(self._get_checkpoint_fname(
+                history_trial, history_trial.score.t))
+        return model
 
     def _get_trial(self, trial_id):
         for temp_trial in self.trials:
