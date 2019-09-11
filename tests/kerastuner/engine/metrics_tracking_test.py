@@ -21,7 +21,6 @@ from kerastuner.engine.metrics_tracking import infer_metric_direction_by_name
 from tensorflow.keras import metrics
 
 
-
 def test_register_from_metrics():
     # As well as direction inference.
     tracker = metrics_tracking.MetricsTracker(
