@@ -223,10 +223,6 @@ class Oracle(object):
                 'to the Oracle, expected: {}'.format(
                     objective_names))
 
-class OracleResponse(enum.Enum):
-    OK = 0
-    STOP = 1
-
 
 def _format_objective(objective):
     if isinstance(objective, (list, tuple)):

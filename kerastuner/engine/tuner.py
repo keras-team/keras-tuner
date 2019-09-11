@@ -245,7 +245,9 @@ class Tuner(object):
             hp = trial.hyperparameters.copy()
             model = self.hypermodel.build(hp)
             self._compile_model(model)
-            # Reload best checkpoint.
+            # Reload best checkpoint. The Oracle scores the Trial and also
+            # indicates at what `t` the best value of the objective was
+            # obtained.
             best_epoch = trial.score.t
             model.load_weights(self._get_checkpoint_fname(trial, best_epoch))
             models.append(model)
@@ -259,7 +261,7 @@ class Tuner(object):
                 Defaults to False.
         """
         display.section('Search space summary')
-        hp = self.oracle.get_space().copy()
+        hp = self.oracle.get_space()
         display.display_setting(
             'Default search space size: %d' % len(hp.space))
         for p in hp.space:
