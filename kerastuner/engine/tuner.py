@@ -50,21 +50,6 @@ class Tuner(object):
         hypermodel: Instance of HyperModel class
             (or callable that takes hyperparameters
             and returns a Model instance).
-        objective: String. Name of model metric to minimize
-            or maximize, e.g. "val_accuracy".
-        max_trials: Int. Total number of trials
-            (model configurations) to test at most.
-            Note that the oracle may interrupt the search
-            before `max_trial` models have been tested.
-        executions_per_trial: Int. Number of executions
-            (training a model from scratch,
-            starting from a new initialization)
-            to run per trial (model configuration).
-            Model metrics may vary greatly depending
-            on random initialization, hence it is
-            often a good idea to run several executions
-            per trial in order to evaluate the performance
-            of a given set of hyperparameter values.
         max_model_size: Int. Maximum size of weights
             (in floating point coefficients) for a valid
             models. Models larger than this are rejected.
@@ -84,18 +69,6 @@ class Tuner(object):
             for the models. If the hypermodel
             does not compile the models it generates,
             then this argument must be specified.
-        hyperparameters: HyperParameters class instance.
-            Can be used to override (or register in advance)
-            hyperparamters in the search space.
-        tune_new_entries: Whether hyperparameter entries
-            that are requested by the hypermodel
-            but that were not specified in `hyperparameters`
-            should be added to the search space, or not.
-            If not, then the default value for these parameters
-            will be used.
-        allow_new_entries: Whether the hypermodel is allowed
-            to request hyperparameter entries not listed in
-            `hyperparameters`.
         distribution_strategy: Optional. A TensorFlow
             `tf.distribute` DistributionStrategy instance. If
             specified, each execution will run under this scope. For
@@ -107,29 +80,26 @@ class Tuner(object):
             by this Tuner.
         logger: Optional. Instance of Logger class, used for streaming data
             to Cloud Service for monitoring.
+        tuner_id: Optional. Used only with multi-worker DistributionStrategies.
     """
 
     def __init__(self,
                  oracle,
                  hypermodel,
-                 objective,
-                 max_trials,
-                 executions_per_trial=1,
                  max_model_size=None,
                  optimizer=None,
                  loss=None,
                  metrics=None,
-                 hyperparameters=None,
-                 tune_new_entries=True,
-                 allow_new_entries=True,
                  distribution_strategy=None,
                  directory=None,
                  project_name=None,
-                 logger=None):
+                 logger=None,
+                 tuner_id=None):
         if not isinstance(oracle, oracle_module.Oracle):
             raise ValueError('Expected oracle to be '
                              'an instance of Oracle, got: %s' % (oracle,))
         self.oracle = oracle
+
         if isinstance(hypermodel, hm_module.HyperModel):
             self.hypermodel = hypermodel
         else:
@@ -141,9 +111,6 @@ class Tuner(object):
             self.hypermodel = hm_module.DefaultHyperModel(hypermodel)
 
         # Global search options
-        self.objective = objective
-        self.max_trials = max_trials
-        self.executions_per_trial = executions_per_trial
         self.max_model_size = max_model_size
         self.distribution_strategy = distribution_strategy
 
@@ -152,44 +119,17 @@ class Tuner(object):
         self.loss = loss
         self.metrics = metrics
 
-        # Search space management
-        if hyperparameters:
-            self.hyperparameters = hyperparameters
-            self._initial_hyperparameters = hyperparameters.copy()
-        else:
-            self.hyperparameters = hp_module.HyperParameters()
-            self._initial_hyperparameters = None
-            if not tune_new_entries:
-                raise ValueError(
-                    'If you set `tune_new_entries=False`, you must'
-                    'specify the search space via the '
-                    '`hyperparameters` argument.')
-            if not allow_new_entries:
-                raise ValueError(
-                    'If you set `allow_new_entries=False`, you must'
-                    'specify the search space via the '
-                    '`hyperparameters` argument.')
-        self.tune_new_entries = tune_new_entries
-        self.allow_new_entries = allow_new_entries
-
         # Ops and metadata
         self.directory = directory or '.'
         self.project_name = project_name or 'untitled_project'
         tf_utils.create_directory(
             os.path.join(self.directory, self.project_name))
 
-        # Public internal state
-        self.trials = []
-
         # Private internal state
         self._max_fail_streak = 5
         self.logger = logger
         self._stats = tuner_utils.TunerStats()
-        self.start_time = int(time.time())
-
-        # Track history of best values per metric
-        # (one timestep per trial).
-        self.best_metrics = metrics_tracking.MetricsTracker()
+        self.tuner_id = tuner_id if tuner_id is not None else 0
 
         # Logs etc
         self._host = host_module.Host(
@@ -205,61 +145,31 @@ class Tuner(object):
 
     def search(self, *fit_args, **fit_kwargs):
         self.on_search_begin()
-        for _ in range(self.max_trials):
-            # Obtain unique trial ID to communicate with the oracle.
-            trial_id = tuner_utils.generate_trial_id()
-            hp = self._call_oracle(trial_id)
-            if hp is None:
+        while True:
+            trial = self.oracle.create_trial(self.tuner_id)
+            if trial is None:
                 # Oracle triggered exit
-                return
-            trial = trial_module.Trial(
-                trial_id=trial_id,
-                hyperparameters=hp.copy(),
-                max_executions=self.executions_per_trial,
-                base_directory=self._host.results_dir
-            )
-            self.trials.append(trial)
+                break
             self.on_trial_begin(trial)
             self.run_trial(trial, hp, fit_args, fit_kwargs)
             self.on_trial_end(trial)
         self.on_search_end()
 
-    def run_trial(self, trial, hp, fit_args, fit_kwargs):
+    def run_trial(self, trial, fit_args, fit_kwargs):
+        # Patch fit arguments
+        # During model `fit`,
+        # the patched callbacks call
+        # `self.on_epoch_begin`, `self.on_epoch_end`,
+        # `self.on_batch_begin`, `self.on_batch_end`.
         fit_kwargs = copy.copy(fit_kwargs)
         original_callbacks = fit_kwargs.get('callbacks', [])[:]
-        for i in range(self.executions_per_trial):
-            execution_id = tuner_utils.format_execution_id(
-                i, self.executions_per_trial)
-            # Patch fit arguments
-            max_epochs, max_steps = tuner_utils.get_max_epochs_and_steps(
-                fit_args, fit_kwargs)
-            fit_kwargs['verbose'] = 0
+        fit_kwargs['callbacks'] = self._inject_callbacks(
+            original_callbacks, trial, execution)
+        fit_kwargs['verbose'] = 0
 
-            # Get model; this will reset the Keras session
-            if not self.tune_new_entries:
-                hp = hp.copy()
-
-            model = self._build_model(hp)
-            self._compile_model(model)
-
-            # Start execution
-            execution = execution_module.Execution(
-                execution_id=execution_id,
-                trial_id=trial.trial_id,
-                max_epochs=max_epochs,
-                max_steps=max_steps,
-                base_directory=trial.directory)
-            trial.executions.append(execution)
-            self.on_execution_begin(trial, execution, model)
-
-            # During model `fit`,
-            # the patched callbacks call
-            # `self.on_epoch_begin`, `self.on_epoch_end`,
-            # `self.on_batch_begin`, `self.on_batch_end`.
-            fit_kwargs['callbacks'] = self._inject_callbacks(
-                original_callbacks, trial, execution)
-            model.fit(*fit_args, **fit_kwargs)
-            self.on_execution_end(trial, execution, model)
+        model = self._build_model(trial.hyperparameters)
+        self._compile_model(model)
+        model.fit(*fit_args, **fit_kwargs)
 
     def on_search_begin(self):
         if self.logger:
@@ -269,112 +179,32 @@ class Tuner(object):
         if self.logger:
             self.logger.register_trial(trial.trial_id, trial.get_state())
 
-    def on_execution_begin(self, trial, execution, model):
-        execution.per_epoch_metrics.register_metrics(model.metrics)
-        self._display.on_execution_begin(trial, execution, model)
-        if self.logger:
-            self.logger.register_execution(execution.execution_id,
-                                           execution.get_state())
+    def on_epoch_begin(self, trial, model, epoch, logs=None):
+        self._display.on_epoch_begin(trial, model, epoch, logs=logs)
 
-    def on_epoch_begin(self, execution, model, epoch, logs=None):
-        # reset per-batch history for the this epoch
-        execution.per_batch_metrics = metrics_tracking.MetricsTracker(
-            model.metrics)
-        self._display.on_epoch_begin(execution, model, epoch, logs=logs)
-
-    def on_batch_begin(self, execution, model, batch, logs):
+    def on_batch_begin(self, trial, model, batch, logs):
         pass
 
-    def on_batch_end(self, execution, model, batch, logs=None):
+    def on_batch_end(self, trial, model, batch, logs=None):
         logs = logs or {}
-        for name, value in logs.items():
-            execution.per_batch_metrics.update(name, float(value))
-        self._checkpoint_execution(execution)
-        self._display.on_batch_end(execution, model, batch, logs=logs)
+        self._display.on_batch_end(trial, model, batch, logs=logs)
 
-    def on_epoch_end(self, execution, model, epoch, logs=None):
+    def on_epoch_end(self, trial, model, epoch, logs=None):
         logs = logs or {}
-        # update epoch counters
-        execution.epochs_seen += 1
-
-        # update metrics and checkpoint if needed
-        for name, value in logs.items():
-            improved = execution.per_epoch_metrics.update(name, value)
-            if self.objective == name and improved:
-                fname = self._checkpoint_model(
-                    model, execution.trial_id, execution.execution_id,
-                    base_directory=execution.directory)
-                execution.best_checkpoint = fname
-
-        # update status
-        self._checkpoint_execution(execution, force=True)
-        self._display.on_epoch_end(execution, model, epoch, logs=logs)
+        self._display.on_epoch_end(trial, model, epoch, logs=logs)
+        self._checkpoint_model(model, trial, epoch)
 
         # report intermediate result to the `Oracle`.
-        if self.objective in logs:
-            oracle_response = self.oracle.report_status(
-                execution.trial_id,
-                "RUNNING",
-                score=logs[self.objective],
-                t=epoch)
-            if oracle_response == oracle_module.OracleResponse.STOP:
-                model.stop_training = True
-
-    def on_execution_end(self, trial, execution, model):
-        execution.training_complete = True
-        # Update tracker of averaged metrics on Trial
-        if len(trial.executions) == 1:
-            for name in execution.per_epoch_metrics.names:
-                if not trial.averaged_metrics.exists(name):
-                    direction = execution.per_epoch_metrics.directions[name]
-                    trial.averaged_metrics.register(name, direction)
-                trial.averaged_metrics.set_history(
-                    name, execution.per_epoch_metrics.get_history(name))
-        else:
-            # Need to average.
-            for name in execution.per_epoch_metrics.names:
-                if not trial.averaged_metrics.exists(name):
-                    direction = execution.per_epoch_metrics.directions[name]
-                    trial.averaged_metrics.register(name, direction)
-                histories = []
-                for execution in trial.executions:
-                    histories.append(
-                        execution.per_epoch_metrics.get_history(name))
-                # The length of the histories may not match
-                # if some executions ran for fewer epochs
-                # due to early stopping.
-                # We do an average of the available timesteps.
-                max_len = max(len(h) for h in histories)
-                avg_history = []
-                for i in range(max_len):
-                    tot = 0.
-                    num = 0
-                    for h in histories:
-                        if len(h) > i:
-                            tot += h[i]
-                            num += 1
-                    avg_history.append(tot / num)
-                trial.averaged_metrics.set_history(name, avg_history)
+        oracle_response = self.oracle.update_trial(
+            trial_id, metrics=logs, t=epoch)
+        if oracle_response == oracle_module.OracleResponse.STOP:
+            model.stop_training = True
 
     def on_trial_end(self, trial):
-        # Update tracker of best metrics on Tuner
-        for name in trial.averaged_metrics.names:
-            if not self.best_metrics.exists(name):
-                direction = trial.averaged_metrics.directions[name]
-                self.best_metrics.register(name, direction)
-            self.best_metrics.update(
-                name, trial.averaged_metrics.get_best_value(name))
-        trial.score = trial.averaged_metrics.get_best_value(self.objective)
-        self.oracle.result(trial.trial_id, trial.score)
-
+        self.oracle.end_trial(trial.trial_id, "OK")
         self._checkpoint_trial(trial)
         self._checkpoint_tuner()
-        self._display.on_trial_end(
-            trial.averaged_metrics,
-            self.best_metrics,
-            objective=self.objective,
-            remaining_trials=self.remaining_trials,
-            max_trials=self.max_trials)
+        self._display.on_trial_end(trial)
 
     def on_search_end(self):
         if self.logger:
@@ -470,15 +300,9 @@ class Tuner(object):
 
         state = {
             'oracle': oracle_fname,
-            'objective': self.objective,
             'start_time': self.start_time,
-            'max_trials': self.max_trials,
-            'executions_per_trial': self.executions_per_trial,
             'max_model_size': self.max_model_size,
             # Note that compilation args are not included.
-            'hyperparameters': self.hyperparameters.get_config(),
-            'tune_new_entries': self.tune_new_entries,
-            'allow_new_entries': self.allow_new_entries,
             'directory': str(self.directory),
             'project_name': self.project_name,
             # Dynamic
@@ -519,43 +343,6 @@ class Tuner(object):
         self.trials = [trial_module.Trial.load(f) for f in state['trials']]
         self.start_time = state['start_time']
         self.stats = tuner_utils.TunerStats.from_config(state['stats'])
-
-    def _call_oracle(self, trial_id):
-        if not self.tune_new_entries:
-            # In this case, never append to the space
-            # so work from a copy of the internal hp object
-            hp = self._initial_hyperparameters.copy()
-        else:
-            # In this case, append to the space,
-            # so pass the internal hp object to `build`
-            hp = self.hyperparameters
-
-        # Obtain hp value suggestions from the oracle.
-        while 1:
-            oracle_answer = self.oracle.populate_space(trial_id, hp.space)
-            if oracle_answer['status'] == 'RUN':
-                hp.values = oracle_answer['values']
-                return hp
-            elif oracle_answer['status'] == 'EXIT':
-                print('Oracle triggered exit')
-                return
-            else:
-                time.sleep(10)
-
-    def _get_best_trials(self, num_trials=1):
-        if not self.best_metrics.exists(self.objective):
-            return []
-        trials = []
-        for x in self.trials:
-            if x.score is not None:
-                trials.append(x)
-        if not trials:
-            return []
-        direction = self.best_metrics.directions[self.objective]
-        sorted_trials = sorted(trials,
-                               key=lambda x: x.score,
-                               reverse=direction == 'max')
-        return sorted_trials[:num_trials]
 
     def _build_model(self, hp):
         """Return a never seen before model instance, compiled.
@@ -646,22 +433,6 @@ class Tuner(object):
                     compile_kwargs['metrics'] = self.metrics
                 model.compile(**compile_kwargs)
             return model
-
-    def _check_space_consistency(self, hp):
-        # Optionally disallow hyperparameters defined on the fly.
-        if not self._initial_hyperparameters:
-            return
-        old_space = [x.name for x in self._initial_hyperparameters.space]
-        new_space = [x.name for x in hp.space]
-        difference = set(new_space) - set(old_space)
-        if not self.allow_new_entries and difference:
-            diff = set(new_space) - set(old_space)
-            raise RuntimeError(
-                'The hypermodel has requested a parameter that was not part '
-                'of `hyperparameters`, '
-                'yet `allow_new_entries` is set to False. '
-                'The unknown parameters are: {diff}'.format(diff=diff))
-        # TODO: consider calling the oracle to update the space.
 
     @property
     def eta(self):

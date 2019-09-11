@@ -17,10 +17,15 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import collections
 import enum
 import hashlib
 
+from tensorflow import keras
 from kerastuner.engine import trial as trial_lib
+
+
+Objective = collections.namedtuple('Objective', 'name direction')
 
 
 class Oracle(object):
@@ -31,11 +36,25 @@ class Oracle(object):
                  hyperparameters=None,
                  allow_new_entries=True,
                  tune_new_entries=True):
-        self.objective = objective
+        self.objective = _format_objective(objective)
         self.max_trials = max_trials
-        self.hyperparameters = hyperparameters
+        if not hyperparameters:
+            if not tune_new_entries:
+                raise ValueError(
+                    'If you set `tune_new_entries=False`, you must'
+                    'specify the search space via the '
+                    '`hyperparameters` argument.')
+            if not allow_new_entries:
+                raise ValueError(
+                    'If you set `allow_new_entries=False`, you must'
+                    'specify the search space via the '
+                    '`hyperparameters` argument.')
+            self.hyperparameters = hp_module.HyperParameters()
+        else:
+            self.hyperparameters = hyperparameters
         self.allow_new_entries = allow_new_entries
         self.tune_new_entries = tune_new_entries
+
         # trial_id -> Trial
         self.trials = {}
         # tuner_id -> Trial
@@ -71,7 +90,7 @@ class Oracle(object):
         """Fill the hyperparameter space with values for a trial.
 
         Returns:
-          HyperParameters object.
+          Dict mapping hyperparameter names to values.
         """
         raise NotImplementedError
 
@@ -80,7 +99,9 @@ class Oracle(object):
         if tuner_id in self.ongoing_trials:
             return self.ongoing_trials[tuner_id]
 
-        trial = trial_lib.Trial(hyperparameters=self.populate_space())
+        hyperparameters = self.hyperparameters.copy()
+        hyperparameters.values = self.populate_space()
+        trial = trial_lib.Trial(hyperparameters=hyperparameters
         self.ongoing_trials[tuner_id] = trial
         self.trials[trial.trial_id] = trial
         return trial
@@ -98,7 +119,7 @@ class Oracle(object):
         trial.status = status
         self.ongoing_trials.pop(trial)
 
-    def update_trial(self, trial_id, metrics, t=None):
+    def update_trial(self, trial_id, metrics, t=0):
         """Used by a worker to report the status of a trial.
 
         Args:
@@ -115,11 +136,17 @@ class Oracle(object):
         """
         trial = self.trials[trial_id]
         for metric_name, metric_value in metrics.items():
-            # TODO: handle `t` in metrics tracker.
-            trial.metrics.update(metric_name, metric_value)
+            trial.metrics.update(metric_name, metric_value, t=t)
+        return OracleResponse.OK
 
-    def get_best_trials(self, n):
-        raise NotImplementedError
+    def get_best_trials(self, num_trials=1):
+        trials = self.trials.values()
+        sorted_trials = sorted(
+            trials,
+            key=lambda trial: trial.metrics.get_best_value(self.objective.name),
+            reverse=self.objective.direction == 'max'
+        )
+        return sorted_trials[:num_trials]
 
     def save(self, fname):
         raise NotImplementedError
@@ -136,3 +163,17 @@ class Oracle(object):
 class OracleResponse(enum.Enum):
     OK = 0
     STOP = 1
+
+
+def _format_objective(objective):
+    if isinstance(objective, (list, tuple)):
+        return [_format_objective(obj for obj in objective)]
+
+    if isinstance(objective, Objective):
+        return objective
+    if isinstance(objective, str):
+        direction = metrics_tracking.infer_metric_direction(objective)
+        return Objective(name=objective, direction=direction)
+    else:
+        raise ValueError('`objective` not understood, expected str or '
+                         '`Objective` object, found: {}'.format(objective))
