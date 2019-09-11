@@ -75,24 +75,23 @@ def get_max_epochs_and_steps(fit_args, fit_kwargs):
 
 class TunerCallback(keras.callbacks.Callback):
 
-    def __init__(self, tuner, trial, execution):
+    def __init__(self, tuner, trial):
         self.tuner = tuner
         self.trial = trial
-        self.execution = execution
 
     def on_epoch_begin(self, epoch, logs=None):
         self.tuner.on_epoch_begin(
-            self.execution, self.model, epoch, logs=logs)
+            self.trial, self.model, epoch, logs=logs)
 
     def on_batch_begin(self, batch, logs=None):
-        self.tuner.on_batch_begin(self.execution, self.model, batch, logs)
+        self.tuner.on_batch_begin(self.trial, self.model, batch, logs)
 
     def on_batch_end(self, batch, logs=None):
-        self.tuner.on_batch_end(self.execution, self.model, batch, logs)
+        self.tuner.on_batch_end(self.trial, self.model, batch, logs)
 
     def on_epoch_end(self, epoch, logs=None):
         self.tuner.on_epoch_end(
-            self.execution, self.model, epoch, logs=logs)
+            self.trial, self.model, epoch, logs=logs)
 
 
 class Display(object):
@@ -104,17 +103,9 @@ class Display(object):
         self.batch_history = defaultdict(list)
         self.epoch_pbar = None
 
-    def on_execution_begin(self, trial, execution, model):
-        # new model summary
-        if len(trial.executions) == 1:
-            display.section('New model')
-            trial.summary()
-
-        # execution info if needed
-        if trial.max_executions > 1:
-            display.subsection('Execution %d/%d' %
-                               (len(trial.executions),
-                                trial.max_executions))
+    def on_trial_begin(self, trial):
+        display.section('New model')
+        trial.summary()
 
     def on_trial_end(self,
                      averaged_metrics,

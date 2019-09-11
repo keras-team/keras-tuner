@@ -17,8 +17,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
+import hashlib
 import json
+import os
+import random
+import time
 
 from . import metrics_tracking
 from . import hyperparameters as hp_module
@@ -27,16 +30,25 @@ from ..abstractions import display
 from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 
 
+class TrialStatus:
+    RUNNING = "RUNNING"
+    INVALID = "INVALID"
+    STOPPED = "STOPPED"
+    COMPLETED = "COMPLETED"
+
+
 class Trial(object):
 
     def __init__(self,
                  hyperparameters,
-                 trial_id=None):
+                 trial_id=None,
+                 status=TrialStatus.RUNNING):
         self.hyperparameters = hyperparameters
         self.trial_id = _generate_trial_id() if trial_id is None else trial_id
 
         self.metrics = metrics_tracking.MetricsTracker()
-        self.status = "OK"
+        self.score = None
+        self.status = status
 
     def summary(self):
         display.section('Trial summary')
@@ -53,15 +65,24 @@ class Trial(object):
             'trial_id': self.trial_id,
             'hyperparameters': self.hyperparameters.get_config(),
             'metrics': self.metrics.get_config(),
+            'score': self.score,
             'status': self.status
         }
 
-    def save(self, base_directory):
-        directory = os.path.join(base_directory, 'trial_' + trial_id)
-        tf_utils.create_directory(directory)
+    def set_state(self, state):
+        self.trial_id = state['trial_id']
+        hp = hp_module.HyperParameters.from_config(
+            state['hyperparameters']
+        )
+        self.hyperparameters = hp
+        metrics = metrics_tracking.MetricsTracker.from_config(
+            state['metrics'])
+        self.score = state['score']
+        self.status = state['status']
+
+    def save(self, fname):
         state = self.get_state()
         state_json = json.dumps(state)
-        fname = os.path.join(directory, 'trial.json')
         tf_utils.write_file(fname, state_json)
         return str(fname)
 
@@ -69,17 +90,8 @@ class Trial(object):
     def load(cls, fname):
         state_data = tf_utils.read_file(fname)
         state = json.loads(state_data)
-        hp = hp_module.HyperParameters.from_config(
-            state['hyperparameters']
-        )
-        trial = cls(
-            hyperparameters=hp,
-            trial_id=state['trial_id'],
-        )
-        metrics = metrics_tracking.MetricsTracker.from_config(
-            state['metrics'])
-        trial.metrics = metrics
-        trial.status = state['status']
+        trial = cls(hyperparameters=None)
+        trial.set_state(state)
         return trial
 
 

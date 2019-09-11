@@ -19,10 +19,11 @@ from __future__ import print_function
 import collections
 import copy
 import numpy as np
+from tensorflow import keras
 
 
 MetricObservation = collections.namedtuple(
-    'MetricsObservation',
+    'MetricObservation',
     'value t')
 
 
@@ -31,7 +32,7 @@ class MetricsTracker(object):
     def __init__(self, metrics=None):
         self.names = []
         self.directions = {}
-        # str -> [MetricsObservation]
+        # str -> [MetricObservation]
         self.metrics_history = {}
         self.register_metrics(metrics)
 
@@ -63,7 +64,10 @@ class MetricsTracker(object):
             self.register(name)
         history = self.get_history(name)
         history_values = [obs.value for obs in history]
-        history.append(MetricsObservation(value=value, t=t))
+        history.append(MetricObservation(value=value, t=t))
+
+        if not history_values:
+            return True
 
         # Return whether the updated value is best yet seen.
         if self.directions[name] == 'max':
@@ -165,8 +169,12 @@ _MAX_METRIC_FNS = {
 def infer_metric_direction(metric):
     # Handle str input and get canonical object.
     if isinstance(metric, str):
+        metric_name = metric
         if len(metric_name) > 4 and metric_name[:4] == 'val_':
             metric_name = metric_name[4:]
+        if metric_name == 'loss':
+            # Special-case the overall loss.
+            return 'min'
         metric = keras.metrics.get(metric_name)
 
     # Metric class or function.

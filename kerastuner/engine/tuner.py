@@ -30,7 +30,6 @@ from . import hyperparameters as hp_module
 from . import hypermodel as hm_module
 from . import oracle as oracle_module
 from . import trial as trial_module
-from . import execution as execution_module
 from . import tuner_utils
 from .. import config as config_module
 from .. import utils
@@ -71,9 +70,9 @@ class Tuner(object):
             then this argument must be specified.
         distribution_strategy: Optional. A TensorFlow
             `tf.distribute` DistributionStrategy instance. If
-            specified, each execution will run under this scope. For
+            specified, each trial will run under this scope. For
             example, `tf.distribute.MirroredStrategy(['/gpu:0, /'gpu:1])`
-            will run each execution on two GPUs. Currently only
+            will run each trial on two GPUs. Currently only
             single-worker strategies are supported.
         directory: String. Path to the working directory (relative).
         project_name: Name to use as prefix for files saved
@@ -140,18 +139,20 @@ class Tuner(object):
         self._display = tuner_utils.Display(self._host)
 
         # Populate initial search space
-        if not self.hyperparameters.space and self.tune_new_entries:
-            self._build_model(self.hyperparameters)
+        if self.oracle.tune_new_entries:
+            hp = self.oracle.get_space()
+            self._build_model(hp)
+            self.oracle.update_space(hp)
 
     def search(self, *fit_args, **fit_kwargs):
         self.on_search_begin()
         while True:
             trial = self.oracle.create_trial(self.tuner_id)
-            if trial is None:
+            if trial.status == trial_module.TrialStatus.STOPPED:
                 # Oracle triggered exit
                 break
             self.on_trial_begin(trial)
-            self.run_trial(trial, hp, fit_args, fit_kwargs)
+            self.run_trial(trial, fit_args, fit_kwargs)
             self.on_trial_end(trial)
         self.on_search_end()
 
@@ -164,7 +165,7 @@ class Tuner(object):
         fit_kwargs = copy.copy(fit_kwargs)
         original_callbacks = fit_kwargs.get('callbacks', [])[:]
         fit_kwargs['callbacks'] = self._inject_callbacks(
-            original_callbacks, trial, execution)
+            original_callbacks, trial)
         fit_kwargs['verbose'] = 0
 
         model = self._build_model(trial.hyperparameters)
@@ -180,31 +181,41 @@ class Tuner(object):
             self.logger.register_trial(trial.trial_id, trial.get_state())
 
     def on_epoch_begin(self, trial, model, epoch, logs=None):
-        self._display.on_epoch_begin(trial, model, epoch, logs=logs)
+        # TODO: reenable Display.
+        # self._display.on_epoch_begin(trial, model, epoch, logs=logs)
+        pass
 
     def on_batch_begin(self, trial, model, batch, logs):
         pass
 
     def on_batch_end(self, trial, model, batch, logs=None):
         logs = logs or {}
-        self._display.on_batch_end(trial, model, batch, logs=logs)
+        # TODO: reenable Display.
+        # self._display.on_batch_end(trial, model, batch, logs=logs)
 
     def on_epoch_end(self, trial, model, epoch, logs=None):
         logs = logs or {}
-        self._display.on_epoch_end(trial, model, epoch, logs=logs)
+        # TODO: reenable Display.
+        # self._display.on_epoch_end(trial, model, epoch, logs=logs)
+
+        # TODO: Garbage collect unneeded checkpoints.
         self._checkpoint_model(model, trial, epoch)
 
-        # report intermediate result to the `Oracle`.
-        oracle_response = self.oracle.update_trial(
-            trial_id, metrics=logs, t=epoch)
-        if oracle_response == oracle_module.OracleResponse.STOP:
+        # Report intermediate result to the `Oracle`.
+        updated_trial = self.oracle.update_trial(
+            trial.trial_id, metrics=logs, t=epoch)
+        trial.set_state(updated_trial.get_state())
+        if trial.status == "STOPPED":
             model.stop_training = True
 
     def on_trial_end(self, trial):
-        self.oracle.end_trial(trial.trial_id, "OK")
+        self.oracle.end_trial(
+            trial.trial_id, trial_module.TrialStatus.COMPLETED)
         self._checkpoint_trial(trial)
         self._checkpoint_tuner()
-        self._display.on_trial_end(trial)
+
+        # TODO: reenable Display.
+        # self._display.on_trial_end(trial)
 
     def on_search_end(self):
         if self.logger:
@@ -214,7 +225,7 @@ class Tuner(object):
         """Returns the best model(s), as determined by the tuner's objective.
 
         The models are loaded with the weights corresponding to
-        their best checkpoint (at the end of the best epoch of best execution).
+        their best checkpoint (at the end of the best epoch of best trial).
 
         This method is only a convenience shortcut.
 
@@ -225,22 +236,15 @@ class Tuner(object):
         Returns:
             List of trained model instances.
         """
-        best_trials = self._get_best_trials(num_models)
+        best_trials = self.oracle.get_best_trials(num_models)
         models = []
         for trial in best_trials:
             hp = trial.hyperparameters.copy()
             model = self.hypermodel.build(hp)
             self._compile_model(model)
-            # Get best execution.
-            direction = self.best_metrics.directions[self.objective]
-            executions = sorted(
-                trial.executions,
-                key=lambda x: x.per_epoch_metrics.get_best_value(
-                    self.objective),
-                reverse=direction == 'max')
             # Reload best checkpoint.
-            best_checkpoint = executions[0].best_checkpoint + '-weights.h5'
-            model.load_weights(best_checkpoint)
+            best_epoch = trial.score.t
+            model.load_weights(self._get_checkpoint_fname(trial, best_epoch))
             models.append(model)
         return models
 
@@ -252,11 +256,7 @@ class Tuner(object):
                 Defaults to False.
         """
         display.section('Search space summary')
-        hp = self.hyperparameters.copy()
-        if not hp.space and self.tune_new_entries:
-            # Attempt to populate the space
-            # if it is expected to be dynamic.
-            self.hypermodel.build(hp)
+        hp = self.oracle.get_space().copy()
         display.display_setting(
             'Default search space size: %d' % len(hp.space))
         for p in hp.space:
@@ -265,7 +265,7 @@ class Tuner(object):
             display.subsection('%s (%s)' % (name, p.__class__.__name__))
             display.display_settings(config)
 
-    def results_summary(self, num_models=10, sort_metric=None):
+    def results_summary(self, num_trials=10):
         """Display tuning results summary.
 
         Args:
@@ -279,18 +279,16 @@ class Tuner(object):
             display.display_setting('No results to display.')
             return
         display.display_setting('Results in %s' % self._host.results_dir)
-        display.display_setting('Ran %d trials' % len(self.trials))
-        display.display_setting('Ran %d executions (%d per trial)' %
-                                (sum([len(x.executions) for x in self.trials]),
-                                 self.executions_per_trial))
-        display.display_setting(
-            'Best %s: %.4f' % (self.objective,
-                               self.best_metrics.get_best_value(
-                                   self.objective)))
+        best_trials = self.oracle.get_best_trials(num_trials)
+        display.display_setting('Showing %d best trials' % len(num_trials))
+        for trial in best_trials:
+            display.display_setting(
+                'Objective: {} Score: {}'.format(
+                    self.objective, trial.score.value))
 
     @property
     def remaining_trials(self):
-        return self.max_trials - len(self.trials)
+        return self.oracle.remaining_trials()
 
     def get_state(self):
         oracle_fname = os.path.join(
@@ -306,20 +304,10 @@ class Tuner(object):
             'directory': str(self.directory),
             'project_name': self.project_name,
             # Dynamic
-            'best_metrics': self.best_metrics.get_config(),
-            'trials': [t.save() for t in self.trials],
             # Extra
-            'eta': self.eta,
-            'remaining_trials': self.remaining_trials,
             'stats': self._stats.get_config(),
             'host': self._host.get_config(),
         }
-        best_trials = self._get_best_trials(1)
-        if best_trials:
-            best_trial = best_trials[0]
-            state['best_trial'] = best_trial.get_state()
-        else:
-            state['best_trial'] = None
         return state
 
     def save(self):
@@ -335,13 +323,6 @@ class Tuner(object):
         state_data = tf_utils.read_file(fname)
         state = json.loads(state_data)
         self.oracle.reload(state['oracle'])
-
-        self.hyperparameters = hp_module.HyperParameters.from_config(
-            state['hyperparameters'])
-        self.best_metrics = metrics_tracking.MetricsTracker.from_config(
-            state['best_metrics'])
-        self.trials = [trial_module.Trial.load(f) for f in state['trials']]
-        self.start_time = state['start_time']
         self.stats = tuner_utils.TunerStats.from_config(state['stats'])
 
     def _build_model(self, hp):
@@ -384,9 +365,6 @@ class Tuner(object):
                         'Too many failed attempts to build model.')
                 continue
 
-            # Check that all mutations of `hp` are legal.
-            self._check_space_consistency(hp)
-
             # Stop if `build()` does not return a valid model.
             if not isinstance(model, keras.models.Model):
                 raise RuntimeError(
@@ -405,6 +383,8 @@ class Tuner(object):
                         'Too many consecutive oversized models.')
                 continue
             break
+
+        self.oracle.update_space(hp)
         return self._compile_model(model)
 
     def _compile_model(self, model):
@@ -434,22 +414,7 @@ class Tuner(object):
                 model.compile(**compile_kwargs)
             return model
 
-    @property
-    def eta(self):
-        """Return search estimated completion time."""
-        num_trials = len(self.trials)
-        num_remaining_trials = self.max_trials - num_trials
-        if num_remaining_trials < 1:
-            return 0
-        else:
-            if num_trials:
-                elapsed_time = int(time.time() - self.start_time)
-                time_per_trial = elapsed_time / num_trials
-                return int(num_remaining_trials * time_per_trial)
-            else:
-                return -1
-
-    def _inject_callbacks(self, callbacks, trial, execution):
+    def _inject_callbacks(self, callbacks, trial):
         # Deepcopy and patch callbacks if needed
         if callbacks:
             try:
@@ -458,61 +423,53 @@ class Tuner(object):
                 raise ValueError(
                     'All callbacks used during a search '
                     'should be deep-copyable (since they are '
-                    'reused across executions). '
+                    'reused across trials). '
                     'It is not possible to do `copy.deepcopy(%s)`' %
                     (callbacks,))
             for callback in callbacks:
-                # patching tensorboard log dir
+                # Patching tensorboard log dir
                 if callback.__class__.__name__ == 'TensorBoard':
-                    tensorboard_idx = '%s-%s' % (trial.trial_id,
-                                                 execution.execution_id)
-                    callback.log_dir = os.path.join(execution.directory,
-                                                    tensorboard_idx)
+                    callback.log_dir = os.path.join(
+                        callback.log_dir,
+                        str(trial.trial_id))
         else:
             callbacks = []
 
         # Add callback to call back the tuner during `fit`.
-        callbacks.append(tuner_utils.TunerCallback(self, trial, execution))
+        callbacks.append(tuner_utils.TunerCallback(self, trial))
         return callbacks
 
     def _checkpoint_tuner(self):
         # Write tuner status to tuner directory
-        self.save()
+        # TODO: re-enable saving.
+        # self.save()
         # Send status to Logger
         if self.logger:
             self.logger.report_tuner_state(self.get_state())
 
     def _checkpoint_trial(self, trial):
         # Write trial status to trial directory
-        trial.save()
+        trial.save(self._get_trial_fname(trial))
         # Send status to Logger
         if self.logger:
             self.logger.report_trial_state(trial.trial_id, trial.get_state())
 
-    def _checkpoint_execution(self, execution, force=False):
-        refresh_interval = 30
-        if hasattr(self, '_last_execution_status_refresh'):
-            elapsed = int(time.time()) - self._last_execution_status_refresh
-            if refresh_interval > elapsed and not force:
-                return
-            self._last_execution_status_refresh = int(time.time())
+    def _get_checkpoint_fname(self, trial, epoch):
+        fname = os.path.join(
+            self.directory,
+            'trial_' + str(trial.trial_id),
+            'checkpoints',
+            'epoch_' + str(epoch))
+        return fname
 
-        # Write execution status to execution directory
-        execution.save()
-        # Send status to Logger
-        if self.logger:
-            self.logger.report_execution_state(execution.execution_id,
-                                               execution.get_state())
+    def _get_trial_fname(self, trial):
+        return os.path.join(
+            self.directory,
+            'trial_' + str(trial.trial_id),
+            'trial.json')
 
-    def _checkpoint_model(self, model, trial_id, execution_id,
-                          base_directory='.'):
-        file_prefix = '%s-%s' % (trial_id, execution_id)
-        base_filename = os.path.join(base_directory, file_prefix)
-
-        tmp_path = os.path.join(self._host.tmp_dir,
-                                file_prefix)
-        tf_utils.save_model(model,
-                            base_filename,
-                            tmp_path=tmp_path,
-                            export_type='keras')
-        return base_filename
+    def _checkpoint_model(self, model, trial, epoch):
+        fname = self._get_checkpoint_fname(trial, epoch)
+        # Save in TF format.
+        model.save_weights(fname)
+        return fname

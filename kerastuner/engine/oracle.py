@@ -22,6 +22,8 @@ import enum
 import hashlib
 
 from tensorflow import keras
+from kerastuner.engine import hyperparameters as hp_module
+from kerastuner.engine import metrics_tracking
 from kerastuner.engine import trial as trial_lib
 
 
@@ -61,18 +63,19 @@ class Oracle(object):
         self.ongoing_trials = {}
 
     def get_space(self):
-        return self.hyperparameters
+        return self.hyperparameters.copy()
 
-    def update_space(self, new_entries):
+    def update_space(self, hyperparameters):
         """Add new hyperparameters to the tracking space.
 
         Already recorded parameters get ignored.
 
         Args:
-            new_entries: A list of HyperParameter objects to track.
+            hyperparameters: An updated HyperParameters object.
         """
         ref_names = {hp.name for hp in self.hyperparameters.space}
-        new_hps = [hp for hp in new_entries if hp.name not in ref_names]
+        new_hps = [hp for hp in hyperparameters.space
+                   if hp.name not in ref_names]
 
         if new_hps and not self.allow_new_entries:
             raise ValueError('`allow_new_entries` is `False`, but found '
@@ -99,9 +102,15 @@ class Oracle(object):
         if tuner_id in self.ongoing_trials:
             return self.ongoing_trials[tuner_id]
 
+        if len(self.trials.items()) >= self.max_trials:
+            trial = trial_lib.Trial(
+                hyperparameters=None,
+                status=trial_lib.TrialStatus.STOPPED)
+            return trial
+
         hyperparameters = self.hyperparameters.copy()
         hyperparameters.values = self.populate_space()
-        trial = trial_lib.Trial(hyperparameters=hyperparameters
+        trial = trial_lib.Trial(hyperparameters=hyperparameters)
         self.ongoing_trials[tuner_id] = trial
         self.trials[trial.trial_id] = trial
         return trial
@@ -115,38 +124,61 @@ class Oracle(object):
                 "INVALID" means a trial has crashed or been deemed
                 infeasible.
         """
-        trial = self.trials[trial_id]
-        trial.status = status
-        self.ongoing_trials.pop(trial)
+        trial_found = False
+        for tuner_id, ongoing_trial in self.ongoing_trials.items():
+            if ongoing_trial.trial_id == trial_id:
+                ongoing_trial.status = status
+                self.ongoing_trials.pop(tuner_id)
+                trial_found = True
+                break
+
+        if not trial_found:
+            raise ValueError(
+                'Ongoing trial with id: {} not found.'.format(trial_id))
 
     def update_trial(self, trial_id, metrics, t=0):
         """Used by a worker to report the status of a trial.
 
         Args:
             trial_id: A previously seen trial id.
-            metrics: Dict of float. The current value of the
+            metrics: Dict of float. The current value of this
                 trial's metrics.
             t: (Optional) Float. Used to report intermediate results. The
                 current value in a timeseries representing the state of the
                 trial. This is the value that `metrics` will be associated with.
 
         Returns:
-            `OracleResponse.STOP` if the trial should be stopped, otherwise
-            `OracleResponse.OK`.
+            Trial object. Trial.status will be set to "STOPPED" if the Trial
+            should be stopped early.
         """
         trial = self.trials[trial_id]
+        self._check_objective_found(metrics)
         for metric_name, metric_value in metrics.items():
             trial.metrics.update(metric_name, metric_value, t=t)
-        return OracleResponse.OK
+        # To handle early stopping, set Trial.status to "STOPPED".
+        return trial
+
+    def score_trial(self, trial):
+        # Assumes single objective, subclasses can override.
+        return metrics_tracking.MetricObservation(
+            value=trial.metrics.get_best_value(self.objective.name),
+            t=trial.metrics.get_best_t(self.objective.name))
 
     def get_best_trials(self, num_trials=1):
         trials = self.trials.values()
+        for trial in trials:
+            trial.score = self.score_trial(trial)
+
         sorted_trials = sorted(
             trials,
-            key=lambda trial: trial.metrics.get_best_value(self.objective.name),
+            key=lambda trial: trial.score.value,
+            # Assumes single objective, subclasses can override.
             reverse=self.objective.direction == 'max'
         )
         return sorted_trials[:num_trials]
+
+    def remaining_trials(self):
+        return self.max_trials - len(self.trials.items())
 
     def save(self, fname):
         raise NotImplementedError
@@ -159,6 +191,19 @@ class Oracle(object):
         s = ''.join(str(k) + '=' + str(values[k]) for k in keys)
         return hashlib.sha256(s.encode('utf-8')).hexdigest()[:32]
 
+    def _check_objective_found(self, metrics):
+        if isinstance(self.objective, Objective):
+            objective_names = [self.objective.name]
+        else:
+            objective_names = [obj.name for obj in self.objective]
+        for metric_name in metrics.keys():
+            if metric_name in objective_names:
+                objective_names.remove(metric_name)
+        if objective_names:
+            raise ValueError(
+                'Objective value missing in metrics reported '
+                'to the Oracle, expected: {}'.format(
+                    objective_names))
 
 class OracleResponse(enum.Enum):
     OK = 0
