@@ -11,379 +11,748 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"Tuner base class."
 
-"Meta classs for hypertuner"
-from __future__ import absolute_import, division, print_function
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
-import gc
-import hashlib
-import json
 import os
-import socket
-import sys
 import time
-from abc import abstractmethod
-from collections import defaultdict
-from pathlib import Path
 import traceback
+import json
+import copy
 
-# used to check if supplied model_fn is a valid model
-from tensorflow.keras.models import Model  # pylint: disable=import-error
-from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
-from kerastuner.abstractions.display import highlight, display_table, section
-from kerastuner.abstractions.display import display_setting, display_settings
-from kerastuner.abstractions.display import info, warning, fatal, set_log
-from kerastuner.abstractions.display import progress_bar, subsection
-from kerastuner.abstractions.display import colorize, colorize_default
-from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
-from kerastuner.tools.summary import results_summary as _results_summary
-from kerastuner import config
-from kerastuner.states import TunerState, InstanceState
-from .cloudservice import CloudService
-from .instance import Instance
-from kerastuner.collections import InstanceStatesCollection
-from kerastuner.abstractions.io import reload_model, exists
-from kerastuner.abstractions.io import get_weights_filename
-from sklearn.model_selection import train_test_split
+import numpy as np
+from tensorflow import keras
+
+from . import hyperparameters as hp_module
+from . import hypermodel as hm_module
+from . import oracle as oracle_module
+from . import trial as trial_module
+from . import execution as execution_module
+from . import tuner_utils
+from .. import config as config_module
+from .. import utils
+from ..abstractions import display
+from ..abstractions import host as host_module
+from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
+from . import metrics_tracking
 
 
 class Tuner(object):
-    """Abstract hypertuner class."""
+    """Tuner base class.
 
-    def __init__(self, model_fn, objective, name, distributions, **kwargs):
-        """ Tuner abstract class
+    May be subclassed to create new tuners.
 
-        Args:
-            model_fn (function): Function that return a Keras model
-            name (str): name of the tuner
-            objective (str): Which objective the tuner optimize for
-            distributions (Distributions): distributions object
+    Args:
+        oracle: Instance of Oracle class.
+        hypermodel: Instance of HyperModel class
+            (or callable that takes hyperparameters
+            and returns a Model instance).
+        objective: String. Name of model metric to minimize
+            or maximize, e.g. "val_accuracy".
+        max_trials: Int. Total number of trials
+            (model configurations) to test at most.
+            Note that the oracle may interrupt the search
+            before `max_trial` models have been tested.
+        executions_per_trial: Int. Number of executions
+            (training a model from scratch,
+            starting from a new initialization)
+            to run per trial (model configuration).
+            Model metrics may vary greatly depending
+            on random initialization, hence it is
+            often a good idea to run several executions
+            per trial in order to evaluate the performance
+            of a given set of hyperparameter values.
+        max_model_size: Int. Maximum size of weights
+            (in floating point coefficients) for a valid
+            models. Models larger than this are rejected.
+        optimizer: Optional. Optimizer instance.
+            May be used to override the `optimizer`
+            argument in the `compile` step for the
+            models. If the hypermodel
+            does not compile the models it generates,
+            then this argument must be specified.
+        loss: Optional. May be used to override the `loss`
+            argument in the `compile` step for the
+            models. If the hypermodel
+            does not compile the models it generates,
+            then this argument must be specified.
+        metrics: Optional. May be used to override the
+            `metrics` argument in the `compile` step
+            for the models. If the hypermodel
+            does not compile the models it generates,
+            then this argument must be specified.
+        hyperparameters: HyperParameters class instance.
+            Can be used to override (or register in advance)
+            hyperparamters in the search space.
+        tune_new_entries: Whether hyperparameter entries
+            that are requested by the hypermodel
+            but that were not specified in `hyperparameters`
+            should be added to the search space, or not.
+            If not, then the default value for these parameters
+            will be used.
+        allow_new_entries: Whether the hypermodel is allowed
+            to request hyperparameter entries not listed in
+            `hyperparameters`.
+        distribution_strategy: Optional. A TensorFlow
+            `tf.distribute` DistributionStrategy instance. If
+            specified, each execution will run under this scope. For
+            example, `tf.distribute.MirroredStrategy(['/gpu:0, /'gpu:1])`
+            will run each execution on two GPUs. Currently only
+            single-worker strategies are supported.
+        directory: String. Path to the working directory (relative).
+        project_name: Name to use as prefix for files saved
+            by this Tuner.
+        logger: Optional. Instance of Logger class, used for streaming data
+            to Cloud Service for monitoring.
+    """
 
-        Notes:
-            All meta data and varialbles are stored into self.state
-            defined in ../states/tunerstate.py
-        """
+    def __init__(self,
+                 oracle,
+                 hypermodel,
+                 objective,
+                 max_trials,
+                 executions_per_trial=1,
+                 max_model_size=None,
+                 optimizer=None,
+                 loss=None,
+                 metrics=None,
+                 hyperparameters=None,
+                 tune_new_entries=True,
+                 allow_new_entries=True,
+                 distribution_strategy=None,
+                 directory=None,
+                 project_name=None,
+                 logger=None):
+        if not isinstance(oracle, oracle_module.Oracle):
+            raise ValueError('Expected oracle to be '
+                             'an instance of Oracle, got: %s' % (oracle, ))
+        self.oracle = oracle
+        if isinstance(hypermodel, hm_module.HyperModel):
+            self.hypermodel = hypermodel
+        else:
+            if not callable(hypermodel):
+                raise ValueError(
+                    'The `hypermodel` argument should be either '
+                    'a callable with signature `build(hp)` returning a model, '
+                    'or an instance of `HyperModel`.')
+            self.hypermodel = hm_module.DefaultHyperModel(hypermodel)
 
-        # hypertuner state init
-        self.state = TunerState(name, objective, **kwargs)
-        self.stats = self.state.stats  # shorthand access
-        self.cloudservice = CloudService()
+        # Global search options
+        self.objective = objective
+        self.max_trials = max_trials
+        self.executions_per_trial = executions_per_trial
+        self.max_model_size = max_model_size
+        self.distribution_strategy = distribution_strategy
 
-        # check model function
-        if not model_fn:
-            fatal("Model function can't be empty")
-        try:
-            mdl = model_fn()
-        except:
-            traceback.print_exc()
-            fatal("Invalid model function")
+        # Compilation options
+        self.optimizer = optimizer
+        self.loss = loss
+        self.metrics = metrics
 
-        if not isinstance(mdl, Model):
-            t = "tensorflow.keras.models.Model"
-            fatal("Invalid model function: Doesn't return a %s object" % t)
+        # Search space management
+        if hyperparameters:
+            self.hyperparameters = hyperparameters
+            self._initial_hyperparameters = hyperparameters.copy()
+        else:
+            self.hyperparameters = hp_module.HyperParameters()
+            self._initial_hyperparameters = None
+            if not tune_new_entries:
+                raise ValueError(
+                    'If you set `tune_new_entries=False`, you must'
+                    'specify the search space via the '
+                    '`hyperparameters` argument.')
+            if not allow_new_entries:
+                raise ValueError(
+                    'If you set `allow_new_entries=False`, you must'
+                    'specify the search space via the '
+                    '`hyperparameters` argument.')
+        self.tune_new_entries = tune_new_entries
+        self.allow_new_entries = allow_new_entries
 
-        # function is valid - recording it
-        self.model_fn = model_fn
+        # Ops and metadata
+        self.directory = directory or '.'
+        self.project_name = project_name or 'untitled_project'
+        tf_utils.create_directory(
+            os.path.join(self.directory, self.project_name))
 
-        # Initializing distributions
-        hparams = config._DISTRIBUTIONS.get_hyperparameters_config()
-        if len(hparams) == 0:
-            warning("No hyperparameters used in model function. Are you sure?")
+        # Public internal state
+        self.trials = []
 
-        # set global distribution object to the one requested by tuner
-        # !MUST be after _eval_model_fn()
-        config._DISTRIBUTIONS = distributions(hparams)
+        # Private internal state
+        self._max_fail_streak = 5
+        self.logger = logger
+        self._stats = tuner_utils.TunerStats()
+        self.start_time = int(time.time())
 
-        # instances management
-        self.max_fail_streak = 5  # how many failure before giving up
-        self.instance_states = InstanceStatesCollection()
+        # Track history of best values per metric
+        # (one timestep per trial).
+        self.best_metrics = metrics_tracking.MetricsTracker()
 
-        # previous models
-        print("Loading from %s" % self.state.host.results_dir)
-        count = self.instance_states.load_from_dir(self.state.host.results_dir,
-                                                   self.state.project,
-                                                   self.state.architecture)
-        self.stats.instance_states_previously_trained = count
-        info("Tuner initialized")
+        # Logs etc
+        self._host = host_module.Host(
+            results_dir=os.path.join(self.directory, self.project_name),
+            tmp_dir=os.path.join(self.directory, 'tmp'),
+            export_dir=os.path.join(self.directory, 'export'))
+        self._display = tuner_utils.Display(self._host)
 
-    def summary(self, extended=False):
-        """Print tuner summary
+        # Populate initial search space
+        if not self.hyperparameters.space and self.tune_new_entries:
+            self._build_model(self.hyperparameters)
 
-        Args:
-            extended (bool, optional): Display extended summary.
-            Defaults to False.
-        """
-        section('Tuner summary')
-        self.state.summary(extended=extended)
-        config._DISTRIBUTIONS.config_summary()
+    def search(self, *fit_args, **fit_kwargs):
+        self.on_search_begin()
+        for _ in range(self.max_trials):
+            # Obtain unique trial ID to communicate with the oracle.
+            trial_id = tuner_utils.generate_trial_id()
+            hp = self._call_oracle(trial_id)
+            if hp is None:
+                # Oracle triggered exit
+                return
+            trial = trial_module.Trial(
+                trial_id=trial_id,
+                hyperparameters=hp.copy(),
+                max_executions=self.executions_per_trial,
+                base_directory=self._host.results_dir)
+            self.trials.append(trial)
+            self.on_trial_begin(trial)
+            self.run_trial(trial, hp, fit_args, fit_kwargs)
+            self.on_trial_end(trial)
+        self.on_search_end()
 
-    def enable_cloud(self, api_key, url=None):
-        """Enable cloud service reporting
+    def run_trial(self, trial, hp, fit_args, fit_kwargs):
+        fit_kwargs = copy.copy(fit_kwargs)
+        original_callbacks = fit_kwargs.get('callbacks', [])[:]
+        for i in range(self.executions_per_trial):
+            execution_id = tuner_utils.format_execution_id(
+                i, self.executions_per_trial)
+            # Patch fit arguments
+            max_epochs, max_steps = tuner_utils.get_max_epochs_and_steps(
+                fit_args, fit_kwargs)
+            fit_kwargs['verbose'] = 0
 
-            Args:
-                api_key (str): The backend API access token.
-                url (str, optional): The backend base URL.
+            # Get model; this will reset the Keras session
+            if not self.tune_new_entries:
+                hp = hp.copy()
 
-            Note:
-                this is called by the user
-        """
-        self.cloudservice.enable(api_key, url)
+            model = self._build_model(hp)
+            self._compile_model(model)
 
-    def search(self, x, y=None, **kwargs):
-        kwargs["verbose"] = 0
+            # Start execution
+            execution = execution_module.Execution(
+                execution_id=execution_id,
+                trial_id=trial.trial_id,
+                max_epochs=max_epochs,
+                max_steps=max_steps,
+                base_directory=trial.directory)
+            trial.executions.append(execution)
+            self.on_execution_begin(trial, execution, model)
 
-        validation_data = None
+            # During model `fit`,
+            # the patched callbacks call
+            # `self.on_epoch_begin`, `self.on_epoch_end`,
+            # `self.on_batch_begin`, `self.on_batch_end`.
+            fit_kwargs['callbacks'] = self._inject_callbacks(
+                original_callbacks, trial, execution)
+            model.fit(*fit_args, **fit_kwargs)
+            self.on_execution_end(trial, execution, model)
 
-        if "validation_split" in kwargs and "validation_data" in kwargs:
-            raise ValueError(
-                "Specify validation_data= or validation_split=, but not both.")
+    def on_search_begin(self):
+        if self.logger:
+            self.logger.register_tuner(self.get_state())
 
-        if "validation_split" in kwargs and "validation_data" not in kwargs:
-            val_split = kwargs["validation_split"]
-            x, x_validation = train_test_split(x, test_size=val_split)
-            if y is not None:
-                y, y_validation = train_test_split(y, test_size=val_split)
-            else:
-                y, y_validation = None, None
-            validation_data = (x_validation, y_validation)
-            del kwargs["validation_split"]
-        elif "validation_data" in kwargs:
-            validation_data = kwargs["validation_data"]
-            del kwargs["validation_data"]
+    def on_trial_begin(self, trial):
+        if self.logger:
+            self.logger.register_trial(trial.trial_id, trial.get_state())
 
-        self.tune(x, y, validation_data=validation_data, **kwargs)
-        if self.cloudservice.is_enable:
-            self.cloudservice.complete()
+    def on_execution_begin(self, trial, execution, model):
+        execution.per_epoch_metrics.register_metrics(model.metrics)
+        self._display.on_execution_begin(trial, execution, model)
+        if self.logger:
+            self.logger.register_execution(execution.execution_id,
+                                           execution.get_state())
 
-    def new_instance(self):
-        "Return a never seen before model instance"
-        fail_streak = 0
-        collision_streak = 0
-        over_sized_streak = 0
+    def on_epoch_begin(self, execution, model, epoch, logs=None):
+        # reset per-batch history for the this epoch
+        execution.per_batch_metrics = metrics_tracking.MetricsTracker(
+            model.metrics)
+        self._display.on_epoch_begin(execution, model, epoch, logs=logs)
 
-        while 1:
-            # clean-up TF graph from previously stored (defunct) graph
-            tf_utils.clear_tf_session()
-            self.stats.generated_instances += 1
-            fail_streak += 1
-            try:
-                model = self.model_fn()
-            except:
-                if self.state.debug:
-                    traceback.print_exc()
+    def on_batch_begin(self, execution, model, batch, logs):
+        pass
 
-                self.stats.invalid_instances += 1
-                warning("invalid model %s/%s" %
-                        (self.stats.invalid_instances, self.max_fail_streak))
+    def on_batch_end(self, execution, model, batch, logs=None):
+        logs = logs or {}
+        for name, value in logs.items():
+            execution.per_batch_metrics.update(name, float(value))
+        self._checkpoint_execution(execution)
+        self._display.on_batch_end(execution, model, batch, logs=logs)
 
-                if self.stats.invalid_instances >= self.max_fail_streak:
-                    warning("too many consecutive failed models - stopping")
-                    return None
-                continue
+    def on_epoch_end(self, execution, model, epoch, logs=None):
+        logs = logs or {}
+        # update epoch counters
+        execution.epochs_seen += 1
 
-            # stop if the model_fn() return nothing
-            if not model:
-                warning("No model returned from model function - stopping.")
-                return None
+        # update metrics and checkpoint if needed
+        for name, value in logs.items():
+            improved = execution.per_epoch_metrics.update(name, value)
+            if self.objective == name and improved:
+                fname = self._checkpoint_model(
+                    model,
+                    execution.trial_id,
+                    execution.execution_id,
+                    base_directory=execution.directory)
+                execution.best_checkpoint = fname
 
-            # computing instance unique idx
-            idx = self.__compute_model_id(model)
-            if self.instance_states.exist(idx):
-                collision_streak += 1
-                self.stats.collisions += 1
-                warning("Collision for %s -- skipping" % (idx))
-                if collision_streak >= self.max_fail_streak:
-                    return None
-                continue
+        # update status
+        self._checkpoint_execution(execution, force=True)
+        self._display.on_epoch_end(execution, model, epoch, logs=logs)
 
-            # check size
-            nump = tf_utils.compute_model_size(model)
-            if nump > self.state.max_model_parameters:
-                over_sized_streak += 1
-                self.stats.over_sized_models += 1
-                warning("Oversized model: %s parameters-- skipping" % (nump))
-                if over_sized_streak >= self.max_fail_streak:
-                    warning("too many consecutive failed model - stopping")
-                    return None
-                continue
+        # report intermediate result to the `Oracle`.
+        if self.objective in logs:
+            oracle_response = self.oracle.report_status(
+                execution.trial_id,
+                "RUNNING",
+                score=logs[self.objective],
+                t=epoch)
+            if oracle_response == oracle_module.OracleResponse.STOP:
+                model.stop_training = True
 
-            # creating instance
-            hparams = config._DISTRIBUTIONS.get_hyperparameters()
-            instance = Instance(idx, model, hparams, self.state,
-                                self.cloudservice)
-            break
+    def on_execution_end(self, trial, execution, model):
+        execution.training_complete = True
+        # Update tracker of averaged metrics on Trial
+        if len(trial.executions) == 1:
+            for name in execution.per_epoch_metrics.names:
+                if not trial.averaged_metrics.exists(name):
+                    direction = execution.per_epoch_metrics.directions[name]
+                    trial.averaged_metrics.register(name, direction)
+                trial.averaged_metrics.set_history(
+                    name, execution.per_epoch_metrics.get_history(name))
+        else:
+            # Need to average.
+            for name in execution.per_epoch_metrics.names:
+                if not trial.averaged_metrics.exists(name):
+                    direction = execution.per_epoch_metrics.directions[name]
+                    trial.averaged_metrics.register(name, direction)
+                histories = []
+                for execution in trial.executions:
+                    histories.append(
+                        execution.per_epoch_metrics.get_history(name))
+                # The length of the histories may not match
+                # if some executions ran for fewer epochs
+                # due to early stopping.
+                # We do an average of the available timesteps.
+                max_len = max(len(h) for h in histories)
+                avg_history = []
+                for i in range(max_len):
+                    tot = 0.
+                    num = 0
+                    for h in histories:
+                        if len(h) > i:
+                            tot += h[i]
+                            num += 1
+                    avg_history.append(tot / num)
+                trial.averaged_metrics.set_history(name, avg_history)
 
-        # recording instance
-        self.instance_states.add(idx, instance.state)
-        return instance
+    def on_trial_end(self, trial):
+        # Update tracker of best metrics on Tuner
+        for name in trial.averaged_metrics.names:
+            if not self.best_metrics.exists(name):
+                direction = trial.averaged_metrics.directions[name]
+                self.best_metrics.register(name, direction)
+            self.best_metrics.update(
+                name, trial.averaged_metrics.get_best_value(name))
+        trial.score = trial.averaged_metrics.get_best_value(self.objective)
+        self.oracle.result(trial.trial_id, trial.score)
 
-    def reload_instance(self, idx, execution="last", metrics=[]):
-        tf_utils.clear_tf_session()
+        self._checkpoint_trial(trial)
+        self._checkpoint_tuner()
+        self._display.on_trial_end(trial.averaged_metrics,
+                                   self.best_metrics,
+                                   objective=self.objective,
+                                   remaining_trials=self.remaining_trials,
+                                   max_trials=self.max_trials)
 
-        instance_state = self.instance_states.get(idx)
-        if not instance_state:
-            raise ValueError("Attempted to reload unknown instance '%s'." %
-                             idx)
+    def on_search_end(self):
+        if self.logger:
+            self.logger.exit()
 
-        # Find the specified execution.
-        executions = instance_state.execution_states_collection
-        execution_state = None
-        if execution == "last":
-            execution_state = executions.get_last()
-        elif execution == "best":
-            execution_state = executions.sort_by_metric(
-                self.state.objective).to_list()[0]
-        elif execution:
-            execution_state = executions.get(idx)
+    def get_best_models(self, num_models=1):
+        """Returns the best model(s), as determined by the tuner's objective.
 
-        weights_filename = get_weights_filename(self.state, instance_state,
-                                                execution_state)
+        The models are loaded with the weights corresponding to
+        their best checkpoint (at the end of the best epoch of best execution).
 
-        model = InstanceState.model_from_configs(
-            instance_state.model_config,
-            instance_state.loss_config,
-            instance_state.optimizer_config,
-            instance_state.metrics_config,
-            weights_filename=weights_filename)
-
-        instance = Instance(idx=instance_state.idx,
-                            model=model,
-                            hparams=instance_state.hyper_parameters,
-                            tuner_state=self.state,
-                            cloudservice=self.cloudservice,
-                            instance_state=instance_state)
-        return instance
-
-    def get_best_models(self, num_models=1, compile=False):
-        """Returns the best models, as determined by the tuner's objective.
+        This method is only a convenience shortcut.
 
         Args:
             num_models (int, optional): Number of best models to return.
                 Models will be returned in sorted order. Defaults to 1.
-            compile (bool, optional): If True, infer the loss and optimizer,
-                and compile the returned models. Defaults to False.
 
         Returns:
-            tuple: Tuple containing a list of InstanceStates, a list of
-                ExecutionStates, and a list of Models, where the Nth Instance
-                and Nth Execution correspond to the Nth Model.
+            List of trained model instances.
         """
-        sorted_instance_states = self.instance_states.sort_by_objective()
-        if len(sorted_instance_states) > num_models:
-            sorted_instance_states = sorted_instance_states[:num_models]
-
-        execution_states = []
-        for instance_state in sorted_instance_states:
-            sorted_execution_list = (
-                instance_state.execution_states_collection.sort_by_metric(
-                    instance_state.objective))
-            best_execution_state = sorted_execution_list[0]
-            execution_states.append(best_execution_state)
-
+        best_trials = self._get_best_trials(num_models)
         models = []
-        for instance_state, execution_state in zip(sorted_instance_states,
-                                                   execution_states):
-
-            model = reload_model(self.state,
-                                 instance_state,
-                                 execution_state,
-                                 compile=True)
+        for trial in best_trials:
+            hp = trial.hyperparameters.copy()
+            model = self.hypermodel.build(hp)
+            self._compile_model(model)
+            # Get best execution.
+            direction = self.best_metrics.directions[self.objective]
+            executions = sorted(trial.executions,
+                                key=lambda x: x.per_epoch_metrics.
+                                get_best_value(self.objective),
+                                reverse=direction == 'max')
+            # Reload best checkpoint.
+            best_checkpoint = executions[0].best_checkpoint + '-weights.h5'
+            model.load_weights(best_checkpoint)
             models.append(model)
+        return models
 
-        return sorted_instance_states, execution_states, models
+    def search_space_summary(self, extended=False):
+        """Print search space summary.
 
-    def save_best_model(self, export_type="keras"):
-        """Shortcut for save_best_models for the case of only keeping the best
-        model."""
-        return self.save_best_models(export_type=export_type, num_models=1)
-
-    def save_best_models(self, export_type="keras", num_models=1):
-        """ Exports the best model based on the specified metric, to the
-            results directory.
-
-            Args:
-                output_type (str, optional): Defaults to "keras". What format
-                    of model to export:
-
-                    # Tensorflow 1.x/2.x
-                    "keras" - Save as separate config (JSON) and weights (HDF5)
-                        files.
-                    "keras_bundle" - Saved in Keras's native format (HDF5), via
-                        save_model()
-
-                    # Currently only supported in Tensorflow 1.x
-                    "tf" - Saved in tensorflow's SavedModel format. See:
-                        https://www.tensorflow.org/alpha/guide/saved_model
-                    "tf_frozen" - A SavedModel, where the weights are stored
-                        in the model file itself, rather than a variables
-                        directory. See:
-                        https://www.tensorflow.org/guide/extend/model_files
-                    "tf_optimized" - A frozen SavedModel, which has
-                        additionally been transformed via tensorflow's graph
-                        transform library to remove training-specific nodes
-                        and operations.  See:
-                        https://github.com/tensorflow/tensorflow/tree/master/tensorflow/tools/graph_transforms
-                    "tf_lite" - A TF Lite model.
+        Args:
+            extended: Bool, optional. Display extended summary.
+                Defaults to False.
         """
-
-        instance_states, execution_states, models = self.get_best_models(
-            num_models=num_models, compile=False)
-
-        zipped = zip(models, instance_states, execution_states)
-        for idx, (model, instance_state, execution_state) in enumerate(zipped):
-            export_prefix = "%s-%s-%s-%s" % (
-                self.state.project, self.state.architecture,
-                instance_state.idx, execution_state.idx)
-
-            export_path = os.path.join(self.state.host.export_dir,
-                                       export_prefix)
-
-            tmp_path = os.path.join(self.state.host.tmp_dir, export_prefix)
-            info("Exporting top model (%d/%d) - %s" %
-                 (idx + 1, len(models), export_path))
-            tf_utils.save_model(model,
-                                export_path,
-                                tmp_path=tmp_path,
-                                export_type=export_type)
-
-    def __compute_model_id(self, model):
-        "compute model hash"
-        s = str(model.get_config())
-        # Optimizer and loss are not currently part of the model config,
-        # but could conceivably be part of the model_fn/tuning process.
-        if model.optimizer:
-            s += "optimizer:" + str(model.optimizer.get_config())
-        s += "loss:" + str(model.loss)
-        return hashlib.sha256(s.encode('utf-8')).hexdigest()[:32]
+        display.section('Search space summary')
+        hp = self.hyperparameters.copy()
+        if not hp.space and self.tune_new_entries:
+            # Attempt to populate the space
+            # if it is expected to be dynamic.
+            self.hypermodel.build(hp)
+        display.display_setting('Default search space size: %d' %
+                                len(hp.space))
+        for p in hp.space:
+            config = p.get_config()
+            name = config.pop('name')
+            display.subsection('%s (%s)' % (name, p.__class__.__name__))
+            display.display_settings(config)
 
     def results_summary(self, num_models=10, sort_metric=None):
         """Display tuning results summary.
 
         Args:
-            num_models (int, optional): Number of model to display.
-            Defaults to 10.
+            num_trials (int, optional): Number of trials to display.
+                Defaults to 10.
             sort_metric (str, optional): Sorting metric, when not specified
-            sort models by objective value. Defaults to None.
+                sort models by objective value. Defaults to None.
+
+        Returns:
+            dict: Dictionary of metrics that are being displayed.
         """
-        if self.state.dry_run:
-            info("Dry-Run - no results to report.")
+        display.section('Results summary')
+        if not self.trials:
+            display_values = ['No results to display.']
+            for value in display_values:
+                display.display_setting(value)
+            return display_values
+
+        display_values = [
+            'Results in %s' % self._host.results_dir,
+            'Ran %d trials' % len(self.trials),
+            'Ran %d executions (%d per trial)' %
+            (sum([len(x.executions)
+                  for x in self.trials]), self.executions_per_trial),
+            'Best %s: %.4f' %
+            (self.objective, self.best_metrics.get_best_value(self.objective))
+        ]
+
+        for value in display_values:
+            display.display_setting(value)
+
+        return display_values
+
+    @property
+    def remaining_trials(self):
+        return self.max_trials - len(self.trials)
+
+    def get_state(self):
+        oracle_fname = os.path.join(self.directory, self.project_name,
+                                    'oracle.json')
+        self.oracle.save(oracle_fname)
+        oracle_fname = str(oracle_fname)
+
+        state = {
+            'oracle': oracle_fname,
+            'objective': self.objective,
+            'start_time': self.start_time,
+            'max_trials': self.max_trials,
+            'executions_per_trial': self.executions_per_trial,
+            'max_model_size': self.max_model_size,
+            # Note that compilation args are not included.
+            'hyperparameters': self.hyperparameters.get_config(),
+            'tune_new_entries': self.tune_new_entries,
+            'allow_new_entries': self.allow_new_entries,
+            'directory': str(self.directory),
+            'project_name': self.project_name,
+            # Dynamic
+            'best_metrics': self.best_metrics.get_config(),
+            'trials': [t.save() for t in self.trials],
+            # Extra
+            'eta': self.eta,
+            'remaining_trials': self.remaining_trials,
+            'stats': self._stats.get_config(),
+            'host': self._host.get_config(),
+        }
+        best_trials = self._get_best_trials(1)
+        if best_trials:
+            best_trial = best_trials[0]
+            state['best_trial'] = best_trial.get_state()
+        else:
+            state['best_trial'] = None
+        return state
+
+    def save(self):
+        fname = os.path.join(self.directory, self.project_name, 'tuner.json')
+        state = self.get_state()
+        state_json = json.dumps(state)
+        tf_utils.write_file(fname, state_json)
+        return str(fname)
+
+    def reload(self):
+        """Populate `self.trials` and `self.oracle` state."""
+        fname = os.path.join(self.directory, self.project_name, 'tuner.json')
+        state_data = tf_utils.read_file(fname)
+        state = json.loads(state_data)
+        self.oracle.reload(state['oracle'])
+
+        self.hyperparameters = hp_module.HyperParameters.from_config(
+            state['hyperparameters'])
+        self.best_metrics = metrics_tracking.MetricsTracker.from_config(
+            state['best_metrics'])
+        self.trials = [trial_module.Trial.load(f) for f in state['trials']]
+        self.start_time = state['start_time']
+        self.stats = tuner_utils.TunerStats.from_config(state['stats'])
+
+    def _call_oracle(self, trial_id):
+        if not self.tune_new_entries:
+            # In this case, never append to the space
+            # so work from a copy of the internal hp object
+            hp = self._initial_hyperparameters.copy()
+        else:
+            # In this case, append to the space,
+            # so pass the internal hp object to `build`
+            hp = self.hyperparameters
+
+        # Obtain hp value suggestions from the oracle.
+        while 1:
+            oracle_answer = self.oracle.populate_space(trial_id, hp.space)
+            if oracle_answer['status'] == 'RUN':
+                hp.values = oracle_answer['values']
+                return hp
+            elif oracle_answer['status'] == 'EXIT':
+                print('Oracle triggered exit')
+                return
+            else:
+                time.sleep(10)
+
+    def _get_best_trials(self, num_trials=1):
+        if not self.best_metrics.exists(self.objective):
+            return []
+        trials = []
+        for x in self.trials:
+            if x.score is not None:
+                trials.append(x)
+        if not trials:
+            return []
+        direction = self.best_metrics.directions[self.objective]
+        sorted_trials = sorted(trials,
+                               key=lambda x: x.score,
+                               reverse=direction == 'max')
+        return sorted_trials[:num_trials]
+
+    def _build_model(self, hp):
+        """Return a never seen before model instance, compiled.
+
+        Args:
+            hp: Instance of HyperParameters with populated values.
+                These values will be used to instantiate a model
+                using the tuner's hypermodel.
+
+        Returns:
+            A compiled Model instance.
+
+        Raises:
+            RuntimeError: If we cannot generate
+                a unique Model instance.
+        """
+        fail_streak = 0
+        oversized_streak = 0
+
+        while 1:
+            # clean-up TF graph from previously stored (defunct) graph
+            utils.clear_tf_session()
+            self._stats.num_generated_models += 1
+            fail_streak += 1
+            try:
+                with tuner_utils.maybe_distribute(self.distribution_strategy):
+                    model = self.hypermodel.build(hp)
+            except:
+                if config_module.DEBUG:
+                    traceback.print_exc()
+
+                self._stats.num_invalid_models += 1
+                display.warning(
+                    'Invalid model %s/%s' %
+                    (self._stats.num_invalid_models, self._max_fail_streak))
+
+                if self._stats.num_invalid_models >= self._max_fail_streak:
+                    raise RuntimeError(
+                        'Too many failed attempts to build model.')
+                continue
+
+            # Check that all mutations of `hp` are legal.
+            self._check_space_consistency(hp)
+
+            # Stop if `build()` does not return a valid model.
+            if not isinstance(model, keras.models.Model):
+                raise RuntimeError('Model-building function did not return '
+                                   'a valid Model instance.')
+
+            # Check model size.
+            size = utils.maybe_compute_model_size(model)
+            if self.max_model_size and size > self.max_model_size:
+                oversized_streak += 1
+                self._stats.num_oversized_models += 1
+                display.warning('Oversized model: %s parameters -- skipping' %
+                                (size))
+                if oversized_streak >= self._max_fail_streak:
+                    raise RuntimeError(
+                        'Too many consecutive oversized models.')
+                continue
+            break
+        return self._compile_model(model)
+
+    def _compile_model(self, model):
+        with tuner_utils.maybe_distribute(self.distribution_strategy):
+            if not model.optimizer:
+                if not self.optimizer:
+                    raise ValueError(
+                        'The hypermodel returned a model '
+                        'that was not compiled. In this case, you '
+                        'should pass the arguments `optimizer`, `loss`, '
+                        'and `metrics` to the Tuner constructor, so '
+                        'that the Tuner will able to compile the model.')
+                model.compile(optimizer=self.optimizer,
+                              loss=self.loss,
+                              metrics=self.metrics)
+            elif self.optimizer or self.loss or self.metrics:
+                compile_kwargs = {
+                    'optimizer': model.optimizer,
+                    'loss': model.loss,
+                    'metrics': model.metrics,
+                }
+                if self.loss:
+                    compile_kwargs['loss'] = self.loss
+                if self.optimizer:
+                    compile_kwargs['optimizer'] = self.optimizer
+                if self.metrics:
+                    compile_kwargs['metrics'] = self.metrics
+                model.compile(**compile_kwargs)
+            return model
+
+    def _check_space_consistency(self, hp):
+        # Optionally disallow hyperparameters defined on the fly.
+        if not self._initial_hyperparameters:
             return
+        old_space = [x.name for x in self._initial_hyperparameters.space]
+        new_space = [x.name for x in hp.space]
+        difference = set(new_space) - set(old_space)
+        if not self.allow_new_entries and difference:
+            diff = set(new_space) - set(old_space)
+            raise RuntimeError(
+                'The hypermodel has requested a parameter that was not part '
+                'of `hyperparameters`, '
+                'yet `allow_new_entries` is set to False. '
+                'The unknown parameters are: {diff}'.format(diff=diff))
+        # TODO: consider calling the oracle to update the space.
 
-        # FIXME API documentation
-        _results_summary(input_dir=self.state.host.results_dir,
-                         project=self.state.project,
-                         architecture=self.state.architecture,
-                         num_models=num_models,
-                         sort_metric=sort_metric)
+    @property
+    def eta(self):
+        """Return search estimated completion time."""
+        num_trials = len(self.trials)
+        num_remaining_trials = self.max_trials - num_trials
+        if num_remaining_trials < 1:
+            return 0
+        else:
+            if num_trials:
+                elapsed_time = int(time.time() - self.start_time)
+                time_per_trial = elapsed_time / num_trials
+                return int(num_remaining_trials * time_per_trial)
+            else:
+                return -1
 
-    @abstractmethod
-    def tune(self, x, y, **kwargs):
-        "method called by the hypertuner to train an instance"
+    def _inject_callbacks(self, callbacks, trial, execution):
+        # Deepcopy and patch callbacks if needed
+        if callbacks:
+            try:
+                callbacks = copy.deepcopy(callbacks)
+            except:
+                raise ValueError(
+                    'All callbacks used during a search '
+                    'should be deep-copyable (since they are '
+                    'reused across executions). '
+                    'It is not possible to do `copy.deepcopy(%s)`' %
+                    (callbacks, ))
+            for callback in callbacks:
+                # patching tensorboard log dir
+                if callback.__class__.__name__ == 'TensorBoard':
+                    tensorboard_idx = '%s-%s' % (trial.trial_id,
+                                                 execution.execution_id)
+                    callback.log_dir = os.path.join(execution.directory,
+                                                    tensorboard_idx)
+        else:
+            callbacks = []
 
-    @abstractmethod
-    def retrain(self, idx, x, y, execution=None, metrics=[], **kwargs):
-        "method called by the hypertuner to resume training an instance"
-        instance = self.reload_instance(idx,
-                                        execution=execution,
-                                        metrics=metrics)
-        instance.fit(x, y, self.state.max_epochs, **kwargs)
+        # Add callback to call back the tuner during `fit`.
+        callbacks.append(tuner_utils.TunerCallback(self, trial, execution))
+        return callbacks
+
+    def _checkpoint_tuner(self):
+        # Write tuner status to tuner directory
+        self.save()
+        # Send status to Logger
+        if self.logger:
+            self.logger.report_tuner_state(self.get_state())
+
+    def _checkpoint_trial(self, trial):
+        # Write trial status to trial directory
+        trial.save()
+        # Send status to Logger
+        if self.logger:
+            self.logger.report_trial_state(trial.trial_id, trial.get_state())
+
+    def _checkpoint_execution(self, execution, force=False):
+        refresh_interval = 30
+        if hasattr(self, '_last_execution_status_refresh'):
+            elapsed = int(time.time()) - self._last_execution_status_refresh
+            if refresh_interval > elapsed and not force:
+                return
+            self._last_execution_status_refresh = int(time.time())
+
+        # Write execution status to execution directory
+        execution.save()
+        # Send status to Logger
+        if self.logger:
+            self.logger.report_execution_state(execution.execution_id,
+                                               execution.get_state())
+
+    def _checkpoint_model(self,
+                          model,
+                          trial_id,
+                          execution_id,
+                          base_directory='.'):
+        file_prefix = '%s-%s' % (trial_id, execution_id)
+        base_filename = os.path.join(base_directory, file_prefix)
+
+        tmp_path = os.path.join(self._host.tmp_dir, file_prefix)
+        tf_utils.save_model(model,
+                            base_filename,
+                            tmp_path=tmp_path,
+                            export_type='keras')
+        return base_filename
