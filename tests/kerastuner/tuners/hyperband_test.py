@@ -79,6 +79,66 @@ def test_hyperband_oracle(tmp_dir):
     assert oracle.populate_space('last', hp_list)['status'] == 'RUN'
 
 
+def test_hyperband_select_candidates():
+    hp_list = [
+        hp_module.Choice('a', [1, 2], default=1),
+        hp_module.Choice('b', [3, 4], default=3),
+        hp_module.Choice('c', [5, 6], default=5),
+        hp_module.Choice('d', [7, 8], default=7),
+        hp_module.Choice('e', [9, 0], default=9)
+    ]
+
+    min_oracle = hyperband_module.HyperbandOracle(max_epochs=10,
+                                                  factor=3,
+                                                  direction='min')
+    default_oracle = hyperband_module.HyperbandOracle(max_epochs=10, factor=3)
+    max_oracle = hyperband_module.HyperbandOracle(max_epochs=10,
+                                                  factor=3,
+                                                  direction='max')
+
+    # Complete the first bracket.
+    idx = 0
+    for _ in range(min_oracle._model_sequence[0]):
+        trial_id = "trial_%d" % idx
+        idx += 1
+
+        min_oracle.populate_space(trial_id, hp_list)
+        default_oracle.populate_space(trial_id, hp_list)
+        max_oracle.populate_space(trial_id, hp_list)
+
+        min_oracle.result(trial_id, float(idx))
+        default_oracle.result(trial_id, float(idx))
+        max_oracle.result(trial_id, float(idx))
+
+    # Now we start on the next bracket. The Oracles should be feeding us the
+    # top values, based on their 'direction'.  We'll pull the tuner/trial_id
+    # value from the populate_space() responses, and use them to check that the
+    # correct trials are being prioritized.
+    for i in range(min_oracle._model_sequence[1]):
+        expected_min_previous_trial_id = 'trial_%d' % i
+        expected_max_previous_trial_id = 'trial_%d' % (9 - i)
+
+        trial_id = "trial_%d" % idx
+        idx += 1
+
+        min_populate = min_oracle.populate_space(trial_id, hp_list)
+        max_populate = max_oracle.populate_space(trial_id, hp_list)
+        default_populate = default_oracle.populate_space(trial_id, hp_list)
+
+        min_previous_trial_id = min_populate['values']['tuner/trial_id']
+        max_previous_trial_id = max_populate['values']['tuner/trial_id']
+        default_previous_trial_id = default_populate['values'][
+            'tuner/trial_id']
+
+        assert min_previous_trial_id == expected_min_previous_trial_id
+        assert default_previous_trial_id == expected_min_previous_trial_id
+        assert max_previous_trial_id == expected_max_previous_trial_id
+
+        default_oracle.result(trial_id, float(idx))
+        min_oracle.result(trial_id, float(idx))
+        max_oracle.result(trial_id, float(idx))
+
+
 def test_hyperband_dynamic_space(tmp_dir):
     hp_list = [hp_module.Choice('a', [1, 2], default=1)]
     oracle = hyperband_module.HyperbandOracle()
