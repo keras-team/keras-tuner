@@ -87,13 +87,17 @@ class Oracle(object):
 
         for hp in new_hps:
             self.hyperparameters.register(
-                hp.name, type(hp), hp.get_config())
+                hp.name, hp.__class__.__name__, hp.get_config())
 
-    def populate_space(self):
+    def populate_space(self, trial_id):
         """Fill the hyperparameter space with values for a trial.
 
+        Args:
+          `trial_id`: The id for this Trial.
+
         Returns:
-          Dict mapping hyperparameter names to values.
+          Dict mapping hyperparameter names to values, or `None` if
+          the search should stop.
         """
         raise NotImplementedError
 
@@ -102,14 +106,23 @@ class Oracle(object):
         if tuner_id in self.ongoing_trials:
             return self.ongoing_trials[tuner_id]
 
+        trial_id = trial_lib.generate_trial_id()
+
+        # Stop search if max_trials is reached or no valid HyperParameters found.
+        stop_search = False
         if len(self.trials.items()) >= self.max_trials:
+            stop_search = True
+        values = self.populate_space(trial_id)
+        if values is None:
+            stop_search = True
+        if stop_search:
             trial = trial_lib.Trial(
                 hyperparameters=None,
                 status=trial_lib.TrialStatus.STOPPED)
             return trial
 
         hyperparameters = self.hyperparameters.copy()
-        hyperparameters.values = self.populate_space()
+        hyperparameters.values = values
         trial = trial_lib.Trial(hyperparameters=hyperparameters)
         self.ongoing_trials[tuner_id] = trial
         self.trials[trial.trial_id] = trial

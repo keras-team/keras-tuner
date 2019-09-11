@@ -29,8 +29,13 @@ import json
 
 class RandomSearchOracle(oracle_module.Oracle):
 
-    def __init__(self, seed=None):
-        super(RandomSearchOracle, self).__init__()
+    def __init__(self,
+                 objective,
+                 max_trials,
+                 seed=None,
+                 **kwargs):
+        super(RandomSearchOracle, self).__init__(
+            objective=objective, max_trials=max_trials, **kwargs)
         self.seed = seed or random.randint(1, 1e4)
         # Incremented at every call to `populate_space`.
         self._seed_state = self.seed
@@ -40,25 +45,17 @@ class RandomSearchOracle(oracle_module.Oracle):
         # before we consider the space to be exhausted.
         self._max_collisions = 5
 
-    def populate_space(self, trial_id, space):
-        """Fill a given hyperparameter space with values.
-
-        Args:
-            space: A list of HyperParameter objects
-                to provide values for.
+    def populate_space(self, _):
+        """Fill the hyperparameter space with values.
 
         Returns:
             A dictionary mapping parameter names to suggested values.
-            Note that if the Oracle is keeping tracking of a large
-            space, it may return values for more parameters
-            than what was listed in `space`.
         """
-        self.update_space(space)
         collisions = 0
         while 1:
             # Generate a set of random values.
             values = {}
-            for p in space:
+            for p in self.hyperparameters.space:
                 values[p.name] = p.random_sample(self._seed_state)
                 self._seed_state += 1
             # Keep trying until the set of values is unique,
@@ -67,11 +64,11 @@ class RandomSearchOracle(oracle_module.Oracle):
             if values_hash in self._tried_so_far:
                 collisions += 1
                 if collisions > self._max_collisions:
-                    return {'status': 'EXIT'}
+                    return None
                 continue
             self._tried_so_far.add(values_hash)
             break
-        return {'values': values, 'status': 'RUN'}
+        return values
 
     def save(self, fname):
         state = {
@@ -96,7 +93,7 @@ class RandomSearch(tuner_module.Tuner):
     Args:
         hypermodel: Instance of HyperModel class
             (or callable that takes hyperparameters
-            and returns a Model isntance).
+            and returns a Model instance).
         objective: String. Name of model metric to minimize
             or maximize, e.g. "val_accuracy".
         max_trials: Int. Total number of trials
@@ -113,10 +110,14 @@ class RandomSearch(tuner_module.Tuner):
                  seed=None,
                  **kwargs):
         self.seed = seed
-        oracle = RandomSearchOracle(seed)
+        oracle = RandomSearchOracle(
+            objective=objective,
+            max_trials=max_trials,
+            seed=seed,
+            hyperparameters=kwargs.pop('hyperparameters', None),
+            tune_new_entries=kwargs.pop('tune_new_entries', True),
+            allow_new_entries=kwargs.pop('allow_new_entries', True))
         super(RandomSearch, self).__init__(
             oracle,
             hypermodel,
-            objective,
-            max_trials,
             **kwargs)

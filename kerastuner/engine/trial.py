@@ -44,7 +44,7 @@ class Trial(object):
                  trial_id=None,
                  status=TrialStatus.RUNNING):
         self.hyperparameters = hyperparameters
-        self.trial_id = _generate_trial_id() if trial_id is None else trial_id
+        self.trial_id = generate_trial_id() if trial_id is None else trial_id
 
         self.metrics = metrics_tracking.MetricsTracker()
         self.score = None
@@ -95,6 +95,6 @@ class Trial(object):
         return trial
 
 
-def _generate_trial_id():
+def generate_trial_id():
     s = str(time.time()) + str(random.randint(1, 1e7))
     return hashlib.sha256(s.encode('utf-8')).hexdigest()[:32]
