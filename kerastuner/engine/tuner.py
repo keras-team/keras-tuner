@@ -280,16 +280,13 @@ class Tuner(object):
                 sort models by objective value. Defaults to None.
         """
         display.section('Results summary')
-        if not self.trials:
-            display.display_setting('No results to display.')
-            return
         display.display_setting('Results in %s' % self._host.results_dir)
         best_trials = self.oracle.get_best_trials(num_trials)
-        display.display_setting('Showing %d best trials' % len(num_trials))
+        display.display_setting('Showing %d best trials' % num_trials)
         for trial in best_trials:
             display.display_setting(
                 'Objective: {} Score: {}'.format(
-                    self.objective, trial.score.value))
+                    self.oracle.objective, trial.score.value))
 
     @property
     def remaining_trials(self):
