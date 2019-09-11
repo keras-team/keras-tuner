@@ -78,7 +78,7 @@ class HyperbandOracle(oracle_module.Oracle):
         if not self._queue.empty():
             return self._run_values(space, trial_id)
 
-        # Wait the current bracket to finish
+        # Wait the current bracket to finish.
         if any([value for key, value in self._running.items()]):
             return {'status': 'IDLE'}
 
@@ -86,7 +86,7 @@ class HyperbandOracle(oracle_module.Oracle):
         if self._bracket_index + 1 < self._num_brackets:
             self._bracket_index += 1
             self._select_candidates()
-        # If the current band ends
+        # If the current band ends.
         else:
             self._bracket_index = 0
             self._generate_candidates()
@@ -276,7 +276,7 @@ class Hyperband(tuner_module.Tuner):
         oracle: Instance of Oracle class.
         hypermodel: Instance of HyperModel class
             (or callable that takes hyperparameters
-            and returns a Model isntance).
+            and returns a Model instance).
         objective: String. Name of model metric to minimize
             or maximize, e.g. "val_accuracy".
         max_trials: Int. Total number of trials
