@@ -1,20 +1,21 @@
+# -*- coding: utf-8 -*-
 # Copyright 2019 The Keras Tuner Authors
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     https://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# -*- coding: utf-8 -*-
 
-"display utilities"
+"""Display utilities."""
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -23,7 +24,7 @@ from kerastuner import config
 from terminaltables import SingleTable, AsciiTable
 from tabulate import tabulate
 from colorama import init, Fore, Back, Style
-from tensorflow.python.lib.io import file_io  # nopep8 pylint: disable=no-name-in-module
+from tensorflow.python.lib.io import file_io
 
 init()  # colorama init
 
@@ -42,6 +43,7 @@ except NameError:
 if IS_NOTEBOOK:
     from tqdm import tqdm_notebook as tqdm
     from IPython.display import HTML
+    display = HTML
 else:
     from tqdm import tqdm
     display = print
@@ -71,16 +73,6 @@ styles = {
 }
 
 
-# Log functions
-def set_log(filename):
-    config._LOG = file_io.FileIO(filename, 'w')
-
-
-def write_log(text):
-    if config._LOG and not IS_NOTEBOOK:
-        config._LOG.write(text + "\n")
-
-
 # Shorthand functions
 def info(text, render=1):
     """ display a info
@@ -95,7 +87,6 @@ def info(text, render=1):
     color = 'blue'
     s = "[Info] %s" % text
 
-    write_log(s)
     if render:
         cprint(s, color)
     else:
@@ -115,7 +106,6 @@ def warning(text, render=1):
     color = 'yellow'
     s = "[Warning] %s" % text
 
-    write_log(s)
     if render:
         cprint(s, color)
     else:
@@ -136,7 +126,6 @@ def fatal(text, render=True, raise_exception=True):
     bgcolor = 'red'
     s = "[FATAL] %s" % text
 
-    write_log(s)
     if render:
         cprint(s, color, bgcolor)
         if raise_exception:
@@ -156,7 +145,6 @@ def section(text):
     else:
         section = '[' + text + ']'
         cprint(section, 'yellow')
-        write_log(section)
 
 
 def subsection(text):
@@ -171,7 +159,6 @@ def subsection(text):
     else:
         section = ' > ' + text + ''
         cprint(section, 'magenta', brightness='dim')
-        write_log(section)
 
 
 def display_setting(text, indent_level=1, idx=0, render=True):
@@ -193,7 +180,6 @@ def display_setting(text, indent_level=1, idx=0, render=True):
     else:
         color = 'cyan'
 
-    write_log(s)
     if render:
         cprint(s, color)
     return colorize(s + '\n', color)
@@ -224,7 +210,6 @@ def highlight(text):
         text = '<span style="font-size:14px"><b>' + text + '</b></span>'
         cprint(text, '#64DD17')
     else:
-        write_log(text)
         cprint(text, 'green', brightness="bright")
 
 # Charts
@@ -272,6 +257,7 @@ def make_bar_chart(val, max_val, title=None, left='', right='',
 
 def cprint(text, color, bg_color=None, brightness='normal'):
     """ Print given piece of text with color
+
     Args:
         text (str): text to colorize
         color (str): forground color
@@ -283,8 +269,9 @@ def cprint(text, color, bg_color=None, brightness='normal'):
 
     # HTMLify if needed
     if IS_NOTEBOOK and isinstance(text, str):
-        text = HTML(text)
-    display(text)
+        HTML(text)
+    else:
+        display(text)
 
 
 def colorize_row(row, color, bg_color=None, brightness='normal'):
@@ -384,8 +371,6 @@ def display_table(rows, title=None, indent=0):
         for line in table.split("\n"):
             out.append(indent + line)
         table = "\n".join(out)
-
-    write_log(table)
     display(table)
 
 
@@ -456,7 +441,6 @@ def display_combined_table(array_rows):
         array_rows (list(list)): Array of tables rows to combine
     """
     table = make_combined_table(array_rows)
-    write_log(table)
     display(table)
 
 

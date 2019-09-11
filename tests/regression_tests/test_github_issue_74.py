@@ -9,7 +9,7 @@ import tensorflow.keras as keras
 from tensorflow.keras import layers
 
 from kerastuner.tuners.randomsearch import RandomSearch
-
+from kerastuner.engine.trial import Trial
 import issue_74_context
 
 
@@ -23,7 +23,7 @@ def test_val_accuracy_as_objective(tmp_path):
     tuner = RandomSearch(issue_74_context.build_model,
                          objective='val_accuracy',
                          max_trials=5,
-                         executions_per_trial=5,
+                         executions_per_trial=2,
                          directory=tuner_directory,
                          project_name='issue_74')
 
@@ -35,20 +35,16 @@ def test_val_accuracy_as_objective(tmp_path):
                  validation_data=(x_test, y_test),
                  shuffle=True)
 
-    summary = tuner.results_summary()
+    summary_lines = tuner.results_summary()
+    _, _, _, best_val_line = summary_lines
 
-    ## Manually look at the scores for all of the runs.
-    # Accuracy => higher is better
+    # Manually look at the scores for all of the runs.
+    # For accuracy, we want the maximum value.
     max_score = sys.float_info.min
     for file in glob.glob(trial_pattern):
-        with open(file, "rt") as f:
-            trial_json = json.load(f)
-            score = trial_json['score']
-            print(file, score)
-            max_score = max(max_score, score)
+        trial = Trial.load(file)
+        score = trial.score
+        max_score = max(max_score, score)
 
-    assert summary['best_objective_value'] == max_score
-
-
-if __name__ == '__main__':
-    test_issue_74_reproduction(pathlib.Path("/tmp/"))
+    expected_best_val_line = 'Best val_accuracy: %.4f' % max_score
+    assert expected_best_val_line == best_val_line

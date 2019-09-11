@@ -13,8 +13,8 @@
 # limitations under the License.
 
 "Compute hardware statistics"
+
 import os
-from time import time
 import psutil
 import platform
 from subprocess import Popen, PIPE
@@ -22,7 +22,8 @@ from distutils import spawn
 from time import time
 import tensorflow as tf
 import kerastuner as kt
-from .display import subsection, display_settings, display_setting
+from .display import subsection, display_settings, display_setting, fatal
+from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 
 
 class Host():
@@ -33,7 +34,7 @@ class Host():
 
     """
 
-    def __init__(self):
+    def __init__(self, results_dir, tmp_dir, export_dir):
 
         # caching
         self.cached_status = None
@@ -57,8 +58,20 @@ class Host():
             self.tf_can_use_gpu = False
         self._get_gpu_usage()  # to get gpu driver info > before get software
 
-        # keep it last
         self.software = self._get_software()
+
+        self.results_dir = results_dir or 'results'
+        self.tmp_dir = tmp_dir or 'tmp_dir'
+        self.export_dir = export_dir or 'export'
+
+        # ensure the user don't shoot himself in the foot
+        if self.results_dir == self.tmp_dir:
+            fatal('Result dir and tmp dir must be different')
+
+        # create directory if needed
+        tf_utils.create_directory(self.results_dir)
+        tf_utils.create_directory(self.tmp_dir, remove_existing=True)
+        tf_utils.create_directory(self.export_dir)
 
     def get_status(self, no_cach=False):
         """
@@ -114,9 +127,8 @@ class Host():
             display_setting('software', idx=1)
             display_settings(status['software'], indent_level=2)
 
-            # ram
-            s = "ram: %s/%s%s" % (status['ram']['used'], status['ram']['total'],  # nopep8
-                                  status['ram']['unit'])
+            ram = status['ram']
+            s = "ram: %s/%s%s" % (ram['used'], ram['total'], ram['unit'])
             display_setting(s, idx=2)
 
             # disk
@@ -140,7 +152,7 @@ class Host():
                 display_setting('gpu', indent_level=indent - 1)
                 display_settings(gpu, indent_level=indent)
 
-    def to_config(self):
+    def get_config(self):
         """
         Return various hardware counters as dict
 
@@ -174,6 +186,10 @@ class Host():
         """Returns disk usage"""
         partitions = []
         for partition in self.partitions:
+            if os.name == 'nt':
+                if 'cdrom' in partition.opts or partition.fstype == '':
+                    # skip cd-rom drives on windows machines (will throw error)
+                    continue
             name = partition.mountpoint
             usage = psutil.disk_usage(name)
             info = {
@@ -229,7 +245,9 @@ class Host():
             # try to find it from system drive with default installation path
             nvidia_smi = spawn.find_executable('nvidia-smi')
             if nvidia_smi is None:
-                nvidia_smi = "%s\\Program Files\\NVIDIA Corporation\\NVSMI\\nvidia-smi.exe" % os.environ['systemdrive']  # nopep8
+                nvidia_smi = ("{}\\Program Files\\NVIDIA Corporation"
+                              "\\NVSMI\\nvidia-smi.exe")
+                nvidia_smi.format(os.environ['systemdrive'])
         else:
             nvidia_smi = "nvidia-smi"
         return nvidia_smi

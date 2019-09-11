@@ -131,13 +131,13 @@ def test_serialization():
 # This test originally failed prior to the fix for:
 # https://github.com/keras-team/keras-tuner/issues/74
 def test_register_val_accuracy_no_accuracy():
-    tracker = metrics_tracking.MetricsTracker()    
+    tracker = metrics_tracking.MetricsTracker()
     tracker.register('val_accuracy')
     tracker.set_history('val_accuracy', [1., 2., 3.])
     assert tracker.directions['val_accuracy'] == 'max'
 
 
-def test_infer_metric_direction_by_name():    
+def test_infer_metric_direction_by_name():
     assert infer_metric_direction_by_name("Accuracy") == "max"
     assert infer_metric_direction_by_name("val_Accuracy") == "max"
     assert infer_metric_direction_by_name("BinaryAccuracy") == "max"

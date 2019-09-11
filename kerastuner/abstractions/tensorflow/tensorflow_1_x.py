@@ -1,11 +1,11 @@
 # Copyright 2019 The Keras Tuner Authors
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     https://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,7 +18,7 @@ import os
 import tensorflow as tf
 
 from tensorflow.keras import backend as K
-from tensorflow.python import Graph, GraphDef, Session, ConfigProto
+from tensorflow.python import Session, ConfigProto
 from tensorflow.tools.graph_transforms import TransformGraph
 
 from kerastuner.abstractions.tensorflow import proxy
@@ -32,7 +32,8 @@ class GFileProxy_1_x(proxy.GFileProxy):
 
         Args:
             name (str): name of the file
-            mode (str): one of 'r', 'w', 'a', 'r+', 'w+', 'a+'. Append 'b' for bytes mode.
+            mode (str): one of 'r', 'w', 'a', 'r+', 'w+', 'a+'.
+                Append 'b' for bytes mode.
 
         Returns:
             GFile - a GFile object representing the opened file.
@@ -59,10 +60,12 @@ class GFileProxy_1_x(proxy.GFileProxy):
 
         Returns:
             True if the path exists, whether it's a file or a directory.
-            False if the path does not exist and there are no filesystem errors.
+            False if the path does not exist
+                and there are no filesystem errors.
 
         Raises:
-            errors.OpError: Propagates any errors reported by the FileSystem API.
+            errors.OpError: Propagates any errors
+                reported by the FileSystem API.
         """
         return tf.io.gfile.exists(path)
 
@@ -98,8 +101,8 @@ class GFileProxy_1_x(proxy.GFileProxy):
         path: string, a path
 
         Raises:
-        errors.OpError: Propagates any errors reported by the FileSystem API.  E.g.,
-        NotFoundError if the path does not exist.
+        errors.OpError: Propagates any errors reported by the FileSystem API.
+            NotFoundError if the path does not exist.
         """
         return tf.io.gfile.remove(path)
 
@@ -109,8 +112,8 @@ class GFileProxy_1_x(proxy.GFileProxy):
         Args:
         src: string, name of the file whose contents need to be copied
         dst: string, name of the file to which to copy to
-        overwrite: boolean, if false its an error for newpath to be occupied by an
-            existing file.
+        overwrite: boolean, if false its an error for newpath
+            to be occupied by an existing file.
 
         Raises:
         errors.OpError: If the operation fails.
@@ -193,8 +196,10 @@ class Utils_1_x(proxy.UtilsBase):
         return transformed_graph_def
 
     def clear_tf_session(self):
-        """Clear the tensorflow graph/session. Used to avoid OOM issues related to
-        having numerous models."""
+        """Clear the tensorflow graph/session.
+
+        Used to avoid OOM issues related to having numerous models.
+        """
 
         tf.keras.backend.clear_session()
         gc.collect()
@@ -236,7 +241,8 @@ class Utils_1_x(proxy.UtilsBase):
                     and operations.  See:
                     https://github.com/tensorflow/tensorflow/tree/master/tensorflow/tools/graph_transforms
                 "tf_lite" - A TF Lite model.
-            tmp_path (str, optional): directory in which to store temporary files.
+            tmp_path (str, optional): directory in which
+                to store temporary files.
         """
 
         KNOWN_OUTPUT_TYPES = [

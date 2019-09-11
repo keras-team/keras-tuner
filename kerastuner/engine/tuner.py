@@ -128,7 +128,7 @@ class Tuner(object):
                  logger=None):
         if not isinstance(oracle, oracle_module.Oracle):
             raise ValueError('Expected oracle to be '
-                             'an instance of Oracle, got: %s' % (oracle, ))
+                             'an instance of Oracle, got: %s' % (oracle,))
         self.oracle = oracle
         if isinstance(hypermodel, hm_module.HyperModel):
             self.hypermodel = hypermodel
@@ -195,7 +195,8 @@ class Tuner(object):
         self._host = host_module.Host(
             results_dir=os.path.join(self.directory, self.project_name),
             tmp_dir=os.path.join(self.directory, 'tmp'),
-            export_dir=os.path.join(self.directory, 'export'))
+            export_dir=os.path.join(self.directory, 'export')
+        )
         self._display = tuner_utils.Display(self._host)
 
         # Populate initial search space
@@ -215,7 +216,8 @@ class Tuner(object):
                 trial_id=trial_id,
                 hyperparameters=hp.copy(),
                 max_executions=self.executions_per_trial,
-                base_directory=self._host.results_dir)
+                base_directory=self._host.results_dir
+            )
             self.trials.append(trial)
             self.on_trial_begin(trial)
             self.run_trial(trial, hp, fit_args, fit_kwargs)
@@ -300,9 +302,7 @@ class Tuner(object):
             improved = execution.per_epoch_metrics.update(name, value)
             if self.objective == name and improved:
                 fname = self._checkpoint_model(
-                    model,
-                    execution.trial_id,
-                    execution.execution_id,
+                    model, execution.trial_id, execution.execution_id,
                     base_directory=execution.directory)
                 execution.best_checkpoint = fname
 
@@ -369,11 +369,12 @@ class Tuner(object):
 
         self._checkpoint_trial(trial)
         self._checkpoint_tuner()
-        self._display.on_trial_end(trial.averaged_metrics,
-                                   self.best_metrics,
-                                   objective=self.objective,
-                                   remaining_trials=self.remaining_trials,
-                                   max_trials=self.max_trials)
+        self._display.on_trial_end(
+            trial.averaged_metrics,
+            self.best_metrics,
+            objective=self.objective,
+            remaining_trials=self.remaining_trials,
+            max_trials=self.max_trials)
 
     def on_search_end(self):
         if self.logger:
@@ -402,10 +403,11 @@ class Tuner(object):
             self._compile_model(model)
             # Get best execution.
             direction = self.best_metrics.directions[self.objective]
-            executions = sorted(trial.executions,
-                                key=lambda x: x.per_epoch_metrics.
-                                get_best_value(self.objective),
-                                reverse=direction == 'max')
+            executions = sorted(
+                trial.executions,
+                key=lambda x: x.per_epoch_metrics.get_best_value(
+                    self.objective),
+                reverse=direction == 'max')
             # Reload best checkpoint.
             best_checkpoint = executions[0].best_checkpoint + '-weights.h5'
             model.load_weights(best_checkpoint)
@@ -425,8 +427,8 @@ class Tuner(object):
             # Attempt to populate the space
             # if it is expected to be dynamic.
             self.hypermodel.build(hp)
-        display.display_setting('Default search space size: %d' %
-                                len(hp.space))
+        display.display_setting(
+            'Default search space size: %d' % len(hp.space))
         for p in hp.space:
             config = p.get_config()
             name = config.pop('name')
@@ -443,7 +445,7 @@ class Tuner(object):
                 sort models by objective value. Defaults to None.
 
         Returns:
-            dict: Dictionary of metrics that are being displayed.
+            list: List of strings that were displayed, for testing.
         """
         display.section('Results summary')
         if not self.trials:
@@ -464,7 +466,6 @@ class Tuner(object):
 
         for value in display_values:
             display.display_setting(value)
-
         return display_values
 
     @property
@@ -472,8 +473,8 @@ class Tuner(object):
         return self.max_trials - len(self.trials)
 
     def get_state(self):
-        oracle_fname = os.path.join(self.directory, self.project_name,
-                                    'oracle.json')
+        oracle_fname = os.path.join(
+            self.directory, self.project_name, 'oracle.json')
         self.oracle.save(oracle_fname)
         oracle_fname = str(oracle_fname)
 
@@ -597,9 +598,9 @@ class Tuner(object):
                     traceback.print_exc()
 
                 self._stats.num_invalid_models += 1
-                display.warning(
-                    'Invalid model %s/%s' %
-                    (self._stats.num_invalid_models, self._max_fail_streak))
+                display.warning('Invalid model %s/%s' %
+                                (self._stats.num_invalid_models,
+                                 self._max_fail_streak))
 
                 if self._stats.num_invalid_models >= self._max_fail_streak:
                     raise RuntimeError(
@@ -611,16 +612,17 @@ class Tuner(object):
 
             # Stop if `build()` does not return a valid model.
             if not isinstance(model, keras.models.Model):
-                raise RuntimeError('Model-building function did not return '
-                                   'a valid Model instance.')
+                raise RuntimeError(
+                    'Model-building function did not return '
+                    'a valid Model instance.')
 
             # Check model size.
             size = utils.maybe_compute_model_size(model)
             if self.max_model_size and size > self.max_model_size:
                 oversized_streak += 1
                 self._stats.num_oversized_models += 1
-                display.warning('Oversized model: %s parameters -- skipping' %
-                                (size))
+                display.warning(
+                    'Oversized model: %s parameters -- skipping' % (size))
                 if oversized_streak >= self._max_fail_streak:
                     raise RuntimeError(
                         'Too many consecutive oversized models.')
@@ -638,9 +640,8 @@ class Tuner(object):
                         'should pass the arguments `optimizer`, `loss`, '
                         'and `metrics` to the Tuner constructor, so '
                         'that the Tuner will able to compile the model.')
-                model.compile(optimizer=self.optimizer,
-                              loss=self.loss,
-                              metrics=self.metrics)
+                model.compile(
+                    optimizer=self.optimizer, loss=self.loss, metrics=self.metrics)
             elif self.optimizer or self.loss or self.metrics:
                 compile_kwargs = {
                     'optimizer': model.optimizer,
@@ -698,7 +699,7 @@ class Tuner(object):
                     'should be deep-copyable (since they are '
                     'reused across executions). '
                     'It is not possible to do `copy.deepcopy(%s)`' %
-                    (callbacks, ))
+                    (callbacks,))
             for callback in callbacks:
                 # patching tensorboard log dir
                 if callback.__class__.__name__ == 'TensorBoard':
@@ -742,15 +743,13 @@ class Tuner(object):
             self.logger.report_execution_state(execution.execution_id,
                                                execution.get_state())
 
-    def _checkpoint_model(self,
-                          model,
-                          trial_id,
-                          execution_id,
+    def _checkpoint_model(self, model, trial_id, execution_id,
                           base_directory='.'):
         file_prefix = '%s-%s' % (trial_id, execution_id)
         base_filename = os.path.join(base_directory, file_prefix)
 
-        tmp_path = os.path.join(self._host.tmp_dir, file_prefix)
+        tmp_path = os.path.join(self._host.tmp_dir,
+                                file_prefix)
         tf_utils.save_model(model,
                             base_filename,
                             tmp_path=tmp_path,
