@@ -46,8 +46,15 @@ class HyperbandOracle(oracle_module.Oracle):
                  min_epochs=3,
                  max_epochs=10,
                  seed=None,
-                 **kwargs):
-        super(HyperbandOracle, self).__init__(objective, max_trials, **kwargs)
+                 hyperparameters=None,
+                 allow_new_entries=True,
+                 tune_new_entries=True):
+        super(HyperbandOracle, self).__init__(
+            objective=objective,
+            max_trials=max_trials,
+            hyperparameters=hyperparameters,
+            allow_new_entries=allow_new_entries,
+            tune_new_entries=tune_new_entries)
         if min_epochs >= max_epochs:
             raise ValueError('max_epochs needs to be larger than min_epochs.')
         if factor < 2:
@@ -71,10 +78,11 @@ class HyperbandOracle(oracle_module.Oracle):
         self._model_sequence = self._get_model_sequence()
         self._epoch_sequence = self._get_epoch_sequence()
 
-    def result(self, trial_id, score):
+    def end_trial(self, trial_id, status):
         self._running[trial_id] = False
         self._candidate_score[
             self._trial_id_to_candidate_index[trial_id]] = score
+        super(HyperbandOracle, self).end_trial(trial_id, status)
 
     def populate_space(self, trial_id):
         space = self.hyperparameters.space
@@ -293,6 +301,7 @@ class Hyperband(tuner_module.Tuner):
         min_epochs: Int. Minimum number of epochs to train a model.
         max_epochs: Int. Maximum number of epochs to train a model.
         seed: Int. Random seed.
+        **kwargs: Additional kwargs.
     """
 
     def __init__(self,

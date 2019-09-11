@@ -8,6 +8,7 @@ from sklearn import gaussian_process
 from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 from ..engine import hyperparameters as hp_module
 from ..engine import oracle as oracle_module
+from ..engine import trial as trial_lib
 from ..engine import tuner as tuner_module
 
 
@@ -32,11 +33,21 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
     """
 
     def __init__(self,
+                 objective,
+                 max_trials,
                  num_initial_points=2,
                  alpha=1e-4,
                  beta=2.6,
-                 seed=None):
-        super(BayesianOptimizationOracle, self).__init__()
+                 seed=None,
+                 hyperparameters=None,
+                 allow_new_entries=True,
+                 tune_new_entries=True):
+        super(BayesianOptimizationOracle, self).__init__(
+            objective=objective,
+            max_trials=max_trials,
+            hyperparameters=hyperparameters,
+            tune_new_entries=tune_new_entries,
+            allow_new_entries=allow_new_entries)
         self.num_initial_points = num_initial_points
         self.alpha = alpha
         self.beta = beta
@@ -53,21 +64,18 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             kernel=gaussian_process.kernels.ConstantKernel(1.0),
             alpha=self.alpha)
 
-    def populate_space(self, trial_id, space):
-        self.update_space(space)
+    def populate_space(self, trial_id):
         # Generate enough samples before training Gaussian process.
         if self._num_trials < self.num_initial_points or len(self._score) < 2:
             self._num_trials += 1
             values = self._new_trial()
             self._values[trial_id] = values
-            return {'status': 'RUN', 'values': values}
+            return {'status': trial_lib.TrialStatus.RUNNING,
+                    'values': values}
         values = self._to_hp_dict(self._generate_vector())
         self._values[trial_id] = values
-        return {'status': 'RUN', 'values': values}
-
-    def report_status(self, trial_id, status, score=None, t=None):
-        # TODO
-        pass
+        return {'status': trial_lib.TrialStatus.RUNNING,
+                'values': values}
 
     def save(self, fname):
         state = {
@@ -110,14 +118,16 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             kernel=gaussian_process.kernels.ConstantKernel(1.0),
             alpha=self.alpha)
 
-    def result(self, trial_id, score):
-        self._score[trial_id] = score
-        # Update Gaussian process with existing samples
-        if len(self._score) >= self.num_initial_points:
-            x, y = self._get_training_data()
-            self.gpr.fit(x, y)
-            self._x = x
-            self._y = y
+    def end_trial(self, trial_id, status):
+        super(BayesianOptimizationOracle, self).end_trial(trial_id, status)
+        if status == trial_lib.TrialStatus.COMPLETED:
+            self._score[trial_id] = self.trials[trial_id].score.value
+            # Update Gaussian process with existing samples
+            if len(self._score) >= self.num_initial_points:
+                x, y = self._get_training_data()
+                self.gpr.fit(x, y)
+                self._x = x
+                self._y = y
 
     def _new_trial(self):
         """Fill a given hyperparameter space with values.
@@ -132,7 +142,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         while 1:
             # Generate a set of random values.
             values = {}
-            for p in self.space:
+            for p in self.hyperparameters.space:
                 values[p.name] = p.random_sample(self._seed_state)
                 self._seed_state += 1
             # Keep trying until the set of values is unique,
@@ -156,10 +166,10 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                 continue
             score = self._score[trial_id]
 
-            vector = [0] * len(self.space)
+            vector = [0] * len(self.hyperparameters.space)
             for name, value in values.items():
                 index = self._get_hp_index(name)
-                hp = self.space[index]
+                hp = self.hyperparameters.space[index]
                 if isinstance(hp, hp_module.Choice):
                     value = hp.values.index(value)
                 elif isinstance(hp, hp_module.Fixed):
@@ -173,7 +183,8 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             # Exclude the fixed value from the vector
             no_fixed_vector = []
             for index, value in enumerate(vector):
-                if not isinstance(self.space[index], hp_module.Fixed):
+                if not isinstance(self.hyperparameters.space[index],
+                                  hp_module.Fixed):
                     no_fixed_vector.append(value)
             x.append(no_fixed_vector)
             y.append(score)
@@ -186,8 +197,8 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
     def _to_hp_dict(self, vector):
         values = {}
         vector_index = 0
-        for index, hp in enumerate(self.space):
-            hp = self.space[index]
+        for index, hp in enumerate(self.hyperparameters.space):
+            hp = self.hyperparameters.space[index]
             if isinstance(hp, hp_module.Fixed):
                 values[hp.name] = hp.value
                 continue
@@ -206,7 +217,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         return values
 
     def _get_hp_index(self, name):
-        for index, hp in enumerate(self.space):
+        for index, hp in enumerate(self.hyperparameters.space):
             if hp.name == name:
                 return index
         return None
@@ -218,13 +229,13 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
 
     @property
     def _dim(self):
-        return len([hp for hp in self.space if not isinstance(hp, hp_module.Fixed)])
+        return len([hp for hp in self.hyperparameters.space if not isinstance(hp, hp_module.Fixed)])
 
     def _generate_vector(self):
         min_val = float('inf')
         min_x = None
         bounds = []
-        for hp in self.space:
+        for hp in self.hyperparameters.space:
             if isinstance(hp, hp_module.Choice):
                 bound = [0, len(hp.values)]
             elif isinstance(hp, hp_module.Fixed):
@@ -278,10 +289,14 @@ class BayesianOptimization(tuner_module.Tuner):
                  num_initial_points=2,
                  seed=None,
                  **kwargs):
-        oracle = BayesianOptimizationOracle(num_initial_points=num_initial_points,
-                                            seed=seed)
+        oracle = BayesianOptimizationOracle(
+            objective=objective,
+            max_trials=max_trials,
+            num_initial_points=num_initial_points,
+            seed=seed,
+            hyperparameters=kwargs.pop('hyperparameters', None),
+            allow_new_entries=kwargs.pop('allow_new_entries', True),
+            tune_new_entries=kwargs.pop('tune_new_entries', True))
         super(BayesianOptimization, self, ).__init__(oracle=oracle,
                                                      hypermodel=hypermodel,
-                                                     objective=objective,
-                                                     max_trials=max_trials,
                                                      **kwargs)
