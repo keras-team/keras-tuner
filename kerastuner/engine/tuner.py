@@ -211,6 +211,7 @@ class Tuner(stateful.Stateful):
             trial.trial_id, trial_module.TrialStatus.COMPLETED)
         self._checkpoint_trial(trial)
         self._display.on_trial_end(trial)
+        self.save()
 
     def on_search_end(self):
         if self.logger:

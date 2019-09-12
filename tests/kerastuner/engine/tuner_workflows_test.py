@@ -413,15 +413,12 @@ def test_get_best_models(tmp_dir):
     assert isinstance(models[1], keras.Model)
 
 
-# TODO: Enable trial saving in Oracle.
-@pytest.mark.skip(reason='Saving must be done by Oracle')
 def test_saving_and_reloading(tmp_dir):
 
     tuner = kerastuner.tuners.RandomSearch(
         build_model,
         objective='val_accuracy',
         max_trials=4,
-        executions_per_trial=2,
         directory=tmp_dir)
 
     tuner.search(
@@ -437,23 +434,7 @@ def test_saving_and_reloading(tmp_dir):
         directory=tmp_dir)
     new_tuner.reload()
 
-    assert len(new_tuner.trials) == 4
-    assert len(new_tuner.trials[0].executions) == 2
-    assert (new_tuner.hyperparameters.values ==
-            tuner.hyperparameters.values)
-    assert (tuner.best_metrics.metrics_history ==
-            new_tuner.best_metrics.metrics_history)
-
-    old_trial3 = tuner.trials[3]
-    new_trial3 = tuner.trials[3]
-
-    assert (old_trial3.averaged_metrics.metrics_history ==
-            new_trial3.averaged_metrics.metrics_history)
-
-    old_trial3_execution1 = old_trial3.executions[1]
-    new_trial3_execution1 = new_trial3.executions[1]
-    assert (old_trial3_execution1.per_epoch_metrics.metrics_history ==
-            new_trial3_execution1.per_epoch_metrics.metrics_history)
+    assert len(new_tuner.oracle.trials) == 4
 
     new_tuner.search(
         x=TRAIN_INPUTS,
