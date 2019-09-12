@@ -34,7 +34,6 @@ from . import tuner_utils
 from .. import config as config_module
 from .. import utils
 from ..abstractions import display
-from ..abstractions import host as host_module
 from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 from . import metrics_tracking
 
@@ -122,8 +121,7 @@ class Tuner(object):
         # Ops and metadata
         self.directory = directory or '.'
         self.project_name = project_name or 'untitled_project'
-        tf_utils.create_directory(
-            os.path.join(self.directory, self.project_name))
+        tf_utils.create_directory(self._get_project_dir())
 
         # Private internal state
         self._max_fail_streak = 5
@@ -131,12 +129,7 @@ class Tuner(object):
 
         # Logs etc
         self.logger = logger
-        self._host = host_module.Host(
-            results_dir=os.path.join(self.directory, self.project_name),
-            tmp_dir=os.path.join(self.directory, 'tmp'),
-            export_dir=os.path.join(self.directory, 'export')
-        )
-        self._display = tuner_utils.Display(self._host)
+        self._display = tuner_utils.Display()
 
         # Populate initial search space.
         if self.oracle.tune_new_entries:
@@ -170,7 +163,6 @@ class Tuner(object):
         original_callbacks = fit_kwargs.get('callbacks', [])[:]
         fit_kwargs['callbacks'] = self._inject_callbacks(
             original_callbacks, trial)
-        fit_kwargs['verbose'] = 0
 
         model = self._build_model(trial.hyperparameters)
         self._compile_model(model)
@@ -185,28 +177,19 @@ class Tuner(object):
             self.logger.register_trial(trial.trial_id, trial.get_state())
 
     def on_epoch_begin(self, trial, model, epoch, logs=None):
-        # TODO: reenable Display.
-        # self._display.on_epoch_begin(trial, model, epoch, logs=logs)
         pass
 
     def on_batch_begin(self, trial, model, batch, logs):
         pass
 
     def on_batch_end(self, trial, model, batch, logs=None):
-        logs = logs or {}
-
-        # TODO: reenable Display.
-        # self._display.on_batch_end(trial, model, batch, logs=logs)
+        pass
 
     def on_epoch_end(self, trial, model, epoch, logs=None):
-        logs = logs or {}
-        # TODO: reenable Display.
-        # self._display.on_epoch_end(trial, model, epoch, logs=logs)
-
         # TODO: Garbage collect unneeded checkpoints.
         self._checkpoint_model(model, trial, epoch)
 
-        # Report intermediate result to the `Oracle`.
+        # Report intermediate metrics to the `Oracle`.
         updated_trial = self.oracle.update_trial(
             trial.trial_id, metrics=logs, t=epoch)
         trial.set_state(updated_trial.get_state())
@@ -217,9 +200,7 @@ class Tuner(object):
         self.oracle.end_trial(
             trial.trial_id, trial_module.TrialStatus.COMPLETED)
         self._checkpoint_trial(trial)
-
-        # TODO: reenable Display.
-        # self._display.on_trial_end(trial)
+        self._display.on_trial_end(trial)
 
     def on_search_end(self):
         if self.logger:
@@ -281,7 +262,7 @@ class Tuner(object):
                 sort models by objective value. Defaults to None.
         """
         display.section('Results summary')
-        display.display_setting('Results in %s' % self._host.results_dir)
+        display.display_setting('Results in %s' % self._get_project_dir())
         best_trials = self.oracle.get_best_trials(num_trials)
         display.display_setting('Showing %d best trials' % num_trials)
         for trial in best_trials:
@@ -434,26 +415,27 @@ class Tuner(object):
         if self.logger:
             self.logger.report_trial_state(trial.trial_id, trial.get_state())
 
-    def _get_checkpoint_fname(self, trial, epoch):
-        fname = os.path.join(
+    def _get_project_dir(self):
+        return os.path.join(
             self.directory,
-            self.project_name,
+            self.project_name)
+
+    def _get_checkpoint_fname(self, trial, epoch):
+        return os.path.join(
+            self._get_project_dir(),
             'trial_' + str(trial.trial_id),
             'checkpoints',
             'epoch_' + str(epoch))
-        return fname
 
     def _get_trial_fname(self, trial):
         return os.path.join(
-            self.directory,
-            self.project_name,
+            self._get_project_dir(),
             'trial_' + str(trial.trial_id),
             'trial.json')
 
     def _get_tuner_fname(self):
         return os.path.join(
-            self.directory,
-            self.project_name,
+            self._get_project_dir(),
             'tuner_' + str(self.tuner_id) + '.json')
 
     def _checkpoint_model(self, model, trial, epoch):

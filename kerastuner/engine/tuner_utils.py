@@ -94,112 +94,16 @@ class TunerCallback(keras.callbacks.Callback):
             self.trial, self.model, epoch, logs=logs)
 
 
+# TODO: Add more extensive display.
 class Display(object):
-
-    def __init__(self, host):
-        self.host = host
-        self.cpu_usage = []
-        self.gpu_usage = []
-        self.batch_history = defaultdict(list)
-        self.epoch_pbar = None
 
     def on_trial_begin(self, trial):
         display.section('New model')
         trial.summary()
 
-    def on_trial_end(self,
-                     averaged_metrics,
-                     best_metrics,
-                     objective,
-                     remaining_trials,
-                     max_trials):
-        # train summary
-        current = averaged_metrics
-        best = best_metrics
-        rows = [['Name', 'Best model', 'Current model']]
-        for name in best.names:
-            best_value = round(best.get_best_value(name), 4)
-            current_value = round(current.get_best_value(name), 4)
-            row = [name, best_value, current_value]
-            if name == objective:
-                if best_value == current_value:
-                    row = display.colorize_row(row, 'green')
-                else:
-                    row = display.colorize_row(row, 'red')
-            rows.append(row)
-        display.display_table(rows)
-
-        # Tuning budget exhausted
-        if remaining_trials < 1:
-            display.highlight('Hypertuning complete - results in %s' %
-                              self.host.results_dir)
-            # TODO: final summary
-        else:
-            display.highlight('%d/%d trials left' %
-                              (remaining_trials, max_trials))
-
-    def on_epoch_begin(self, execution, model, epoch, logs=None):
-        # reset counters
-        self.epoch_history = defaultdict(list)
-        self.gpu_usage = []
-        self.cpu_usage = []
-
-        # epoch bar
-        self.epoch_pbar = display.progress_bar(
-            total=execution.max_steps,
-            leave=True,
-            unit='steps')
-
-    def on_epoch_end(self, execution, model, epoch, logs=None):
-        # compute stats
-        final_epoch_postfix = {}
-        for m, v in logs.items():
-            final_epoch_postfix[m] = round(v, 4)
-
-        # epoch bar
-        self.epoch_pbar.set_postfix(final_epoch_postfix)
-        self.epoch_pbar.close()
-
-    def on_batch_end(self, execution, model, batch, logs=None):
-        logs = logs or {}
-        self.epoch_pbar.update(1)
-
-        # computing metric statistics
-        for k, v in logs.items():
-            self.batch_history[k].append(v)
-        avg_metrics = self._avg_metrics(self.batch_history)
-        self.epoch_pbar.set_postfix(avg_metrics)
-
-        # create bar desc with updated statistics
-        description = ''
-        host_status = self.host.get_status()
-        if len(host_status['gpu']):
-            gpu_usage = [float(gpu['usage']) for gpu in host_status['gpu']]
-            gpu_usage = int(np.average(gpu_usage))
-            self.gpu_usage.append(gpu_usage)
-            description += '[GPU:%3s%%]' % int(np.average(self.gpu_usage))
-
-        self.cpu_usage.append(int(host_status['cpu']['usage']))
-        description += '[CPU:%3s%%]' % int(np.average(self.cpu_usage))
-        description += 'Epoch %s/%s' % (execution.epochs_seen + 1,
-                                        execution.max_epochs)
-        self.epoch_pbar.set_description(description)
-
-    def _avg_metrics(self, metrics):
-        agg_metrics = {}
-        for metric_name, values in metrics.items():
-            if metric_name == 'batch' or metric_name == 'size':
-                continue
-            agg_metrics[metric_name] = '%.4f' % np.average(values)
-        return agg_metrics
-
-
-def format_execution_id(i, executions_per_trial):
-    execution_id_length = math.ceil(
-        math.log(executions_per_trial, 10))
-    execution_id_template = '%0' + str(execution_id_length) + 'd'
-    execution_id = execution_id_template % i
-    return execution_id
+    def on_trial_end(self, trial):
+        display.section('Trial complete')
+        trial.summary()
 
 
 @contextlib.contextmanager

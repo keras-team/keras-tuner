@@ -59,7 +59,7 @@ class Trial(object):
         else:
             display.subsection('Hp values: default configuration.')
         if self.score:
-            display.display_setting('Score: %.4f' % self.score)
+            display.display_setting('Score: {}'.format(self.score))
 
     def get_state(self):
         return {
