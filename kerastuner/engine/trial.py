@@ -25,7 +25,6 @@ import time
 
 from . import metrics_tracking
 from . import hyperparameters as hp_module
-from . import execution as execution_module
 from ..abstractions import display
 from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 

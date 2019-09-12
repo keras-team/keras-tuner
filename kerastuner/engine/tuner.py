@@ -24,6 +24,7 @@ import json
 import copy
 
 import numpy as np
+import tensorflow as tf
 from tensorflow import keras
 
 from . import hyperparameters as hp_module
@@ -92,7 +93,8 @@ class Tuner(object):
                  directory=None,
                  project_name=None,
                  logger=None,
-                 tuner_id=None):
+                 tuner_id=None,
+                 **kwargs):
         if not isinstance(oracle, oracle_module.Oracle):
             raise ValueError('Expected oracle to be '
                              'an instance of Oracle, got: %s' % (oracle,))
@@ -121,7 +123,6 @@ class Tuner(object):
         # Ops and metadata
         self.directory = directory or '.'
         self.project_name = project_name or 'untitled_project'
-        tf_utils.create_directory(self._get_project_dir())
 
         # Private internal state
         self._max_fail_streak = 5
@@ -136,6 +137,14 @@ class Tuner(object):
             hp = self.oracle.get_space()
             self._build_model(hp)
             self.oracle.update_space(hp)
+
+        executions_per_trial = kwargs.pop('executions_per_trial', 1)
+        if executions_per_trial > 1:
+            tf.compat.v1.logging.warn(
+                '`executions_per_trial` is no longer supported.')
+
+        if kwargs:
+            raise ValueError('Unrecognized keyword arguments: {}'.format(kwargs))
 
     def search(self, *fit_args, **fit_kwargs):
         self.on_search_begin()
@@ -413,21 +422,28 @@ class Tuner(object):
             self.logger.report_trial_state(trial.trial_id, trial.get_state())
 
     def _get_project_dir(self):
-        return os.path.join(
+        dirname = os.path.join(
             self.directory,
             self.project_name)
+        tf_utils.create_directory(dirname)
+        return dirname
+
+    def _get_trial_dir(self, trial):
+        dirname = os.path.join(
+            self._get_project_dir(),
+            'trial_' + str(trial.trial_id))
+        tf_utils.create_directory(dirname)
+        return dirname
 
     def _get_checkpoint_fname(self, trial, epoch):
         return os.path.join(
-            self._get_project_dir(),
-            'trial_' + str(trial.trial_id),
+            self._get_trial_dir(trial),
             'checkpoints',
             'epoch_' + str(epoch))
 
     def _get_trial_fname(self, trial):
         return os.path.join(
-            self._get_project_dir(),
-            'trial_' + str(trial.trial_id),
+            self._get_trial_dir(trial),
             'trial.json')
 
     def _get_tuner_fname(self):
