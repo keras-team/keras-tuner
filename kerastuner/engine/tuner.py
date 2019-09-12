@@ -112,6 +112,7 @@ class Tuner(object):
         # Global search options
         self.max_model_size = max_model_size
         self.distribution_strategy = distribution_strategy
+        self.tuner_id = tuner_id if tuner_id is not None else 0
 
         # Compilation options
         self.optimizer = optimizer
@@ -126,11 +127,10 @@ class Tuner(object):
 
         # Private internal state
         self._max_fail_streak = 5
-        self.logger = logger
         self._stats = tuner_utils.TunerStats()
-        self.tuner_id = tuner_id if tuner_id is not None else 0
 
         # Logs etc
+        self.logger = logger
         self._host = host_module.Host(
             results_dir=os.path.join(self.directory, self.project_name),
             tmp_dir=os.path.join(self.directory, 'tmp'),
@@ -138,7 +138,7 @@ class Tuner(object):
         )
         self._display = tuner_utils.Display(self._host)
 
-        # Populate initial search space
+        # Populate initial search space.
         if self.oracle.tune_new_entries:
             hp = self.oracle.get_space()
             self._build_model(hp)
@@ -149,11 +149,12 @@ class Tuner(object):
         while True:
             trial = self.oracle.create_trial(self.tuner_id)
             if trial.status == trial_module.TrialStatus.STOPPED:
-                # Oracle triggered exit
+                # Oracle triggered exit.
                 break
             if trial.status == trial_module.TrialStatus.IDLE:
                 # Oracle is calculating, resend request.
                 continue
+
             self.on_trial_begin(trial)
             self.run_trial(trial, fit_args, fit_kwargs)
             self.on_trial_end(trial)
@@ -193,6 +194,7 @@ class Tuner(object):
 
     def on_batch_end(self, trial, model, batch, logs=None):
         logs = logs or {}
+
         # TODO: reenable Display.
         # self._display.on_batch_end(trial, model, batch, logs=logs)
 
@@ -215,7 +217,6 @@ class Tuner(object):
         self.oracle.end_trial(
             trial.trial_id, trial_module.TrialStatus.COMPLETED)
         self._checkpoint_trial(trial)
-        self._checkpoint_tuner()
 
         # TODO: reenable Display.
         # self._display.on_trial_end(trial)
@@ -293,20 +294,7 @@ class Tuner(object):
         return self.oracle.remaining_trials()
 
     def get_state(self):
-        oracle_fname = os.path.join(
-            self.directory, self.project_name, 'oracle.json')
-        self.oracle.save(oracle_fname)
-        oracle_fname = str(oracle_fname)
-
         state = {
-            'oracle': oracle_fname,
-            'start_time': self.start_time,
-            'max_model_size': self.max_model_size,
-            # Note that compilation args are not included.
-            'directory': str(self.directory),
-            'project_name': self.project_name,
-            # Dynamic
-            # Extra
             'stats': self._stats.get_config(),
             'host': self._host.get_config(),
         }
@@ -320,11 +308,9 @@ class Tuner(object):
         return str(fname)
 
     def reload(self):
-        """Populate `self.trials` and `self.oracle` state."""
         fname = os.path.join(self.directory, self.project_name, 'tuner.json')
         state_data = tf_utils.read_file(fname)
         state = json.loads(state_data)
-        self.oracle.reload(state['oracle'])
         self.stats = tuner_utils.TunerStats.from_config(state['stats'])
 
     def _build_model(self, hp):
@@ -441,14 +427,6 @@ class Tuner(object):
         callbacks.append(tuner_utils.TunerCallback(self, trial))
         return callbacks
 
-    def _checkpoint_tuner(self):
-        # Write tuner status to tuner directory
-        # TODO: re-enable saving.
-        # self.save()
-        # Send status to Logger
-        if self.logger:
-            self.logger.report_tuner_state(self.get_state())
-
     def _checkpoint_trial(self, trial):
         # Write trial status to trial directory
         trial.save(self._get_trial_fname(trial))
@@ -459,6 +437,7 @@ class Tuner(object):
     def _get_checkpoint_fname(self, trial, epoch):
         fname = os.path.join(
             self.directory,
+            self.project_name,
             'trial_' + str(trial.trial_id),
             'checkpoints',
             'epoch_' + str(epoch))
@@ -467,8 +446,15 @@ class Tuner(object):
     def _get_trial_fname(self, trial):
         return os.path.join(
             self.directory,
+            self.project_name,
             'trial_' + str(trial.trial_id),
             'trial.json')
+
+    def _get_tuner_fname(self):
+        return os.path.join(
+            self.directory,
+            self.project_name,
+            'tuner_' + str(self.tuner_id) + '.json')
 
     def _checkpoint_model(self, model, trial, epoch):
         fname = self._get_checkpoint_fname(trial, epoch)

@@ -127,7 +127,6 @@ class Oracle(object):
 
         if status == trial_lib.TrialStatus.RUNNING:
             self.ongoing_trials[tuner_id] = trial
-            self.trials[trial.trial_id] = trial
 
         return trial
 
@@ -153,6 +152,7 @@ class Oracle(object):
         trial.status = status
         if status == trial_lib.TrialStatus.COMPLETED:
             trial.score = self.score_trial(trial)
+        self.trials[trial.trial_id] = trial
 
     def update_trial(self, trial_id, metrics, t=0):
         """Used by a worker to report the status of a trial.
@@ -181,6 +181,9 @@ class Oracle(object):
         return metrics_tracking.MetricObservation(
             value=trial.metrics.get_best_value(self.objective.name),
             t=trial.metrics.get_best_t(self.objective.name))
+
+    def get_trial(self, trial_id):
+        return self.trials[trial_id]
 
     def get_best_trials(self, num_trials=1):
         trials = self.trials.values()
