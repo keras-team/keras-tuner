@@ -16,7 +16,9 @@ import queue
 import random
 import json
 from ..engine import tuner as tuner_module
+from ..engine import tuner as tuner_module
 from ..engine import oracle as oracle_module
+from ..engine.metrics_tracking import infer_metric_direction_by_name
 from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 
 
@@ -42,6 +44,7 @@ class HyperbandOracle(oracle_module.Oracle):
                  factor=3,
                  min_epochs=3,
                  max_epochs=10,
+                 direction='min',
                  seed=None):
         super(HyperbandOracle, self).__init__()
         if min_epochs >= max_epochs:
@@ -52,6 +55,7 @@ class HyperbandOracle(oracle_module.Oracle):
         self.factor = factor
         self.min_epochs = min_epochs
         self.max_epochs = max_epochs
+        self.direction = direction
         self._queue = queue.Queue()
         self._trial_count = 0
         self._running = {}
@@ -78,7 +82,7 @@ class HyperbandOracle(oracle_module.Oracle):
         if not self._queue.empty():
             return self._run_values(space, trial_id)
 
-        # Wait the current bracket to finish.
+        # Wait the current bracket to finish
         if any([value for key, value in self._running.items()]):
             return {'status': 'IDLE'}
 
@@ -86,7 +90,7 @@ class HyperbandOracle(oracle_module.Oracle):
         if self._bracket_index + 1 < self._num_brackets:
             self._bracket_index += 1
             self._select_candidates()
-        # If the current band ends.
+        # If the current band ends
         else:
             self._bracket_index = 0
             self._generate_candidates()
@@ -134,7 +138,8 @@ class HyperbandOracle(oracle_module.Oracle):
 
     def _select_candidates(self):
         sorted_candidates = sorted(list(range(len(self._candidates))),
-                                   key=lambda i: self._candidate_score[i])
+                                   key=lambda i: self._candidate_score[i],
+                                   reverse=self.direction=='max')
         num_selected_candidates = self._model_sequence[self._bracket_index]
         for index in sorted_candidates[:num_selected_candidates]:
             self._queue.put(index)
@@ -276,7 +281,7 @@ class Hyperband(tuner_module.Tuner):
         oracle: Instance of Oracle class.
         hypermodel: Instance of HyperModel class
             (or callable that takes hyperparameters
-            and returns a Model instance).
+            and returns a Model isntance).
         objective: String. Name of model metric to minimize
             or maximize, e.g. "val_accuracy".
         max_trials: Int. Total number of trials
@@ -299,8 +304,10 @@ class Hyperband(tuner_module.Tuner):
                  max_epochs=10,
                  seed=None,
                  **kwargs):
+        direction = infer_metric_direction_by_name(objective)
         oracle = HyperbandOracle(seed=seed,
                                  factor=factor,
+                                 direction=direction,
                                  min_epochs=min_epochs,
                                  max_epochs=max_epochs)
         super(Hyperband, self).__init__(
