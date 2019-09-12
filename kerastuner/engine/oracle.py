@@ -25,6 +25,7 @@ import json
 from tensorflow import keras
 from kerastuner.engine import hyperparameters as hp_module
 from kerastuner.engine import metrics_tracking
+from kerastuner.engine import stateful
 from kerastuner.engine import trial as trial_lib
 from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 
@@ -32,7 +33,7 @@ from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 Objective = collections.namedtuple('Objective', 'name direction')
 
 
-class Oracle(object):
+class Oracle(stateful.Stateful):
 
     def __init__(self,
                  objective,
@@ -81,7 +82,7 @@ class Oracle(object):
 
         if new_hps and not self.allow_new_entries:
             raise RuntimeError('`allow_new_entries` is `False`, but found '
-                             'new entries {}'.format(new_hps))
+                               'new entries {}'.format(new_hps))
 
         if not self.tune_new_entries:
             # New entries should always use the default value.

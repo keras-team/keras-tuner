@@ -23,6 +23,7 @@ import os
 import random
 import time
 
+from kerastuner.engine import stateful
 from . import metrics_tracking
 from . import hyperparameters as hp_module
 from ..abstractions import display
@@ -37,7 +38,7 @@ class TrialStatus:
     COMPLETED = "COMPLETED"
 
 
-class Trial(object):
+class Trial(stateful.Stateful):
 
     def __init__(self,
                  hyperparameters,
@@ -77,8 +78,9 @@ class Trial(object):
         self.hyperparameters = hp
         metrics = metrics_tracking.MetricsTracker.from_config(
             state['metrics'])
-        self.score = metrics_tracking.MetricObservation(
-            *state['score'])
+        if state['score']:
+            self.score = metrics_tracking.MetricObservation(
+                *state['score'])
         self.status = state['status']
 
     @classmethod
@@ -86,12 +88,6 @@ class Trial(object):
         trial = cls(hyperparameters=None)
         trial.set_state(state)
         return trial
-
-    def save(self, fname):
-        state = self.get_state()
-        state_json = json.dumps(state)
-        tf_utils.write_file(fname, state_json)
-        return str(fname)
 
     @classmethod
     def load(cls, fname):

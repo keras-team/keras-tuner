@@ -27,6 +27,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
+from kerastuner.engine import stateful
 from . import hyperparameters as hp_module
 from . import hypermodel as hm_module
 from . import oracle as oracle_module
@@ -39,7 +40,7 @@ from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 from . import metrics_tracking
 
 
-class Tuner(object):
+class Tuner(stateful.Stateful):
     """Tuner base class.
 
     May be subclassed to create new tuners.
@@ -287,18 +288,16 @@ class Tuner(object):
         state = {'stats': self._stats.get_config()}
         return state
 
+    def set_state(self, state):
+        self._stats = tuner_utils.TunerStats.from_config(state['stats'])
+
     def save(self):
-        fname = self._get_tuner_fname()
-        state = self.get_state()
-        state_json = json.dumps(state)
-        tf_utils.write_file(fname, state_json)
-        return str(fname)
+        self.oracle.save(self._get_oracle_fname())
+        super(Tuner, self).save(self._get_tuner_fname())
 
     def reload(self):
-        fname = self._get_tuner_fname()
-        state_data = tf_utils.read_file(fname)
-        state = json.loads(state_data)
-        self._stats = tuner_utils.TunerStats.from_config(state['stats'])
+        self.oracle.reload(self._get_oracle_fname())
+        super(Tuner, self).reload(self._get_tuner_fname())
 
     def _build_model(self, hp):
         """Return a never seen before model instance, compiled.
@@ -450,6 +449,11 @@ class Tuner(object):
         return os.path.join(
             self._get_project_dir(),
             'tuner_' + str(self.tuner_id) + '.json')
+
+    def _get_oracle_fname(self):
+        return os.path.join(
+            self._get_project_dir(),
+            'oracle_' + str(self.tuner_id) + '.json')
 
     def _checkpoint_model(self, model, trial, epoch):
         fname = self._get_checkpoint_fname(trial, epoch)

@@ -136,8 +136,14 @@ def test_serialization():
     tracker = metrics_tracking.MetricsTracker()
     tracker.register('metric_min', 'min')
     tracker.register('metric_max', 'max')
-    tracker.set_history('metric_min', [1., 2., 3.])
-    tracker.set_history('metric_max', [1., 2., 3.])
+    tracker.set_history('metric_min',
+        [metrics_tracking.MetricObservation(1., 0),
+         metrics_tracking.MetricObservation(2., 1),
+         metrics_tracking.MetricObservation(3., 2)])
+    tracker.set_history('metric_max',
+        [metrics_tracking.MetricObservation(1., 0),
+         metrics_tracking.MetricObservation(2., 1),
+         metrics_tracking.MetricObservation(3., 2)])
 
     new_tracker = metrics_tracking.MetricsTracker.from_config(
         tracker.get_config())

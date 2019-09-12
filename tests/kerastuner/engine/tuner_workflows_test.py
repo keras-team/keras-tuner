@@ -496,10 +496,6 @@ def test_update_trial(tmp_dir):
             return super(MyOracle, self).update_trial(
                 trial_id, metrics, t)
 
-
-        def save(self, fname):
-            return {}
-
     my_oracle = MyOracle(
         objective='val_accuracy',
         max_trials=2)
