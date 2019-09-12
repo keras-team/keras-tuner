@@ -17,6 +17,7 @@ import random
 import numpy as np
 
 from kerastuner.engine import metrics_tracking
+from kerastuner.engine.metrics_tracking import infer_metric_direction_by_name
 from tensorflow.keras import metrics
 
 
@@ -124,3 +125,24 @@ def test_serialization():
     assert new_tracker.names == tracker.names
     assert new_tracker.directions == tracker.directions
     assert new_tracker.metrics_history == tracker.metrics_history
+
+
+# This test originally failed prior to the fix for:
+# https://github.com/keras-team/keras-tuner/issues/74
+def test_register_val_accuracy_no_accuracy():
+    tracker = metrics_tracking.MetricsTracker()
+    tracker.register('val_accuracy')
+    tracker.set_history('val_accuracy', [1., 2., 3.])
+    assert tracker.directions['val_accuracy'] == 'max'
+
+
+def test_infer_metric_direction_by_name():
+    assert infer_metric_direction_by_name("Accuracy") == "max"
+    assert infer_metric_direction_by_name("val_Accuracy") == "max"
+    assert infer_metric_direction_by_name("BinaryAccuracy") == "max"
+    assert infer_metric_direction_by_name("val_BinaryAccuracy") == "max"
+    assert infer_metric_direction_by_name("accuracy") == "max"
+    assert infer_metric_direction_by_name("binary_accuracy") == "max"
+    assert infer_metric_direction_by_name("val_accuracy") == "max"
+    assert infer_metric_direction_by_name("val_binary_accuracy") == "max"
+    assert infer_metric_direction_by_name("other") == "min"

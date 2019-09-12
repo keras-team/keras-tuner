@@ -21,7 +21,6 @@ import numpy as np
 
 
 class MetricsTracker(object):
-
     def __init__(self, metrics=None):
         self.names = []
         self.directions = {}
@@ -38,19 +37,16 @@ class MetricsTracker(object):
             self.register(metric.name, direction)
 
     def register(self, name, direction=None):
+        """Register a metric by name and direction."""
+
         if direction is None:
-            if name.startswith('val_') and name[4:] in self.names:
-                direction = self.directions[name[4:]]
-            else:
-                # Assume `min` by default
-                direction = 'min'
-                # TODO: raise warning
+            direction = infer_metric_direction_by_name(name)
+
         if direction not in {'min', 'max'}:
-            raise ValueError(
-                '`direction` should be one of '
-                '{"min", "max"}, but got: %s' % (direction,))
+            raise ValueError('`direction` should be one of '
+                             '{"min", "max"}, but got: %s' % (direction, ))
         if name in self.names:
-            raise ValueError('Metric already exists: %s' % (name,))
+            raise ValueError('Metric already exists: %s' % (name, ))
         self.names.append(name)
         self.directions[name] = direction
         self.metrics_history[name] = []
@@ -73,7 +69,7 @@ class MetricsTracker(object):
 
     def get_history(self, name):
         if name not in self.names:
-            raise ValueError('Unknown metric: %s' % (name,))
+            raise ValueError('Unknown metric: %s' % (name, ))
         return self.metrics_history[name]
 
     def set_history(self, name, series):
@@ -85,6 +81,7 @@ class MetricsTracker(object):
     def get_best_value(self, name):
         history = self.get_history(name)
         direction = self.directions[name]
+
         if direction == 'min' and len(history):
             return min(history)
         elif direction == 'max' and len(history):
@@ -129,18 +126,33 @@ class MetricsTracker(object):
 
 
 _MAX_METRICS = {
-    'Accuracy', 'BinaryAccuracy',
-    'CategoricalAccuracy', 'SparseCategoricalAccuracy',
-    'TopKCategoricalAccuracy', 'SparseTopKCategoricalAccuracy',
-    'TruePositives', 'TrueNegatives',
-    'Precision', 'Recall', 'AUC',
-    'SensitivityAtSpecificity', 'SpecificityAtSensitivity'
+    'Accuracy', 'BinaryAccuracy', 'CategoricalAccuracy',
+    'SparseCategoricalAccuracy', 'TopKCategoricalAccuracy',
+    'SparseTopKCategoricalAccuracy', 'TruePositives', 'TrueNegatives',
+    'Precision', 'Recall', 'AUC', 'SensitivityAtSpecificity',
+    'SpecificityAtSensitivity'
 }
 
 _MAX_METRIC_FNS = {
     'accuracy', 'categorical_accuracy', 'binary_accuracy',
     'sparse_categorical_accuracy'
 }
+
+
+def infer_metric_direction_by_name(name):
+    """Infer the metric direction based on a name.
+
+    Assumes that if the name exists in _MAX_METRICS or _MAX_METRIC_FNS, the
+    metric should be sorted in 'max' order, otherwise 'min'.
+
+    If the name starts with 'val_', said prefix will be ignored.
+    """
+    if name.startswith("val_"):
+        name = name[4:]
+
+    if name in _MAX_METRICS or name in _MAX_METRIC_FNS:
+        return "max"
+    return "min"
 
 
 def infer_metric_direction(metric):
