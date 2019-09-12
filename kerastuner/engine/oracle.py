@@ -179,7 +179,6 @@ class Oracle(stateful.Stateful):
         if status == trial_lib.TrialStatus.COMPLETED:
             trial.score = self.score_trial(trial)
 
-
     def score_trial(self, trial):
         # Assumes single objective, subclasses can override.
         return metrics_tracking.MetricObservation(

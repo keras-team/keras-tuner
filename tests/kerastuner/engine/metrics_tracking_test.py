@@ -125,7 +125,7 @@ def test_get_last_value():
     tracker.register('new_metric', 'min')
     assert tracker.get_last_value('new_metric') is None
     tracker.set_history(
-        'new_metric', 
+        'new_metric',
         [metrics_tracking.MetricObservation(1., t=0),
          metrics_tracking.MetricObservation(2., t=1),
          metrics_tracking.MetricObservation(3., t=2)])
@@ -136,11 +136,13 @@ def test_serialization():
     tracker = metrics_tracking.MetricsTracker()
     tracker.register('metric_min', 'min')
     tracker.register('metric_max', 'max')
-    tracker.set_history('metric_min',
+    tracker.set_history(
+        'metric_min',
         [metrics_tracking.MetricObservation(1., 0),
          metrics_tracking.MetricObservation(2., 1),
          metrics_tracking.MetricObservation(3., 2)])
-    tracker.set_history('metric_max',
+    tracker.set_history(
+        'metric_max',
         [metrics_tracking.MetricObservation(1., 0),
          metrics_tracking.MetricObservation(2., 1),
          metrics_tracking.MetricObservation(3., 2)])

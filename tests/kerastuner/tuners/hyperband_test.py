@@ -65,6 +65,7 @@ def test_hyperband_oracle(tmp_dir):
             oracle.update_trial(trial.trial_id, {'score': 1.})
             oracle.end_trial(trial.trial_id, 'COMPLETED')
 
+
 def test_hyperband_dynamic_space(tmp_dir):
     hps = hp_module.HyperParameters()
     hps.Choice('a', [1, 2], default=1)
@@ -116,7 +117,7 @@ def test_hyperband_save_load_middle_of_bracket(tmp_dir):
         trial = oracle.create_trial(i + 2)
         trials.append(trial)
         assert trial.status == 'RUNNING'
-            
+
     # Asking for more trials when bracket is not yet complete.
     trial = oracle.create_trial('idle0')
     assert trial.status == 'IDLE'
