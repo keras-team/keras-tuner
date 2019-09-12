@@ -20,6 +20,7 @@ import pytest
 import tensorflow as tf
 
 from kerastuner.engine import hyperparameters
+from kerastuner.engine import metrics_tracking
 from kerastuner.engine import trial as trial_module
 from kerastuner.engine import hyperparameters as hp_module
 from kerastuner.tuners import hyperband as hyperband_module
@@ -31,183 +32,228 @@ def tmp_dir(tmpdir_factory):
 
 
 def test_hyperband_oracle(tmp_dir):
-    hp_list = [hp_module.Choice('a', [1, 2], default=1),
-               hp_module.Choice('b', [3, 4], default=3),
-               hp_module.Choice('c', [5, 6], default=5),
-               hp_module.Choice('d', [7, 8], default=7),
-               hp_module.Choice('e', [9, 0], default=9)]
-    oracle = hyperband_module.HyperbandOracle()
+    hps = hp_module.HyperParameters()
+
+    hps.Choice('a', [1, 2], default=1)
+    hps.Choice('b', [3, 4], default=3)
+    hps.Choice('c', [5, 6], default=5)
+    hps.Choice('d', [7, 8], default=7)
+    hps.Choice('e', [9, 0], default=9)
+    oracle = hyperband_module.HyperbandOracle(
+        objective='score', max_trials=100, hyperparameters=hps)
     assert oracle._num_brackets == 3
 
-    for trial_id in range(oracle._model_sequence[0]):
-        hp = oracle.populate_space('0_' + str(trial_id), hp_list)
-        assert hp['status'] == 'RUN'
-        assert hp['values']['tuner/epochs'] == oracle._epoch_sequence[0]
-        assert 'tuner/trial_id' not in hp['values']
-    assert oracle.populate_space('idle0', hp_list)['status'] == 'IDLE'
-    for trial_id in range(oracle._model_sequence[0]):
-        oracle.result('0_' + str(trial_id), trial_id)
+    for bracket in range(oracle._num_brackets):
+        trials = []
+        for i in range(oracle._model_sequence[bracket]):
+            trial = oracle.create_trial(i)
+            trials.append(trial)
+            hp = trial.hyperparameters
+            assert trial.status == 'RUNNING'
+            assert (hp.values['tuner/epochs'] ==
+                    oracle._epoch_sequence[bracket])
+            if bracket > 0:
+                assert 'tuner/trial_id' in hp.values
+            else:
+                assert 'tuner/trial_id' not in hp.values
 
-    for trial_id in range(oracle._model_sequence[1]):
-        hp = oracle.populate_space('1_' + str(trial_id), hp_list)
-        assert hp['status'] == 'RUN'
-        assert hp['values']['tuner/epochs'] == oracle._epoch_sequence[1]
-        assert 'tuner/trial_id' in hp['values']
-    assert oracle.populate_space('idle1', hp_list)['status'] == 'IDLE'
-    for trial_id in range(oracle._model_sequence[1]):
-        oracle.result('1_' + str(trial_id), trial_id)
+        # Asking for more trials when bracket is not yet complete.
+        trial = oracle.create_trial('idle0')
+        assert trial.status == 'IDLE'
 
-    for trial_id in range(oracle._model_sequence[2]):
-        hp = oracle.populate_space('2_' + str(trial_id), hp_list)
-        assert hp['status'] == 'RUN'
-        assert hp['values']['tuner/epochs'] == oracle._epoch_sequence[2]
-        assert 'tuner/trial_id' in hp['values']
-    assert oracle.populate_space('idle2', hp_list)['status'] == 'IDLE'
-    for trial_id in range(oracle._model_sequence[2]):
-        oracle.result('2_' + str(trial_id), trial_id)
-
-    for trial_id in range(oracle._model_sequence[0]):
-        hp = oracle.populate_space('3_' + str(trial_id), hp_list)
-        assert hp['status'] == 'RUN'
-        assert hp['values']['tuner/epochs'] == oracle._epoch_sequence[0]
-        assert 'tuner/trial_id' not in hp['values']
-    assert oracle.populate_space('idle3', hp_list)['status'] == 'IDLE'
-    for trial_id in range(oracle._model_sequence[0]):
-        oracle.result('3_' + str(trial_id), trial_id)
-
-    assert oracle.populate_space('last', hp_list)['status'] == 'RUN'
-
+        for trial in trials:
+            oracle.update_trial(trial.trial_id, {'score': 1.})
+            oracle.end_trial(trial.trial_id, 'COMPLETED')
 
 def test_hyperband_dynamic_space(tmp_dir):
-    hp_list = [hp_module.Choice('a', [1, 2], default=1)]
-    oracle = hyperband_module.HyperbandOracle()
-    hp_list.append(hp_module.Choice('b', [3, 4], default=3))
-    values = oracle.populate_space('0', hp_list)['values']
+    hps = hp_module.HyperParameters()
+    hps.Choice('a', [1, 2], default=1)
+    oracle = hyperband_module.HyperbandOracle(
+        objective='score', max_trials=50, hyperparameters=hps)
+    hps.Choice('b', [3, 4], default=3)
+    values = oracle.populate_space('0')['values']
     assert 'b' in values
-    oracle.update_space(hp_list)
-    hp_list.append(hp_module.Choice('c', [5, 6], default=5))
-    assert 'c' in oracle.populate_space('1', hp_list)['values']
-    hp_list.append(hp_module.Choice('d', [7, 8], default=7))
-    assert 'd' in oracle.populate_space('2', hp_list)['values']
-    hp_list.append(hp_module.Choice('e', [9, 0], default=9))
-    assert 'e' in oracle.populate_space('3', hp_list)['values']
+    new_hps = hp_module.HyperParameters()
+    new_hps.Choice('c', [5, 6], default=5)
+    oracle.update_space(new_hps)
+    assert 'c' in oracle.populate_space('1')['values']
+    new_hps.Choice('d', [7, 8], default=7)
+    oracle.update_space(new_hps)
+    assert 'd' in oracle.populate_space('2')['values']
+    new_hps.Choice('e', [9, 0], default=9)
+    oracle.update_space(new_hps)
+    assert 'e' in oracle.populate_space('3')['values']
 
 
 def test_hyperband_save_load_middle_of_bracket(tmp_dir):
-    hp_list = [hp_module.Choice('a', [1, 2], default=1),
-               hp_module.Choice('b', [3, 4], default=3),
-               hp_module.Choice('c', [5, 6], default=5),
-               hp_module.Choice('d', [7, 8], default=7),
-               hp_module.Choice('e', [9, 0], default=9)]
-    oracle = hyperband_module.HyperbandOracle()
+    hps = hp_module.HyperParameters()
+    hps.Choice('a', [1, 2], default=1)
+    hps.Choice('b', [3, 4], default=3)
+    hps.Choice('c', [5, 6], default=5)
+    hps.Choice('d', [7, 8], default=7)
+    hps.Choice('e', [9, 0], default=9)
+    oracle = hyperband_module.HyperbandOracle(
+        objective='score', max_trials=50, hyperparameters=hps)
 
-    for trial_id in range(3):
-        oracle.populate_space('0_' + str(trial_id), hp_list)
-    for trial_id in range(2):
-        oracle.result('0_' + str(trial_id), trial_id)
+    trials = []
+    for i in range(3):
+        trial = oracle.create_trial(i)
+        trials.append(trial)
+
+    for i in range(2):
+        trial = trials[i]
+        oracle.update_trial(trial.trial_id, {'score': 1.})
+        oracle.end_trial(trial.trial_id, "COMPLETED")
 
     fname = os.path.join(tmp_dir, 'oracle')
     oracle.save(fname)
-    oracle = hyperband_module.HyperbandOracle()
+    oracle = hyperband_module.HyperbandOracle(
+        objective='score', max_trials=50, hyperparameters=hps)
     oracle.reload(fname)
 
-    for trial_id in range(oracle._model_sequence[0] - 2):
-        hp = oracle.populate_space('1_' + str(trial_id), hp_list)
-        assert hp['status'] == 'RUN'
-    assert oracle.populate_space('idle', hp_list)['status'] == 'IDLE'
-    for trial_id in range(oracle._model_sequence[0] - 2):
-        oracle.result('1_' + str(trial_id), trial_id)
+    trials = []
+    for i in range(oracle._model_sequence[0] - 2):
+        trial = oracle.create_trial(i + 2)
+        trials.append(trial)
+        assert trial.status == 'RUNNING'
+            
+    # Asking for more trials when bracket is not yet complete.
+    trial = oracle.create_trial('idle0')
+    assert trial.status == 'IDLE'
+
+    for trial in trials:
+        oracle.update_trial(trial.trial_id, {'score': 1.})
+        oracle.end_trial(trial.trial_id, 'COMPLETED')
 
 
 def test_hyperband_save_load_at_begining(tmp_dir):
-    hp_list = [hp_module.Choice('a', [1, 2], default=1),
-               hp_module.Choice('b', [3, 4], default=3),
-               hp_module.Choice('c', [5, 6], default=5),
-               hp_module.Choice('d', [7, 8], default=7),
-               hp_module.Choice('e', [9, 0], default=9)]
-    oracle = hyperband_module.HyperbandOracle()
+    hps = hp_module.HyperParameters()
+    hps.Choice('a', [1, 2], default=1)
+    hps.Choice('b', [3, 4], default=3)
+    hps.Choice('c', [5, 6], default=5)
+    hps.Choice('d', [7, 8], default=7)
+    hps.Choice('e', [9, 0], default=9)
+    oracle = hyperband_module.HyperbandOracle(
+        objective='score', max_trials=50, hyperparameters=hps)
 
     fname = os.path.join(tmp_dir, 'oracle')
     oracle.save(fname)
-    oracle = hyperband_module.HyperbandOracle()
+    oracle = hyperband_module.HyperbandOracle(
+        objective='score', max_trials=50, hyperparameters=hps)
     oracle.reload(fname)
 
-    for trial_id in range(oracle._model_sequence[0]):
-        hp = oracle.populate_space('0_' + str(trial_id), hp_list)
-        assert hp['status'] == 'RUN'
-    assert oracle.populate_space('idle', hp_list)['status'] == 'IDLE'
-    for trial_id in range(oracle._model_sequence[0]):
-        oracle.result('0_' + str(trial_id), trial_id)
+    trials = []
+    for i in range(oracle._model_sequence[0]):
+        trial = oracle.create_trial(i)
+        trials.append(trial)
+        assert trial.status == 'RUNNING'
+        oracle.update_trial(trial.trial_id, {'score': 1})
+
+    trial = oracle.create_trial('idle0')
+    assert trial.status == 'IDLE'
+
+    for trial in trials:
+        oracle.end_trial(trial.trial_id, 'COMPLETED')
 
 
 def test_hyperband_save_load_at_the_end_of_bracket(tmp_dir):
-    hp_list = [hp_module.Choice('a', [1, 2], default=1),
-               hp_module.Choice('b', [3, 4], default=3),
-               hp_module.Choice('c', [5, 6], default=5),
-               hp_module.Choice('d', [7, 8], default=7),
-               hp_module.Choice('e', [9, 0], default=9)]
-    oracle = hyperband_module.HyperbandOracle()
+    hps = hp_module.HyperParameters()
+    hps.Choice('a', [1, 2], default=1)
+    hps.Choice('b', [3, 4], default=3)
+    hps.Choice('c', [5, 6], default=5)
+    hps.Choice('d', [7, 8], default=7)
+    hps.Choice('e', [9, 0], default=9)
+    oracle = hyperband_module.HyperbandOracle(
+        objective='score', max_trials=50, hyperparameters=hps)
 
-    for trial_id in range(oracle._model_sequence[0]):
-        hp = oracle.populate_space('0_' + str(trial_id), hp_list)
-        assert hp['status'] == 'RUN'
-    assert oracle.populate_space('idle', hp_list)['status'] == 'IDLE'
-    for trial_id in range(oracle._model_sequence[0]):
-        oracle.result('0_' + str(trial_id), trial_id)
+    trials = []
+    for i in range(oracle._model_sequence[0]):
+        trial = oracle.create_trial(i)
+        trials.append(trial)
+        assert trial.status == 'RUNNING'
+        oracle.update_trial(trial.trial_id, {'score': 1})
+
+    trial = oracle.create_trial('idle0')
+    assert trial.status == 'IDLE'
+
+    for trial in trials:
+        oracle.end_trial(trial.trial_id, 'COMPLETED')
 
     fname = os.path.join(tmp_dir, 'oracle')
     oracle.save(fname)
-    oracle = hyperband_module.HyperbandOracle()
+    oracle = hyperband_module.HyperbandOracle(
+        objective='score', max_trials=50, hyperparameters=hps)
     oracle.reload(fname)
 
-    for trial_id in range(oracle._model_sequence[1]):
-        hp = oracle.populate_space('1_' + str(trial_id), hp_list)
-        assert hp['status'] == 'RUN'
-    assert oracle.populate_space('idle1', hp_list)['status'] == 'IDLE'
+    trials = []
+    for i in range(oracle._model_sequence[1]):
+        trial = oracle.create_trial(i)
+        trials.append(trial)
+        assert trial.status == 'RUNNING'
+        oracle.update_trial(trial.trial_id, {'score': 1})
+
+    trial = oracle.create_trial('idle1')
+    assert trial.status == 'IDLE'
+
+    for trial in trials:
+        oracle.end_trial(trial.trial_id, 'COMPLETED')
 
 
 def test_hyperband_save_load_at_the_end_of_bandit(tmp_dir):
-    hp_list = [hp_module.Choice('a', [1, 2], default=1),
-               hp_module.Choice('b', [3, 4], default=3),
-               hp_module.Choice('c', [5, 6], default=5),
-               hp_module.Choice('d', [7, 8], default=7),
-               hp_module.Choice('e', [9, 0], default=9)]
-    oracle = hyperband_module.HyperbandOracle()
+    hps = hp_module.HyperParameters()
+    hps.Choice('a', [1, 2], default=1)
+    hps.Choice('b', [3, 4], default=3)
+    hps.Choice('c', [5, 6], default=5)
+    hps.Choice('d', [7, 8], default=7)
+    hps.Choice('e', [9, 0], default=9)
+    oracle = hyperband_module.HyperbandOracle(
+        objective='score', max_trials=50, hyperparameters=hps)
 
-    for trial_id in range(oracle._model_sequence[0]):
-        hp = oracle.populate_space('0_' + str(trial_id), hp_list)
-        assert hp['status'] == 'RUN'
-    assert oracle.populate_space('idle', hp_list)['status'] == 'IDLE'
-    for trial_id in range(oracle._model_sequence[0]):
-        oracle.result('0_' + str(trial_id), trial_id)
+    for bracket in range(oracle._num_brackets):
+        trials = []
+        for i in range(oracle._model_sequence[bracket]):
+            trial = oracle.create_trial(i)
+            trials.append(trial)
+            hp = trial.hyperparameters
+            assert trial.status == 'RUNNING'
+            assert (hp.values['tuner/epochs'] ==
+                    oracle._epoch_sequence[bracket])
+            if bracket > 0:
+                assert 'tuner/trial_id' in hp.values
+            else:
+                assert 'tuner/trial_id' not in hp.values
 
-    for trial_id in range(oracle._model_sequence[1]):
-        hp = oracle.populate_space('1_' + str(trial_id), hp_list)
-        assert hp['status'] == 'RUN'
-    assert oracle.populate_space('idle1', hp_list)['status'] == 'IDLE'
-    for trial_id in range(oracle._model_sequence[1]):
-        oracle.result('1_' + str(trial_id), trial_id)
+        # Asking for more trials when bracket is not yet complete.
+        trial = oracle.create_trial('idle0')
+        assert trial.status == 'IDLE'
 
-    for trial_id in range(oracle._model_sequence[2]):
-        hp = oracle.populate_space('2_' + str(trial_id), hp_list)
-        assert hp['status'] == 'RUN'
-        assert hp['values']['tuner/epochs'] == oracle._epoch_sequence[2]
-        assert 'tuner/trial_id' in hp['values']
-    assert oracle.populate_space('idle2', hp_list)['status'] == 'IDLE'
-    for trial_id in range(oracle._model_sequence[2]):
-        oracle.result('2_' + str(trial_id), trial_id)
+        for trial in trials:
+            oracle.update_trial(trial.trial_id, {'score': 1.})
+            oracle.end_trial(trial.trial_id, 'COMPLETED')
 
     fname = os.path.join(tmp_dir, 'oracle')
     oracle.save(fname)
-    oracle = hyperband_module.HyperbandOracle()
+    oracle = hyperband_module.HyperbandOracle(
+        objective='score', max_trials=50, hyperparameters=hps)
     oracle.reload(fname)
 
-    for trial_id in range(oracle._model_sequence[0]):
-        hp = oracle.populate_space('3_' + str(trial_id), hp_list)
-        assert hp['status'] == 'RUN'
-        assert hp['values']['tuner/epochs'] == oracle._epoch_sequence[0]
-        assert 'tuner/trial_id' not in hp['values']
-    assert oracle.populate_space('idle3', hp_list)['status'] == 'IDLE'
+    trials = []
+    for i in range(oracle._model_sequence[0]):
+        trial = oracle.create_trial(i)
+        trials.append(trial)
+        hp = trial.hyperparameters
+        assert trial.status == 'RUNNING'
+        assert (hp.values['tuner/epochs'] ==
+                oracle._epoch_sequence[0])
+        assert 'tuner/trial_id' not in hp.values
+
+    # Asking for more trials when bracket is not yet complete.
+    trial = oracle.create_trial('idle0')
+    assert trial.status == 'IDLE'
+
+    for trial in trials:
+        oracle.update_trial(trial.trial_id, {'score': 1.})
+        oracle.end_trial(trial.trial_id, 'COMPLETED')
 
 
 def build_model(hp):
@@ -231,22 +277,12 @@ def mock_fit(**kwargs):
 
 
 def mock_load(best_checkpoint):
-    assert best_checkpoint == 'x-weights.h5'
+    assert 'epoch_0' in best_checkpoint
 
 
 class HyperbandStub(hyperband_module.Hyperband):
     def on_execution_end(self, trial, execution, model):
         pass
-
-    def __init__(self, hypermodel, objective, max_trials, **kwargs):
-        super().__init__(hypermodel, objective, max_trials, **kwargs)
-        hp = hyperparameters.HyperParameters()
-        trial = trial_module.Trial('1', hp, 5, base_directory=self.directory)
-        trial.executions = [
-            execution_module.Execution('a', 'b', 1, 3,
-                                       base_directory=self.directory)]
-        trial.executions[0].best_checkpoint = 'x'
-        self.trials = [trial]
 
 
 @mock.patch('tensorflow.keras.Model.fit', side_effect=mock_fit)
@@ -268,12 +304,18 @@ def test_hyperband_tuner(patch_fit, patch_load, tmp_dir):
         directory=tmp_dir)
 
     hp = hyperparameters.HyperParameters()
+    history_trial = trial_module.Trial(hyperparameters=hp.copy())
+    history_trial.score = metrics_tracking.MetricObservation(1., t=0)
     hp.values['tuner/epochs'] = 10
-    trial_id = '1'
-    hp.values['tuner/trial_id'] = trial_id
+    hp.values['tuner/trial_id'] = history_trial.trial_id
+    tuner.oracle.trials[history_trial.trial_id] = history_trial
 
+    trial = trial_module.Trial(hyperparameters=hp)
     tuner.run_trial(
-        trial_module.Trial(trial_id, hp, 5, base_directory=tmp_dir), hp, [],
-        {'x': x, 'y': y, 'epochs': 1, 'validation_data': (val_x, val_y)})
+        trial,
+        x=x,
+        y=y,
+        epochs=1,
+        validation_data=(val_x, val_y))
     assert patch_fit.called
     assert patch_load.called

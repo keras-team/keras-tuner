@@ -324,11 +324,11 @@ class Hyperband(tuner_module.Tuner):
             hypermodel=hypermodel,
             **kwargs)
 
-    def run_trial(self, trial, fit_args, fit_kwargs):
+    def run_trial(self, trial, *fit_args, **fit_kwargs):
         hp = trial.hyperparameters
         if 'tuner/epochs' in hp.values:
             fit_kwargs['epochs'] = hp.values['tuner/epochs']
-        super(Hyperband, self).run_trial(trial, fit_args, fit_kwargs)
+        super(Hyperband, self).run_trial(trial, *fit_args, **fit_kwargs)
 
     def _build_model(self, hp):
         model = super(Hyperband, self)._build_model(hp)

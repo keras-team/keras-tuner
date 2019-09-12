@@ -159,11 +159,11 @@ class Tuner(stateful.Stateful):
                 continue
 
             self.on_trial_begin(trial)
-            self.run_trial(trial, fit_args, fit_kwargs)
+            self.run_trial(trial, *fit_args, **fit_kwargs)
             self.on_trial_end(trial)
         self.on_search_end()
 
-    def run_trial(self, trial, fit_args, fit_kwargs):
+    def run_trial(self, trial, *fit_args, **fit_kwargs):
         # Patch fit arguments
         # During model `fit`,
         # the patched callbacks call

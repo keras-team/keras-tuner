@@ -209,12 +209,19 @@ class Oracle(stateful.Stateful):
         state = {}
         state['trials'] = {trial_id: trial.get_state()
                            for trial_id, trial in self.trials.items()}
+        # Just save the IDs for ongoing trials, since these are in `trials`.
+        state['ongoing_trials'] = {
+            tuner_id: trial.trial_id
+            for tuner_id, trial in self.ongoing_trials.items()}
         return state
 
     def set_state(self, state):
         self.trials = {
             trial_id: trial_lib.Trial.from_state(trial_config)
             for trial_id, trial_config in state['trials'].items()}
+        self.ongoing_trials = {
+            tuner_id: self.trials[trial_id]
+            for tuner_id, trial_id in state['ongoing_trials'].items()}
 
     def save(self, fname):
         state = self.get_state()
