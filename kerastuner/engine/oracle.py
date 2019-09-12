@@ -78,7 +78,7 @@ class Oracle(object):
                    if hp.name not in ref_names]
 
         if new_hps and not self.allow_new_entries:
-            raise ValueError('`allow_new_entries` is `False`, but found '
+            raise RuntimeError('`allow_new_entries` is `False`, but found '
                              'new entries {}'.format(new_hps))
 
         if not self.tune_new_entries:

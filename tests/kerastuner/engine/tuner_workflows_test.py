@@ -107,13 +107,12 @@ def test_basic_tuner_attributes(tmp_dir):
         executions_per_trial=3,
         directory=tmp_dir)
 
-    assert tuner.objective == 'val_accuracy'
-    assert tuner.max_trials == 2
-    assert tuner.executions_per_trial == 3
+    assert tuner.oracle.objective.name == 'val_accuracy'
+    assert tuner.oracle.max_trials == 2
     assert tuner.directory == tmp_dir
     assert tuner.hypermodel.__class__.__name__ == 'DefaultHyperModel'
-    assert len(tuner.hyperparameters.space) == 3  # default search space
-    assert len(tuner.hyperparameters.values) == 3  # default search space
+    assert len(tuner.oracle.hyperparameters.space) == 3  # default search space
+    assert len(tuner.oracle.hyperparameters.values) == 3  # default search space
 
     tuner.search_space_summary()
 
@@ -124,9 +123,7 @@ def test_basic_tuner_attributes(tmp_dir):
 
     tuner.results_summary()
 
-    assert len(tuner.trials) == 2
-    assert len(tuner.trials[0].executions) == 3
-    assert len(tuner.trials[1].executions) == 3
+    assert len(tuner.oracle.trials) == 2
     assert os.path.exists(os.path.join(tmp_dir, 'untitled_project'))
 
 
@@ -143,9 +140,7 @@ def test_callbacks_in_fit_kwargs(tmp_dir):
                  validation_data=(VAL_INPUTS, VAL_TARGETS),
                  callbacks=[keras.callbacks.EarlyStopping(),
                             keras.callbacks.TensorBoard(tmp_dir)])
-    assert len(tuner.trials) == 2
-    assert len(tuner.trials[0].executions) == 3
-    assert len(tuner.trials[1].executions) == 3
+    assert len(tuner.oracle.trials) == 2
 
 
 def test_hypermodel_with_dynamic_space(tmp_dir):
@@ -168,9 +163,7 @@ def test_hypermodel_with_dynamic_space(tmp_dir):
 
     tuner.results_summary()
 
-    assert len(tuner.trials) == 2
-    assert len(tuner.trials[0].executions) == 3
-    assert len(tuner.trials[1].executions) == 3
+    assert len(tuner.oracle.trials) == 2
 
 
 def test_override_compile(tmp_dir):
@@ -184,7 +177,7 @@ def test_override_compile(tmp_dir):
         optimizer='rmsprop',
         directory=tmp_dir)
 
-    assert tuner.objective == 'val_mse'
+    assert tuner.oracle.objective.name == 'val_mse'
     assert tuner.optimizer == 'rmsprop'
     assert tuner.loss == 'sparse_categorical_crossentropy'
     assert tuner.metrics == ['mse', 'accuracy']
@@ -198,7 +191,7 @@ def test_override_compile(tmp_dir):
 
     tuner.results_summary()
 
-    model = tuner._build_model(tuner.trials[0].hyperparameters)
+    model = tuner._build_model(tuner.oracle.hyperparameters)
     tuner._compile_model(model)
     assert model.optimizer.__class__.__name__ == 'RMSprop'
     assert model.loss == 'sparse_categorical_crossentropy'
@@ -238,15 +231,14 @@ def test_static_space(tmp_dir):
         hyperparameters=hp,
         allow_new_entries=False)
 
-    assert tuner.hyperparameters == hp
+    assert tuner.oracle.hyperparameters == hp
     tuner.search(
         x=TRAIN_INPUTS,
         y=TRAIN_TARGETS,
         epochs=2,
         validation_data=(VAL_INPUTS, VAL_TARGETS))
 
-    assert len(tuner.trials) == 4
-    assert len(tuner.trials[0].executions) == 1
+    assert len(tuner.oracle.trials) == 4
 
 
 def test_static_space_errors(tmp_dir):
@@ -303,7 +295,7 @@ def test_static_space_errors(tmp_dir):
         return model
 
     with pytest.raises(RuntimeError,
-                       match='yet `allow_new_entries` is set to False'):
+                       match='`allow_new_entries` is `False`'):
         tuner = kerastuner.tuners.RandomSearch(
             build_model_static_invalid,
             objective='val_accuracy',
@@ -332,8 +324,8 @@ def test_restricted_space_using_defaults(tmp_dir):
         allow_new_entries=True,
         tune_new_entries=False)
 
-    assert len(tuner.hyperparameters.space) == 2
-    new_lr = [p for p in tuner.hyperparameters.space
+    assert len(tuner.oracle.hyperparameters.space) == 2
+    new_lr = [p for p in tuner.oracle.hyperparameters.space
               if p.name == 'learning_rate'][0]
     assert new_lr.values == [0.01, 0.001, 0.0001]
 
@@ -343,10 +335,10 @@ def test_restricted_space_using_defaults(tmp_dir):
         epochs=1,
         validation_data=(VAL_INPUTS, VAL_TARGETS))
 
-    assert len(tuner.trials) == 4
-    assert len(tuner.trials[0].executions) == 1
-    assert len(tuner.hyperparameters.space) == 2  # Nothing added
-    assert len(tuner.trials[-1].hyperparameters.space) == 2  # Nothing added
+    assert len(tuner.oracle.trials) == 4
+    assert len(tuner.oracle.hyperparameters.space) == 2  # Nothing added
+    for trial in tuner.oracle.trials.values():
+        assert len(trial.hyperparameters.space) == 2  # Nothing added
 
 
 def test_restricted_space_with_custom_defaults(tmp_dir):
@@ -365,15 +357,14 @@ def test_restricted_space_with_custom_defaults(tmp_dir):
         allow_new_entries=True,
         tune_new_entries=False)
 
-    assert len(tuner.hyperparameters.space) == 4
+    assert len(tuner.oracle.hyperparameters.space) == 4
     tuner.search(
         x=TRAIN_INPUTS,
         y=TRAIN_TARGETS,
         epochs=1,
         validation_data=(VAL_INPUTS, VAL_TARGETS))
 
-    assert len(tuner.trials) == 4
-    assert len(tuner.trials[0].executions) == 1
+    assert len(tuner.oracle.trials) == 4
 
 
 def test_reparameterized_space(tmp_dir):
@@ -391,16 +382,16 @@ def test_reparameterized_space(tmp_dir):
         allow_new_entries=True,
         tune_new_entries=True)
 
-    assert len(tuner.hyperparameters.space) == 2
+    # Initial build model adds to the space.
+    assert len(tuner.oracle.hyperparameters.space) == 4
     tuner.search(
         x=TRAIN_INPUTS,
         y=TRAIN_TARGETS,
         epochs=1,
         validation_data=(VAL_INPUTS, VAL_TARGETS))
 
-    assert len(tuner.trials) == 4
-    assert len(tuner.trials[0].executions) == 1
-    assert len(tuner.hyperparameters.space) == 4
+    assert len(tuner.oracle.trials) == 4
+    assert len(tuner.oracle.hyperparameters.space) == 4
 
 
 def test_get_best_models(tmp_dir):
@@ -422,6 +413,8 @@ def test_get_best_models(tmp_dir):
     assert isinstance(models[1], keras.Model)
 
 
+# TODO: Enable trial saving in Oracle.
+@pytest.mark.skip(reason='Saving must be done by Oracle')
 def test_saving_and_reloading(tmp_dir):
 
     tuner = kerastuner.tuners.RandomSearch(
@@ -474,7 +467,6 @@ def test_subclass_model(tmp_dir):
         build_subclass_model,
         objective='val_accuracy',
         max_trials=2,
-        executions_per_trial=3,
         directory=tmp_dir)
 
     tuner.search_space_summary()
@@ -485,48 +477,43 @@ def test_subclass_model(tmp_dir):
                  validation_data=(VAL_INPUTS, VAL_TARGETS))
 
     tuner.results_summary()
-
-    assert len(tuner.trials) == 2
-    assert len(tuner.trials[0].executions) == 3
-    assert len(tuner.trials[1].executions) == 3
+    assert len(tuner.oracle.trials) == 2
 
 
-def test_report_status_to_oracle(tmp_dir):
+def test_update_trial(tmp_dir):
     class MyOracle(kerastuner.Oracle):
-        def __init__(self):
-            super(MyOracle, self).__init__()
-            self.trials = collections.defaultdict(list)
 
-        def populate_space(self, trial_id, space):
-            values = {p.name: p.random_sample() for p in space}
-            return {'values': values, 'status': 'RUN'}
+        def populate_space(self, _):
+            values = {p.name: p.random_sample()
+                      for p in self.hyperparameters.space}
+            return {'values': values, 'status': 'RUNNING'}
 
-        def report_status(self, trial_id, status, score=None, t=None):
-            self.trials[trial_id].append((score, t))
-            if t == 2:
-                return kerastuner.engine.oracle.OracleResponse.STOP
-            return kerastuner.engine.oracle.OracleResponse.OK
+        def update_trial(self, trial_id, metrics, t=0):
+            if t == 3:
+                trial = self.trials[trial_id]
+                trial.status = "STOPPED"
+                return trial
+            return super(MyOracle, self).update_trial(
+                trial_id, metrics, t)
+
 
         def save(self, fname):
             return {}
 
-    my_oracle = MyOracle()
+    my_oracle = MyOracle(
+        objective='val_accuracy',
+        max_trials=2)
     tuner = kerastuner.Tuner(
         oracle=my_oracle,
         hypermodel=build_model,
-        objective='val_accuracy',
-        max_trials=2,
-        executions_per_trial=1,
         directory=tmp_dir)
     tuner.search(x=TRAIN_INPUTS,
                  y=TRAIN_TARGETS,
                  epochs=5,
                  validation_data=(VAL_INPUTS, VAL_TARGETS))
 
-    oracle_trial_ids = set(my_oracle.trials.keys())
-    tuner_trial_ids = set(trial.trial_id for trial in tuner.trials)
-    assert oracle_trial_ids == tuner_trial_ids
+    assert len(my_oracle.trials) == 2
 
-    for trial_id, scores in my_oracle.trials.items():
+    for trial in my_oracle.trials.values():
         # Test that early stopping worked.
-        assert len(scores) == 3
+        assert len(trial.metrics.get_history('val_accuracy')) == 3

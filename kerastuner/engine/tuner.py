@@ -173,7 +173,7 @@ class Tuner(object):
         fit_kwargs['callbacks'] = self._inject_callbacks(
             original_callbacks, trial)
 
-        model = self._build_model(trial.hyperparameters)
+        model = self._build_model(trial.hyperparameters.copy())
         self._compile_model(model)
         model.fit(*fit_args, **fit_kwargs)
 
@@ -288,14 +288,14 @@ class Tuner(object):
         return state
 
     def save(self):
-        fname = os.path.join(self.directory, self.project_name, 'tuner.json')
+        fname = self._get_tuner_fname()
         state = self.get_state()
         state_json = json.dumps(state)
         tf_utils.write_file(fname, state_json)
         return str(fname)
 
     def reload(self):
-        fname = os.path.join(self.directory, self.project_name, 'tuner.json')
+        fname = self._get_tuner_fname()
         state_data = tf_utils.read_file(fname)
         state = json.loads(state_data)
         self._stats = tuner_utils.TunerStats.from_config(state['stats'])
