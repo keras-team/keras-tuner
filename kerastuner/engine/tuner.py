@@ -275,10 +275,7 @@ class Tuner(object):
         return self.oracle.remaining_trials()
 
     def get_state(self):
-        state = {
-            'stats': self._stats.get_config(),
-            'host': self._host.get_config(),
-        }
+        state = {'stats': self._stats.get_config()}
         return state
 
     def save(self):
@@ -292,7 +289,7 @@ class Tuner(object):
         fname = os.path.join(self.directory, self.project_name, 'tuner.json')
         state_data = tf_utils.read_file(fname)
         state = json.loads(state_data)
-        self.stats = tuner_utils.TunerStats.from_config(state['stats'])
+        self._stats = tuner_utils.TunerStats.from_config(state['stats'])
 
     def _build_model(self, hp):
         """Return a never seen before model instance, compiled.

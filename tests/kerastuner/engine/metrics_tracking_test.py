@@ -58,15 +58,20 @@ def test_update():
     tracker.update('new_metric', 0.5)  # automatic registration
     assert tracker.names == ['new_metric']
     assert tracker.directions['new_metric'] == 'min'  # default direction
-    assert tracker.get_history('new_metric') == [0.5]
+    assert (tracker.get_history('new_metric') ==
+            [metrics_tracking.MetricObservation(0.5, t=0)])
 
 
 def test_get_history():
     tracker = metrics_tracking.MetricsTracker()
-    tracker.update('new_metric', 0.5)
-    tracker.update('new_metric', 1.5)
-    tracker.update('new_metric', 2.)
-    assert tracker.get_history('new_metric') == [0.5, 1.5, 2.]
+    tracker.update('new_metric', 0.5, t=0)
+    tracker.update('new_metric', 1.5, t=1)
+    tracker.update('new_metric', 2., t=2)
+    assert tracker.get_history('new_metric') == [
+        metrics_tracking.MetricObservation(0.5, 0),
+        metrics_tracking.MetricObservation(1.5, 1),
+        metrics_tracking.MetricObservation(2., 2),
+    ]
     with pytest.raises(ValueError,  match='Unknown metric'):
         tracker.get_history('another_metric')
 
@@ -83,19 +88,30 @@ def test_get_best_value():
     tracker.register('metric_max', 'max')
     assert tracker.get_best_value('metric_min') is None
 
-    tracker.set_history('metric_min', [1., 2., 3.])
-    tracker.set_history('metric_max', [1., 2., 3.])
+    tracker.set_history(
+        'metric_min',
+        [metrics_tracking.MetricObservation(1., 0),
+         metrics_tracking.MetricObservation(2., 1),
+         metrics_tracking.MetricObservation(3., 2)])
+    tracker.set_history(
+        'metric_max',
+        [metrics_tracking.MetricObservation(1., 0),
+         metrics_tracking.MetricObservation(2., 1),
+         metrics_tracking.MetricObservation(3., 2)])
     assert tracker.get_best_value('metric_min') == 1.
     assert tracker.get_best_value('metric_max') == 3.
 
 
 def test_get_statistics():
     tracker = metrics_tracking.MetricsTracker()
-    history = [random.random() for _ in range(10)]
+    history = [
+        metrics_tracking.MetricObservation(random.random(), i)
+        for i in range(10)]
     tracker.set_history('new_metric', history)
     stats = tracker.get_statistics('new_metric')
     assert set(stats.keys()) == {
         'min', 'max', 'mean', 'median', 'var', 'std'}
+    history = [obs.value for obs in history]
     assert stats['min'] == np.min(history)
     assert stats['max'] == np.max(history)
     assert stats['mean'] == np.mean(history)
@@ -108,7 +124,11 @@ def test_get_last_value():
     tracker = metrics_tracking.MetricsTracker()
     tracker.register('new_metric', 'min')
     assert tracker.get_last_value('new_metric') is None
-    tracker.set_history('new_metric', [1., 2., 3.])
+    tracker.set_history(
+        'new_metric', 
+        [metrics_tracking.MetricObservation(1., t=0),
+         metrics_tracking.MetricObservation(2., t=1),
+         metrics_tracking.MetricObservation(3., t=2)])
     assert tracker.get_last_value('new_metric') == 3.
 
 

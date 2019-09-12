@@ -79,10 +79,11 @@ class HyperbandOracle(oracle_module.Oracle):
         self._epoch_sequence = self._get_epoch_sequence()
 
     def end_trial(self, trial_id, status):
+        super(HyperbandOracle, self).end_trial(trial_id, status)
         self._running[trial_id] = False
+        score = self.trials[trial_id].score.value
         self._candidate_score[
             self._trial_id_to_candidate_index[trial_id]] = score
-        super(HyperbandOracle, self).end_trial(trial_id, status)
 
     def populate_space(self, trial_id):
         space = self.hyperparameters.space

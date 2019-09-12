@@ -229,7 +229,8 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
 
     @property
     def _dim(self):
-        return len([hp for hp in self.hyperparameters.space if not isinstance(hp, hp_module.Fixed)])
+        return len([hp for hp in self.hyperparameters.space
+                    if not isinstance(hp, hp_module.Fixed)])
 
     def _generate_vector(self):
         min_val = float('inf')

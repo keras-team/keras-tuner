@@ -175,7 +175,11 @@ def infer_metric_direction(metric):
         if metric_name == 'loss':
             # Special-case the overall loss.
             return 'min'
-        metric = keras.metrics.get(metric_name)
+        try:
+            metric = keras.metrics.get(metric_name)
+        except ValueError:
+            # Default to minimization for unknown metric.
+            return 'min'
 
     # Metric class or function.
     if isinstance(metric, keras.metrics.Metric):

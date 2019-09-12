@@ -203,9 +203,11 @@ class Oracle(object):
         return self.max_trials - len(self.trials.items())
 
     def save(self, fname):
+        # TODO: Save completed trials.
         raise NotImplementedError
 
     def reload(self, fname):
+        # TODO: Restore completed trials.
         raise NotImplementedError
 
     def _compute_values_hash(self, values):
