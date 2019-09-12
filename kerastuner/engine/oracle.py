@@ -134,6 +134,28 @@ class Oracle(stateful.Stateful):
 
         return trial
 
+    def update_trial(self, trial_id, metrics, t=0):
+        """Used by a worker to report the status of a trial.
+
+        Args:
+            trial_id: A previously seen trial id.
+            metrics: Dict of float. The current value of this
+                trial's metrics.
+            t: (Optional) Float. Used to report intermediate results. The
+                current value in a timeseries representing the state of the
+                trial. This is the value that `metrics` will be associated with.
+
+        Returns:
+            Trial object. Trial.status will be set to "STOPPED" if the Trial
+            should be stopped early.
+        """
+        trial = self.trials[trial_id]
+        self._check_objective_found(metrics)
+        for metric_name, metric_value in metrics.items():
+            trial.metrics.update(metric_name, metric_value, t=t)
+        # To handle early stopping, set Trial.status to "STOPPED".
+        return trial
+
     def end_trial(self, trial_id, status):
         """Record the measured objective for a set of parameter values.
 
@@ -157,27 +179,6 @@ class Oracle(stateful.Stateful):
         if status == trial_lib.TrialStatus.COMPLETED:
             trial.score = self.score_trial(trial)
 
-    def update_trial(self, trial_id, metrics, t=0):
-        """Used by a worker to report the status of a trial.
-
-        Args:
-            trial_id: A previously seen trial id.
-            metrics: Dict of float. The current value of this
-                trial's metrics.
-            t: (Optional) Float. Used to report intermediate results. The
-                current value in a timeseries representing the state of the
-                trial. This is the value that `metrics` will be associated with.
-
-        Returns:
-            Trial object. Trial.status will be set to "STOPPED" if the Trial
-            should be stopped early.
-        """
-        trial = self.trials[trial_id]
-        self._check_objective_found(metrics)
-        for metric_name, metric_value in metrics.items():
-            trial.metrics.update(metric_name, metric_value, t=t)
-        # To handle early stopping, set Trial.status to "STOPPED".
-        return trial
 
     def score_trial(self, trial):
         # Assumes single objective, subclasses can override.
