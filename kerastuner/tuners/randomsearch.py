@@ -79,18 +79,17 @@ class RandomSearchOracle(oracle_module.Oracle):
         return {'status': trial_lib.TrialStatus.RUNNING,
                 'values': values}
 
-    def save(self, fname):
-        state = {
+    def get_state(self):
+        state = super(RandomSearchOracle, self).get_state()
+        state.update({
             'seed': self.seed,
             'seed_state': self._seed_state,
             'tried_so_far': list(self._tried_so_far),
-        }
-        state_json = json.dumps(state)
-        tf_utils.write_file(fname, state_json)
+        })
+        return state
 
-    def reload(self, fname):
-        state_data = tf_utils.read_file(fname)
-        state = json.loads(state_data)
+    def set_state(self, state):
+        super(RandomSearchOracle, self).set_state(state)
         self.seed = state['seed']
         self._seed_state = state['seed_state']
         self._tried_so_far = set(state['tried_so_far'])

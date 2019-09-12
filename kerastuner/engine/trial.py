@@ -77,8 +77,15 @@ class Trial(object):
         self.hyperparameters = hp
         metrics = metrics_tracking.MetricsTracker.from_config(
             state['metrics'])
-        self.score = state['score']
+        self.score = metrics_tracking.MetricObservation(
+            *state['score'])
         self.status = state['status']
+
+    @classmethod
+    def from_state(cls, state):
+        trial = cls(hyperparameters=None)
+        trial.set_state(state)
+        return trial
 
     def save(self, fname):
         state = self.get_state()
@@ -90,9 +97,7 @@ class Trial(object):
     def load(cls, fname):
         state_data = tf_utils.read_file(fname)
         state = json.loads(state_data)
-        trial = cls(hyperparameters=None)
-        trial.set_state(state)
-        return trial
+        return cls.from_state(state_data)
 
 
 def generate_trial_id():

@@ -216,8 +216,9 @@ class HyperbandOracle(oracle_module.Oracle):
             previous_size = size
         return output_sizes
 
-    def save(self, fname):
-        state = {
+    def get_state(self):
+        state = super(HyperbandOracle, self).get_state()
+        state.update({
             'seed': self.seed,
             'factor': self.factor,
             'min_epochs': self.min_epochs,
@@ -236,13 +237,11 @@ class HyperbandOracle(oracle_module.Oracle):
             'bracket_index': self._bracket_index,
             'model_sequence': self._model_sequence,
             'epoch_sequence': self._epoch_sequence
-        }
-        state_json = json.dumps(state)
-        tf_utils.write_file(fname, state_json)
+        })
+        return state
 
-    def reload(self, fname):
-        state_data = tf_utils.read_file(fname)
-        state = json.loads(state_data)
+    def set_state(self, state):
+        super(HyperbandOracle, self).set_state(state)
         self.seed = state['seed']
         self.factor = state['factor']
         self.min_epochs = state['min_epochs']
@@ -269,10 +268,6 @@ class HyperbandOracle(oracle_module.Oracle):
             if value:
                 self._queue.put(self._trial_id_to_candidate_index[trial_id])
                 self._running[trial_id] = False
-
-    def report_status(self, trial_id, status, score=None, t=None):
-        # TODO
-        pass
 
 
 class Hyperband(tuner_module.Tuner):

@@ -77,8 +77,21 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         return {'status': trial_lib.TrialStatus.RUNNING,
                 'values': values}
 
-    def save(self, fname):
-        state = {
+    def end_trial(self, trial_id, status):
+        super(BayesianOptimizationOracle, self).end_trial(trial_id, status)
+        if status == trial_lib.TrialStatus.COMPLETED:
+            self._score[trial_id] = self.trials[trial_id].score.value
+            # Update Gaussian process with existing samples
+            if len(self._score) >= self.num_initial_points:
+                x, y = self._get_training_data()
+                self.gpr.fit(x, y)
+                self._x = x
+                self._y = y
+
+    def get_state(self):
+        state = super(BayesianOptimizationOracle, self).get_state()
+
+        state.update({
             'num_initial_points': self.num_initial_points,
             'alpha': self.alpha,
             'beta': self.beta,
@@ -91,13 +104,11 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             'values': self._values,
             'x': self._x.tolist() if isinstance(self._x, np.ndarray) else self._x,
             'y': self._y.tolist() if isinstance(self._y, np.ndarray) else self._y,
-        }
-        state_json = json.dumps(state)
-        tf_utils.write_file(fname, state_json)
+        })
+        return state
 
-    def reload(self, fname):
-        state_data = tf_utils.read_file(fname)
-        state = json.loads(state_data)
+    def set_state(self, state):
+        super(BayesianOptimizationOracle, self).set_state(state)
         self.num_initial_points = state['num_initial_points']
         self.alpha = state['alpha']
         self.beta = state['beta']
@@ -117,17 +128,6 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         self.gpr = gaussian_process.GaussianProcessRegressor(
             kernel=gaussian_process.kernels.ConstantKernel(1.0),
             alpha=self.alpha)
-
-    def end_trial(self, trial_id, status):
-        super(BayesianOptimizationOracle, self).end_trial(trial_id, status)
-        if status == trial_lib.TrialStatus.COMPLETED:
-            self._score[trial_id] = self.trials[trial_id].score.value
-            # Update Gaussian process with existing samples
-            if len(self._score) >= self.num_initial_points:
-                x, y = self._get_training_data()
-                self.gpr.fit(x, y)
-                self._x = x
-                self._y = y
 
     def _new_trial(self):
         """Fill a given hyperparameter space with values.

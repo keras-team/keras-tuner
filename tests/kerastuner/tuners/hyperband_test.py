@@ -20,7 +20,6 @@ import pytest
 import tensorflow as tf
 
 from kerastuner.engine import hyperparameters
-from kerastuner.engine import execution as execution_module
 from kerastuner.engine import trial as trial_module
 from kerastuner.engine import hyperparameters as hp_module
 from kerastuner.tuners import hyperband as hyperband_module

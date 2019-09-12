@@ -147,7 +147,9 @@ class MetricsTracker(object):
         instance = cls()
         instance.names = config['names']
         instance.directions = config['directions']
-        instance.metrics_history = config['metrics_history']
+        instance.metrics_history = {
+            name: [MetricObservation(*obs) for obs in data]
+            for name, data in config['metrics_history'].items()}
         return instance
 
 

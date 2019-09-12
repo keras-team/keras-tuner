@@ -20,11 +20,13 @@ from __future__ import print_function
 import collections
 import enum
 import hashlib
+import json
 
 from tensorflow import keras
 from kerastuner.engine import hyperparameters as hp_module
 from kerastuner.engine import metrics_tracking
 from kerastuner.engine import trial as trial_lib
+from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 
 
 Objective = collections.namedtuple('Objective', 'name direction')
@@ -202,13 +204,26 @@ class Oracle(object):
     def remaining_trials(self):
         return self.max_trials - len(self.trials.items())
 
+    def get_state(self):
+        state = {}
+        state['trials'] = {trial_id: trial.get_state()
+                           for trial_id, trial in self.trials.items()}
+        return state
+
+    def set_state(self, state):
+        self.trials = {
+            trial_id: trial_lib.Trial.from_state(trial_config)
+            for trial_id, trial_config in state['trials'].items()}
+
     def save(self, fname):
-        # TODO: Save completed trials.
-        raise NotImplementedError
+        state = self.get_state()
+        state_json = json.dumps(state)
+        tf_utils.write_file(fname, state_json)
 
     def reload(self, fname):
-        # TODO: Restore completed trials.
-        raise NotImplementedError
+        state_data = tf_utils.read_file(fname)
+        state = json.loads(state_data)
+        self.set_state(state)
 
     def _compute_values_hash(self, values):
         keys = sorted(values.keys())
