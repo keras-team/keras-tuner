@@ -71,11 +71,11 @@ class MetricsTracker(object):
 
         # Return whether the updated value is best yet seen.
         if self.directions[name] == 'max':
-            if value >= np.max(history_values):
+            if value >= np.nanmax(history_values):
                 return True
             return False
         if self.directions[name] == 'min':
-            if value <= np.min(history_values):
+            if value <= np.nanmin(history_values):
                 return True
             return False
 
@@ -120,12 +120,12 @@ class MetricsTracker(object):
         if not len(history_values):
             return {}
         return {
-            'min': float(np.min(history_values)),
-            'max': float(np.max(history_values)),
-            'mean': float(np.mean(history_values)),
-            'median': float(np.median(history_values)),
-            'var': float(np.var(history_values)),
-            'std': float(np.std(history_values))
+            'min': float(np.nanmin(history_values)),
+            'max': float(np.nanmax(history_values)),
+            'mean': float(np.nanmean(history_values)),
+            'median': float(np.nanmedian(history_values)),
+            'var': float(np.nanvar(history_values)),
+            'std': float(np.nanstd(history_values))
         }
 
     def get_last_value(self, name):
