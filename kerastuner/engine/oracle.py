@@ -37,7 +37,7 @@ class Oracle(stateful.Stateful):
 
     def __init__(self,
                  objective,
-                 max_trials,
+                 max_trials=None,
                  hyperparameters=None,
                  allow_new_entries=True,
                  tune_new_entries=True):
@@ -113,7 +113,7 @@ class Oracle(stateful.Stateful):
 
         trial_id = trial_lib.generate_trial_id()
 
-        if len(self.trials.items()) >= self.max_trials:
+        if self.max_trials and len(self.trials.items()) >= self.max_trials:
             status = trial_lib.TrialStatus.STOPPED
             values = None
         else:
@@ -203,7 +203,10 @@ class Oracle(stateful.Stateful):
         return sorted_trials[:num_trials]
 
     def remaining_trials(self):
-        return self.max_trials - len(self.trials.items())
+        if self.max_trials:
+            return self.max_trials - len(self.trials.items())
+        else:
+            return None
 
     def get_state(self):
         state = {}
