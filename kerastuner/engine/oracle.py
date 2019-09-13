@@ -223,16 +223,6 @@ class Oracle(stateful.Stateful):
             tuner_id: self.trials[trial_id]
             for tuner_id, trial_id in state['ongoing_trials'].items()}
 
-    def save(self, fname):
-        state = self.get_state()
-        state_json = json.dumps(state)
-        tf_utils.write_file(fname, state_json)
-
-    def reload(self, fname):
-        state_data = tf_utils.read_file(fname)
-        state = json.loads(state_data)
-        self.set_state(state)
-
     def _compute_values_hash(self, values):
         keys = sorted(values.keys())
         s = ''.join(str(k) + '=' + str(values[k]) for k in keys)
