@@ -301,7 +301,6 @@ def test_hyperband_tuner(patch_fit, patch_load, tmp_dir):
         factor=2,
         min_epochs=1,
         max_epochs=2,
-        executions_per_trial=3,
         directory=tmp_dir)
 
     hp = hyperparameters.HyperParameters()

@@ -109,6 +109,7 @@ def test_basic_tuner_attributes(tmp_dir):
 
     assert tuner.oracle.objective.name == 'val_accuracy'
     assert tuner.oracle.max_trials == 2
+    assert tuner.executions_per_trial == 3
     assert tuner.directory == tmp_dir
     assert tuner.hypermodel.__class__.__name__ == 'DefaultHyperModel'
     assert len(tuner.oracle.hyperparameters.space) == 3  # default search space
@@ -419,6 +420,7 @@ def test_saving_and_reloading(tmp_dir):
         build_model,
         objective='val_accuracy',
         max_trials=4,
+        executions_per_trial=2,
         directory=tmp_dir)
 
     tuner.search(

@@ -17,11 +17,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import copy
+import json
 import os
 import time
 import traceback
-import json
-import copy
+
 
 import numpy as np
 import tensorflow as tf
@@ -50,6 +51,15 @@ class Tuner(stateful.Stateful):
         hypermodel: Instance of HyperModel class
             (or callable that takes hyperparameters
             and returns a Model instance).
+        executions_per_trial: Int. Number of executions
+            (training a model from scratch,
+            starting from a new initialization)
+            to run per trial (model configuration).
+            Model metrics may vary greatly depending
+            on random initialization, hence it is
+            often a good idea to run several executions
+            per trial in order to evaluate the performance
+            of a given set of hyperparameter values.
         max_model_size: Int. Maximum size of weights
             (in floating point coefficients) for a valid
             models. Models larger than this are rejected.
@@ -86,6 +96,7 @@ class Tuner(stateful.Stateful):
     def __init__(self,
                  oracle,
                  hypermodel,
+                 executions_per_trial=1,
                  max_model_size=None,
                  optimizer=None,
                  loss=None,
@@ -94,8 +105,7 @@ class Tuner(stateful.Stateful):
                  directory=None,
                  project_name=None,
                  logger=None,
-                 tuner_id=None,
-                 **kwargs):
+                 tuner_id=None):
         if not isinstance(oracle, oracle_module.Oracle):
             raise ValueError('Expected oracle to be '
                              'an instance of Oracle, got: %s' % (oracle,))
@@ -114,6 +124,7 @@ class Tuner(stateful.Stateful):
         # Global search options
         self.max_model_size = max_model_size
         self.distribution_strategy = distribution_strategy
+        self.executions_per_trial = executions_per_trial
         self.tuner_id = tuner_id if tuner_id is not None else 0
 
         # Compilation options
@@ -139,14 +150,6 @@ class Tuner(stateful.Stateful):
             self._build_model(hp)
             self.oracle.update_space(hp)
 
-        executions_per_trial = kwargs.pop('executions_per_trial', 1)
-        if executions_per_trial > 1:
-            tf.compat.v1.logging.warn(
-                '`executions_per_trial` is no longer supported.')
-
-        if kwargs:
-            raise ValueError('Unrecognized keyword arguments: {}'.format(kwargs))
-
     def search(self, *fit_args, **fit_kwargs):
         self.on_search_begin()
         while True:
@@ -164,19 +167,39 @@ class Tuner(stateful.Stateful):
         self.on_search_end()
 
     def run_trial(self, trial, *fit_args, **fit_kwargs):
-        # Patch fit arguments
-        # During model `fit`,
-        # the patched callbacks call
-        # `self.on_epoch_begin`, `self.on_epoch_end`,
-        # `self.on_batch_begin`, `self.on_batch_end`.
-        fit_kwargs = copy.copy(fit_kwargs)
-        original_callbacks = fit_kwargs.get('callbacks', [])[:]
-        fit_kwargs['callbacks'] = self._inject_callbacks(
-            original_callbacks, trial)
 
-        model = self._build_model(trial.hyperparameters.copy())
-        self._compile_model(model)
-        model.fit(*fit_args, **fit_kwargs)
+        def _run_one_execution(trial, *fit_args, **fit_kwargs):
+            # Patch fit arguments. During model `fit`, the patched 
+            # callbacks call: `self.on_epoch_begin`, `self.on_epoch_end`,
+            # `self.on_batch_begin`, `self.on_batch_end`.
+            fit_kwargs = copy.copy(fit_kwargs)
+            original_callbacks = fit_kwargs.get('callbacks', [])[:]
+            fit_kwargs['callbacks'] = self._inject_callbacks(
+                original_callbacks, trial)
+            model = self._build_model(trial.hyperparameters.copy())
+            self._compile_model(model)
+            return model.fit(*fit_args, **fit_kwargs)
+
+        if self.executions_per_trial == 1:
+            # Oracle communication handled by callbacks.
+            _run_one_execution(trial, *fit_args, **fit_kwargs)
+            return
+
+        # Average the results of multiple executions. In this case,
+        # averaged results are reported all at once to the Oracle at
+        # the end of training. In `get_best_model`, checkpoints
+        # corresponding to the last execution of a Trial are loaded.
+        histories = []
+        for _ in range(self.executions_per_trial):
+            history = _run_one_execution(trial, *fit_args, **fit_kwargs)
+            histories.append(history.history)
+        average_metrics = tuner_utils.average_histories(histories)
+        initial_epoch = fit_kwargs.get('initial_epoch', 0)
+        for epoch, metrics in enumerate(average_metrics):
+            self.oracle.update_trial(
+                trial.trial_id, metrics, t=epoch + initial_epoch)
+        self.oracle.end_trial(
+            trial.trial_id, status=trial_module.TrialStatus.COMPLETED)
 
     def on_search_begin(self):
         if self.logger:
@@ -200,15 +223,17 @@ class Tuner(stateful.Stateful):
         self._checkpoint_model(model, trial, epoch)
 
         # Report intermediate metrics to the `Oracle`.
-        updated_trial = self.oracle.update_trial(
-            trial.trial_id, metrics=logs, t=epoch)
-        trial.set_state(updated_trial.get_state())
-        if trial.status == "STOPPED":
-            model.stop_training = True
+        if self.executions_per_trial == 1:
+            updated_trial = self.oracle.update_trial(
+                trial.trial_id, metrics=logs, t=epoch)
+            trial.set_state(updated_trial.get_state())
+            if trial.status == "STOPPED":
+                model.stop_training = True
 
     def on_trial_end(self, trial):
-        self.oracle.end_trial(
-            trial.trial_id, trial_module.TrialStatus.COMPLETED)
+        if self.executions_per_trial == 1:
+            self.oracle.end_trial(
+                trial.trial_id, trial_module.TrialStatus.COMPLETED)
         self._checkpoint_trial(trial)
         self._display.on_trial_end(trial)
         self.save()

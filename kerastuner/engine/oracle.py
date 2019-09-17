@@ -156,7 +156,7 @@ class Oracle(stateful.Stateful):
         # To handle early stopping, set Trial.status to "STOPPED".
         return trial
 
-    def end_trial(self, trial_id, status):
+    def end_trial(self, trial_id, status="COMPLETED"):
         """Record the measured objective for a set of parameter values.
 
         Args:
@@ -241,9 +241,9 @@ class Oracle(stateful.Stateful):
                 objective_names.remove(metric_name)
         if objective_names:
             raise ValueError(
-                'Objective value missing in metrics reported '
-                'to the Oracle, expected: {}'.format(
-                    objective_names))
+                'Objective value missing in metrics reported to the '
+                'Oracle, expected: {}, found: {}'.format(
+                    objective_names, metrics.keys()))
 
 
 def _format_objective(objective):

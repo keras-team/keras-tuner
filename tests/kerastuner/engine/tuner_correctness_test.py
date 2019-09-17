@@ -145,8 +145,6 @@ def test_tuner_errors(tmp_dir):
         tuner_module.Tuner(
             oracle='invalid',
             hypermodel=build_model,
-            objective='val_accuracy',
-            max_trials=3,
             directory=tmp_dir)
     # invalid hypermodel
     with pytest.raises(

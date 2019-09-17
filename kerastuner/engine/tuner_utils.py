@@ -21,6 +21,7 @@ import contextlib
 import math
 from collections import defaultdict
 import numpy as np
+import six
 import time
 import random
 import hashlib
@@ -113,3 +114,19 @@ def maybe_distribute(distribution_strategy):
     else:
         with distribution_strategy.scope():
             yield
+
+
+def average_histories(histories):
+    """Averages the per-epoch metrics from multiple executions."""
+    averaged = {}
+    metrics = histories[0].keys()
+    for metric in metrics:
+        values = []
+        for epoch_values in six.moves.zip_longest(
+                *[h[metric] for h in histories],
+                fillvalue=np.nan):
+            values.append(np.nanmean(epoch_values))
+        averaged[metric] = values
+    # Convert {str: [float]} to [{str: float}]
+    averaged = [dict(zip(metrics, vals)) for vals in zip(*averaged.values())]
+    return averaged
