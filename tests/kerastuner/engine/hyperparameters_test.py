@@ -334,3 +334,30 @@ def test_Fixed():
     fixed = hp_module.Fixed.from_config(fixed.get_config())
     assert fixed.default == 'value'
     assert fixed.random_sample() == 'value'
+
+
+def test_merge():
+    hp = hp_module.HyperParameters()
+    hp.Int('a', 0, 100)
+    hp.Fixed('b', 2)
+
+    hp2 = hp_module.HyperParameters()
+    hp2.Fixed('a', 3)
+    hp.Int('c', 10, 100, default=30)
+
+    hp.merge(hp2)
+
+    assert hp.get('a') == 3
+    assert hp.get('b') == 2
+    assert hp.get('c') == 30
+
+    hp3 = hp_module.HyperParameters()
+    hp3.Fixed('a', 5)
+    hp3.Choice('d', [1, 2, 3], default=1)
+
+    hp.merge(hp3, overwrite=False)
+
+    assert hp.get('a') == 3
+    assert hp.get('b') == 2
+    assert hp.get('c') == 30
+    assert hp.get('d') == 1
