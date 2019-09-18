@@ -621,7 +621,7 @@ class HyperParameters(object):
         return HyperParameters.from_config(self.get_config())
 
     def merge(self, hps, overwrite=True):
-        """Merges `hps` into this object.
+        """Merges hyperparameters into this object.
 
         Arguments:
           hps: A `HyperParameters` object of list of `HyperParameter`
