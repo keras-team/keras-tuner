@@ -377,14 +377,10 @@ class HyperParameters(object):
     """
 
     def __init__(self):
+        # A map from full HP name to HP object.
         self._space = {}
         self.values = {}
         self._scopes = []
-        # Controls whether an existing HP can be overridden.
-        # TODO: Should this be default True? Should we have
-        # public methods `freeze()` and `unfreeze()`? Is there
-        # a better name for this concept?
-        self._frozen = True
 
     @contextlib.contextmanager
     def name_scope(self, name):
@@ -452,18 +448,19 @@ class HyperParameters(object):
                   type,
                   config,
                   parent_name=None,
-                  parent_values=None):
+                  parent_values=None,
+                  overwrite=False):
         """Gets or creates a `HyperParameter`."""
         if parent_name:
             with self.conditional_scope(parent_name, parent_values):
-                return self._retrieve_helper(name, type, config)
-        return self._retrieve_helper(name, type, config)
+                return self._retrieve_helper(name, type, config, overwrite)
+        return self._retrieve_helper(name, type, config, overwrite)
 
-    def _retrieve_helper(self, name, type, config):
+    def _retrieve_helper(self, name, type, config, overwrite=False):
         self._check_name_is_valid(name)
         full_name = self._get_name(name)
 
-        if full_name in self.values and self._frozen:
+        if full_name in self.values and not overwrite:
             # TODO: type compatibility check,
             # or name collision check.
             retrieved_value = self.values[full_name]
@@ -624,19 +621,20 @@ class HyperParameters(object):
         """Merges hyperparameters into this object.
 
         Arguments:
-          hps: A `HyperParameters` object of list of `HyperParameter`
+          hps: A `HyperParameters` object or list of `HyperParameter`
             objects.
-          overwrite: bool. If `True`, the parameters in `hps` will
-            overwrite any values with the same name in this object.
+          overwrite: bool. Whether existing `HyperParameter`s should
+            be overridden by those in `hps` with the same name.
         """
-        frozen = self._frozen
         self._frozen = not overwrite
         if isinstance(hps, HyperParameters):
             hps = hps.space
         for hp in hps:
             self._retrieve(
-                hp.name, hp.__class__.__name__, hp.get_config())
-        self._frozen = frozen
+                hp.name,
+                hp.__class__.__name__,
+                hp.get_config(),
+                overwrite=overwrite)
 
     def _get_name(self, name, scopes=None):
         """Returns a name qualified by `name_scopes`."""
