@@ -40,9 +40,9 @@ class Oracle(stateful.Stateful):
                  max_trials=None,
                  hyperparameters=None,
                  allow_new_entries=True,
-                 tune_new_entries=True):
+                 tune_new_entries=True,
+                 executions_per_trial=1):
         self.objective = _format_objective(objective)
-        self.max_trials = max_trials
         if not hyperparameters:
             if not tune_new_entries:
                 raise ValueError(
@@ -59,6 +59,13 @@ class Oracle(stateful.Stateful):
             self.hyperparameters = hyperparameters
         self.allow_new_entries = allow_new_entries
         self.tune_new_entries = tune_new_entries
+
+        # Each hyperparameter combination will be repeated this number of times.
+        # Scores of each execution will be averaged.
+        self.executions_per_trial = executions_per_trial
+        self.max_trials = max_trials * executions_per_trial
+        self._current_trial_execution = 0
+        self._current_hps = None
 
         # trial_id -> Trial
         self.trials = {}
@@ -92,7 +99,7 @@ class Oracle(stateful.Stateful):
             self.hyperparameters.register(
                 hp.name, hp.__class__.__name__, hp.get_config())
 
-    def populate_space(self, trial_id):
+    def _populate_space(self, trial_id):
         """Fill the hyperparameter space with values for a trial.
 
         Args:
@@ -113,13 +120,21 @@ class Oracle(stateful.Stateful):
 
         trial_id = trial_lib.generate_trial_id()
 
-        if self.max_trials and len(self.trials.items()) >= self.max_trials:
+        if self._current_trial_execution > 0:
+            # Repeat the current hyperparameter combination.
+            status = trial_lib.TrialStatus.RUNNING
+            values = self._current_hps
+        elif self.max_trials and len(self.trials.items()) >= self.max_trials:
             status = trial_lib.TrialStatus.STOPPED
             values = None
         else:
-            response = self.populate_space(trial_id)
+            response = self._populate_space(trial_id)
             status = response['status']
             values = response['values'] if 'values' in response else None
+
+        self._current_trial_execution += 1
+        if self._current_trial_execution == self.executions_per_trial:
+            self._current_trial_execution = 0
 
         hyperparameters = self.hyperparameters.copy()
         hyperparameters.values = values
@@ -177,13 +192,23 @@ class Oracle(stateful.Stateful):
 
         trial.status = status
         if status == trial_lib.TrialStatus.COMPLETED:
-            trial.score = self.score_trial(trial)
+            self._score_trial(trial)
 
-    def score_trial(self, trial):
+    def _score_trial(self, trial):
         # Assumes single objective, subclasses can override.
-        return metrics_tracking.MetricObservation(
+        trial.score = metrics_tracking.MetricObservation(
             value=trial.metrics.get_best_value(self.objective.name),
             t=trial.metrics.get_best_t(self.objective.name))
+
+        # Average the scores of multiple executions.
+        if self.executions_per_trial > 1:
+            executions [
+                t for t in self.trials.values()
+                if (t.hyperparameters.values == trial.hyperparameters.values and
+                    t.status == trial_lib.TrialStatus.COMPLETED)]
+            average_score = np.nanmean([e.score.value for e in executions])
+            for e in executions:
+                e.score.value = average_score
 
     def get_trial(self, trial_id):
         return self.trials[trial_id]
@@ -191,8 +216,6 @@ class Oracle(stateful.Stateful):
     def get_best_trials(self, num_trials=1):
         trials = [t for t in self.trials.values()
                   if t.status == trial_lib.TrialStatus.COMPLETED]
-        for trial in trials:
-            trial.score = self.score_trial(trial)
 
         sorted_trials = sorted(
             trials,
@@ -200,7 +223,19 @@ class Oracle(stateful.Stateful):
             # Assumes single objective, subclasses can override.
             reverse=self.objective.direction == 'max'
         )
-        return sorted_trials[:num_trials]
+
+        if self.executions_per_trial == 1:
+            return sorted_trials[:num_trials]
+
+        # Filter out executions with identical hyperparameters.
+        return_trials = []
+        seen_hps = []
+        for trial in sorted_trials:
+            if trial.hyperparameters.values not in seen_hps:
+                return_trials.append(trial)
+            if len(return_trials) == num_trials:
+                break
+        return return_trials
 
     def remaining_trials(self):
         if self.max_trials:
