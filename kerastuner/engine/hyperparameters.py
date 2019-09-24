@@ -626,7 +626,6 @@ class HyperParameters(object):
           overwrite: bool. Whether existing `HyperParameter`s should
             be overridden by those in `hps` with the same name.
         """
-        self._frozen = not overwrite
         if isinstance(hps, HyperParameters):
             hps = hps.space
         for hp in hps:
