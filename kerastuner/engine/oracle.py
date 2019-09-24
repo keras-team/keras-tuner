@@ -149,14 +149,14 @@ class Oracle(stateful.Stateful):
 
         return trial
 
-    def update_trial(self, trial_id, metrics, t=0):
+    def update_trial(self, trial_id, metrics, step=0):
         """Used by a worker to report the status of a trial.
 
         Args:
             trial_id: A previously seen trial id.
             metrics: Dict of float. The current value of this
                 trial's metrics.
-            t: (Optional) Float. Used to report intermediate results. The
+            step: (Optional) Float. Used to report intermediate results. The
                 current value in a timeseries representing the state of the
                 trial. This is the value that `metrics` will be associated with.
 
@@ -167,9 +167,9 @@ class Oracle(stateful.Stateful):
         trial = self.trials[trial_id]
         self._check_objective_found(metrics)
         for metric_name, metric_value in metrics.items():
-            trial.metrics.update(metric_name, metric_value, t=t)
-        # To handle early stopping, set Trial.status to "STOPPED".
-        return trial
+            trial.metrics.update(metric_name, metric_value, step=step)
+        # To signal early stopping, set Trial.status to "STOPPED".
+        return trial.status
 
     def end_trial(self, trial_id, status="COMPLETED"):
         """Record the measured objective for a set of parameter values.
@@ -196,19 +196,8 @@ class Oracle(stateful.Stateful):
 
     def _score_trial(self, trial):
         # Assumes single objective, subclasses can override.
-        trial.score = metrics_tracking.MetricObservation(
-            value=trial.metrics.get_best_value(self.objective.name),
-            t=trial.metrics.get_best_t(self.objective.name))
-
-        # Average the scores of multiple executions.
-        if self.executions_per_trial > 1:
-            executions [
-                t for t in self.trials.values()
-                if (t.hyperparameters.values == trial.hyperparameters.values and
-                    t.status == trial_lib.TrialStatus.COMPLETED)]
-            average_score = np.nanmean([e.score.value for e in executions])
-            for e in executions:
-                e.score.value = average_score
+        trial.score = trial.metrics.get_best_value(self.objective.name)
+        trial.best_step = trial.metrics.get_best_step(self.objective.name)
 
     def get_trial(self, trial_id):
         return self.trials[trial_id]
@@ -227,7 +216,8 @@ class Oracle(stateful.Stateful):
         if self.executions_per_trial == 1:
             return sorted_trials[:num_trials]
 
-        # Filter out executions with identical hyperparameters.
+        # Filter out Trials with identical hyperparameters.
+        # Return the best Trial for each set of hyperparameters.
         return_trials = []
         seen_hps = []
         for trial in sorted_trials:

@@ -51,15 +51,6 @@ class Tuner(stateful.Stateful):
         hypermodel: Instance of HyperModel class
             (or callable that takes hyperparameters
             and returns a Model instance).
-        executions_per_trial: Int. Number of executions
-            (training a model from scratch,
-            starting from a new initialization)
-            to run per trial (model configuration).
-            Model metrics may vary greatly depending
-            on random initialization, hence it is
-            often a good idea to run several executions
-            per trial in order to evaluate the performance
-            of a given set of hyperparameter values.
         max_model_size: Int. Maximum size of weights
             (in floating point coefficients) for a valid
             models. Models larger than this are rejected.
@@ -124,7 +115,6 @@ class Tuner(stateful.Stateful):
         # Global search options
         self.max_model_size = max_model_size
         self.distribution_strategy = distribution_strategy
-        self.executions_per_trial = executions_per_trial
         self.tuner_id = tuner_id if tuner_id is not None else 0
 
         # Compilation options
@@ -167,39 +157,16 @@ class Tuner(stateful.Stateful):
         self.on_search_end()
 
     def run_trial(self, trial, *fit_args, **fit_kwargs):
-
-        def _run_one_execution(trial, *fit_args, **fit_kwargs):
-            # Patch fit arguments. During model `fit`, the patched 
-            # callbacks call: `self.on_epoch_begin`, `self.on_epoch_end`,
-            # `self.on_batch_begin`, `self.on_batch_end`.
-            fit_kwargs = copy.copy(fit_kwargs)
-            original_callbacks = fit_kwargs.get('callbacks', [])[:]
-            fit_kwargs['callbacks'] = self._inject_callbacks(
-                original_callbacks, trial)
-            model = self._build_model(trial.hyperparameters.copy())
-            self._compile_model(model)
-            return model.fit(*fit_args, **fit_kwargs)
-
-        if self.executions_per_trial == 1:
-            # Oracle communication handled by callbacks.
-            _run_one_execution(trial, *fit_args, **fit_kwargs)
-            return
-
-        # Average the results of multiple executions. In this case,
-        # averaged results are reported all at once to the Oracle at
-        # the end of training. In `get_best_model`, checkpoints
-        # corresponding to the last execution of a Trial are loaded.
-        histories = []
-        for _ in range(self.executions_per_trial):
-            history = _run_one_execution(trial, *fit_args, **fit_kwargs)
-            histories.append(history.history)
-        average_metrics = tuner_utils.average_histories(histories)
-        initial_epoch = fit_kwargs.get('initial_epoch', 0)
-        for epoch, metrics in enumerate(average_metrics):
-            self.oracle.update_trial(
-                trial.trial_id, metrics, t=epoch + initial_epoch)
-        self.oracle.end_trial(
-            trial.trial_id, status=trial_module.TrialStatus.COMPLETED)
+        # Patch fit arguments. During model `fit`, the patched 
+        # callbacks call: `self.on_epoch_begin`, `self.on_epoch_end`,
+        # `self.on_batch_begin`, `self.on_batch_end`.
+        fit_kwargs = copy.copy(fit_kwargs)
+        original_callbacks = fit_kwargs.get('callbacks', [])[:]
+        fit_kwargs['callbacks'] = self._inject_callbacks(
+            original_callbacks, trial)
+        model = self._build_model(trial.hyperparameters.copy())
+        self._compile_model(model)
+        return model.fit(*fit_args, **fit_kwargs)
 
     def on_search_begin(self):
         if self.logger:
@@ -223,17 +190,15 @@ class Tuner(stateful.Stateful):
         self._checkpoint_model(model, trial, epoch)
 
         # Report intermediate metrics to the `Oracle`.
-        if self.executions_per_trial == 1:
-            updated_trial = self.oracle.update_trial(
-                trial.trial_id, metrics=logs, t=epoch)
-            trial.set_state(updated_trial.get_state())
-            if trial.status == "STOPPED":
-                model.stop_training = True
+        updated_trial = self.oracle.update_trial(
+            trial.trial_id, metrics=logs, t=epoch)
+        trial.set_state(updated_trial.get_state())
+        if trial.status == "STOPPED":
+            model.stop_training = True
 
     def on_trial_end(self, trial):
-        if self.executions_per_trial == 1:
-            self.oracle.end_trial(
-                trial.trial_id, trial_module.TrialStatus.COMPLETED)
+        self.oracle.end_trial(
+            trial.trial_id, trial_module.TrialStatus.COMPLETED)
         self._checkpoint_trial(trial)
         self._display.on_trial_end(trial)
         self.save()
@@ -264,9 +229,9 @@ class Tuner(stateful.Stateful):
             model = self.hypermodel.build(hp)
             self._compile_model(model)
             # Reload best checkpoint. The Oracle scores the Trial and also
-            # indicates at what `t` the best value of the objective was
+            # indicates at what epoch the best value of the objective was
             # obtained.
-            best_epoch = trial.score.t
+            best_epoch = trial.best_step
             model.load_weights(self._get_checkpoint_fname(trial, best_epoch))
             models.append(model)
         return models
@@ -304,7 +269,7 @@ class Tuner(stateful.Stateful):
         for trial in best_trials:
             display.display_setting(
                 'Objective: {} Score: {}'.format(
-                    self.oracle.objective, trial.score.value))
+                    self.oracle.objective, trial.score))
 
     @property
     def remaining_trials(self):

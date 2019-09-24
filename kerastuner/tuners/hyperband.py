@@ -318,7 +318,8 @@ class Hyperband(tuner_module.Tuner):
             max_epochs=max_epochs,
             hyperparameters=kwargs.pop('hyperparameters', None),
             tune_new_entries=kwargs.pop('tune_new_entries', True),
-            allow_new_entries=kwargs.pop('allow_new_entries', True))
+            allow_new_entries=kwargs.pop('allow_new_entries', True),
+            executions_per_trial=kwargs.pop('executions_per_trial', 1))
         super(Hyperband, self).__init__(
             oracle=oracle,
             hypermodel=hypermodel,

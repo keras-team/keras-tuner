@@ -24,7 +24,7 @@ from tensorflow import keras
 
 MetricObservation = collections.namedtuple(
     'MetricObservation',
-    'value t')
+    'value step')
 
 
 class MetricsTracker(object):
@@ -58,13 +58,13 @@ class MetricsTracker(object):
         self.directions[name] = direction
         self.metrics_history[name] = []
 
-    def update(self, name, value, t=0):
+    def update(self, name, value, step=0):
         value = float(value)
         if not self.exists(name):
             self.register(name)
         history = self.get_history(name)
         history_values = [obs.value for obs in history]
-        history.append(MetricObservation(value=value, t=t))
+        history.append(MetricObservation(value=value, step=step))
 
         if not history_values:
             return True
@@ -101,7 +101,7 @@ class MetricsTracker(object):
             return min(history_values)
         return max(history_values)
 
-    def get_best_t(self, name):
+    def get_best_step(self, name):
         history = self.get_history(name)
         if not len(history):
             return None
@@ -112,7 +112,7 @@ class MetricsTracker(object):
             t_index = np.argmin(history_values)
         else:
             t_index = np.argmax(history_values)
-        return history[t_index].t
+        return history[t_index].step
 
     def get_statistics(self, name):
         history = self.get_history(name)

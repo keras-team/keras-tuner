@@ -124,7 +124,8 @@ class RandomSearch(tuner_module.Tuner):
             seed=seed,
             hyperparameters=kwargs.pop('hyperparameters', None),
             tune_new_entries=kwargs.pop('tune_new_entries', True),
-            allow_new_entries=kwargs.pop('allow_new_entries', True))
+            allow_new_entries=kwargs.pop('allow_new_entries', True),
+            executions_per_trial=kwargs.pop('executions_per_trial', 1))
         super(RandomSearch, self).__init__(
             oracle,
             hypermodel,

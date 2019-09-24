@@ -297,7 +297,8 @@ class BayesianOptimization(tuner_module.Tuner):
             seed=seed,
             hyperparameters=kwargs.pop('hyperparameters', None),
             allow_new_entries=kwargs.pop('allow_new_entries', True),
-            tune_new_entries=kwargs.pop('tune_new_entries', True))
+            tune_new_entries=kwargs.pop('tune_new_entries', True),
+            executions_per_trial=kwargs.pop('executions_per_trial', 1))
         super(BayesianOptimization, self, ).__init__(oracle=oracle,
                                                      hypermodel=hypermodel,
                                                      **kwargs)
