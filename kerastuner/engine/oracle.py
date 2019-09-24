@@ -64,8 +64,8 @@ class Oracle(stateful.Stateful):
         # Scores of each execution will be averaged.
         self.executions_per_trial = executions_per_trial
         self.max_trials = max_trials * executions_per_trial
-        self._current_trial_execution = 0
-        self._current_hps = None
+        self._last_trial_execution = 0
+        self._last_hps = None
 
         # trial_id -> Trial
         self.trials = {}
@@ -120,10 +120,10 @@ class Oracle(stateful.Stateful):
 
         trial_id = trial_lib.generate_trial_id()
 
-        if self._current_trial_execution > 0:
+        if self._last_trial_execution > 0:
             # Repeat the current hyperparameter combination.
             status = trial_lib.TrialStatus.RUNNING
-            values = self._current_hps
+            values = self._last_hps
         elif self.max_trials and len(self.trials.items()) >= self.max_trials:
             status = trial_lib.TrialStatus.STOPPED
             values = None
@@ -132,9 +132,10 @@ class Oracle(stateful.Stateful):
             status = response['status']
             values = response['values'] if 'values' in response else None
 
-        self._current_trial_execution += 1
-        if self._current_trial_execution == self.executions_per_trial:
-            self._current_trial_execution = 0
+        self._last_hps = values
+        self._last_trial_execution += 1
+        if self._last_trial_execution == self.executions_per_trial:
+            self._last_trial_execution = 0
 
         hyperparameters = self.hyperparameters.copy()
         hyperparameters.values = values
@@ -208,7 +209,7 @@ class Oracle(stateful.Stateful):
 
         sorted_trials = sorted(
             trials,
-            key=lambda trial: trial.score.value,
+            key=lambda trial: trial.score,
             # Assumes single objective, subclasses can override.
             reverse=self.objective.direction == 'max'
         )
@@ -241,6 +242,8 @@ class Oracle(stateful.Stateful):
         state['ongoing_trials'] = {
             tuner_id: trial.trial_id
             for tuner_id, trial in self.ongoing_trials.items()}
+        state['last_trial_execution'] = self._last_trial_execution
+        state['last_hps'] = self._last_hps
         return state
 
     def set_state(self, state):
@@ -250,6 +253,8 @@ class Oracle(stateful.Stateful):
         self.ongoing_trials = {
             tuner_id: self.trials[trial_id]
             for tuner_id, trial_id in state['ongoing_trials'].items()}
+        self._last_trial_execution = state['last_trial_execution']
+        self._last_hps = state['last_hps']
 
     def _compute_values_hash(self, values):
         keys = sorted(values.keys())

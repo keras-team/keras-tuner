@@ -63,15 +63,15 @@ def test_bayesian_dynamic_space(tmp_dir):
         objective='val_acc', max_trials=20)
     oracle.hyperparameters = hps
     for i in range(10):
-        oracle.populate_space(str(i))
+        oracle._populate_space(str(i))
     hps.Int('b', 3, 10, default=3)
-    assert 'b' in oracle.populate_space('1_0')['values']
+    assert 'b' in oracle._populate_space('1_0')['values']
     hps.Float('c', 0, 1, 0.1, default=0)
-    assert 'c' in oracle.populate_space('1_1')['values']
+    assert 'c' in oracle._populate_space('1_1')['values']
     hps.Fixed('d', 7)
-    assert 'd' in oracle.populate_space('1_2')['values']
+    assert 'd' in oracle._populate_space('1_2')['values']
     hps.Choice('e', [9, 0], default=9)
-    assert 'e' in oracle.populate_space('1_3')['values']
+    assert 'e' in oracle._populate_space('1_3')['values']
 
 
 def test_bayesian_save_reload(tmp_dir):
@@ -121,5 +121,5 @@ def test_save_before_result(tmp_dir):
     hps.Choice('e', [9, 0], default=9)
     oracle = bo_module.BayesianOptimizationOracle(
         objective='score', max_trials=10, hyperparameters=hps)
-    oracle.populate_space(str(1))
+    oracle._populate_space(str(1))
     oracle.save(os.path.join(tmp_dir, 'temp_oracle'))

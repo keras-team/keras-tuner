@@ -190,9 +190,9 @@ class Tuner(stateful.Stateful):
         self._checkpoint_model(model, trial, epoch)
 
         # Report intermediate metrics to the `Oracle`.
-        updated_trial = self.oracle.update_trial(
-            trial.trial_id, metrics=logs, t=epoch)
-        trial.set_state(updated_trial.get_state())
+        status = self.oracle.update_trial(
+            trial.trial_id, metrics=logs, step=epoch)
+        trial.status = status
         if trial.status == "STOPPED":
             model.stop_training = True
 

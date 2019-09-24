@@ -130,9 +130,9 @@ def test_tuning_correctness(tmp_dir):
 
     # Score tracking correctness
     first_trial, second_trial = sorted(
-        tuner.oracle.trials.values(), key=lambda x: x.score.value)
-    assert first_trial.score.value == min(m0_epochs)
-    assert second_trial.score.value == min(m1_epochs)
+        tuner.oracle.trials.values(), key=lambda t: t.score)
+    assert first_trial.score == min(m0_epochs)
+    assert second_trial.score == min(m1_epochs)
     assert (tuner.oracle.get_best_trials(1)[0].trial_id == 
             first_trial.trial_id)
 

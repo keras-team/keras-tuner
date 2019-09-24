@@ -41,13 +41,15 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                  seed=None,
                  hyperparameters=None,
                  allow_new_entries=True,
-                 tune_new_entries=True):
+                 tune_new_entries=True,
+                 executions_per_trial=1):
         super(BayesianOptimizationOracle, self).__init__(
             objective=objective,
             max_trials=max_trials,
             hyperparameters=hyperparameters,
             tune_new_entries=tune_new_entries,
-            allow_new_entries=allow_new_entries)
+            allow_new_entries=allow_new_entries,
+            executions_per_trial=executions_per_trial)
         self.num_initial_points = num_initial_points
         self.alpha = alpha
         self.beta = beta
@@ -64,7 +66,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             kernel=gaussian_process.kernels.ConstantKernel(1.0),
             alpha=self.alpha)
 
-    def populate_space(self, trial_id):
+    def _populate_space(self, trial_id):
         # Generate enough samples before training Gaussian process.
         if self._num_trials < self.num_initial_points or len(self._score) < 2:
             self._num_trials += 1
@@ -80,7 +82,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
     def end_trial(self, trial_id, status):
         super(BayesianOptimizationOracle, self).end_trial(trial_id, status)
         if status == trial_lib.TrialStatus.COMPLETED:
-            self._score[trial_id] = self.trials[trial_id].score.value
+            self._score[trial_id] = self.trials[trial_id].score
             # Update Gaussian process with existing samples
             if len(self._score) >= self.num_initial_points:
                 x, y = self._get_training_data()

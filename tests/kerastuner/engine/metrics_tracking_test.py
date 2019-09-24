@@ -59,14 +59,14 @@ def test_update():
     assert tracker.names == ['new_metric']
     assert tracker.directions['new_metric'] == 'min'  # default direction
     assert (tracker.get_history('new_metric') ==
-            [metrics_tracking.MetricObservation(0.5, t=0)])
+            [metrics_tracking.MetricObservation(0.5, step=0)])
 
 
 def test_get_history():
     tracker = metrics_tracking.MetricsTracker()
-    tracker.update('new_metric', 0.5, t=0)
-    tracker.update('new_metric', 1.5, t=1)
-    tracker.update('new_metric', 2., t=2)
+    tracker.update('new_metric', 0.5, step=0)
+    tracker.update('new_metric', 1.5, step=1)
+    tracker.update('new_metric', 2., step=2)
     assert tracker.get_history('new_metric') == [
         metrics_tracking.MetricObservation(0.5, 0),
         metrics_tracking.MetricObservation(1.5, 1),
@@ -126,9 +126,9 @@ def test_get_last_value():
     assert tracker.get_last_value('new_metric') is None
     tracker.set_history(
         'new_metric',
-        [metrics_tracking.MetricObservation(1., t=0),
-         metrics_tracking.MetricObservation(2., t=1),
-         metrics_tracking.MetricObservation(3., t=2)])
+        [metrics_tracking.MetricObservation(1., 0),
+         metrics_tracking.MetricObservation(2., 1),
+         metrics_tracking.MetricObservation(3., 2)])
     assert tracker.get_last_value('new_metric') == 3.
 
 

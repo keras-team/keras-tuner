@@ -48,13 +48,15 @@ class HyperbandOracle(oracle_module.Oracle):
                  seed=None,
                  hyperparameters=None,
                  allow_new_entries=True,
-                 tune_new_entries=True):
+                 tune_new_entries=True,
+                 executions_per_trial=1):
         super(HyperbandOracle, self).__init__(
             objective=objective,
             max_trials=max_trials,
             hyperparameters=hyperparameters,
             allow_new_entries=allow_new_entries,
-            tune_new_entries=tune_new_entries)
+            tune_new_entries=tune_new_entries,
+            executions_per_trial=executions_per_trial)
         if min_epochs >= max_epochs:
             raise ValueError('max_epochs needs to be larger than min_epochs.')
         if factor < 2:
@@ -81,11 +83,11 @@ class HyperbandOracle(oracle_module.Oracle):
     def end_trial(self, trial_id, status):
         super(HyperbandOracle, self).end_trial(trial_id, status)
         self._running[trial_id] = False
-        score = self.trials[trial_id].score.value
+        score = self.trials[trial_id].score
         self._candidate_score[
             self._trial_id_to_candidate_index[trial_id]] = score
 
-    def populate_space(self, trial_id):
+    def _populate_space(self, trial_id):
         space = self.hyperparameters.space
         # Queue is not empty means it is in one bracket.
         if not self._queue.empty():
@@ -338,7 +340,7 @@ class Hyperband(tuner_module.Tuner):
             history_trial = self.oracle.get_trial(trial_id)
             # Load best checkpoint from this trial.
             model.load_weights(self._get_checkpoint_fname(
-                history_trial, history_trial.score.t))
+                history_trial, history_trial.best_step))
         return model
 
     def _get_trial(self, trial_id):

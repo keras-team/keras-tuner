@@ -72,18 +72,18 @@ def test_hyperband_dynamic_space(tmp_dir):
     oracle = hyperband_module.HyperbandOracle(
         objective='score', max_trials=50, hyperparameters=hps)
     hps.Choice('b', [3, 4], default=3)
-    values = oracle.populate_space('0')['values']
+    values = oracle._populate_space('0')['values']
     assert 'b' in values
     new_hps = hp_module.HyperParameters()
     new_hps.Choice('c', [5, 6], default=5)
     oracle.update_space(new_hps)
-    assert 'c' in oracle.populate_space('1')['values']
+    assert 'c' in oracle._populate_space('1')['values']
     new_hps.Choice('d', [7, 8], default=7)
     oracle.update_space(new_hps)
-    assert 'd' in oracle.populate_space('2')['values']
+    assert 'd' in oracle._populate_space('2')['values']
     new_hps.Choice('e', [9, 0], default=9)
     oracle.update_space(new_hps)
-    assert 'e' in oracle.populate_space('3')['values']
+    assert 'e' in oracle._populate_space('3')['values']
 
 
 def test_hyperband_save_load_middle_of_bracket(tmp_dir):
@@ -305,7 +305,8 @@ def test_hyperband_tuner(patch_fit, patch_load, tmp_dir):
 
     hp = hyperparameters.HyperParameters()
     history_trial = trial_module.Trial(hyperparameters=hp.copy())
-    history_trial.score = metrics_tracking.MetricObservation(1., t=0)
+    history_trial.score = 1
+    history_trial.best_step = 0
     hp.values['tuner/epochs'] = 10
     hp.values['tuner/trial_id'] = history_trial.trial_id
     tuner.oracle.trials[history_trial.trial_id] = history_trial

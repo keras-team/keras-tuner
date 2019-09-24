@@ -46,7 +46,7 @@ class RandomSearchOracle(oracle_module.Oracle):
         # before we consider the space to be exhausted.
         self._max_collisions = 5
 
-    def populate_space(self, _):
+    def _populate_space(self, _):
         """Fill the hyperparameter space with values.
 
         Args:

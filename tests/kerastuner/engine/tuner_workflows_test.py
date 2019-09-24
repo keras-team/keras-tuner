@@ -466,18 +466,18 @@ def test_subclass_model(tmp_dir):
 def test_update_trial(tmp_dir):
     class MyOracle(kerastuner.Oracle):
 
-        def populate_space(self, _):
+        def _populate_space(self, _):
             values = {p.name: p.random_sample()
                       for p in self.hyperparameters.space}
             return {'values': values, 'status': 'RUNNING'}
 
-        def update_trial(self, trial_id, metrics, t=0):
-            if t == 3:
+        def update_trial(self, trial_id, metrics, step=0):
+            if step == 3:
                 trial = self.trials[trial_id]
                 trial.status = "STOPPED"
                 return trial
             return super(MyOracle, self).update_trial(
-                trial_id, metrics, t)
+                trial_id, metrics, step)
 
     my_oracle = MyOracle(
         objective='val_accuracy',
