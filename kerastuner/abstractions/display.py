@@ -40,11 +40,14 @@ try:
 except NameError:
     IS_NOTEBOOK = False
 
+
 if IS_NOTEBOOK:
     from tqdm import tqdm_notebook as tqdm
     from IPython.display import HTML
     from IPython.display import display as ipython_display
-    display = lambda x: ipython_display(HTML(x))
+
+    def display(text):
+        ipython_display(HTML(text))
 else:
     from tqdm import tqdm
     display = print
