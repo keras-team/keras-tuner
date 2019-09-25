@@ -20,6 +20,7 @@ from __future__ import print_function
 import collections
 import enum
 import hashlib
+import itertools
 import json
 
 from tensorflow import keras
@@ -43,6 +44,7 @@ class Oracle(stateful.Stateful):
                  tune_new_entries=True,
                  executions_per_trial=1):
         self.objective = _format_objective(objective)
+        self.max_trials = max_trials
         if not hyperparameters:
             if not tune_new_entries:
                 raise ValueError(
@@ -59,13 +61,6 @@ class Oracle(stateful.Stateful):
             self.hyperparameters = hyperparameters
         self.allow_new_entries = allow_new_entries
         self.tune_new_entries = tune_new_entries
-
-        # Each hyperparameter combination will be repeated this number of times.
-        # Scores of each execution will be averaged.
-        self.executions_per_trial = executions_per_trial
-        self.max_trials = max_trials * executions_per_trial
-        self._last_trial_execution = 0
-        self._last_hps = None
 
         # trial_id -> Trial
         self.trials = {}
@@ -120,22 +115,13 @@ class Oracle(stateful.Stateful):
 
         trial_id = trial_lib.generate_trial_id()
 
-        if self._last_trial_execution > 0:
-            # Repeat the current hyperparameter combination.
-            status = trial_lib.TrialStatus.RUNNING
-            values = self._last_hps
-        elif self.max_trials and len(self.trials.items()) >= self.max_trials:
+        if len(self.trials) >= self.max_trials:
             status = trial_lib.TrialStatus.STOPPED
             values = None
         else:
             response = self._populate_space(trial_id)
             status = response['status']
             values = response['values'] if 'values' in response else None
-
-        self._last_hps = values
-        self._last_trial_execution += 1
-        if self._last_trial_execution == self.executions_per_trial:
-            self._last_trial_execution = 0
 
         hyperparameters = self.hyperparameters.copy()
         hyperparameters.values = values
@@ -213,20 +199,7 @@ class Oracle(stateful.Stateful):
             # Assumes single objective, subclasses can override.
             reverse=self.objective.direction == 'max'
         )
-
-        if self.executions_per_trial == 1:
-            return sorted_trials[:num_trials]
-
-        # Filter out Trials with identical hyperparameters.
-        # Return the best Trial for each set of hyperparameters.
-        return_trials = []
-        seen_hps = []
-        for trial in sorted_trials:
-            if trial.hyperparameters.values not in seen_hps:
-                return_trials.append(trial)
-            if len(return_trials) == num_trials:
-                break
-        return return_trials
+        return sorted_trials[:num_trials]
 
     def remaining_trials(self):
         if self.max_trials:
@@ -242,8 +215,6 @@ class Oracle(stateful.Stateful):
         state['ongoing_trials'] = {
             tuner_id: trial.trial_id
             for tuner_id, trial in self.ongoing_trials.items()}
-        state['last_trial_execution'] = self._last_trial_execution
-        state['last_hps'] = self._last_hps
         return state
 
     def set_state(self, state):
@@ -253,8 +224,6 @@ class Oracle(stateful.Stateful):
         self.ongoing_trials = {
             tuner_id: self.trials[trial_id]
             for tuner_id, trial_id in state['ongoing_trials'].items()}
-        self._last_trial_execution = state['last_trial_execution']
-        self._last_hps = state['last_hps']
 
     def _compute_values_hash(self, values):
         keys = sorted(values.keys())

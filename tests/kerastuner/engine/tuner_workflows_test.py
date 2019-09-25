@@ -109,7 +109,7 @@ def test_basic_tuner_attributes(tmp_dir):
 
     assert tuner.oracle.objective.name == 'val_accuracy'
     assert tuner.oracle.max_trials == 2
-    assert tuner.executions_per_trial == 3
+    assert tuner.oracle.executions_per_trial == 3
     assert tuner.directory == tmp_dir
     assert tuner.hypermodel.__class__.__name__ == 'DefaultHyperModel'
     assert len(tuner.oracle.hyperparameters.space) == 3  # default search space
@@ -124,7 +124,8 @@ def test_basic_tuner_attributes(tmp_dir):
 
     tuner.results_summary()
 
-    assert len(tuner.oracle.trials) == 2
+    # max_trials * executions_per_trial
+    assert len(tuner.oracle.trials) == 6
     assert os.path.exists(os.path.join(tmp_dir, 'untitled_project'))
 
 
@@ -141,7 +142,8 @@ def test_callbacks_in_fit_kwargs(tmp_dir):
                  validation_data=(VAL_INPUTS, VAL_TARGETS),
                  callbacks=[keras.callbacks.EarlyStopping(),
                             keras.callbacks.TensorBoard(tmp_dir)])
-    assert len(tuner.oracle.trials) == 2
+    # max_trials * executions_per_trial
+    assert len(tuner.oracle.trials) == 6
 
 
 def test_hypermodel_with_dynamic_space(tmp_dir):
@@ -164,7 +166,8 @@ def test_hypermodel_with_dynamic_space(tmp_dir):
 
     tuner.results_summary()
 
-    assert len(tuner.oracle.trials) == 2
+    # max_trials * executions_per_trial
+    assert len(tuner.oracle.trials) == 6
 
 
 def test_override_compile(tmp_dir):
@@ -238,7 +241,6 @@ def test_static_space(tmp_dir):
         y=TRAIN_TARGETS,
         epochs=2,
         validation_data=(VAL_INPUTS, VAL_TARGETS))
-
     assert len(tuner.oracle.trials) == 4
 
 
@@ -433,10 +435,12 @@ def test_saving_and_reloading(tmp_dir):
         build_model,
         objective='val_accuracy',
         max_trials=4,
+        executions_per_trial=2,
         directory=tmp_dir)
     new_tuner.reload()
 
-    assert len(new_tuner.oracle.trials) == 4
+    # max_trials * executions_per_trial
+    assert len(new_tuner.oracle.trials) == 8
 
     new_tuner.search(
         x=TRAIN_INPUTS,
@@ -475,7 +479,7 @@ def test_update_trial(tmp_dir):
             if step == 3:
                 trial = self.trials[trial_id]
                 trial.status = "STOPPED"
-                return trial
+                return trial.status
             return super(MyOracle, self).update_trial(
                 trial_id, metrics, step)
 

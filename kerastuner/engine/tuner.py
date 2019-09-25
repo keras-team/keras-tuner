@@ -87,7 +87,6 @@ class Tuner(stateful.Stateful):
     def __init__(self,
                  oracle,
                  hypermodel,
-                 executions_per_trial=1,
                  max_model_size=None,
                  optimizer=None,
                  loss=None,

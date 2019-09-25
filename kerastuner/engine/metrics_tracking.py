@@ -27,6 +27,31 @@ MetricObservation = collections.namedtuple(
     'value step')
 
 
+class Direction(object):
+    def __init__(self, direction=None):
+        if direction not in {'min', 'max'}:
+            raise ValueError('`direction` must be "min" or "max".')
+        self.direction = direction
+
+    def get_best_value(self, values):
+        if self.direction == 'min':
+            return np.min(values)
+        return np.max(values)
+
+    def get_best_index(self, values):
+        if self.direction == 'min':
+            return int(np.argmin(values))
+        return int(np.argmax(values))
+
+
+class MetricHistory(object):
+    def __init__(self, name, direction=None):
+        self.name
+        if direction is None:
+            direction = _infer_metric_direction(name)
+
+
+
 class MetricsTracker(object):
 
     def __init__(self, metrics=None):
