@@ -35,6 +35,27 @@ Objective = collections.namedtuple('Objective', 'name direction')
 
 
 class Oracle(stateful.Stateful):
+    """Implements a hyperparameter optimization algorithm.
+
+    Attributes:
+        hypermodel: Instance of HyperModel class
+            (or callable that takes hyperparameters
+            and returns a Model instance).
+        objective: String. Name of model metric to minimize
+            or maximize, e.g. "val_accuracy".
+        hyperparameters: HyperParameters class instance.
+            Can be used to override (or register in advance)
+            hyperparamters in the search space.
+        tune_new_entries: Whether hyperparameter entries
+            that are requested by the hypermodel
+            but that were not specified in `hyperparameters`
+            should be added to the search space, or not.
+            If not, then the default value for these parameters
+            will be used.
+        allow_new_entries: Whether the hypermodel is allowed
+            to request hyperparameter entries not listed in
+            `hyperparameters`.
+    """
 
     def __init__(self,
                  objective,
@@ -66,35 +87,12 @@ class Oracle(stateful.Stateful):
         # tuner_id -> Trial
         self.ongoing_trials = {}
 
-    def get_space(self):
-        return self.hyperparameters.copy()
-
-    def update_space(self, hyperparameters):
-        """Add new hyperparameters to the tracking space.
-
-        Already recorded parameters get ignored.
-
-        Args:
-            hyperparameters: An updated HyperParameters object.
-        """
-        ref_names = {hp.name for hp in self.hyperparameters.space}
-        new_hps = [hp for hp in hyperparameters.space
-                   if hp.name not in ref_names]
-
-        if new_hps and not self.allow_new_entries:
-            raise RuntimeError('`allow_new_entries` is `False`, but found '
-                               'new entries {}'.format(new_hps))
-
-        if not self.tune_new_entries:
-            # New entries should always use the default value.
-            return
-
-        for hp in new_hps:
-            self.hyperparameters.register(
-                hp.name, hp.__class__.__name__, hp.get_config())
-
     def _populate_space(self, trial_id):
         """Fill the hyperparameter space with values for a trial.
+
+        This method should be overrridden in subclasses and called in
+        `create_trial` in order to populate the hyperparameter space with
+        values.
 
         Args:
           `trial_id`: The id for this Trial.
@@ -107,7 +105,35 @@ class Oracle(stateful.Stateful):
         """
         raise NotImplementedError
 
+    def _score_trial(self, trial):
+        """Score a completed `Trial`.
+
+        This method can be overridden in subclasses to provide a score for
+        a set of hyperparameter values. This method is called from `end_trial`
+        on completed `Trial`s.
+
+        Args:
+          trial: A completed `Trial` object.
+        """
+        # Assumes single objective, subclasses can override.
+        trial.score = trial.metrics.get_best_value(self.objective.name)
+        trial.best_step = trial.metrics.get_best_step(self.objective.name)
+
     def create_trial(self, tuner_id):
+        """Create a new `Trial` to be run by the `Tuner`.
+
+        A `Trial` corresponds to a unique set of hyperparameters to be run
+        by `Tuner.run_trial`.
+
+        Args:
+          tuner_id: A ID that identifies the `Tuner` requesting a
+          `Trial`. `Tuners` that should run the same trial (for instance,
+           when running a multi-worker model) should have the same ID.
+
+        Returns:
+          A `Trial` object containing a set of hyperparameter values to run
+          in a `Tuner`.
+        """
         # Allow for multi-worker DistributionStrategy within a Trial.
         if tuner_id in self.ongoing_trials:
             return self.ongoing_trials[tuner_id]
@@ -180,15 +206,40 @@ class Oracle(stateful.Stateful):
         if status == trial_lib.TrialStatus.COMPLETED:
             self._score_trial(trial)
 
-    def _score_trial(self, trial):
-        # Assumes single objective, subclasses can override.
-        trial.score = trial.metrics.get_best_value(self.objective.name)
-        trial.best_step = trial.metrics.get_best_step(self.objective.name)
+    def get_space(self):
+        """Returns the `HyperParameters` search space."""
+        return self.hyperparameters.copy()
+
+    def update_space(self, hyperparameters):
+        """Add new hyperparameters to the tracking space.
+
+        Already recorded parameters get ignored.
+
+        Args:
+            hyperparameters: An updated HyperParameters object.
+        """
+        ref_names = {hp.name for hp in self.hyperparameters.space}
+        new_hps = [hp for hp in hyperparameters.space
+                   if hp.name not in ref_names]
+
+        if new_hps and not self.allow_new_entries:
+            raise RuntimeError('`allow_new_entries` is `False`, but found '
+                               'new entries {}'.format(new_hps))
+
+        if not self.tune_new_entries:
+            # New entries should always use the default value.
+            return
+
+        for hp in new_hps:
+            self.hyperparameters.register(
+                hp.name, hp.__class__.__name__, hp.get_config())
 
     def get_trial(self, trial_id):
+        """Returns the `Trial` specified by `trial_id`."""
         return self.trials[trial_id]
 
     def get_best_trials(self, num_trials=1):
+        """Returns the best `Trial`s."""
         trials = [t for t in self.trials.values()
                   if t.status == trial_lib.TrialStatus.COMPLETED]
 

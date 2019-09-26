@@ -128,7 +128,7 @@ class RandomSearchOracle(oracle_module.Oracle):
 class RandomSearch(multi_execution_tuner.MultiExecutionTuner):
     """Random search tuner.
 
-    Args:
+    Attributes:
         hypermodel: Instance of HyperModel class
             (or callable that takes hyperparameters
             and returns a Model instance).
