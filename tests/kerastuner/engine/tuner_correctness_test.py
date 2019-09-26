@@ -115,11 +115,12 @@ class MockHyperModel(kerastuner.HyperModel):
 
 
 def test_tuning_correctness(tmp_dir):
-    tuner = kerastuner.RandomSearch(
-        seed=1337,
+    tuner = kerastuner.Tuner(
+        oracle=kerastuner.tuners.randomsearch.RandomSearchOracle(
+            objective='loss',
+            max_trials=2,
+            seed=1337),
         hypermodel=MockHyperModel(),
-        max_trials=2,
-        objective='loss',
         directory=tmp_dir,
     )
     tuner.search()

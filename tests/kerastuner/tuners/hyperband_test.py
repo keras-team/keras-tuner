@@ -275,15 +275,13 @@ def build_model(hp):
 
 def mock_fit(**kwargs):
     assert kwargs['epochs'] == 10
+    history = tf.keras.callbacks.History()
+    history.history = {'val_accuracy': 0.5}
+    return history
 
 
 def mock_load(best_checkpoint):
     assert 'epoch_0' in best_checkpoint
-
-
-class HyperbandStub(hyperband_module.Hyperband):
-    def on_execution_end(self, trial, execution, model):
-        pass
 
 
 @mock.patch('tensorflow.keras.Model.fit', side_effect=mock_fit)
@@ -294,7 +292,7 @@ def test_hyperband_tuner(patch_fit, patch_load, tmp_dir):
     val_x = np.random.rand(10, 2, 2).astype('float32')
     val_y = np.random.randint(0, 1, (10,))
 
-    tuner = HyperbandStub(
+    tuner = hyperband_module.Hyperband(
         build_model,
         objective='val_accuracy',
         max_trials=15,
@@ -312,6 +310,7 @@ def test_hyperband_tuner(patch_fit, patch_load, tmp_dir):
     tuner.oracle.trials[history_trial.trial_id] = history_trial
 
     trial = trial_module.Trial(hyperparameters=hp)
+    tuner.oracle.trials[trial.trial_id] = trial
     tuner.run_trial(
         trial,
         x=x,

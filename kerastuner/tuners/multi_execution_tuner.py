@@ -62,7 +62,7 @@ class MultiExecutionTuner(tuner_module.Tuner):
                  **kwargs):
         super(MultiExecutionTuner, self).__init__(
             oracle, hypermodel, **kwargs)
-        if isinstance(oracle.objective, (list, tuple)):
+        if isinstance(oracle.objective, list):
             raise ValueError(
                 'Multi-objective is not supported, found: {}'.format(
                     oracle.objective))
@@ -85,16 +85,20 @@ class MultiExecutionTuner(tuner_module.Tuner):
         metrics = collections.defaultdict(list)
 
         # Run the training process multiple times.
-        for execution in self.executions_per_trial:
+        for execution in range(self.executions_per_trial):
             model = self._build_model(trial.hyperparameters.copy())
             self._compile_model(model)
             history = model.fit(*fit_args, **fit_kwargs)
-            for metric, epoch_values in history.history:
-                metrics[metrics].append(epoch_values[-1])
+            for metric, epoch_values in history.history.items():
+                if self.oracle.objective.direction == 'min':
+                    best_value = np.min(epoch_values)
+                else:
+                    best_value = np.max(epoch_values)
+                metrics[metric].append(best_value)
 
         # Average the results across executions and send to the Oracle.
         averaged_metrics = {}
-        for metric, execution_values in metrics:
+        for metric, execution_values in metrics.items():
             averaged_metrics[metric] = np.mean(execution_values)
         self.oracle.update_trial(
             trial.trial_id, metrics=averaged_metrics, step=self._reported_step)
@@ -104,8 +108,8 @@ class MultiExecutionTuner(tuner_module.Tuner):
             callbacks, trial)
         model_checkpoint = keras.callbacks.ModelCheckpoint(
             filepath=self._get_checkpoint_fname(trial, self._reported_step),
-            monitor=self.objective.name,
-            mode=self.objective.direction,
+            monitor=self.oracle.objective.name,
+            mode=self.oracle.objective.direction,
             save_best_only=True,
             save_weights_only=True)
         callbacks.append(model_checkpoint)
