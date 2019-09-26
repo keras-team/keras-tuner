@@ -38,11 +38,10 @@ class Oracle(stateful.Stateful):
     """Implements a hyperparameter optimization algorithm.
 
     Attributes:
-        hypermodel: Instance of HyperModel class
-            (or callable that takes hyperparameters
-            and returns a Model instance).
         objective: String. Name of model metric to minimize
             or maximize, e.g. "val_accuracy".
+        max_trials: The maximum number of hyperparameter
+            combinations to try.
         hyperparameters: HyperParameters class instance.
             Can be used to override (or register in advance)
             hyperparamters in the search space.
