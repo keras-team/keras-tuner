@@ -19,24 +19,54 @@ from __future__ import division
 from __future__ import print_function
 
 from ..engine import trial as trial_lib
-from ..engine import tuner as tuner_module
 from ..engine import oracle as oracle_module
 from ..engine import hyperparameters as hp_module
 from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
+from ..tuners import multi_execution_tuner
 
 import random
 import json
 
 
 class RandomSearchOracle(oracle_module.Oracle):
+    """Random search oracle.
+
+    Attributes:
+        objective: String or `kerastuner.Objective`. If a string,
+          the direction of the optimization (min or max) will be
+          inferred.
+        max_trials: Int. Total number of trials
+            (model configurations) to test at most.
+            Note that the oracle may interrupt the search
+            before `max_trial` models have been tested.
+        seed: Int. Random seed.
+        hyperparameters: HyperParameters class instance.
+            Can be used to override (or register in advance)
+            hyperparamters in the search space.
+        tune_new_entries: Whether hyperparameter entries
+            that are requested by the hypermodel
+            but that were not specified in `hyperparameters`
+            should be added to the search space, or not.
+            If not, then the default value for these parameters
+            will be used.
+        allow_new_entries: Whether the hypermodel is allowed
+            to request hyperparameter entries not listed in
+            `hyperparameters`.
+    """
 
     def __init__(self,
                  objective,
                  max_trials,
                  seed=None,
-                 **kwargs):
+                 hyperparameters=None,
+                 allow_new_entries=True,
+                 tune_new_entries=True):
         super(RandomSearchOracle, self).__init__(
-            objective=objective, max_trials=max_trials, **kwargs)
+            objective=objective,
+            max_trials=max_trials,
+            hyperparameters=hyperparameters,
+            tune_new_entries=tune_new_entries,
+            allow_new_entries=allow_new_entries)
         self.seed = seed or random.randint(1, 1e4)
         # Incremented at every call to `populate_space`.
         self._seed_state = self.seed
@@ -95,7 +125,7 @@ class RandomSearchOracle(oracle_module.Oracle):
         self._tried_so_far = set(state['tried_so_far'])
 
 
-class RandomSearch(tuner_module.Tuner):
+class RandomSearch(multi_execution_tuner.MultiExecutionTuner):
     """Random search tuner.
 
     Args:
@@ -109,6 +139,20 @@ class RandomSearch(tuner_module.Tuner):
             Note that the oracle may interrupt the search
             before `max_trial` models have been tested.
         seed: Int. Random seed.
+        hyperparameters: HyperParameters class instance.
+            Can be used to override (or register in advance)
+            hyperparamters in the search space.
+        tune_new_entries: Whether hyperparameter entries
+            that are requested by the hypermodel
+            but that were not specified in `hyperparameters`
+            should be added to the search space, or not.
+            If not, then the default value for these parameters
+            will be used.
+        allow_new_entries: Whether the hypermodel is allowed
+            to request hyperparameter entries not listed in
+            `hyperparameters`.
+        **kwargs: Keyword arguments relevant to all `Tuner` subclasses.
+            Please see the docstring for `Tuner`.
     """
 
     def __init__(self,
@@ -116,16 +160,18 @@ class RandomSearch(tuner_module.Tuner):
                  objective,
                  max_trials,
                  seed=None,
+                 hyperparameters=None,
+                 tune_new_entries=True,
+                 allow_new_entries=True,
                  **kwargs):
         self.seed = seed
         oracle = RandomSearchOracle(
             objective=objective,
             max_trials=max_trials,
             seed=seed,
-            hyperparameters=kwargs.pop('hyperparameters', None),
-            tune_new_entries=kwargs.pop('tune_new_entries', True),
-            allow_new_entries=kwargs.pop('allow_new_entries', True),
-            executions_per_trial=kwargs.pop('executions_per_trial', 1))
+            hyperparameters=hyperparameters,
+            tune_new_entries=tune_new_entries,
+            allow_new_entries=allow_new_entries)
         super(RandomSearch, self).__init__(
             oracle,
             hypermodel,

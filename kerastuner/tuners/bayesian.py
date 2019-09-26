@@ -9,8 +9,7 @@ from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 from ..engine import hyperparameters as hp_module
 from ..engine import oracle as oracle_module
 from ..engine import trial as trial_lib
-from ..engine import tuner as tuner_module
-
+from ..tuners import multi_execution_tuner
 
 class BayesianOptimizationOracle(oracle_module.Oracle):
     """Bayesian optimization oracle.
@@ -21,6 +20,13 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
     https://www.cse.wustl.edu/~garnett/cse515t/spring_2015/files/lecture_notes/12.pdf
 
     Attributes:
+        objective: String or `kerastuner.Objective`. If a string,
+          the direction of the optimization (min or max) will be
+          inferred.
+        max_trials: Int. Total number of trials
+            (model configurations) to test at most.
+            Note that the oracle may interrupt the search
+            before `max_trial` models have been tested.
         num_initial_points: Int. The number of randomly generated samples as initial
             training data for Bayesian optimization.
         alpha: Float. Value added to the diagonal of the kernel matrix
@@ -29,7 +35,18 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         beta: Float. The balancing factor of exploration and exploitation.
             The larger it is, the more explorative it is.
         seed: Int. Random seed.
-
+        hyperparameters: HyperParameters class instance.
+            Can be used to override (or register in advance)
+            hyperparamters in the search space.
+        tune_new_entries: Whether hyperparameter entries
+            that are requested by the hypermodel
+            but that were not specified in `hyperparameters`
+            should be added to the search space, or not.
+            If not, then the default value for these parameters
+            will be used.
+        allow_new_entries: Whether the hypermodel is allowed
+            to request hyperparameter entries not listed in
+            `hyperparameters`.
     """
 
     def __init__(self,
@@ -41,15 +58,13 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                  seed=None,
                  hyperparameters=None,
                  allow_new_entries=True,
-                 tune_new_entries=True,
-                 executions_per_trial=1):
+                 tune_new_entries=True)
         super(BayesianOptimizationOracle, self).__init__(
             objective=objective,
             max_trials=max_trials,
             hyperparameters=hyperparameters,
             tune_new_entries=tune_new_entries,
-            allow_new_entries=allow_new_entries,
-            executions_per_trial=executions_per_trial)
+            allow_new_entries=allow_new_entries)
         self.num_initial_points = num_initial_points
         self.alpha = alpha
         self.beta = beta
@@ -263,7 +278,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         return min_x.reshape(-1, 1)
 
 
-class BayesianOptimization(tuner_module.Tuner):
+class BayesianOptimization(multi_execution_tuner.MultiExecutionTuner):
     """BayesianOptimization tuning with Gaussian process.
 
     Args:
@@ -283,6 +298,20 @@ class BayesianOptimization(tuner_module.Tuner):
         beta: Float. The balancing factor of exploration and exploitation.
             The larger it is, the more explorative it is.
         seed: Int. Random seed.
+        hyperparameters: HyperParameters class instance.
+            Can be used to override (or register in advance)
+            hyperparamters in the search space.
+        tune_new_entries: Whether hyperparameter entries
+            that are requested by the hypermodel
+            but that were not specified in `hyperparameters`
+            should be added to the search space, or not.
+            If not, then the default value for these parameters
+            will be used.
+        allow_new_entries: Whether the hypermodel is allowed
+            to request hyperparameter entries not listed in
+            `hyperparameters`.
+        **kwargs: Keyword arguments relevant to all `Tuner` subclasses.
+            Please see the docstring for `Tuner`.
     """
 
     def __init__(self,
@@ -291,16 +320,18 @@ class BayesianOptimization(tuner_module.Tuner):
                  max_trials,
                  num_initial_points=2,
                  seed=None,
+                 hyperparameters=None,
+                 tune_new_entries=True,
+                 allow_new_entries=True,
                  **kwargs):
         oracle = BayesianOptimizationOracle(
             objective=objective,
             max_trials=max_trials,
             num_initial_points=num_initial_points,
             seed=seed,
-            hyperparameters=kwargs.pop('hyperparameters', None),
-            allow_new_entries=kwargs.pop('allow_new_entries', True),
-            tune_new_entries=kwargs.pop('tune_new_entries', True),
-            executions_per_trial=kwargs.pop('executions_per_trial', 1))
+            hyperparameters=hyperparameters,
+            tune_new_entries=tune_new_entries,
+            allow_new_entries=allow_new_entries)
         super(BayesianOptimization, self, ).__init__(oracle=oracle,
                                                      hypermodel=hypermodel,
                                                      **kwargs)

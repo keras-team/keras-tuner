@@ -41,8 +41,7 @@ class Oracle(stateful.Stateful):
                  max_trials=None,
                  hyperparameters=None,
                  allow_new_entries=True,
-                 tune_new_entries=True,
-                 executions_per_trial=1):
+                 tune_new_entries=True):
         self.objective = _format_objective(objective)
         self.max_trials = max_trials
         if not hyperparameters:

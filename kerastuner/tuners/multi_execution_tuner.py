@@ -30,15 +30,35 @@ import json
 from tensorflow import keras
 
 
-class MultipleExecutionsTuner(tuner_module.Tuner):
+class MultiExecutionTuner(tuner_module.Tuner):
+    """A Tuner class that averages multiple runs of the process.
 
+
+
+    Args:
+        oracle: Instance of Oracle class.
+        hypermodel: Instance of HyperModel class
+            (or callable that takes hyperparameters
+            and returns a Model instance).
+        executions_per_trial: Int. Number of executions
+            (training a model from scratch,
+            starting from a new initialization)
+            to run per trial (model configuration).
+            Model metrics may vary greatly depending
+            on random initialization, hence it is
+            often a good idea to run several executions
+            per trial in order to evaluate the performance
+            of a given set of hyperparameter values.
+        **kwargs: Keyword arguments relevant to all `Tuner` subclasses.
+            Please see the docstring for `Tuner`.
+    """
 
     def __init__(self,
                  oracle,
                  hypermodel,
                  executions_per_trial=1,
                  **kwargs):
-        super(MultipleExecutionsTuner, self).__init__(
+        super(MultiExecutionTuner, self).__init__(
             oracle, hypermodel, **kwargs)
         if isinstance(oracle.objective, (list, tuple)):
             raise ValueError(
@@ -88,5 +108,3 @@ class MultipleExecutionsTuner(tuner_module.Tuner):
             save_weights_only=True)
         callbacks.append(model_checkpoint)
         return callbacks
-
-

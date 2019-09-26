@@ -16,9 +16,9 @@ import queue
 import random
 import json
 from ..engine import trial as trial_lib
-from ..engine import tuner as tuner_module
 from ..engine import oracle as oracle_module
 from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
+from ..tuners import multi_execution_tuner
 
 
 def queue_to_list(queue):
@@ -31,12 +31,31 @@ def queue_to_list(queue):
 class HyperbandOracle(oracle_module.Oracle):
     """Oracle class for Hyperband.
 
-    Args:
+    Attributes:
+        objective: String or `kerastuner.Objective`. If a string,
+          the direction of the optimization (min or max) will be
+          inferred.
+        max_trials: Int. Total number of trials
+            (model configurations) to test at most.
+            Note that the oracle may interrupt the search
+            before `max_trial` models have been tested.
         factor: Int. Reduction factor for the number of epochs
             and number of models for each bracket.
         min_epochs: Int. The minimum number of epochs to train a model.
         max_epochs: Int. The maximum number of epochs to train a model.
         seed: Int. Random seed.
+        hyperparameters: HyperParameters class instance.
+            Can be used to override (or register in advance)
+            hyperparamters in the search space.
+        tune_new_entries: Whether hyperparameter entries
+            that are requested by the hypermodel
+            but that were not specified in `hyperparameters`
+            should be added to the search space, or not.
+            If not, then the default value for these parameters
+            will be used.
+        allow_new_entries: Whether the hypermodel is allowed
+            to request hyperparameter entries not listed in
+            `hyperparameters`.
     """
 
     def __init__(self,
@@ -48,15 +67,13 @@ class HyperbandOracle(oracle_module.Oracle):
                  seed=None,
                  hyperparameters=None,
                  allow_new_entries=True,
-                 tune_new_entries=True,
-                 executions_per_trial=1):
+                 tune_new_entries=True):
         super(HyperbandOracle, self).__init__(
             objective=objective,
             max_trials=max_trials,
             hyperparameters=hyperparameters,
             allow_new_entries=allow_new_entries,
-            tune_new_entries=tune_new_entries,
-            executions_per_trial=executions_per_trial)
+            tune_new_entries=tune_new_entries)
         if min_epochs >= max_epochs:
             raise ValueError('max_epochs needs to be larger than min_epochs.')
         if factor < 2:
@@ -272,7 +289,7 @@ class HyperbandOracle(oracle_module.Oracle):
                 self._running[trial_id] = False
 
 
-class Hyperband(tuner_module.Tuner):
+class Hyperband(multi_execution_tuner.MultiExecutionTuner):
     """Variation of HyperBand algorithm.
 
     Reference:
@@ -283,7 +300,7 @@ class Hyperband(tuner_module.Tuner):
             http://jmlr.org/papers/v18/16-558.html).
 
 
-    Args:
+    Attributes:
         oracle: Instance of Oracle class.
         hypermodel: Instance of HyperModel class
             (or callable that takes hyperparameters
@@ -299,7 +316,20 @@ class Hyperband(tuner_module.Tuner):
         min_epochs: Int. Minimum number of epochs to train a model.
         max_epochs: Int. Maximum number of epochs to train a model.
         seed: Int. Random seed.
-        **kwargs: Additional kwargs.
+        hyperparameters: HyperParameters class instance.
+            Can be used to override (or register in advance)
+            hyperparamters in the search space.
+        tune_new_entries: Whether hyperparameter entries
+            that are requested by the hypermodel
+            but that were not specified in `hyperparameters`
+            should be added to the search space, or not.
+            If not, then the default value for these parameters
+            will be used.
+        allow_new_entries: Whether the hypermodel is allowed
+            to request hyperparameter entries not listed in
+            `hyperparameters`.
+        **kwargs: Keyword arguments relevant to all `Tuner` subclasses.
+            Please see the docstring for `Tuner`.
     """
 
     def __init__(self,
@@ -310,6 +340,9 @@ class Hyperband(tuner_module.Tuner):
                  min_epochs=3,
                  max_epochs=10,
                  seed=None,
+                 hyperparameters=None,
+                 tune_new_entries=True,
+                 allow_new_entries=True,
                  **kwargs):
         oracle = HyperbandOracle(
             objective,
@@ -318,10 +351,9 @@ class Hyperband(tuner_module.Tuner):
             factor=factor,
             min_epochs=min_epochs,
             max_epochs=max_epochs,
-            hyperparameters=kwargs.pop('hyperparameters', None),
-            tune_new_entries=kwargs.pop('tune_new_entries', True),
-            allow_new_entries=kwargs.pop('allow_new_entries', True),
-            executions_per_trial=kwargs.pop('executions_per_trial', 1))
+            hyperparameters=hyperparameters,
+            tune_new_entries=tune_new_entries,
+            allow_new_entries=allow_new_entries)
         super(Hyperband, self).__init__(
             oracle=oracle,
             hypermodel=hypermodel,
