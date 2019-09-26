@@ -182,7 +182,7 @@ class Oracle(stateful.Stateful):
         # To signal early stopping, set Trial.status to "STOPPED".
         return trial.status
 
-    def end_trial(self, trial_id, status="COMPLETED"):
+    def end_trial(self, trial_id, status='COMPLETED'):
         """Record the measured objective for a set of parameter values.
 
         Args:

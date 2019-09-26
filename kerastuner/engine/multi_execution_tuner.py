@@ -35,8 +35,6 @@ from tensorflow import keras
 class MultiExecutionTuner(tuner_module.Tuner):
     """A Tuner class that averages multiple runs of the process.
 
-
-
     Args:
         oracle: Instance of Oracle class.
         hypermodel: Instance of HyperModel class
