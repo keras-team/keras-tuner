@@ -11,6 +11,7 @@ from ..engine import oracle as oracle_module
 from ..engine import trial as trial_lib
 from ..tuners import multi_execution_tuner
 
+
 class BayesianOptimizationOracle(oracle_module.Oracle):
     """Bayesian optimization oracle.
 
@@ -58,7 +59,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                  seed=None,
                  hyperparameters=None,
                  allow_new_entries=True,
-                 tune_new_entries=True)
+                 tune_new_entries=True):
         super(BayesianOptimizationOracle, self).__init__(
             objective=objective,
             max_trials=max_trials,

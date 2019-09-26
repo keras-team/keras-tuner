@@ -25,8 +25,10 @@ from ..engine import hyperparameters as hp_module
 from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 
 import collections
-import random
+import copy
 import json
+import numpy as np
+import random
 from tensorflow import keras
 
 
@@ -98,7 +100,7 @@ class MultiExecutionTuner(tuner_module.Tuner):
             trial.trial_id, metrics=averaged_metrics, step=self._reported_step)
 
     def _inject_callbacks(self, callbacks, trial):
-        callbacks = super(MultipleExecutionsTuner, self)._inject_callbacks(
+        callbacks = super(MultiExecutionTuner, self)._inject_callbacks(
             callbacks, trial)
         model_checkpoint = keras.callbacks.ModelCheckpoint(
             filepath=self._get_checkpoint_fname(trial, self._reported_step),
