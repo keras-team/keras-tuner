@@ -133,6 +133,9 @@ class Tuner(stateful.Stateful):
         self.logger = logger
         self._display = tuner_utils.Display()
 
+        # Save only the last N checkpoints.
+        self._save_n_checkpoints = 10
+
         # Populate initial search space.
         if self.oracle.tune_new_entries:
             hp = self.oracle.get_space()
@@ -185,8 +188,10 @@ class Tuner(stateful.Stateful):
         pass
 
     def on_epoch_end(self, trial, model, epoch, logs=None):
-        # TODO: Garbage collect unneeded checkpoints.
         self._checkpoint_model(model, trial, epoch)
+        if epoch > self._save_n_checkpoints:
+            self._delete_checkpoint(
+                trial, epoch - self._save_n_checkpoints)
 
         # Report intermediate metrics to the `Oracle`.
         status = self.oracle.update_trial(
@@ -424,11 +429,17 @@ class Tuner(stateful.Stateful):
         tf_utils.create_directory(dirname)
         return dirname
 
-    def _get_checkpoint_fname(self, trial, epoch):
+    def _get_checkpoint_dir(self, trial, epoch):
         return os.path.join(
             self._get_trial_dir(trial),
             'checkpoints',
             'epoch_' + str(epoch))
+
+    def _get_checkpoint_fname(self, trial, epoch):
+        return os.path.join(
+            # Each checkpoint is saved in its own directory.
+            self._get_checkpoint_dir(trial, epoch),
+            'checkpoint')
 
     def _get_trial_fname(self, trial):
         return os.path.join(
@@ -450,3 +461,6 @@ class Tuner(stateful.Stateful):
         # Save in TF format.
         model.save_weights(fname)
         return fname
+
+    def _delete_checkpoint(self, trial, epoch):
+        tf.io.gfile.rmtree(self._get_checkpoint_dir(trial, epoch))

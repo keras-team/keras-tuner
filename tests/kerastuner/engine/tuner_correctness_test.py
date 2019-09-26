@@ -18,6 +18,7 @@ import numpy as np
 import kerastuner
 from kerastuner.engine import tuner as tuner_module
 
+import tensorflow as tf
 from tensorflow import keras
 
 INPUT_DIM = 2
@@ -171,3 +172,29 @@ def test_tuner_errors(tmp_dir):
         tuner.search(TRAIN_INPUTS, TRAIN_TARGETS,
                      validation_data=(VAL_INPUTS, VAL_TARGETS))
     # TODO: test no optimizer
+
+
+def test_checkpoint_removal(tmp_dir):
+    def build_model(hp):
+        model = keras.Sequential([
+            keras.layers.Dense(hp.Int('size', 5, 10)),
+            keras.layers.Dense(1)])
+        model.compile('sgd', 'mse', metrics=['accuracy'])
+        return model
+
+    tuner = kerastuner.Tuner(
+        oracle=kerastuner.tuners.randomsearch.RandomSearchOracle(
+            objective='val_accuracy',
+            max_trials=1,
+            seed=1337),
+        hypermodel=build_model,
+        directory=tmp_dir,
+    )
+    x, y = np.ones((1, 5)), np.ones((1, 1))
+    tuner.search(x,
+                 y,
+                 validation_data=(x, y),
+                 epochs=21)
+    trial = list(tuner.oracle.trials.values())[0]
+    assert tf.io.gfile.exists(tuner._get_checkpoint_fname(trial, 20))
+    assert not tf.io.gfile.exists(tuner._get_checkpoint_fname(trial, 10))
