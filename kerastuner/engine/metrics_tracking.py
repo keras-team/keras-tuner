@@ -64,7 +64,7 @@ class MetricsTracker(object):
             improved = True
         elif self.directions[name] == 'max' and value >= np.max(history):
             improved = True
-        elif self.directions[name] == 'min' and value <= np.max(history):
+        elif self.directions[name] == 'min' and value <= np.min(history):
             improved = True
         else:
             improved = False
