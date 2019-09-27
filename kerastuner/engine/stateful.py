@@ -11,23 +11,32 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"Tuner base class."
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from kerastuner import tuners
+import json
 
-from kerastuner.engine.hyperparameters import HyperParameters
-from kerastuner.engine.hyperparameters import HyperParameter
-from kerastuner.engine.hypermodel import HyperModel
-from kerastuner.engine.tuner import Tuner
-from kerastuner.engine.oracle import Objective
-from kerastuner.engine.oracle import Oracle
-from kerastuner.engine.logger import Logger
-from kerastuner.engine.logger import CloudLogger
-from kerastuner.tuners import BayesianOptimization
-from kerastuner.tuners import Hyperband
-from kerastuner.tuners import RandomSearch
+from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 
-__version__ = '0.9.1'
+
+class Stateful(object):
+
+    def get_state(self):
+        raise NotImplementedError
+
+    def set_state(self):
+        raise NotImplementedError
+
+    def save(self, fname):
+        state = self.get_state()
+        state_json = json.dumps(state)
+        tf_utils.write_file(fname, state_json)
+        return str(fname)
+
+    def reload(self, fname):
+        state_data = tf_utils.read_file(fname)
+        state = json.loads(state_data)
+        self.set_state(state)

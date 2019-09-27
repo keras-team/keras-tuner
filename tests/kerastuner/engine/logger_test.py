@@ -61,8 +61,7 @@ def test_cloud_logger(tmp_dir):
     tuner = kerastuner.tuners.RandomSearch(
         build_model,
         objective='val_accuracy',
-        max_trials=2,
-        executions_per_trial=3,
+        max_trials=6,
         directory=tmp_dir,
         logger=cloud_logger)
 
@@ -75,8 +74,7 @@ def test_cloud_logger(tmp_dir):
     assert len(MOCK_POST.url_calls) >= 10
     keys = [
         ('register_tuner', 1),
-        ('register_trial', 2),
-        ('register_execution', 6),
+        ('register_trial', 6),
     ]
     for key, count in keys:
         actual_count = 0

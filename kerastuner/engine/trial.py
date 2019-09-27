@@ -17,34 +17,40 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
+import hashlib
 import json
+import os
+import random
+import time
 
+from kerastuner.engine import stateful
 from . import metrics_tracking
 from . import hyperparameters as hp_module
-from . import execution as execution_module
 from ..abstractions import display
 from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 
 
-class Trial(object):
+class TrialStatus:
+    RUNNING = 'RUNNING'
+    IDLE = 'IDLE'
+    INVALID = 'INVALID'
+    STOPPED = 'STOPPED'
+    COMPLETED = 'COMPLETED'
+
+
+class Trial(stateful.Stateful):
 
     def __init__(self,
-                 trial_id,
                  hyperparameters,
-                 max_executions,
-                 base_directory='.'):
-        self.trial_id = trial_id
+                 trial_id=None,
+                 status=TrialStatus.RUNNING):
         self.hyperparameters = hyperparameters
-        self.max_executions = max_executions
-        self.base_directory = base_directory
+        self.trial_id = generate_trial_id() if trial_id is None else trial_id
 
-        self.averaged_metrics = metrics_tracking.MetricsTracker()
+        self.metrics = metrics_tracking.MetricsTracker()
         self.score = None
-        self.executions = []
-
-        self.directory = os.path.join(base_directory, 'trial_' + trial_id)
-        tf_utils.create_directory(self.directory)
+        self.best_step = None
+        self.status = status
 
     def summary(self):
         display.section('Trial summary')
@@ -53,48 +59,46 @@ class Trial(object):
             display.display_settings(self.hyperparameters.values)
         else:
             display.subsection('Hp values: default configuration.')
-        if self.score:
-            display.display_setting('Score: %.4f' % self.score)
+        if self.score is not None:
+            display.display_setting('Score: {}'.format(self.score))
+        if self.best_step is not None:
+            display.display_setting('Best step: {}'.format(self.best_step))
 
     def get_state(self):
         return {
             'trial_id': self.trial_id,
             'hyperparameters': self.hyperparameters.get_config(),
-            'max_executions': self.max_executions,
-            'base_directory': self.base_directory,
-            'averaged_metrics': self.averaged_metrics.get_config(),
+            'metrics': self.metrics.get_config(),
             'score': self.score,
-            'executions': [
-                e.save() for e in self.executions
-                if e.training_complete]
+            'best_step': self.best_step,
+            'status': self.status
         }
 
-    def save(self):
-        state = self.get_state()
-        state_json = json.dumps(state)
-        fname = os.path.join(self.directory, 'trial.json')
-        tf_utils.write_file(fname, state_json)
-        return str(fname)
+    def set_state(self, state):
+        self.trial_id = state['trial_id']
+        hp = hp_module.HyperParameters.from_config(
+            state['hyperparameters']
+        )
+        self.hyperparameters = hp
+        metrics = metrics_tracking.MetricsTracker.from_config(
+            state['metrics'])
+        self.score = state['score']
+        self.best_step = state['best_step']
+        self.status = state['status']
+
+    @classmethod
+    def from_state(cls, state):
+        trial = cls(hyperparameters=None)
+        trial.set_state(state)
+        return trial
 
     @classmethod
     def load(cls, fname):
         state_data = tf_utils.read_file(fname)
         state = json.loads(state_data)
-        hp = hp_module.HyperParameters.from_config(
-            state['hyperparameters']
-        )
-        trial = cls(
-            trial_id=state['trial_id'],
-            hyperparameters=hp,
-            max_executions=state['max_executions'],
-            base_directory=state['base_directory']
-        )
-        trial.score = state['score']
-        metrics = metrics_tracking.MetricsTracker.from_config(
-            state['averaged_metrics'])
-        trial.averaged_metrics = metrics
-        trial.executions = [
-            execution_module.Execution.load(f)
-            for f in state['executions']
-        ]
-        return trial
+        return cls.from_state(state_data)
+
+
+def generate_trial_id():
+    s = str(time.time()) + str(random.randint(1, 1e7))
+    return hashlib.sha256(s.encode('utf-8')).hexdigest()[:32]

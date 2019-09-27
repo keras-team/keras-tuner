@@ -15,9 +15,11 @@ import copy
 import queue
 import random
 import json
-from ..engine import tuner as tuner_module
-from ..engine import oracle as oracle_module
+
 from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
+from ..engine import multi_execution_tuner
+from ..engine import oracle as oracle_module
+from ..engine import trial as trial_lib
 
 
 def queue_to_list(queue):
@@ -30,20 +32,49 @@ def queue_to_list(queue):
 class HyperbandOracle(oracle_module.Oracle):
     """Oracle class for Hyperband.
 
-    Args:
+    Attributes:
+        objective: String or `kerastuner.Objective`. If a string,
+          the direction of the optimization (min or max) will be
+          inferred.
+        max_trials: Int. Total number of trials
+            (model configurations) to test at most.
+            Note that the oracle may interrupt the search
+            before `max_trial` models have been tested.
         factor: Int. Reduction factor for the number of epochs
             and number of models for each bracket.
         min_epochs: Int. The minimum number of epochs to train a model.
         max_epochs: Int. The maximum number of epochs to train a model.
         seed: Int. Random seed.
+        hyperparameters: HyperParameters class instance.
+            Can be used to override (or register in advance)
+            hyperparamters in the search space.
+        tune_new_entries: Whether hyperparameter entries
+            that are requested by the hypermodel
+            but that were not specified in `hyperparameters`
+            should be added to the search space, or not.
+            If not, then the default value for these parameters
+            will be used.
+        allow_new_entries: Whether the hypermodel is allowed
+            to request hyperparameter entries not listed in
+            `hyperparameters`.
     """
 
     def __init__(self,
+                 objective,
+                 max_trials,
                  factor=3,
                  min_epochs=3,
                  max_epochs=10,
-                 seed=None):
-        super(HyperbandOracle, self).__init__()
+                 seed=None,
+                 hyperparameters=None,
+                 allow_new_entries=True,
+                 tune_new_entries=True):
+        super(HyperbandOracle, self).__init__(
+            objective=objective,
+            max_trials=max_trials,
+            hyperparameters=hyperparameters,
+            allow_new_entries=allow_new_entries,
+            tune_new_entries=tune_new_entries)
         if min_epochs >= max_epochs:
             raise ValueError('max_epochs needs to be larger than min_epochs.')
         if factor < 2:
@@ -67,20 +98,22 @@ class HyperbandOracle(oracle_module.Oracle):
         self._model_sequence = self._get_model_sequence()
         self._epoch_sequence = self._get_epoch_sequence()
 
-    def result(self, trial_id, score):
+    def end_trial(self, trial_id, status):
+        super(HyperbandOracle, self).end_trial(trial_id, status)
         self._running[trial_id] = False
+        score = self.trials[trial_id].score
         self._candidate_score[
             self._trial_id_to_candidate_index[trial_id]] = score
 
-    def populate_space(self, trial_id, space):
-        self.update_space(space)
+    def _populate_space(self, trial_id):
+        space = self.hyperparameters.space
         # Queue is not empty means it is in one bracket.
         if not self._queue.empty():
             return self._run_values(space, trial_id)
 
         # Wait the current bracket to finish.
         if any([value for key, value in self._running.items()]):
-            return {'status': 'IDLE'}
+            return {'status': trial_lib.TrialStatus.IDLE}
 
         # Start the next bracket if not end of bandit.
         if self._bracket_index + 1 < self._num_brackets:
@@ -107,8 +140,9 @@ class HyperbandOracle(oracle_module.Oracle):
             if trial_id != self._index_to_id[candidate_index]:
                 values['tuner/trial_id'] = self._index_to_id[candidate_index]
             values['tuner/epochs'] = self._epoch_sequence[self._bracket_index]
-            return {'status': 'RUN', 'values': values}
-        return {'status': 'EXIT'}
+            return {'status': trial_lib.TrialStatus.RUNNING,
+                    'values': values}
+        return {'status': trial_lib.TrialStatus.STOPPED}
 
     @staticmethod
     def _copy_values(space, values):
@@ -152,7 +186,7 @@ class HyperbandOracle(oracle_module.Oracle):
         while 1:
             # Generate a set of random values.
             values = {}
-            for p in self.space:
+            for p in self.hyperparameters.space:
                 values[p.name] = p.random_sample(self._seed_state)
                 self._seed_state += 1
             # Keep trying until the set of values is unique,
@@ -202,8 +236,9 @@ class HyperbandOracle(oracle_module.Oracle):
             previous_size = size
         return output_sizes
 
-    def save(self, fname):
-        state = {
+    def get_state(self):
+        state = super(HyperbandOracle, self).get_state()
+        state.update({
             'seed': self.seed,
             'factor': self.factor,
             'min_epochs': self.min_epochs,
@@ -222,13 +257,11 @@ class HyperbandOracle(oracle_module.Oracle):
             'bracket_index': self._bracket_index,
             'model_sequence': self._model_sequence,
             'epoch_sequence': self._epoch_sequence
-        }
-        state_json = json.dumps(state)
-        tf_utils.write_file(fname, state_json)
+        })
+        return state
 
-    def reload(self, fname):
-        state_data = tf_utils.read_file(fname)
-        state = json.loads(state_data)
+    def set_state(self, state):
+        super(HyperbandOracle, self).set_state(state)
         self.seed = state['seed']
         self.factor = state['factor']
         self.min_epochs = state['min_epochs']
@@ -256,12 +289,8 @@ class HyperbandOracle(oracle_module.Oracle):
                 self._queue.put(self._trial_id_to_candidate_index[trial_id])
                 self._running[trial_id] = False
 
-    def report_status(self, trial_id, status, score=None, t=None):
-        # TODO
-        pass
 
-
-class Hyperband(tuner_module.Tuner):
+class Hyperband(multi_execution_tuner.MultiExecutionTuner):
     """Variation of HyperBand algorithm.
 
     Reference:
@@ -272,7 +301,7 @@ class Hyperband(tuner_module.Tuner):
             http://jmlr.org/papers/v18/16-558.html).
 
 
-    Args:
+    Attributes:
         oracle: Instance of Oracle class.
         hypermodel: Instance of HyperModel class
             (or callable that takes hyperparameters
@@ -288,6 +317,20 @@ class Hyperband(tuner_module.Tuner):
         min_epochs: Int. Minimum number of epochs to train a model.
         max_epochs: Int. Maximum number of epochs to train a model.
         seed: Int. Random seed.
+        hyperparameters: HyperParameters class instance.
+            Can be used to override (or register in advance)
+            hyperparamters in the search space.
+        tune_new_entries: Whether hyperparameter entries
+            that are requested by the hypermodel
+            but that were not specified in `hyperparameters`
+            should be added to the search space, or not.
+            If not, then the default value for these parameters
+            will be used.
+        allow_new_entries: Whether the hypermodel is allowed
+            to request hyperparameter entries not listed in
+            `hyperparameters`.
+        **kwargs: Keyword arguments relevant to all `Tuner` subclasses.
+            Please see the docstring for `Tuner`.
     """
 
     def __init__(self,
@@ -298,32 +341,40 @@ class Hyperband(tuner_module.Tuner):
                  min_epochs=3,
                  max_epochs=10,
                  seed=None,
+                 hyperparameters=None,
+                 tune_new_entries=True,
+                 allow_new_entries=True,
                  **kwargs):
-        oracle = HyperbandOracle(seed=seed,
-                                 factor=factor,
-                                 min_epochs=min_epochs,
-                                 max_epochs=max_epochs)
+        oracle = HyperbandOracle(
+            objective,
+            max_trials,
+            seed=seed,
+            factor=factor,
+            min_epochs=min_epochs,
+            max_epochs=max_epochs,
+            hyperparameters=hyperparameters,
+            tune_new_entries=tune_new_entries,
+            allow_new_entries=allow_new_entries)
         super(Hyperband, self).__init__(
             oracle=oracle,
             hypermodel=hypermodel,
-            objective=objective,
-            max_trials=max_trials,
             **kwargs)
 
-    def on_execution_begin(self, trial, execution, model):
-        super(Hyperband, self).on_execution_begin(trial, execution, model)
+    def run_trial(self, trial, *fit_args, **fit_kwargs):
         hp = trial.hyperparameters
-        if 'tuner/trial_id' in hp.values:
-            history_trial = self._get_trial(hp.values['tuner/trial_id'])
-            if history_trial.executions[0].best_checkpoint is not None:
-                checkpoint_prefix = history_trial.executions[0].best_checkpoint
-                best_checkpoint = checkpoint_prefix + '-weights.h5'
-                model.load_weights(best_checkpoint)
-
-    def run_trial(self, trial, hp, fit_args, fit_kwargs):
         if 'tuner/epochs' in hp.values:
             fit_kwargs['epochs'] = hp.values['tuner/epochs']
-        super(Hyperband, self).run_trial(trial, hp, fit_args, fit_kwargs)
+        super(Hyperband, self).run_trial(trial, *fit_args, **fit_kwargs)
+
+    def _build_model(self, hp):
+        model = super(Hyperband, self)._build_model(hp)
+        if 'tuner/trial_id' in hp.values:
+            trial_id = hp.values['tuner/trial_id']
+            history_trial = self.oracle.get_trial(trial_id)
+            # Load best checkpoint from this trial.
+            model.load_weights(self._get_checkpoint_fname(
+                history_trial, history_trial.best_step))
+        return model
 
     def _get_trial(self, trial_id):
         for temp_trial in self.trials:

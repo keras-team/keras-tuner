@@ -31,20 +31,8 @@ class Logger(object):
         """Informs the logger that a new Trial is starting."""
         raise NotImplementedError
 
-    def register_execution(self, execution_id, execution_state):
-        """Informs the logger that a new Execution is starting."""
-        raise NotImplementedError
-
-    def report_tuner_state(self, tuner_state):
-        """Gives the logger information about search status."""
-        raise NotImplementedError
-
     def report_trial_state(self, trial_id, trial_state):
         """Gives the logger information about trial status."""
-        raise NotImplementedError
-
-    def report_execution_state(self, execution_id, execution_state):
-        """Gives the logger information about execution status."""
         raise NotImplementedError
 
     def exit(self):
@@ -107,14 +95,6 @@ class CloudLogger(Logger):
         }
         self._send_to_backend('register_trial', data)
 
-    def register_execution(self, execution_id, execution_state):
-        """Informs the logger that a new Execution is starting."""
-        data = {
-            'execution_id': execution_id,
-            'execution_state': execution_state,
-        }
-        self._send_to_backend('register_execution', data)
-
     def report_trial_state(self, trial_id, trial_state):
         """Gives the logger information about trial status."""
         data = {
@@ -122,21 +102,6 @@ class CloudLogger(Logger):
             'trial_state': trial_state,
         }
         self._send_to_backend('report_trial_state', data)
-
-    def report_execution_state(self, execution_id, execution_state):
-        """Gives the logger information about execution status."""
-        data = {
-            'execution_id': execution_id,
-            'execution_state': execution_state,
-        }
-        self._send_to_backend('report_execution_state', data)
-
-    def report_tuner_state(self, tuner_state):
-        """Gives the logger information about search status."""
-        data = {
-            'tuner_state': tuner_state,
-        }
-        self._send_to_backend('report_tuner_state', data)
 
     def exit(self):
         """Makes sure that all cloud requests have been sent."""

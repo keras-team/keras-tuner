@@ -18,6 +18,7 @@ import numpy as np
 import kerastuner
 from kerastuner.engine import tuner as tuner_module
 
+import tensorflow as tf
 from tensorflow import keras
 
 INPUT_DIM = 2
@@ -92,8 +93,7 @@ class MockModel(keras.Model):
             self.on_epoch_end(epoch)
 
     def save_weights(self, fname, **kwargs):
-        f = open(fname, 'w')
-        f.close()
+        pass
 
     def get_config(self):
         return {}
@@ -101,9 +101,8 @@ class MockModel(keras.Model):
 
 class MockHyperModel(kerastuner.HyperModel):
 
-    mode_0_execution_0 = [[10, 9, 8], [7, 6, 5], [4, 3, 2]]
-    mode_0_execution_1 = [[12, 11, 10], [9, 8, 7], [6, 5, 4], [9, 9, 9]]
-    mode_1_execution = [[13, 13, 13], [12, 12, 12], [11, 11, 11]]
+    mode_0 = [[10, 9, 8], [7, 6, 5], [4, 3, 2]]
+    mode_1 = [[13, 13, 13], [12, 12, 12], [11, 11, 11]]
 
     def __init__(self):
         # The first call to `build` in tuner __init__
@@ -112,58 +111,32 @@ class MockHyperModel(kerastuner.HyperModel):
 
     def build(self, hp):
         if hp.Choice('mode', [0, 1]) == 0:
-            self.mode_0_execution_count += 1
-            if self.mode_0_execution_count == 1:
-                return MockModel(self.mode_0_execution_0)
-            else:
-                return MockModel(self.mode_0_execution_1)
-        return MockModel(self.mode_1_execution)
+            return MockModel(self.mode_0)
+        return MockModel(self.mode_1)
 
 
 def test_tuning_correctness(tmp_dir):
-    tuner = kerastuner.RandomSearch(
-        seed=1337,
+    tuner = kerastuner.Tuner(
+        oracle=kerastuner.tuners.randomsearch.RandomSearchOracle(
+            objective='loss',
+            max_trials=2,
+            seed=1337),
         hypermodel=MockHyperModel(),
-        max_trials=2,
-        objective='loss',
-        executions_per_trial=2,
         directory=tmp_dir,
     )
     tuner.search()
-    assert len(tuner.trials) == 2
+    assert len(tuner.oracle.trials) == 2
 
-    m0_e0_epochs = [
-        float(np.average(x)) for x in MockHyperModel.mode_0_execution_0]
-    m0_e1_epochs = [
-        float(np.average(x)) for x in MockHyperModel.mode_0_execution_1]
-    m0_epochs = [
-        (a + b) / 2
-        for a, b in zip(m0_e0_epochs, m0_e1_epochs)] + [m0_e1_epochs[-1]]
-    m1_epochs = [
-        float(np.average(x)) for x in MockHyperModel.mode_1_execution]
+    m0_epochs = [float(np.average(x)) for x in MockHyperModel.mode_0]
+    m1_epochs = [float(np.average(x)) for x in MockHyperModel.mode_1]
 
     # Score tracking correctness
     first_trial, second_trial = sorted(
-        tuner.trials, key=lambda x: x.score)
+        tuner.oracle.trials.values(), key=lambda t: t.score)
     assert first_trial.score == min(m0_epochs)
     assert second_trial.score == min(m1_epochs)
-    state = tuner.get_state()
-    assert state['best_trial']['score'] == min(m0_epochs)
-    assert tuner._get_best_trials(1)[0] == first_trial
-
-    # Metrics tracking correctness
-    assert len(first_trial.executions) == 2
-    e0 = first_trial.executions[0]
-    e1 = first_trial.executions[1]
-    e0_per_epoch_metrics = e0.per_epoch_metrics.metrics_history['loss']
-    e1_per_epoch_metrics = e1.per_epoch_metrics.metrics_history['loss']
-    e0_per_batch_metrics = e0.per_batch_metrics.metrics_history['loss']
-    e1_per_batch_metrics = e1.per_batch_metrics.metrics_history['loss']
-    assert e0_per_epoch_metrics == m0_e0_epochs
-    assert e0_per_batch_metrics == MockHyperModel.mode_0_execution_0[-1]
-    assert e1_per_epoch_metrics == m0_e1_epochs
-    assert e1_per_batch_metrics == MockHyperModel.mode_0_execution_1[-1]
-    assert first_trial.averaged_metrics.metrics_history['loss'] == m0_epochs
+    assert (tuner.oracle.get_best_trials(1)[0].trial_id == 
+            first_trial.trial_id)
 
 
 def test_tuner_errors(tmp_dir):
@@ -174,30 +147,54 @@ def test_tuner_errors(tmp_dir):
         tuner_module.Tuner(
             oracle='invalid',
             hypermodel=build_model,
-            objective='val_accuracy',
-            max_trials=3,
             directory=tmp_dir)
     # invalid hypermodel
     with pytest.raises(
             ValueError,
             match='`hypermodel` argument should be either'):
         tuner_module.Tuner(
-            oracle=kerastuner.tuners.randomsearch.RandomSearchOracle(),
+            oracle=kerastuner.tuners.randomsearch.RandomSearchOracle(
+                objective='val_accuracy',
+                max_trials=3),
             hypermodel='build_model',
-            objective='val_accuracy',
-            max_trials=3,
             directory=tmp_dir)
     # oversize model
     with pytest.raises(
             RuntimeError,
             match='Too many consecutive oversized models'):
         tuner = tuner_module.Tuner(
-            oracle=kerastuner.tuners.randomsearch.RandomSearchOracle(),
+            oracle=kerastuner.tuners.randomsearch.RandomSearchOracle(
+                objective='val_accuracy',
+                max_trials=3),
             hypermodel=build_model,
-            objective='val_accuracy',
-            max_trials=3,
             max_model_size=4,
             directory=tmp_dir)
         tuner.search(TRAIN_INPUTS, TRAIN_TARGETS,
                      validation_data=(VAL_INPUTS, VAL_TARGETS))
     # TODO: test no optimizer
+
+
+def test_checkpoint_removal(tmp_dir):
+    def build_model(hp):
+        model = keras.Sequential([
+            keras.layers.Dense(hp.Int('size', 5, 10)),
+            keras.layers.Dense(1)])
+        model.compile('sgd', 'mse', metrics=['accuracy'])
+        return model
+
+    tuner = kerastuner.Tuner(
+        oracle=kerastuner.tuners.randomsearch.RandomSearchOracle(
+            objective='val_accuracy',
+            max_trials=1,
+            seed=1337),
+        hypermodel=build_model,
+        directory=tmp_dir,
+    )
+    x, y = np.ones((1, 5)), np.ones((1, 1))
+    tuner.search(x,
+                 y,
+                 validation_data=(x, y),
+                 epochs=21)
+    trial = list(tuner.oracle.trials.values())[0]
+    assert tf.io.gfile.exists(tuner._get_checkpoint_fname(trial, 20))
+    assert not tf.io.gfile.exists(tuner._get_checkpoint_fname(trial, 10))
