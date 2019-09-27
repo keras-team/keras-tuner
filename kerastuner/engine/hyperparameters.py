@@ -164,18 +164,8 @@ class Choice(HyperParameter):
 
     @classmethod
     def from_proto(cls, proto):
-        if proto.string_values:
-            values = proto.string_values
-            default = proto.string_default
-        elif proto.int_values:
-            values = proto.int_values
-            default = proto.int_default
-        elif proto.float_values:
-            values = proto.float_values
-            default = proto.float_default
-        else:
-            raise ValueError('No values found.')
-
+        values = getattr(proto, proto.WhichOneof('values'))
+        default = getattr(proto, proto.WhichOneof('default'), None)
         return cls(
             name=proto.name,
             values=values,
@@ -183,24 +173,24 @@ class Choice(HyperParameter):
             default=default)
 
     def to_proto(self):
+        kwargs = {}
         if self._type == str:
-            return kerastuner_pb2.Choice(
-                name=self.name,
-                ordered=self.ordered,
-                string_values=self.values,
-                string_default=self.default)
+            kwargs['string_values'] = kerastuner_pb2.Choice.StringValues(
+                values=self.values)
+            kwargs['string_default'] = self.default
         elif self._type == int:
-            return kerastuner_pb2.Choice(
-                name=self.name,
-                ordered=self.ordered,
-                int_values=self.values,
-                int_default=self.default)
+            kwargs['int_values'] = kerastuner_pb2.Choice.IntValues(
+                values=self.values)
+            kwargs['int_default'] = self.default
         else:
-            return kerastuner_pb2.Choice(
-                name=self.name,
-                ordered=self.ordered,
-                float_values=self.values,
-                float_default=self.default)
+            kwargs['float_values'] = kerastuner_pb2.Choice.FloatValues(
+                values=self.values)
+            kwargs['float_default'] = self.default
+
+        return kerastuner_pb2.Choice(
+            name=self.name,
+            ordered=self.ordered,
+            **kwargs)
 
 
 class Int(HyperParameter):
@@ -739,8 +729,8 @@ class HyperParameters(object):
 
         for hp in space:
             hps.register(hp.name,
-                          hp.__class__.__name__,
-                          hp.get_config())
+                         hp.__class__.__name__,
+                         hp.get_config())
 
         for name, float_val in proto.float_values.items():
             hps.values[name] = float_val
