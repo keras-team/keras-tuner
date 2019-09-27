@@ -164,7 +164,7 @@ class Choice(HyperParameter):
 
     @classmethod
     def from_proto(cls, proto):
-        values = getattr(proto, proto.WhichOneof('values'))
+        values = getattr(proto, proto.WhichOneof('values')).values
         default = getattr(proto, proto.WhichOneof('default'), None)
         return cls(
             name=proto.name,
