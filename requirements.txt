@@ -1,6 +1,7 @@
 attrs
 cprint
 numpy
+portpicker
 tabulate
 termcolor
 tqdm
