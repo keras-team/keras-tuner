@@ -32,6 +32,9 @@ install:
     # install pydot for visualization tests
   - travis_retry conda install -q $MKL pydot graphviz $PIL
 
+    # install portpicker for mock distribution framework.
+  - travis_retry conda install portpicker
+
   - pip install -e .[tests] --progress-bar off
 
 # command to run tests
