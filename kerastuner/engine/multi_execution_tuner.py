@@ -28,6 +28,7 @@ import collections
 import copy
 import json
 import numpy as np
+import os
 import random
 from tensorflow import keras
 
@@ -76,16 +77,24 @@ class MultiExecutionTuner(tuner_module.Tuner):
         pass
 
     def run_trial(self, trial, *fit_args, **fit_kwargs):
-        fit_kwargs = copy.copy(fit_kwargs)
         original_callbacks = fit_kwargs.get('callbacks', [])[:]
-        fit_kwargs['callbacks'] = self._inject_callbacks(
-            original_callbacks, trial)
-        metrics = collections.defaultdict(list)
+        model_checkpoint = keras.callbacks.ModelCheckpoint(
+            filepath=self._get_checkpoint_fname(trial, self._reported_step),
+            monitor=self.oracle.objective.name,
+            mode=self.oracle.objective.direction,
+            save_best_only=True,
+            save_weights_only=True)
 
         # Run the training process multiple times.
+        metrics = collections.defaultdict(list)
         for execution in range(self.executions_per_trial):
             model = self._build_model(trial.hyperparameters.copy())
             self._compile_model(model)
+            fit_kwargs = copy.copy(fit_kwargs)
+            fit_kwargs['callbacks'] = self._inject_callbacks(
+                original_callbacks, trial, execution)
+            # Only checkpoint the best epoch across all executions.
+            fit_kwargs['callbacks'].append(model_checkpoint)
             history = model.fit(*fit_args, **fit_kwargs)
             for metric, epoch_values in history.history.items():
                 if self.oracle.objective.direction == 'min':
@@ -101,14 +110,14 @@ class MultiExecutionTuner(tuner_module.Tuner):
         self.oracle.update_trial(
             trial.trial_id, metrics=averaged_metrics, step=self._reported_step)
 
-    def _inject_callbacks(self, callbacks, trial):
+    def _inject_callbacks(self, callbacks, trial, execution=0):
         callbacks = super(MultiExecutionTuner, self)._inject_callbacks(
             callbacks, trial)
-        model_checkpoint = keras.callbacks.ModelCheckpoint(
-            filepath=self._get_checkpoint_fname(trial, self._reported_step),
-            monitor=self.oracle.objective.name,
-            mode=self.oracle.objective.direction,
-            save_best_only=True,
-            save_weights_only=True)
-        callbacks.append(model_checkpoint)
+        for callback in callbacks:
+            # Patching tensorboard log dir
+            if callback.__class__.__name__ == 'TensorBoard':
+                callback.log_dir = os.path.join(
+                    # Super patches in the Trial dir.
+                    callback.log_dir,
+                    'execution{}'.format(execution))
         return callbacks
