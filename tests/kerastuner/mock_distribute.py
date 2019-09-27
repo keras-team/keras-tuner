@@ -13,15 +13,17 @@
 # limitations under the License.
 """Mock running KerasTuner in a distributed tuning setting."""
 
-import multiprocessing
+import threading
 import os
 import portpicker
+from unittest import mock
 
 
 def mock_distribute(fn, num_workers=2):
     """Runs `fn` in multiple processes, setting appropriate env vars."""
     port = str(portpicker.pick_unused_port())
 
+    @mock.patch.dict(os.environ, os.environ.copy())
     def chief_fn():
         # The port for the chief and workers to communicate on.
         os.environ['KERASTUNER_PORT'] = port
@@ -31,12 +33,14 @@ def mock_distribute(fn, num_workers=2):
         # The ID of this process. 'chief' should run a server.   
         os.environ['KERASTUNER_TUNER_ID'] = 'chief'
         fn()
-    chief_process = multiprocessing.Process(target=chief_fn)
+    chief_process = threading.Thread(target=chief_fn)
+    chief_process.daemon = True
     chief_process.start()
 
     worker_processes = []
     for i in range(num_workers):
 
+        @mock.patch.dict(os.environ, os.environ.copy())
         def worker_fn():
             os.environ['KERASTUNER_PORT'] = port
             os.environ['KERASTUNER_DISTRIBUTED'] = 'True'
@@ -44,10 +48,9 @@ def mock_distribute(fn, num_workers=2):
             # DistributionStrategy should have the smae TUNER_ID.
             os.environ['KERASTUNER_TUNER_ID'] = 'worker{}'.format(i)
             fn()
-        worker_process = multiprocessing.Process(target=worker_fn)
+        worker_process = threading.Thread(target=worker_fn)
         worker_process.start()
         worker_processes.append(worker_process)
 
     for worker_process in worker_processes:
         worker_process.join()
-    chief_process.terminate()
