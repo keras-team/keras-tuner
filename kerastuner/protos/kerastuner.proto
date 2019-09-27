@@ -40,7 +40,7 @@ message Int {
     sint64 max_value = 3;
     sint64 step = 4;
     Sampling sampling = 5;
-    float default = 6;
+    sint64 default = 6;
 }
 
 message Choice {
