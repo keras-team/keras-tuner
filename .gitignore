@@ -17,4 +17,3 @@ tmp.py
 .coverage.*
 htmlcov
 old_code/
-kerastuner/protos/*_pb2.py
