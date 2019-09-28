@@ -116,14 +116,14 @@ enum TrialStatus {
 
 message Trial {
     HyperParameters hyperparameters = 1;
-    TrialStatus status = 2;
+    string trial_id = 2;
+    TrialStatus status = 3;
+    MetricsTracker metrics = 4;
 
-    // Necessary to avoid having a default value of 0.
     message Score {
         float value = 1;
+        int64 step = 2;
     }
-    Score score = 3;
+    Score score = 5;
 
-    int64 best_step = 4;
-    MetricsTracker metrics = 5;
 }
