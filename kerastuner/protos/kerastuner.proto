@@ -27,11 +27,11 @@ enum Sampling {
 
 message Float {
     string name = 1;
-    float min_value = 2;
-    float max_value = 3;
-    float step = 4;
+    double min_value = 2;
+    double max_value = 3;
+    double step = 4;
     Sampling sampling = 5;
-    float default = 6;
+    double default = 6;
 }
 
 message Int {
@@ -47,7 +47,7 @@ message Choice {
     string name = 1;
 
     message FloatValues {
-        repeated float values = 1;
+        repeated double values = 1;
     }
     message IntValues {
         repeated sint64 values = 1;
@@ -63,7 +63,7 @@ message Choice {
 
     oneof default {
         sint64 int_default = 5;
-        float float_default = 6;
+        double float_default = 6;
         string string_default = 7;
     }
 
@@ -81,7 +81,7 @@ message HyperParameters {
     repeated Choice choice_space = 3;
     repeated Boolean boolean_space = 4;
 
-    map<string, float> float_values = 5;
+    map<string, double> float_values = 5;
     map<string, sint64> int_values = 6;
     map<string, string> string_values = 7;
     map<string, bool> boolean_values = 8;
