@@ -21,6 +21,8 @@ import copy
 import numpy as np
 from tensorflow import keras
 
+from ..protos import kerastuner_pb2
+
 
 class Direction(object):
     def __init__(self, direction='min'):
@@ -43,6 +45,16 @@ class Direction(object):
     @classmethod
     def from_config(cls, config):
         return cls(config['direction'])
+
+    def to_proto(self):
+        if self.direction == 'max':
+            return kerastuner_pb2.Direction(maximize=True)
+        return kerastuner_pb2.Direction(maximize=False)
+
+    @classmethod
+    def from_proto(cls, proto):
+        direction = 'max' if proto.maximize else 'min'
+        return cls(direction=direction)
 
 
 class MetricObservation(object):
@@ -76,6 +88,22 @@ class MetricObservation(object):
             return False
         return (other.value == self.value and
                 other.step == self.step)
+
+    def to_proto(self):
+        value = self.value
+        # Must always be saved as a list.
+        if not isinstance(value, list):
+            value = [self.value]
+        return kerastuner_pb2.MetricObservation(
+            value=value, step=self.step)
+
+    @classmethod
+    def from_proto(cls, proto):
+        value = proto.value
+        # Convert back to scalar when possible.
+        if len(value) == 1:
+            value = value[0]
+        return cls(value=value, step=proto.step)
 
 
 class MetricTracker(object):
@@ -153,6 +181,19 @@ class MetricTracker(object):
                               for obs in config['observations']])
         return instance
 
+    def to_proto(self):
+        return kerastuner_pb2.MetricTracker(
+            observations=[obs.to_proto() for obs in self.get_history()],
+            direction=self._direction.to_proto())
+
+    @classmethod
+    def from_proto(cls, proto):
+        direction = Direction.from_proto(proto.direction)
+        instance = cls(direction.direction)
+        instance.set_history([
+            MetricObservation.from_proto(p) for p in proto.observations])
+        return instance
+
 
 class MetricsTracker(object):
 
@@ -228,8 +269,21 @@ class MetricsTracker(object):
     def from_config(cls, config):
         instance = cls()
         instance.metrics = {
-            name: MetricTracker.from_config(metric_history)
-            for name, metric_history in config['metrics'].items()}
+            name: MetricTracker.from_config(metric_tracker)
+            for name, metric_tracker in config['metrics'].items()}
+        return instance
+
+    def to_proto(self):
+        return kerastuner_pb2.MetricsTracker(metrics={
+            name: metric_tracker.to_proto()
+            for name, metric_tracker in self.metrics.items()})
+
+    @classmethod
+    def from_proto(cls, proto):
+        instance = cls()
+        instance.metrics = {
+            name: MetricTracker.from_proto(metric_tracker)
+            for name, metric_tracker in proto.metrics.items()}
         return instance
 
     def _assert_exists(self, name):

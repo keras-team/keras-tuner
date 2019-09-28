@@ -157,3 +157,66 @@ def test_serialization():
     new_tracker = metrics_tracking.MetricsTracker.from_config(
         tracker.get_config())
     assert new_tracker.metrics.keys() == tracker.metrics.keys()
+
+
+def test_direction_proto():
+    d = metrics_tracking.Direction('max')
+    proto = d.to_proto()
+    assert proto.maximize
+    new_d = metrics_tracking.Direction.from_proto(proto)
+    assert new_d.direction == 'max'
+
+    d = metrics_tracking.Direction('min')
+    proto = d.to_proto()
+    assert not proto.maximize
+    new_d = metrics_tracking.Direction.from_proto(proto)
+    assert new_d.direction == 'min'
+
+
+def test_metricobservation_proto():
+    obs = metrics_tracking.MetricObservation(-10, 5)
+    proto = obs.to_proto()
+    assert proto.value == [-10]
+    assert proto.step == 5
+    new_obs = metrics_tracking.MetricObservation.from_proto(proto)
+    assert new_obs == obs
+
+
+def test_metrictracker_proto():
+    tracker = metrics_tracking.MetricTracker('max')
+    tracker.update(5, step=3)
+    tracker.update(10, step=4)
+
+    proto = tracker.to_proto()
+    assert proto.observations[0].value == [5]
+    assert proto.observations[0].step == 3
+    assert proto.observations[1].value == [10]
+    assert proto.observations[1].step == 4
+
+    new_tracker = metrics_tracking.MetricTracker.from_proto(proto)
+    assert new_tracker.direction == 'max'
+    assert new_tracker.get_history() == [
+        metrics_tracking.MetricObservation(5, 3),
+        metrics_tracking.MetricObservation(10, 4)]
+
+
+def test_metricstracker_proto():
+    tracker = metrics_tracking.MetricsTracker()
+    tracker.register('score', direction='max')
+    tracker.update('score', value=10, step=1)
+    tracker.update('score', value=20, step=1)
+    tracker.update('score', value=30, step=2)
+
+    proto = tracker.to_proto()
+    obs = proto.metrics['score'].observations
+    assert obs[0].value == [10, 20]
+    assert obs[0].step == 1
+    assert obs[1].value == [30]
+    assert obs[1].step == 2
+    assert proto.metrics['score'].direction.maximize
+
+    new_tracker = metrics_tracking.MetricsTracker.from_proto(proto)
+    assert new_tracker.metrics['score'].direction == 'max'
+    assert new_tracker.metrics['score'].get_history() == [
+        metrics_tracking.MetricObservation([10, 20], 1),
+        metrics_tracking.MetricObservation(30, 2)]
