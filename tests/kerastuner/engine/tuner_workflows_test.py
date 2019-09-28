@@ -496,3 +496,23 @@ def test_update_trial(tmp_dir):
     for trial in my_oracle.trials.values():
         # Test that early stopping worked.
         assert len(trial.metrics.get_history('val_accuracy')) == 3
+
+
+def test_objective_formats():
+    obj = kerastuner.engine.oracle._format_objective('accuracy')
+    assert obj == kerastuner.Objective('accuracy', 'max')
+
+    obj = kerastuner.engine.oracle._format_objective(
+        kerastuner.Objective('score', 'min'))
+    assert obj == kerastuner.Objective('score', 'min')
+
+    obj = kerastuner.engine.oracle._format_objective([
+        kerastuner.Objective('score', 'max'),
+        kerastuner.Objective('loss', 'min')])
+    assert obj == [kerastuner.Objective('score', 'max'),
+                   kerastuner.Objective('loss', 'min')]
+
+    obj = kerastuner.engine.oracle._format_objective([
+        'accuracy', 'loss'])
+    assert obj == [kerastuner.Objective('accuracy', 'max'),
+                   kerastuner.Objective('loss', 'min')]
