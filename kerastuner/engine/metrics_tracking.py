@@ -214,6 +214,10 @@ class MetricsTracker(object):
         self._assert_exists(name)
         return self.metrics[name].get_last_value()
 
+    def get_direction(self, name):
+        self._assert_exists(name)
+        return self.metrics[name].direction
+
     def get_config(self):
         return {
             'metrics': {

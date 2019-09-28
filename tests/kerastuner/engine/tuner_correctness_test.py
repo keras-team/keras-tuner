@@ -198,3 +198,22 @@ def test_checkpoint_removal(tmp_dir):
     trial = list(tuner.oracle.trials.values())[0]
     assert tf.io.gfile.exists(tuner._get_checkpoint_fname(trial, 20))
     assert not tf.io.gfile.exists(tuner._get_checkpoint_fname(trial, 10))
+
+
+def test_metric_direction_inferred_from_objective():
+    oracle = kerastuner.tuners.randomsearch.RandomSearchOracle(
+        objective=kerastuner.Objective('a', 'max'),
+        max_trials=1)
+    trial = oracle.create_trial('tuner0')
+    oracle.update_trial(trial.trial_id, {'a': 1})
+    trial = oracle.get_trial(trial.trial_id)
+    assert trial.metrics.get_direction('a') == 'max'
+
+    oracle = kerastuner.tuners.randomsearch.RandomSearchOracle(
+        objective=kerastuner.Objective('a', 'min'),
+        max_trials=1)
+    trial = oracle.create_trial('tuner0')
+    oracle.update_trial(trial.trial_id, {'a': 1})
+    trial = oracle.get_trial(trial.trial_id)
+    assert trial.metrics.get_direction('a') == 'min'
+
