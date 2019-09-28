@@ -78,7 +78,7 @@ class MetricObservation(object):
                 other.step == self.step)
 
 
-class MetricHistory(object):
+class MetricTracker(object):
 
     def __init__(self, direction='min'):
         self._direction = Direction(direction)
@@ -157,7 +157,7 @@ class MetricHistory(object):
 class MetricsTracker(object):
 
     def __init__(self, metrics=None):
-        # str -> MetricHistory
+        # str -> MetricTracker
         self.metrics = {}
         self.register_metrics(metrics)
 
@@ -174,7 +174,7 @@ class MetricsTracker(object):
             raise ValueError('Metric already exists: %s' % (name,))
         if direction is None:
             direction = infer_metric_direction(name)
-        self.metrics[name] = MetricHistory(direction)
+        self.metrics[name] = MetricTracker(direction)
 
     def update(self, name, value, step=0):
         value = float(value)
@@ -228,7 +228,7 @@ class MetricsTracker(object):
     def from_config(cls, config):
         instance = cls()
         instance.metrics = {
-            name: MetricHistory.from_config(metric_history)
+            name: MetricTracker.from_config(metric_history)
             for name, metric_history in config['metrics'].items()}
         return instance
 
