@@ -21,8 +21,6 @@ import copy
 import numpy as np
 from tensorflow import keras
 
-from ..protos import kerastuner_pb2
-
 
 class Direction(object):
     def __init__(self, direction='min'):
