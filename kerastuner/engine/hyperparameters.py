@@ -23,6 +23,8 @@ import random
 
 from tensorflow import keras
 
+from ..protos import kerastuner_pb2
+
 
 def _check_sampling_arg(sampling,
                         step,
@@ -160,6 +162,36 @@ class Choice(HyperParameter):
         config['ordered'] = self.ordered
         return config
 
+    @classmethod
+    def from_proto(cls, proto):
+        values = getattr(proto, proto.WhichOneof('values')).values
+        default = getattr(proto, proto.WhichOneof('default'), None)
+        return cls(
+            name=proto.name,
+            values=values,
+            ordered=proto.ordered,
+            default=default)
+
+    def to_proto(self):
+        kwargs = {}
+        if self._type == str:
+            kwargs['string_values'] = kerastuner_pb2.Choice.StringValues(
+                values=self.values)
+            kwargs['string_default'] = self.default
+        elif self._type == int:
+            kwargs['int_values'] = kerastuner_pb2.Choice.IntValues(
+                values=self.values)
+            kwargs['int_default'] = self.default
+        else:
+            kwargs['float_values'] = kerastuner_pb2.Choice.FloatValues(
+                values=self.values)
+            kwargs['float_default'] = self.default
+
+        return kerastuner_pb2.Choice(
+            name=self.name,
+            ordered=self.ordered,
+            **kwargs)
+
 
 class Int(HyperParameter):
     """Integer range.
@@ -232,6 +264,24 @@ class Int(HyperParameter):
         config['sampling'] = self.sampling
         config['default'] = self._default
         return config
+
+    @classmethod
+    def from_proto(cls, proto):
+        return cls(name=proto.name,
+                   min_value=proto.min_value,
+                   max_value=proto.max_value,
+                   step=proto.step if proto.step else None,
+                   sampling=_sampling_from_proto(proto.sampling),
+                   default=proto.default)
+
+    def to_proto(self):
+        return kerastuner_pb2.Int(
+            name=self.name,
+            min_value=self.min_value,
+            max_value=self.max_value,
+            step=self.step if self.step is not None else 0,
+            sampling=_sampling_to_proto(self.sampling),
+            default=self.default)
 
 
 class Float(HyperParameter):
@@ -314,6 +364,24 @@ class Float(HyperParameter):
         config['sampling'] = self.sampling
         return config
 
+    @classmethod
+    def from_proto(cls, proto):
+        return cls(name=proto.name,
+                   min_value=proto.min_value,
+                   max_value=proto.max_value,
+                   step=proto.step if proto.step else None,
+                   sampling=_sampling_from_proto(proto.sampling),
+                   default=proto.default)
+
+    def to_proto(self):
+        return kerastuner_pb2.Float(
+            name=self.name,
+            min_value=self.min_value,
+            max_value=self.max_value,
+            step=self.step if self.step is not None else 0.0,
+            sampling=_sampling_to_proto(self.sampling),
+            default=self.default)
+
 
 class Boolean(HyperParameter):
     """Choice between True and False.
@@ -338,6 +406,16 @@ class Boolean(HyperParameter):
     def random_sample(self, seed=None):
         random_state = random.Random(seed)
         return random_state.choice((True, False))
+
+    @classmethod
+    def from_proto(cls, proto):
+        return cls(name=proto.name,
+                   default=proto.default)
+
+    def to_proto(self):
+        return kerastuner_pb2.Boolean(
+            name=self.name,
+            default=self.default)
 
 
 class Fixed(HyperParameter):
@@ -635,6 +713,80 @@ class HyperParameters(object):
                 hp.get_config(),
                 overwrite=overwrite)
 
+    @classmethod
+    def from_proto(cls, proto):
+        hps = cls()
+
+        space = []
+        for float_proto in proto.float_space:
+            space.append(Float.from_proto(float_proto))
+        for int_proto in proto.int_space:
+            space.append(Int.from_proto(int_proto))
+        for choice_proto in proto.choice_space:
+            space.append(Choice.from_proto(choice_proto))
+        for boolean_proto in proto.boolean_space:
+            space.append(Boolean.from_proto(boolean_proto))
+
+        for hp in space:
+            hps.register(hp.name,
+                         hp.__class__.__name__,
+                         hp.get_config())
+
+        for name, float_val in proto.float_values.items():
+            hps.values[name] = float_val
+        for name, int_val in proto.int_values.items():
+            hps.values[name] = int_val
+        for name, string_val in proto.string_values.items():
+            hps.values[name] = string_val
+        for name, boolean_val in proto.boolean_values.items():
+            hps.values[name] = boolean_val
+
+        return hps
+
+    def to_proto(self):
+        float_space = []
+        int_space = []
+        choice_space = []
+        boolean_space = []
+        for hp in self.space:
+            if isinstance(hp, Float):
+                float_space.append(hp.to_proto())
+            elif isinstance(hp, Int):
+                int_space.append(hp.to_proto())
+            elif isinstance(hp, Choice):
+                choice_space.append(hp.to_proto())
+            elif isinstance(hp, Boolean):
+                boolean_space.append(hp.to_proto())
+            else:
+                raise ValueError('Unrecognized HP type: {}'.format(hp))
+
+        float_values = {}
+        int_values = {}
+        string_values = {}
+        boolean_values = {}
+        for name, value in self.values.items():
+            if isinstance(value, float):
+                float_values[name] = value
+            elif isinstance(value, int):
+                int_values[name] = value
+            elif isinstance(value, str):
+                string_values[name] = value
+            elif isinstance(value, bool):
+                boolean_values[name] = value
+            else:
+                raise ValueError(
+                    'Unrecognized value type: {}'.format(value))
+
+        return kerastuner_pb2.HyperParameters(
+            float_space=float_space,
+            int_space=int_space,
+            choice_space=choice_space,
+            boolean_space=boolean_space,
+            float_values=float_values,
+            int_values=int_values,
+            string_values=string_values,
+            boolean_values=boolean_values)
+
     def _get_name(self, name, scopes=None):
         """Returns a name qualified by `name_scopes`."""
         if scopes is None:
@@ -717,3 +869,28 @@ def _log_sample(x, min_value, max_value, seed=None):
 def _reverse_log_sample(x, min_value, max_value, seed=None):
     """Applies reverse log scale to a value in range [0, 1]."""
     return max_value + min_value - min_value * math.pow(max_value / min_value, 1 - x)
+
+
+def _sampling_from_proto(sampling):
+    if sampling is None or sampling == kerastuner_pb2.Sampling.NONE:
+        return None
+    if sampling == kerastuner_pb2.Sampling.LINEAR:
+        return 'linear'
+    if sampling == kerastuner_pb2.Sampling.LOG:
+        return 'log'
+    if sampling == kerastuner_pb2.Sampling.REVERSE_LOG:
+        return 'reverse_log'
+    raise ValueError('Unrecognized sampling: {}'.format(sampling))
+
+
+def _sampling_to_proto(sampling):
+    if sampling is None:
+        return kerastuner_pb2.Sampling.NONE
+    if sampling == 'linear':
+        return kerastuner_pb2.Sampling.LINEAR
+    if sampling == 'log':
+        return kerastuner_pb2.Sampling.LOG
+    if sampling == 'reverse_log':
+        return kerastuner_pb2.Sampling.REVERSE_LOG
+    raise ValueError('Unrecognized sampling: {}'.format(sampling))
+

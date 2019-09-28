@@ -17,6 +17,7 @@ import numpy as np
 import pytest
 
 from kerastuner.engine import hyperparameters as hp_module
+from kerastuner.protos import kerastuner_pb2
 from tensorflow import keras
 
 
@@ -361,3 +362,83 @@ def test_merge():
     assert hp.get('b') == 2
     assert hp.get('c') == 30
     assert hp.get('d') == 1
+
+
+def test_float_proto():
+    hp = hp_module.Float('a', -10, 10, sampling='linear', default=3)
+    proto = hp.to_proto()
+    assert proto.name == 'a'
+    assert proto.min_value == -10.
+    assert proto.max_value == 10.
+    assert proto.sampling == kerastuner_pb2.Sampling.LINEAR
+    assert proto.default == 3.
+    # Zero is the default, gets converted to `None` in `from_proto`.
+    assert proto.step == 0.
+
+    new_hp = hp_module.Float.from_proto(proto)
+    assert new_hp.get_config() == hp.get_config()
+
+
+def test_int_proto():
+    hp = hp_module.Int('a', 1, 100, sampling='log')
+    proto = hp.to_proto()
+    assert proto.name == 'a'
+    assert proto.min_value == 1
+    assert proto.max_value == 100
+    assert proto.sampling == kerastuner_pb2.Sampling.LOG
+    # Proto stores the implicit default.
+    assert proto.default == 1
+    assert proto.step == 1
+
+    new_hp = hp_module.Int.from_proto(proto)
+    assert new_hp._default == 1
+    # Pop the implicit default for comparison purposes.
+    new_hp._default = None
+    assert new_hp.get_config() == hp.get_config()
+
+
+def test_choice_proto():
+    hp = hp_module.Choice('a', [2.3, 4.5, 6.3], ordered=True)
+    proto = hp.to_proto()
+    assert proto.name == 'a'
+    assert proto.ordered
+    assert np.allclose(proto.float_values.values, [2.3, 4.5, 6.3])
+    # Proto stores the implicit default.
+    assert np.isclose(proto.float_default, 2.3)
+
+    new_hp = hp_module.Choice.from_proto(proto)
+    assert new_hp.name == 'a'
+    assert np.allclose(new_hp.values, hp.values)
+    assert new_hp.ordered
+    assert np.isclose(new_hp._default, 2.3)
+
+    # Test int values.
+    int_choice = hp_module.Choice('b', [1, 2, 3], ordered=False, default=2)
+    new_int_choice = hp_module.Choice.from_proto(int_choice.to_proto())
+    assert int_choice.get_config() == new_int_choice.get_config()
+
+    # Test float values.
+    float_choice = hp_module.Choice('b', [0.5, 2.5, 4.], ordered=False, default=2.5)
+    new_float_choice = hp_module.Choice.from_proto(float_choice.to_proto())
+    assert float_choice.get_config() == new_float_choice.get_config()
+
+
+def _sort_space(hps):
+    space = hps.get_config()['space']
+    return sorted(space, key=lambda hp: hp['config']['name'])
+
+
+def test_hyperparameters_proto():
+    hps = hp_module.HyperParameters()
+    hps.Int('a', 1, 10, sampling='reverse_log', default=3)
+    hps.Float('b', 2, 8, sampling='linear', default=4)
+    hps.Choice('c', [1, 5, 10], ordered=False, default=5)
+    with hps.name_scope('d'):
+        hps.Choice('e', [2., 4.5, 8.5], default=2.)
+        hps.Choice('f', ['1', '2'], default='1')
+        with hps.conditional_scope('f', '1'):
+            hps.Int('g', -10, 10, step=2, default=-2)
+
+    new_hps = hp_module.HyperParameters.from_proto(hps.to_proto())
+    assert _sort_space(hps) == _sort_space(new_hps)
+    assert hps.values == new_hps.values

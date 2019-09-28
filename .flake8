@@ -24,5 +24,8 @@ ignore =
     # blank line at end of file
     W391
 
+exclude = 
+    *_pb2.py
+
 
 max-line-length = 85
