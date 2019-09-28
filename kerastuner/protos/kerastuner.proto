@@ -86,3 +86,45 @@ message HyperParameters {
     map<string, string> string_values = 7;
     map<string, bool> boolean_values = 8;
 }
+
+enum Direction {
+    MIN = 0;
+    MAX = 1;
+}
+
+message MetricObservation {
+    int64 step = 1;
+    repeated float value = 2;
+}
+
+message MetricHistory {
+    repeated MetricObservation history = 1;
+    Direction direction = 2;
+}
+
+message MetricsTracker {
+    map<string, MetricHistory> metrics = 1;
+}
+
+enum TrialStatus {
+    UNKNOWN = 0;
+    RUNNING = 1;
+    IDLE = 2;
+    INVALID = 3;
+    STOPPED = 4;
+    COMPLETED = 5;
+}
+
+message Trial {
+    HyperParameters hyperparameters = 1;
+    TrialStatus status = 2;
+
+    // Necessary to avoid having a default value of 0.
+    message Score {
+        float value = 1;
+    }
+    Score score = 3;
+
+    int64 best_step = 4;
+    MetricsTracker metrics = 5;
+}
