@@ -21,5 +21,7 @@ class OracleServicer(service_pb2_grpc.OracleServicer):
         self.oracle.update_space(hps)
         return service_pb2.UpdateSpaceResponse()
 
-
-
+    def CreateTrial(self, request, context):
+        trial = self.oracle.create_trial(request.tuner_id)
+        return service_pb2.CreateTrialResponse(
+            trial=trial.to_proto())

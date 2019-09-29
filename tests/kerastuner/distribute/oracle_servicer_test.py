@@ -87,3 +87,30 @@ def test_update_space():
             assert retrieved_hps.values['b'] == 1
 
     mock_distribute.mock_distribute(_test_update_space)
+
+
+def test_create_trial():
+
+    def _test_create_trial():
+        tuner_id = os.environ['KERASTUNER_TUNER_ID']
+        if 'chief' in tuner_id:
+            hps = kt.HyperParameters()
+            hps.Int('a', 0, 10, default=5)
+            hps.Choice('b', [1, 2, 3])
+            oracle = randomsearch.RandomSearchOracle(
+                objective='score',
+                max_trials=10,
+                hyperparameters=hps)
+            start_servicer(oracle)
+        else:
+            stub = create_stub()
+            response = stub.CreateTrial(service_pb2.CreateTrialRequest(
+                tuner_id='worker0'))
+            trial = kt.engine.trial.Trial.from_proto(response.trial)
+            assert trial.status == "RUNNING"
+            a = trial.hyperparameters.get('a')
+            assert a >= 0 and a <= 10
+            b = trial.hyperparameters.get('b')
+            assert b in {1, 2, 3}
+
+    mock_distribute.mock_distribute(_test_create_trial)
