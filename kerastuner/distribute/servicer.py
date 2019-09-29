@@ -11,9 +11,15 @@ class OracleServicer(service_pb2_grpc.OracleServicer):
         self.oracle = oracle
 
     def GetSpace(self, request, context):
-        hps = self.oracle.hyperparameters.to_proto()
+        hps = self.oracle.get_space()
         return service_pb2.GetSpaceResponse(
-            hyperparameters=hps)
+            hyperparameters=hps.to_proto())
+
+    def UpdateSpace(self, request, context):
+        hps = hp_module.HyperParameters.from_proto(
+            request.hyperparameters)
+        self.oracle.update_space(hps)
+        return service_pb2.UpdateSpaceResponse()
 
 
 

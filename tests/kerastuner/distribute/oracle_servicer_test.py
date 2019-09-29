@@ -54,3 +54,36 @@ def test_get_space():
             assert len(retrieved_hps.space) == 1
 
     mock_distribute.mock_distribute(_test_get_space)
+
+
+def test_update_space():
+
+    def _test_update_space():
+        tuner_id = os.environ['KERASTUNER_TUNER_ID']
+        if 'chief' in tuner_id:
+            oracle = randomsearch.RandomSearchOracle(
+                objective='score',
+                max_trials=10)
+            start_servicer(oracle)
+        else:
+            stub = create_stub()
+            space_response = stub.GetSpace(service_pb2.GetSpaceRequest())
+            retrieved_hps = kt.HyperParameters.from_proto(
+                space_response.hyperparameters)
+            assert len(retrieved_hps.space) == 0
+
+            hps = kt.HyperParameters()
+            hps.Int('a', 0, 10, default=5)
+            hps.Choice('b', [1, 2, 3])
+            request = service_pb2.UpdateSpaceRequest(
+                hyperparameters=hps.to_proto())
+            stub.UpdateSpace(request)
+
+            space_response = stub.GetSpace(service_pb2.GetSpaceRequest())
+            retrieved_hps = kt.HyperParameters.from_proto(
+                space_response.hyperparameters)
+            assert len(retrieved_hps.space) == 2
+            assert retrieved_hps.values['a'] == 5
+            assert retrieved_hps.values['b'] == 1
+
+    mock_distribute.mock_distribute(_test_update_space)
