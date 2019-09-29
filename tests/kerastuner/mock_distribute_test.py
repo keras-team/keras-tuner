@@ -43,3 +43,20 @@ def test_mock_distribute(tmp_dir):
         fname = os.path.join(tmp_dir, tuner_id)
         with tf.io.gfile.GFile(fname, 'r') as f:
             assert f.read() == tuner_id
+
+
+def test_exception_raising():
+
+    def worker_error_fn():
+        if 'worker' in os.environ['KERASTUNER_TUNER_ID']:
+            raise ValueError('Found a worker error')
+
+    with pytest.raises(ValueError, match='Found a worker error'):
+        mock_distribute(worker_error_fn, num_workers=2)
+
+    def chief_error_fn():
+        if 'chief' in os.environ['KERASTUNER_TUNER_ID']:
+            raise ValueError('Found a chief error')
+
+    with pytest.raises(ValueError, match='Found a chief error'):
+        mock_distribute(chief_error_fn, num_workers=2)

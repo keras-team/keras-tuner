@@ -13,10 +13,21 @@
 # limitations under the License.
 """Mock running KerasTuner in a distributed tuning setting."""
 
-import threading
 import os
 import portpicker
+import six
+import sys
+import threading
 from unittest import mock
+
+
+class ExceptionStoringThread(threading.Thread):
+    def run(self):
+        self.raised_exception = None
+        try: 
+            super(ExceptionStoringThread, self).run()
+        except BaseException:
+            self.raised_exception = sys.exc_info()
 
 
 def mock_distribute(fn, num_workers=2):
@@ -33,11 +44,11 @@ def mock_distribute(fn, num_workers=2):
         # The ID of this process. 'chief' should run a server.   
         os.environ['KERASTUNER_TUNER_ID'] = 'chief'
         fn()
-    chief_process = threading.Thread(target=chief_fn)
-    chief_process.daemon = True
-    chief_process.start()
+    chief_thread = ExceptionStoringThread(target=chief_fn)
+    chief_thread.daemon = True
+    chief_thread.start()
 
-    worker_processes = []
+    worker_threads = []
     for i in range(num_workers):
 
         @mock.patch.dict(os.environ, os.environ.copy())
@@ -48,9 +59,16 @@ def mock_distribute(fn, num_workers=2):
             # DistributionStrategy should have the smae TUNER_ID.
             os.environ['KERASTUNER_TUNER_ID'] = 'worker{}'.format(i)
             fn()
-        worker_process = threading.Thread(target=worker_fn)
-        worker_process.start()
-        worker_processes.append(worker_process)
+        worker_thread = ExceptionStoringThread(target=worker_fn)
+        worker_thread.start()
+        worker_threads.append(worker_thread)
 
-    for worker_process in worker_processes:
-        worker_process.join()
+    for worker_thread in worker_threads:
+        worker_thread.join()
+
+    if chief_thread.raised_exception:
+        six.reraise(*chief_thread.raised_exception)
+    for worker_thread in worker_threads:
+        if worker_thread.raised_exception is not None:
+            six.reraise(*worker_thread.raised_exception)
+
