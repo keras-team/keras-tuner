@@ -109,6 +109,29 @@ class BaseTuner(stateful.Stateful):
         self.on_search_end()
 
     def run_trial(self, trial, *fit_args, **fit_kwargs):
+        """Evaluates a set of hyperparameter values.
+
+        For subclass implementers: This method is responsible for
+        reporting metrics related to the `Trial` to the `Oracle`
+        via `self.oracle.update_trial`.
+
+        Simplest example:
+
+        ```python
+        def run_trial(self, trial, x, y, val_x, val_y):
+            model = self.hypermodel.build(trial.hyperparameters)
+            model.fit(x, y)
+            loss = model.evaluate(val_x, val_y)
+            self.oracle.update_trial(
+              trial.trial_id, {'loss': loss})
+            self.save_model(trial.trial_id, model)
+        """
+        raise NotImplementedError
+
+    def save_model(self, trial_id, model, step=0):
+        raise NotImplementedError
+
+    def load_model(self, trial):
         raise NotImplementedError
 
     def on_search_begin(self):
@@ -122,6 +145,7 @@ class BaseTuner(stateful.Stateful):
     def on_trial_end(self, trial):
         self.oracle.end_trial(
             trial.trial_id, trial_module.TrialStatus.COMPLETED)
+        self.oracle.update_space(trial.hyperparameters)
         self._display.on_trial_end(trial)
         self._save_trial(trial)
         self.save()
@@ -133,6 +157,8 @@ class BaseTuner(stateful.Stateful):
     def get_best_models(self, num_models=1):
         """Returns the best model(s), as determined by the tuner's objective.
 
+        This method is only a convenience shortcut.
+
         Args:
             num_models (int, optional): Number of best models to return.
                 Models will be returned in sorted order. Defaults to 1.
@@ -140,7 +166,9 @@ class BaseTuner(stateful.Stateful):
         Returns:
             List of trained model instances.
         """
-        raise NotImplementedError
+        best_trials = self.oracle.get_best_trials(num_models)
+        models = [self.load_model(trial) for trial in best_trials]
+        return models
 
     def search_space_summary(self, extended=False):
         """Print search space summary.
@@ -169,7 +197,7 @@ class BaseTuner(stateful.Stateful):
                 sort models by objective value. Defaults to None.
         """
         display.section('Results summary')
-        display.display_setting('Results in %s' % self._get_project_dir())
+        display.display_setting('Results in %s' % self.project_dir)
         best_trials = self.oracle.get_best_trials(num_trials)
         display.display_setting('Showing %d best trials' % num_trials)
         for trial in best_trials:
@@ -195,38 +223,37 @@ class BaseTuner(stateful.Stateful):
         self.oracle.reload(self._get_oracle_fname())
         super(BaseTuner, self).reload(self._get_tuner_fname())
 
-    def _save_trial(self, trial):
-        # Write trial status to trial directory
-        trial.save(self._get_trial_fname(trial))
-        # Send status to Logger
-        if self.logger:
-            self.logger.report_trial_state(trial.trial_id, trial.get_state())
-
-    def _get_project_dir(self):
+    @property
+    def project_dir(self):
         dirname = os.path.join(
             self.directory,
             self.project_name)
         tf_utils.create_directory(dirname)
         return dirname
 
-    def _get_trial_dir(self, trial):
+    def get_trial_dir(self, trial_id):
         dirname = os.path.join(
-            self._get_project_dir(),
-            'trial_' + str(trial.trial_id))
+            self.project_dir,
+            'trial_' + str(trial_id))
         tf_utils.create_directory(dirname)
         return dirname
 
-    def _get_trial_fname(self, trial):
-        return os.path.join(
-            self._get_trial_dir(trial),
-            'trial.json')
+    def _save_trial(self, trial):
+        # Write trial status to trial directory
+        trial_id = trial.trial_id
+        trial.save(os.path.join(
+            self.get_trial_dir(trial_id),
+            'trial.json'))
+        # Send status to Logger
+        if self.logger:
+            self.logger.report_trial_state(trial_id, trial.get_state())
 
     def _get_tuner_fname(self):
         return os.path.join(
-            self._get_project_dir(),
+            self.project_dir,
             'tuner_' + str(self.tuner_id) + '.json')
 
     def _get_oracle_fname(self):
         return os.path.join(
-            self._get_project_dir(),
+            self.project_dir,
             'oracle_' + str(self.tuner_id) + '.json')

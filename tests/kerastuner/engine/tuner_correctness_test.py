@@ -196,5 +196,6 @@ def test_checkpoint_removal(tmp_dir):
                  validation_data=(x, y),
                  epochs=21)
     trial = list(tuner.oracle.trials.values())[0]
-    assert tf.io.gfile.exists(tuner._get_checkpoint_fname(trial, 20))
-    assert not tf.io.gfile.exists(tuner._get_checkpoint_fname(trial, 10))
+    trial_id = trial.trial_id
+    assert tf.io.gfile.exists(tuner._get_checkpoint_fname(trial_id, 20))
+    assert not tf.io.gfile.exists(tuner._get_checkpoint_fname(trial_id, 10))

@@ -133,9 +133,27 @@ class Tuner(base_tuner.BaseTuner):
         original_callbacks = fit_kwargs.get('callbacks', [])[:]
         fit_kwargs['callbacks'] = self._inject_callbacks(
             original_callbacks, trial)
-        model = self._build_model(trial.hyperparameters.copy())
+        model = self._build_model(trial.hyperparameters)
         self._compile_model(model)
-        return model.fit(*fit_args, **fit_kwargs)
+        model.fit(*fit_args, **fit_kwargs)
+
+    def save_model(self, trial_id, model, step=0):
+        epoch = step
+        self._checkpoint_model(model, trial_id, epoch)
+        if epoch > self._save_n_checkpoints:
+            self._delete_checkpoint(
+                trial_id, epoch - self._save_n_checkpoints)
+
+    def load_model(self, trial):
+        model = self.hypermodel.build(trial.hyperparameters)
+        self._compile_model(model)
+        # Reload best checkpoint. The Oracle scores the Trial and also
+        # indicates at what epoch the best value of the objective was
+        # obtained.
+        best_epoch = trial.best_step
+        model.load_weights(self._get_checkpoint_fname(
+            trial.trial_id, best_epoch))
+        return model
 
     def on_epoch_begin(self, trial, model, epoch, logs=None):
         pass
@@ -147,11 +165,7 @@ class Tuner(base_tuner.BaseTuner):
         pass
 
     def on_epoch_end(self, trial, model, epoch, logs=None):
-        self._checkpoint_model(model, trial, epoch)
-        if epoch > self._save_n_checkpoints:
-            self._delete_checkpoint(
-                trial, epoch - self._save_n_checkpoints)
-
+        self.save_model(trial.trial_id, model, step=epoch)
         # Report intermediate metrics to the `Oracle`.
         status = self.oracle.update_trial(
             trial.trial_id, metrics=logs, step=epoch)
@@ -174,19 +188,8 @@ class Tuner(base_tuner.BaseTuner):
         Returns:
             List of trained model instances.
         """
-        best_trials = self.oracle.get_best_trials(num_models)
-        models = []
-        for trial in best_trials:
-            hp = trial.hyperparameters.copy()
-            model = self.hypermodel.build(hp)
-            self._compile_model(model)
-            # Reload best checkpoint. The Oracle scores the Trial and also
-            # indicates at what epoch the best value of the objective was
-            # obtained.
-            best_epoch = trial.best_step
-            model.load_weights(self._get_checkpoint_fname(trial, best_epoch))
-            models.append(model)
-        return models
+        # Method only exists in this class for the docstring override.
+        return super(Tuner, self).get_best_models(num_models)
 
     def get_state(self):
         state = {'stats': self._stats.get_config()}
@@ -254,7 +257,6 @@ class Tuner(base_tuner.BaseTuner):
                 continue
             break
 
-        self.oracle.update_space(hp)
         return self._compile_model(model)
 
     def _compile_model(self, model):
@@ -309,30 +311,23 @@ class Tuner(base_tuner.BaseTuner):
         callbacks.append(tuner_utils.TunerCallback(self, trial))
         return callbacks
 
-    def _checkpoint_trial(self, trial):
-        # Write trial status to trial directory
-        trial.save(self._get_trial_fname(trial))
-        # Send status to Logger
-        if self.logger:
-            self.logger.report_trial_state(trial.trial_id, trial.get_state())
-
-    def _get_checkpoint_dir(self, trial, epoch):
+    def _get_checkpoint_dir(self, trial_id, epoch):
         return os.path.join(
-            self._get_trial_dir(trial),
+            self.get_trial_dir(trial_id),
             'checkpoints',
             'epoch_' + str(epoch))
 
-    def _get_checkpoint_fname(self, trial, epoch):
+    def _get_checkpoint_fname(self, trial_id, epoch):
         return os.path.join(
             # Each checkpoint is saved in its own directory.
-            self._get_checkpoint_dir(trial, epoch),
+            self._get_checkpoint_dir(trial_id, epoch),
             'checkpoint')
 
-    def _checkpoint_model(self, model, trial, epoch):
-        fname = self._get_checkpoint_fname(trial, epoch)
+    def _checkpoint_model(self, model, trial_id, epoch):
+        fname = self._get_checkpoint_fname(trial_id, epoch)
         # Save in TF format.
         model.save_weights(fname)
         return fname
 
-    def _delete_checkpoint(self, trial, epoch):
-        tf.io.gfile.rmtree(self._get_checkpoint_dir(trial, epoch))
+    def _delete_checkpoint(self, trial_id, epoch):
+        tf.io.gfile.rmtree(self._get_checkpoint_dir(trial_id, epoch))
