@@ -119,12 +119,6 @@ class Tuner(base_tuner.BaseTuner):
         # Save only the last N checkpoints.
         self._save_n_checkpoints = 10
 
-        # Populate initial search space.
-        if self.oracle.tune_new_entries:
-            hp = self.oracle.get_space()
-            self._build_model(hp)
-            self.oracle.update_space(hp)
-
     def run_trial(self, trial, *fit_args, **fit_kwargs):
         # Patch fit arguments. During model `fit`, the patched
         # callbacks call: `self.on_epoch_begin`, `self.on_epoch_end`,

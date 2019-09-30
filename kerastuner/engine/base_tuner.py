@@ -92,6 +92,11 @@ class BaseTuner(stateful.Stateful):
         self.logger = logger
         self._display = tuner_utils.Display()
 
+        # Populate initial search space.
+        hp = self.oracle.get_space()
+        self.hypermodel.build(hp)
+        self.oracle.update_space(hp)
+
     def search(self, *fit_args, **fit_kwargs):
         self.on_search_begin()
         while True:

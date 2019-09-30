@@ -118,4 +118,4 @@ def test_simple_sklearn_tuner():
     models = tuner.get_best_models(2)
     score0 = models[0].score(VAL_INPUTS, VAL_TARGETS)
     score1 = models[1].score(VAL_INPUTS, VAL_TARGETS)
-    assert score0 > score1
+    assert score0 >= score1

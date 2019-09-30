@@ -254,7 +254,7 @@ def test_static_space_errors(tmp_dir):
         model = keras.Model(inputs, outputs)
         model.compile(
             optimizer=keras.optimizers.Adam(
-                hp.get('learning_rate')),
+                hp.Float('learning_rate', 1e-5, 1e-2)),
             loss='sparse_categorical_crossentropy',
             metrics=['accuracy'])
         return model
@@ -264,7 +264,7 @@ def test_static_space_errors(tmp_dir):
     hp.Int('units_0', 4, 6, 1, default=5)
     hp.Int('units_1', 4, 6, 1, default=5)
 
-    with pytest.raises(RuntimeError, match='Too many failed attempts'):
+    with pytest.raises(RuntimeError, match='`allow_new_entries` is `False`'):
         tuner = kerastuner.tuners.RandomSearch(
             build_model_static,
             objective='val_accuracy',
