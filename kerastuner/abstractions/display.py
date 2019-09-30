@@ -40,10 +40,14 @@ try:
 except NameError:
     IS_NOTEBOOK = False
 
+
 if IS_NOTEBOOK:
     from tqdm import tqdm_notebook as tqdm
     from IPython.display import HTML
-    display = HTML
+    from IPython.display import display as ipython_display
+
+    def display(text):
+        ipython_display(HTML(text))
 else:
     from tqdm import tqdm
     display = print
@@ -268,10 +272,7 @@ def cprint(text, color, bg_color=None, brightness='normal'):
     text = colorize(text, color, bg_color, brightness)
 
     # HTMLify if needed
-    if IS_NOTEBOOK and isinstance(text, str):
-        HTML(text)
-    else:
-        display(text)
+    display(text)
 
 
 def colorize_row(row, color, bg_color=None, brightness='normal'):
@@ -386,7 +387,6 @@ def make_table(rows, title=None):
         headers = rows[0]
         body = rows[1:]
         table = tabulate(body, headers, tablefmt="html")
-        table = HTML(table)
     else:
         st = SingleTable(rows, title)
         table = st.table
@@ -423,7 +423,7 @@ def make_combined_table(array_rows):
             table += tabulate(body, headers, tablefmt="html")
             table += '</div>'
         table += "</div>"
-        return HTML(table)
+        return table
     else:
         tables = []
         for rows in array_rows:
