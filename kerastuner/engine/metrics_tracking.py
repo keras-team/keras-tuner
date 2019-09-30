@@ -22,29 +22,6 @@ import numpy as np
 from tensorflow import keras
 
 
-class Direction(object):
-    def __init__(self, direction='min'):
-        if direction not in {'min', 'max'}:
-            raise ValueError(
-                '`direction` should be one of '
-                '{"min", "max"}, but got: %s' % (direction,))
-        self.direction = direction
-
-    def get_best(self, values):
-        if not values:
-            return None
-        if self.direction == 'min':
-            return np.nanmin(values)
-        return np.nanmax(values)
-
-    def get_config(self):
-        return {'direction': self.direction}
-
-    @classmethod
-    def from_config(cls, config):
-        return cls(config['direction'])
-
-
 class MetricObservation(object):
 
     def __init__(self, value, step):
@@ -78,19 +55,15 @@ class MetricObservation(object):
                 other.step == self.step)
 
 
-class MetricTracker(object):
+class MetricHistory(object):
 
     def __init__(self, direction='min'):
-        self._direction = Direction(direction)
+        if direction not in {'min', 'max'}:
+            raise ValueError(
+                '`direction` should be one of '
+                '{"min", "max"}, but got: %s' % (direction,))
+        self.direction = direction
         self._observations = {}
-
-    @property
-    def direction(self):
-        return self._direction.direction
-
-    @direction.setter
-    def direction(self, direction):
-        self._direction = Direction(direction)
 
     def update(self, value, step):
         if step in self._observations:
@@ -100,11 +73,18 @@ class MetricTracker(object):
                 value, step=step)
 
     def get_best_value(self):
-        return self._direction.get_best([
-            obs.mean() for obs in self._observations.values()])
+        values = list(
+            obs.value for obs in self._observations.values())
+        if not values:
+            return None
+        if self.direction == 'min':
+            return np.nanmin(values)
+        return np.nanmax(values)
 
     def get_best_step(self):
         best_value = self.get_best_value()
+        if best_value is None:
+            return None
         for obs in self._observations.values():
             if obs.mean() == best_value:
                 return obs.step
@@ -157,7 +137,7 @@ class MetricTracker(object):
 class MetricsTracker(object):
 
     def __init__(self, metrics=None):
-        # str -> MetricTracker
+        # str -> MetricHistory
         self.metrics = {}
         self.register_metrics(metrics)
 
@@ -174,7 +154,7 @@ class MetricsTracker(object):
             raise ValueError('Metric already exists: %s' % (name,))
         if direction is None:
             direction = infer_metric_direction(name)
-        self.metrics[name] = MetricTracker(direction)
+        self.metrics[name] = MetricHistory(direction)
 
     def update(self, name, value, step=0):
         value = float(value)
@@ -228,7 +208,7 @@ class MetricsTracker(object):
     def from_config(cls, config):
         instance = cls()
         instance.metrics = {
-            name: MetricTracker.from_config(metric_history)
+            name: MetricHistory.from_config(metric_history)
             for name, metric_history in config['metrics'].items()}
         return instance
 
