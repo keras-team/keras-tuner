@@ -12,14 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import numpy as np
+import os
+import pickle
+import pytest
 
 import kerastuner
 from kerastuner.engine import base_tuner
 
+from sklearn import linear_model
 import tensorflow as tf
 from tensorflow import keras
+
+
+INPUT_DIM = 2
+NUM_CLASSES = 3
+NUM_SAMPLES = 64
+TRAIN_INPUTS = np.random.random(size=(NUM_SAMPLES, INPUT_DIM))
+TRAIN_TARGETS = np.random.randint(0, NUM_CLASSES, size=(NUM_SAMPLES,))
+VAL_INPUTS = np.random.random(size=(NUM_SAMPLES, INPUT_DIM))
+VAL_TARGETS = np.random.randint(0, NUM_CLASSES, size=(NUM_SAMPLES,))
 
 
 @pytest.fixture(scope='module')
@@ -67,3 +79,43 @@ def test_base_tuner(tmp_dir):
                               reverse=True)
     assert models[0] == models_by_factor[0]
 
+
+def test_simple_sklearn_tuner():
+    class SimpleSklearnTuner(base_tuner.BaseTuner):
+        def run_trial(self, trial, x, y, validation_data):
+            model = self.hypermodel.build(trial.hyperparameters)
+            model.fit(x, y)
+            x_val, y_val = validation_data
+            score = model.score(x_val, y_val)
+            self.oracle.update_trial(
+                trial.trial_id, {'score': score})
+            self.save_model(trial.trial_id, model)
+
+        def save_model(self, trial_id, model, step=0):
+            fname = os.path.join(self.get_trial_dir(trial_id), 'model.pickle')
+            with open(fname, 'wb') as f:
+                pickle.dump(model, f)
+
+        def load_model(self, trial):
+            fname = os.path.join(
+                self.get_trial_dir(trial.trial_id), 'model.pickle')
+            with open(fname, 'rb') as f:
+                return pickle.load(f)
+
+    def sklearn_build_fn(hp):
+        penalty = hp.Choice('penalty', ['l1', 'l2'])
+        c = hp.Float('c', 1e-4, 10)
+        return linear_model.LogisticRegression(penalty=penalty, C=c)
+
+    tuner = SimpleSklearnTuner(
+        oracle=kerastuner.tuners.randomsearch.RandomSearchOracle(
+            objective=kerastuner.Objective('score', 'max'),
+            max_trials=2),
+        hypermodel=sklearn_build_fn)
+    tuner.search(TRAIN_INPUTS,
+                 TRAIN_TARGETS,
+                 validation_data=(VAL_INPUTS, VAL_TARGETS))
+    models = tuner.get_best_models(2)
+    score0 = models[0].score(VAL_INPUTS, VAL_TARGETS)
+    score1 = models[1].score(VAL_INPUTS, VAL_TARGETS)
+    assert score0 > score1
