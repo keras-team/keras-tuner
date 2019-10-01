@@ -87,22 +87,18 @@ message HyperParameters {
     map<string, bool> boolean_values = 8;
 }
 
-message Direction {
-    bool maximize = 1;
-}
-
 message MetricObservation {
     repeated float value = 1;
     int64 step = 2;
 }
 
-message MetricTracker {
+message MetricHistory {
     repeated MetricObservation observations = 1;
-    Direction direction = 2;
+    bool maximize = 2;
 }
 
 message MetricsTracker {
-    map<string, MetricTracker> metrics = 1;
+    map<string, MetricHistory> metrics = 1;
 }
 
 enum TrialStatus {
