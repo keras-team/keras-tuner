@@ -26,18 +26,18 @@ def test_register_from_metrics():
         metrics=[metrics.CategoricalAccuracy(),
                  metrics.MeanSquaredError()]
     )
-    assert tracker.names == ['categorical_accuracy',
-                             'mean_squared_error']
-    assert tracker.directions['categorical_accuracy'] == 'max'
-    assert tracker.directions['mean_squared_error'] == 'min'
+    assert set(tracker.metrics.keys()) == {'categorical_accuracy',
+                                           'mean_squared_error'}
+    assert tracker.metrics['categorical_accuracy'].direction == 'max'
+    assert tracker.metrics['mean_squared_error'].direction == 'min'
     # TODO: better coverage for direction inference.
 
 
 def test_register():
     tracker = metrics_tracking.MetricsTracker()
     tracker.register('new_metric', direction='max')
-    assert tracker.names == ['new_metric']
-    assert tracker.directions['new_metric'] == 'max'
+    assert set(tracker.metrics.keys()) == {'new_metric'}
+    assert tracker.metrics['new_metric'].direction == 'max'
     with pytest.raises(ValueError,
                        match='`direction` should be one of'):
         tracker.register('another_metric', direction='wrong')
@@ -56,8 +56,8 @@ def test_exists():
 def test_update():
     tracker = metrics_tracking.MetricsTracker()
     tracker.update('new_metric', 0.5)  # automatic registration
-    assert tracker.names == ['new_metric']
-    assert tracker.directions['new_metric'] == 'min'  # default direction
+    assert set(tracker.metrics.keys()) == {'new_metric'}
+    assert tracker.metrics['new_metric'].direction == 'min'  # default direction
     assert (tracker.get_history('new_metric') ==
             [metrics_tracking.MetricObservation(0.5, step=0)])
 
@@ -78,8 +78,15 @@ def test_get_history():
 
 def test_set_history():
     tracker = metrics_tracking.MetricsTracker()
-    tracker.set_history('new_metric', [1., 2., 3.])
-    tracker.get_history('new_metric') == [1., 2., 3.]
+    tracker.set_history('new_metric', [
+        metrics_tracking.MetricObservation(0.5, 0),
+        metrics_tracking.MetricObservation(1.5, 1),
+        metrics_tracking.MetricObservation(2., 2),
+    ])
+    values = [obs.value for obs in tracker.get_history('new_metric')]
+    steps = [obs.step for obs in tracker.get_history('new_metric')]
+    assert values == [0.5, 1.5, 2.]
+    assert steps == [0, 1, 2]
 
 
 def test_get_best_value():
@@ -149,6 +156,4 @@ def test_serialization():
 
     new_tracker = metrics_tracking.MetricsTracker.from_config(
         tracker.get_config())
-    assert new_tracker.names == tracker.names
-    assert new_tracker.directions == tracker.directions
-    assert new_tracker.metrics_history == tracker.metrics_history
+    assert new_tracker.metrics.keys() == tracker.metrics.keys()

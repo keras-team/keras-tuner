@@ -22,101 +22,84 @@ import numpy as np
 from tensorflow import keras
 
 
-MetricObservation = collections.namedtuple(
-    'MetricObservation',
-    'value step')
+class MetricObservation(object):
+
+    def __init__(self, value, step):
+        self.value = value
+        self.step = step
+
+    def append(self, value):
+        if not isinstance(value, list):
+            value = [value]
+        if not isinstance(self.value, list):
+            self.value = [self.value]
+        self.value += value
+
+    def mean(self):
+        if not isinstance(self.value, list):
+            return self.value
+        return np.mean(self.value)
+
+    def get_config(self):
+        return {'value': self.value,
+                'step': self.step}
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
+    def __eq__(self, other):
+        if not isinstance(other, MetricObservation):
+            return False
+        return (other.value == self.value and
+                other.step == self.step)
 
 
-class MetricsTracker(object):
+class MetricHistory(object):
 
-    def __init__(self, metrics=None):
-        self.names = []
-        self.directions = {}
-        # str -> [MetricObservation]
-        self.metrics_history = {}
-        self.register_metrics(metrics)
-
-    def exists(self, name):
-        return name in self.names
-
-    def register_metrics(self, metrics=None):
-        metrics = metrics or []
-        for metric in metrics:
-            direction = infer_metric_direction(metric)
-            self.register(metric.name, direction)
-
-    def register(self, name, direction=None):
-        if direction is None:
-            direction = infer_metric_direction(name)
+    def __init__(self, direction='min'):
         if direction not in {'min', 'max'}:
             raise ValueError(
                 '`direction` should be one of '
                 '{"min", "max"}, but got: %s' % (direction,))
-        if name in self.names:
-            raise ValueError('Metric already exists: %s' % (name,))
-        self.names.append(name)
-        self.directions[name] = direction
-        self.metrics_history[name] = []
+        self.direction = direction
+        self._observations = {}
 
-    def update(self, name, value, step=0):
-        value = float(value)
-        if not self.exists(name):
-            self.register(name)
-        history = self.get_history(name)
-        history_values = [obs.value for obs in history]
-        history.append(MetricObservation(value=value, step=step))
-
-        if not history_values:
-            return True
-
-        # Return whether the updated value is best yet seen.
-        if self.directions[name] == 'max':
-            if value >= np.nanmax(history_values):
-                return True
-            return False
-        if self.directions[name] == 'min':
-            if value <= np.nanmin(history_values):
-                return True
-            return False
-
-    def get_history(self, name):
-        if name not in self.names:
-            raise ValueError('Unknown metric: %s' % (name,))
-        return self.metrics_history[name]
-
-    def set_history(self, name, series):
-        assert type(series) == list
-        if not self.exists(name):
-            self.register(name)
-        self.metrics_history[name] = series
-
-    def get_best_value(self, name):
-        history = self.get_history(name)
-        if not len(history):
-            return None
-
-        history_values = [obs.value for obs in history]
-        direction = self.directions[name]
-        if direction == 'min':
-            return min(history_values)
-        return max(history_values)
-
-    def get_best_step(self, name):
-        history = self.get_history(name)
-        if not len(history):
-            return None
-
-        history_values = [obs.value for obs in history]
-        direction = self.directions[name]
-        if direction == 'min':
-            t_index = np.argmin(history_values)
+    def update(self, value, step):
+        if step in self._observations:
+            self._observations[step].append(value)
         else:
-            t_index = np.argmax(history_values)
-        return history[t_index].step
+            self._observations[step] = MetricObservation(
+                value, step=step)
 
-    def get_statistics(self, name):
-        history = self.get_history(name)
-        history_values = [obs.value for obs in history]
+    def get_best_value(self):
+        values = list(
+            obs.value for obs in self._observations.values())
+        if not values:
+            return None
+        if self.direction == 'min':
+            return np.nanmin(values)
+        return np.nanmax(values)
+
+    def get_best_step(self):
+        best_value = self.get_best_value()
+        if best_value is None:
+            return None
+        for obs in self._observations.values():
+            if obs.mean() == best_value:
+                return obs.step
+
+    def get_history(self):
+        return sorted(self._observations.values(),
+                      key=lambda obs: obs.step)
+
+    def set_history(self, observations):
+        for obs in observations:
+            self.update(obs.value, step=obs.step)
+
+    def get_statistics(self):
+        history = self.get_history()
+        history_values = [obs.mean() for obs in history]
         if not len(history_values):
             return {}
         return {
@@ -128,29 +111,110 @@ class MetricsTracker(object):
             'std': float(np.nanstd(history_values))
         }
 
-    def get_last_value(self, name):
-        history = self.get_history(name)
+    def get_last_value(self):
+        history = self.get_history()
         if history:
-            return history[-1].value
+            last_obs = history[-1]
+            return last_obs.mean()
         else:
             return None
 
     def get_config(self):
+        config = {}
+        config['direction'] = self.direction
+        config['observations'] = [
+            obs.get_config() for obs in self.get_history()]
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        instance = cls(config['direction'])
+        instance.set_history([MetricObservation.from_config(obs)
+                              for obs in config['observations']])
+        return instance
+
+
+class MetricsTracker(object):
+
+    def __init__(self, metrics=None):
+        # str -> MetricHistory
+        self.metrics = {}
+        self.register_metrics(metrics)
+
+    def exists(self, name):
+        return name in self.metrics
+
+    def register_metrics(self, metrics=None):
+        metrics = metrics or []
+        for metric in metrics:
+            self.register(metric.name)
+
+    def register(self, name, direction=None):
+        if self.exists(name):
+            raise ValueError('Metric already exists: %s' % (name,))
+        if direction is None:
+            direction = infer_metric_direction(name)
+        self.metrics[name] = MetricHistory(direction)
+
+    def update(self, name, value, step=0):
+        value = float(value)
+        if not self.exists(name):
+            self.register(name)
+
+        prev_best = self.metrics[name].get_best_value()
+        self.metrics[name].update(value, step=step)
+        new_best = self.metrics[name].get_best_value()
+
+        improved = new_best != prev_best
+        return improved
+
+    def get_history(self, name):
+        self._assert_exists(name)
+        return self.metrics[name].get_history()
+
+    def set_history(self, name, observations):
+        assert type(observations) == list
+        if not self.exists(name):
+            self.register(name)
+        self.metrics[name].set_history(observations)
+
+    def get_best_value(self, name):
+        self._assert_exists(name)
+        return self.metrics[name].get_best_value()
+
+    def get_best_step(self, name):
+        self._assert_exists(name)
+        return self.metrics[name].get_best_step()
+
+    def get_statistics(self, name):
+        self._assert_exists(name)
+        return self.metrics[name].get_statistics()
+
+    def get_last_value(self, name):
+        self._assert_exists(name)
+        return self.metrics[name].get_last_value()
+
+    def get_direction(self, name):
+        self._assert_exists(name)
+        return self.metrics[name].direction
+
+    def get_config(self):
         return {
-            'names': copy.copy(self.names),
-            'directions': copy.copy(self.directions),
-            'metrics_history': copy.copy(self.metrics_history)
-        }
+            'metrics': {
+                name: metric_history.get_config()
+                for name, metric_history in self.metrics.items()}}
 
     @classmethod
     def from_config(cls, config):
         instance = cls()
-        instance.names = config['names']
-        instance.directions = config['directions']
-        instance.metrics_history = {
-            name: [MetricObservation(*obs) for obs in data]
-            for name, data in config['metrics_history'].items()}
+        instance.metrics = {
+            name: MetricHistory.from_config(metric_history)
+            for name, metric_history in config['metrics'].items()}
         return instance
+
+    def _assert_exists(self, name):
+        if name not in self.metrics:
+            raise ValueError('Unknown metric: %s' % (name,))
 
 
 _MAX_METRICS = {

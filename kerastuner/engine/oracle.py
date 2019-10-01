@@ -178,6 +178,10 @@ class Oracle(stateful.Stateful):
         trial = self.trials[trial_id]
         self._check_objective_found(metrics)
         for metric_name, metric_value in metrics.items():
+            if not trial.metrics.exists(metric_name):
+                direction = _maybe_infer_direction_from_objective(
+                    self.objective, metric_name)
+                trial.metrics.register(metric_name, direction=direction)
             trial.metrics.update(metric_name, metric_value, step=step)
         # To signal early stopping, set Trial.status to "STOPPED".
         return trial.status
@@ -305,3 +309,14 @@ def _format_objective(objective):
     else:
         raise ValueError('`objective` not understood, expected str or '
                          '`Objective` object, found: {}'.format(objective))
+
+
+def _maybe_infer_direction_from_objective(objective, metric_name):
+    if isinstance(objective, Objective):
+        objective = [objective]
+    for obj in objective:
+        if obj.name == metric_name:
+            return obj.direction
+    return None
+
+
