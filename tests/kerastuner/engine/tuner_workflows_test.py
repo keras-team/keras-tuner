@@ -254,7 +254,7 @@ def test_static_space_errors(tmp_dir):
         model = keras.Model(inputs, outputs)
         model.compile(
             optimizer=keras.optimizers.Adam(
-                hp.get('learning_rate')),
+                hp.Float('learning_rate', 1e-5, 1e-2)),
             loss='sparse_categorical_crossentropy',
             metrics=['accuracy'])
         return model
@@ -264,7 +264,7 @@ def test_static_space_errors(tmp_dir):
     hp.Int('units_0', 4, 6, 1, default=5)
     hp.Int('units_1', 4, 6, 1, default=5)
 
-    with pytest.raises(RuntimeError, match='Too many failed attempts'):
+    with pytest.raises(RuntimeError, match='`allow_new_entries` is `False`'):
         tuner = kerastuner.tuners.RandomSearch(
             build_model_static,
             objective='val_accuracy',
@@ -496,3 +496,23 @@ def test_update_trial(tmp_dir):
     for trial in my_oracle.trials.values():
         # Test that early stopping worked.
         assert len(trial.metrics.get_history('val_accuracy')) == 3
+
+
+def test_objective_formats():
+    obj = kerastuner.engine.oracle._format_objective('accuracy')
+    assert obj == kerastuner.Objective('accuracy', 'max')
+
+    obj = kerastuner.engine.oracle._format_objective(
+        kerastuner.Objective('score', 'min'))
+    assert obj == kerastuner.Objective('score', 'min')
+
+    obj = kerastuner.engine.oracle._format_objective([
+        kerastuner.Objective('score', 'max'),
+        kerastuner.Objective('loss', 'min')])
+    assert obj == [kerastuner.Objective('score', 'max'),
+                   kerastuner.Objective('loss', 'min')]
+
+    obj = kerastuner.engine.oracle._format_objective([
+        'accuracy', 'loss'])
+    assert obj == [kerastuner.Objective('accuracy', 'max'),
+                   kerastuner.Objective('loss', 'min')]

@@ -301,7 +301,6 @@ class Oracle(stateful.Stateful):
 def _format_objective(objective):
     if isinstance(objective, list):
         return [_format_objective(obj) for obj in objective]
-
     if isinstance(objective, Objective):
         return objective
     if isinstance(objective, str):
