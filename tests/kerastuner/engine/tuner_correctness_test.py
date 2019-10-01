@@ -196,8 +196,9 @@ def test_checkpoint_removal(tmp_dir):
                  validation_data=(x, y),
                  epochs=21)
     trial = list(tuner.oracle.trials.values())[0]
-    assert tf.io.gfile.exists(tuner._get_checkpoint_fname(trial, 20))
-    assert not tf.io.gfile.exists(tuner._get_checkpoint_fname(trial, 10))
+    trial_id = trial.trial_id
+    assert tf.io.gfile.exists(tuner._get_checkpoint_fname(trial_id, 20))
+    assert not tf.io.gfile.exists(tuner._get_checkpoint_fname(trial_id, 10))
 
 
 def test_metric_direction_inferred_from_objective():
@@ -216,4 +217,3 @@ def test_metric_direction_inferred_from_objective():
     oracle.update_trial(trial.trial_id, {'a': 1})
     trial = oracle.get_trial(trial.trial_id)
     assert trial.metrics.get_direction('a') == 'min'
-

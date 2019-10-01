@@ -79,7 +79,8 @@ class MultiExecutionTuner(tuner_module.Tuner):
     def run_trial(self, trial, *fit_args, **fit_kwargs):
         original_callbacks = fit_kwargs.get('callbacks', [])[:]
         model_checkpoint = keras.callbacks.ModelCheckpoint(
-            filepath=self._get_checkpoint_fname(trial, self._reported_step),
+            filepath=self._get_checkpoint_fname(
+                trial.trial_id, self._reported_step),
             monitor=self.oracle.objective.name,
             mode=self.oracle.objective.direction,
             save_best_only=True,
