@@ -203,8 +203,8 @@ def test_save_frozen(
 
     graph = tf.python.Graph()
     sess = tf.python.Session(graph=graph)
-    with sess.as_default() as default_sess:
-        with sess.graph.as_default() as default_graph:
+    with sess.as_default():
+        with sess.graph.as_default():
             graph_def = tf.python.GraphDef()
             graph_def.ParseFromString(tf_utils.read_file(save_path, "rb"))
             tf.import_graph_def(
@@ -237,8 +237,8 @@ def test_save_optimized(
 
     graph = tf.python.Graph()
     sess = tf.python.Session(graph=graph)
-    with sess.as_default() as default_sess:
-        with sess.graph.as_default() as default_graph:
+    with sess.as_default():
+        with sess.graph.as_default():
             graph_def = tf.python.GraphDef()
             graph_def.ParseFromString(
                 tf_utils.read_file(os.path.join(
@@ -275,7 +275,7 @@ def test_save_tf_lite(
     tf_utils.save_model(model, save_path, tmp_path=tmp_path,
                         export_type="tf_lite")
 
-    with tf.python.Session().as_default() as sess:
+    with tf.python.Session().as_default():
         with tf.Graph().as_default() as _:
             interpreter = tf.lite.Interpreter(model_path=save_file)
             interpreter.allocate_tensors()

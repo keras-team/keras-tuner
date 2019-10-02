@@ -80,8 +80,7 @@ class Trial(stateful.Stateful):
             state['hyperparameters']
         )
         self.hyperparameters = hp
-        metrics = metrics_tracking.MetricsTracker.from_config(
-            state['metrics'])
+        metrics_tracking.MetricsTracker.from_config(state['metrics'])
         self.score = state['score']
         self.best_step = state['best_step']
         self.status = state['status']
@@ -95,7 +94,6 @@ class Trial(stateful.Stateful):
     @classmethod
     def load(cls, fname):
         state_data = tf_utils.read_file(fname)
-        state = json.loads(state_data)
         return cls.from_state(state_data)
 
 
