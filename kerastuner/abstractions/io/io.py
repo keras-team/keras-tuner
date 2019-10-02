@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from kerastuner.abstractions.tensorflow import TENSORFLOW as tf
-from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 import os
 from kerastuner.abstractions.display import warning
 import json

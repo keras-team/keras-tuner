@@ -1,4 +1,3 @@
-import json
 import random
 
 import numpy as np
@@ -9,7 +8,6 @@ from ..engine import hyperparameters as hp_module
 from ..engine import multi_execution_tuner
 from ..engine import oracle as oracle_module
 from ..engine import trial as trial_lib
-from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 
 
 class BayesianOptimizationOracle(oracle_module.Oracle):

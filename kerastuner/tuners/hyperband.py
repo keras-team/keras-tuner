@@ -14,9 +14,7 @@
 import copy
 import queue
 import random
-import json
 
-from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 from ..engine import multi_execution_tuner
 from ..engine import oracle as oracle_module
 from ..engine import trial as trial_lib
