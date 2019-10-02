@@ -313,5 +313,3 @@ def _maybe_infer_direction_from_objective(objective, metric_name):
         if obj.name == metric_name:
             return obj.direction
     return None
-
-

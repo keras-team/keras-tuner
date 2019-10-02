@@ -893,4 +893,3 @@ def _sampling_to_proto(sampling):
     if sampling == 'reverse_log':
         return kerastuner_pb2.Sampling.REVERSE_LOG
     raise ValueError('Unrecognized sampling: {}'.format(sampling))
-
