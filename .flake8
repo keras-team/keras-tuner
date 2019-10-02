@@ -21,8 +21,6 @@ ignore =
     F841
     # variable ... in function should be lowercase
     N806
-    # blank line at end of file
-    W391
 
 exclude = 
     *_pb2.py
