@@ -1,35 +1,38 @@
+# Copyright 2019 The Keras Tuner Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Tests for the OracleServicer class."""
+
 from concurrent import futures
 import grpc
 import os
 import time
 
 import kerastuner as kt
-from kerastuner.distribute import servicer
+from kerastuner.distribute import oracle_servicer
 from kerastuner.protos import service_pb2
 from kerastuner.protos import service_pb2_grpc
 from kerastuner.tuners import randomsearch
 from .. import mock_distribute
 
 
-def start_servicer(oracle):
-    port = os.environ['KERASTUNER_PORT']
-    server = grpc.server(
-        futures.ThreadPoolExecutor(max_workers=10))
-    service_pb2_grpc.add_OracleServicer_to_server(
-        servicer.OracleServicer(oracle), server)
-    server.add_insecure_port('127.0.0.1:{}'.format(port))
-    server.start()
-    while True:
-        # The server does not block.
-        time.sleep(10)
-
-
 def create_stub():
-    # Give the Servicer time to come on-line.
+    # Give the OracleServicer time to come on-line.
     time.sleep(2)
-    port = os.environ['KERASTUNER_PORT']
+    ip_addr = os.environ['KERASTUNER_ORACLE_IP']
+    port = os.environ['KERASTUNER_ORACLE_PORT']
     channel = grpc.insecure_channel(
-        '127.0.0.1:{}'.format(port))
+        '{}:{}'.format(ip_addr, port))
     return service_pb2_grpc.OracleStub(channel)
 
 
@@ -44,7 +47,7 @@ def test_get_space():
                 objective='score',
                 max_trials=10,
                 hyperparameters=hps)
-            start_servicer(oracle)
+            oracle_servicer.start_servicer(oracle)
         else:
             stub = create_stub()
             space_response = stub.GetSpace(service_pb2.GetSpaceRequest())
@@ -64,7 +67,7 @@ def test_update_space():
             oracle = randomsearch.RandomSearchOracle(
                 objective='score',
                 max_trials=10)
-            start_servicer(oracle)
+            oracle_servicer.start_servicer(oracle)
         else:
             stub = create_stub()
             space_response = stub.GetSpace(service_pb2.GetSpaceRequest())
@@ -101,7 +104,7 @@ def test_create_trial():
                 objective='score',
                 max_trials=10,
                 hyperparameters=hps)
-            start_servicer(oracle)
+            oracle_servicer.start_servicer(oracle)
         else:
             stub = create_stub()
             response = stub.CreateTrial(service_pb2.CreateTrialRequest(

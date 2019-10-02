@@ -36,12 +36,13 @@ def mock_distribute(fn, num_workers=2):
 
     @mock.patch.dict(os.environ, os.environ.copy())
     def chief_fn():
-        # The port for the chief and workers to communicate on.
-        os.environ['KERASTUNER_PORT'] = port
-        # Run in distributed mode when present. Cloud oracle does not
-        # run in this mode because the Cloud API coordinates workers.
-        os.environ['KERASTUNER_DISTRIBUTED'] = 'True'
-        # The ID of this process. 'chief' should run a server.   
+        # The IP address of the chief Oracle. Run in distributed mode when
+        # present. Cloud oracle does not run in this mode because the Cloud
+        # API coordinates workers itself.
+        os.environ['KERASTUNER_ORACLE_IP'] = '127.0.0.1'
+        # The port of the chief Oracle.
+        os.environ['KERASTUNER_ORACLE_PORT'] = port
+        # The ID of this process. 'chief' will run the OracleServicer server.
         os.environ['KERASTUNER_TUNER_ID'] = 'chief'
         fn()
     chief_thread = ExceptionStoringThread(target=chief_fn)
@@ -53,10 +54,10 @@ def mock_distribute(fn, num_workers=2):
 
         @mock.patch.dict(os.environ, os.environ.copy())
         def worker_fn():
-            os.environ['KERASTUNER_PORT'] = port
-            os.environ['KERASTUNER_DISTRIBUTED'] = 'True'
+            os.environ['KERASTUNER_ORACLE_IP'] = '127.0.0.1'
+            os.environ['KERASTUNER_ORACLE_PORT'] = port
             # Workers that are part of the same multi-worker
-            # DistributionStrategy should have the smae TUNER_ID.
+            # DistributionStrategy should have the same TUNER_ID.
             os.environ['KERASTUNER_TUNER_ID'] = 'worker{}'.format(i)
             fn()
         worker_thread = ExceptionStoringThread(target=worker_fn)
