@@ -1,7 +1,6 @@
 from tensorflow import keras
 from tensorflow.keras import layers
 
-import numpy as np
 
 from kerastuner.tuners import RandomSearch
 from kerastuner.engine.hypermodel import HyperModel

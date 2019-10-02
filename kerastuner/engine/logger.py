@@ -5,11 +5,8 @@ from __future__ import division
 from __future__ import print_function
 
 import concurrent.futures
-import copy
-import time
 import requests
 import json
-from datetime import datetime
 
 from ..abstractions.display import warning
 

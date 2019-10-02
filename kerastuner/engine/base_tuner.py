@@ -17,28 +17,15 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import copy
-import json
 import os
-import time
-import traceback
 
-
-import numpy as np
-import tensorflow as tf
-from tensorflow import keras
-
-from . import hyperparameters as hp_module
 from . import hypermodel as hm_module
 from . import oracle as oracle_module
 from . import stateful
 from . import trial as trial_module
 from . import tuner_utils
-from .. import config as config_module
-from .. import utils
 from ..abstractions import display
 from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
-from . import metrics_tracking
 
 
 class BaseTuner(stateful.Stateful):

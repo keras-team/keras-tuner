@@ -17,7 +17,6 @@
 import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras import layers
-from tensorflow.keras import optimizers
 from tensorflow.keras import backend
 
 from kerastuner.engine import hypermodel

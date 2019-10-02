@@ -18,17 +18,12 @@ from __future__ import division
 from __future__ import print_function
 
 import collections
-import enum
 import hashlib
-import itertools
-import json
 
-from tensorflow import keras
 from kerastuner.engine import hyperparameters as hp_module
 from kerastuner.engine import metrics_tracking
 from kerastuner.engine import stateful
 from kerastuner.engine import trial as trial_lib
-from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 
 
 Objective = collections.namedtuple('Objective', 'name direction')
@@ -318,5 +313,3 @@ def _maybe_infer_direction_from_objective(objective, metric_name):
         if obj.name == metric_name:
             return obj.direction
     return None
-
-

@@ -19,12 +19,8 @@ from __future__ import print_function
 
 import contextlib
 import math
-from collections import defaultdict
 import numpy as np
 import six
-import time
-import random
-import hashlib
 
 import tensorflow as tf
 from tensorflow import keras
