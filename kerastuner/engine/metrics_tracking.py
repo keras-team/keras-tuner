@@ -27,19 +27,17 @@ from ..protos import kerastuner_pb2
 class MetricObservation(object):
 
     def __init__(self, value, step):
+        if not isinstance(value, list):
+            value = [value]
         self.value = value
         self.step = step
 
     def append(self, value):
         if not isinstance(value, list):
             value = [value]
-        if not isinstance(self.value, list):
-            self.value = [self.value]
         self.value += value
 
     def mean(self):
-        if not isinstance(self.value, list):
-            return self.value
         return np.mean(self.value)
 
     def get_config(self):
@@ -56,21 +54,17 @@ class MetricObservation(object):
         return (other.value == self.value and
                 other.step == self.step)
 
+    def __repr__(self):
+        return 'MetricObservation(value={}, step={})'.format(
+            self.value, self.step)
+
     def to_proto(self):
-        value = self.value
-        # Must always be saved as a list.
-        if not isinstance(value, list):
-            value = [self.value]
         return kerastuner_pb2.MetricObservation(
-            value=value, step=self.step)
+            value=self.value, step=self.step)
 
     @classmethod
     def from_proto(cls, proto):
-        value = proto.value
-        # Convert back to scalar when possible.
-        if len(value) == 1:
-            value = value[0]
-        return cls(value=value, step=proto.step)
+        return cls(value=list(proto.value), step=proto.step)
 
 
 class MetricHistory(object):
