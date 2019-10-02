@@ -21,8 +21,6 @@ import kerastuner
 from kerastuner.engine import base_tuner
 
 from sklearn import linear_model
-import tensorflow as tf
-from tensorflow import keras
 
 
 INPUT_DIM = 2

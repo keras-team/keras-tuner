@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from abc import abstractmethod
-import gc
 import json
 import os
 import subprocess

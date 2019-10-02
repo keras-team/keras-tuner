@@ -19,7 +19,6 @@ from __future__ import print_function
 
 import hashlib
 import json
-import os
 import random
 import time
 
@@ -95,7 +94,7 @@ class Trial(stateful.Stateful):
     @classmethod
     def load(cls, fname):
         state_data = tf_utils.read_file(fname)
-        state = json.loads(state_data)
+        json.loads(state_data)
         return cls.from_state(state_data)
 
 

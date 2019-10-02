@@ -43,7 +43,7 @@ def test_hyperparameter_existence_and_defaults():
     hp = hp_module.HyperParameters()
     hypermodel = xception.HyperXception(
         input_shape=(256, 256, 3), classes=10)
-    model = hypermodel.build(hp)
+    hypermodel.build(hp)
     assert hp.values == {
         'activation': 'relu',
         'conv2d_num_filters': 64,
@@ -73,7 +73,7 @@ def test_hyperparameter_override():
     hp.Choice('num_dense_layers', [2])
     hypermodel = xception.HyperXception(
         input_shape=(256, 256, 3), classes=10)
-    model = hypermodel.build(hp)
+    hypermodel.build(hp)
     assert hp.get('pooling') == 'flatten'
     assert hp.get('num_dense_layers') == 2
 

@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import pytest
-import collections
 import os
 
 import numpy as np
