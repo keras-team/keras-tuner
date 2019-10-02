@@ -41,7 +41,7 @@ def test_model_construction(version):
 def test_hyperparameter_existence_and_defaults():
     hp = hp_module.HyperParameters()
     hypermodel = resnet.HyperResNet(input_shape=(256, 256, 3), classes=10)
-    hypermodel.build(hp)
+    model = hypermodel.build(hp)
     assert hp.get('version') == 'v2'
     assert hp.get('v2/conv3_depth') == 4
     assert hp.get('v2/conv4_depth') == 6
@@ -62,7 +62,7 @@ def test_hyperparameter_override():
     hp = hp_module.HyperParameters()
     hp.Choice('version', ['v1'])
     hypermodel = resnet.HyperResNet(input_shape=(256, 256, 3), classes=10)
-    hypermodel.build(hp)
+    model = hypermodel.build(hp)
     assert hp.get('version') == 'v1'
     assert hp.get('v1/conv3_depth') == 4
     assert hp.get('v1/conv4_depth') == 6

@@ -128,7 +128,7 @@ def test_build_with_conditional_scope():
         return model
 
     hp = hp_module.HyperParameters()
-    build_model(hp)
+    model = build_model(hp)
     assert hp.values == {
         'model': 'v1',
         'model=v1/layers': 1,

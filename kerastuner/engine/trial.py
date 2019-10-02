@@ -94,7 +94,7 @@ class Trial(stateful.Stateful):
     @classmethod
     def load(cls, fname):
         state_data = tf_utils.read_file(fname)
-        json.loads(state_data)
+        state = json.loads(state_data)
         return cls.from_state(state_data)
 
 
