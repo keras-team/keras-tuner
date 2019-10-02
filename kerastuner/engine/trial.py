@@ -80,7 +80,7 @@ class Trial(stateful.Stateful):
             state['hyperparameters']
         )
         self.hyperparameters = hp
-        metrics_tracking.MetricsTracker.from_config(state['metrics'])
+        self.metrics = metrics_tracking.MetricsTracker.from_config(state['metrics'])
         self.score = state['score']
         self.best_step = state['best_step']
         self.status = state['status']
