@@ -45,7 +45,8 @@ class OracleClient(object):
             'tune_new_entries'}
         if name in whitelisted_attrs:
             return getattr(self._oracle, name)
-        return super(OracleClient, self).__getattr__(name)
+        raise AttributeError(
+            '`OracleClient` object has no attribute "{}"'.format(name))
 
     def get_space(self):
         response = self.stub.GetSpace(service_pb2.GetSpaceRequest())
@@ -61,6 +62,11 @@ class OracleClient(object):
         return trial_module.Trial.from_proto(response.trial)
 
     def update_trial(self, trial_id, metrics, step=0):
-        response = self.stud.UpdateTrial(service_pb2.UpdateTrialRequest(
+        response = self.stub.UpdateTrial(service_pb2.UpdateTrialRequest(
             trial_id=trial_id, metrics=metrics, step=step))
-        return trial_module._convert_trial_status_to_str(response.trial_status)
+        return trial_module._convert_trial_status_to_str(response.status)
+
+    def get_trial(self, trial_id):
+        response = self.stub.GetTrial(service_pb2.GetTrialRequest(
+            trial_id=trial_id))
+        return trial_module.Trial.from_proto(response.trial)
