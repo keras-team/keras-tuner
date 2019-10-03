@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests for the OracleServicer class."""
 
-from concurrent import futures
 import grpc
 import os
 import time

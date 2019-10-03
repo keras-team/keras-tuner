@@ -72,4 +72,3 @@ def mock_distribute(fn, num_workers=2):
     for worker_thread in worker_threads:
         if worker_thread.raised_exception is not None:
             six.reraise(*worker_thread.raised_exception)
-

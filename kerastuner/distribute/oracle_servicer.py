@@ -18,7 +18,6 @@ import os
 import time
 
 from ..engine import hyperparameters as hp_module
-from ..protos import kerastuner_pb2
 from ..protos import service_pb2
 from ..protos import service_pb2_grpc
 
