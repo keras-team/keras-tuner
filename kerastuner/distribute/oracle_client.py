@@ -53,7 +53,7 @@ class OracleClient(object):
 
     def update_space(self, hyperparameters):
         self.stub.UpdateSpace(service_pb2.UpdateSpaceRequest(
-            hyperparameters=hyperparameters.to_proto()))
+            hyperparameters=hyperparameters.to_proto()), wait_for_ready=True)
 
     def create_trial(self, tuner_id):
         response = self.stub.CreateTrial(service_pb2.CreateTrialRequest(
