@@ -197,7 +197,7 @@ def test_Choice():
 
 
 @pytest.mark.parametrize(
-    "values,ordered_arg,ordered_val", 
+    "values,ordered_arg,ordered_val",
     [([1, 2, 3], True, True),
      ([1, 2, 3], False, False),
      ([1, 2, 3], None, True),
