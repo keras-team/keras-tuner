@@ -128,7 +128,7 @@ def test_build_with_conditional_scope():
         return model
 
     hp = hp_module.HyperParameters()
-    model = build_model(hp)
+    build_model(hp)
     assert hp.values == {
         'model': 'v1',
         'model=v1/layers': 1,
@@ -168,7 +168,7 @@ def test_nested_conditional_scopes_and_name_scopes():
 
 def test_get_with_conditional_scopes():
     hp = hp_module.HyperParameters()
-    a = hp.Choice('a', [1, 2, 3], default=2)
+    hp.Choice('a', [1, 2, 3], default=2)
     assert hp.get('a') == 2
     with hp.conditional_scope('a', 2):
         hp.Fixed('b', 4)
@@ -193,7 +193,7 @@ def test_Choice():
     choice = hp_module.Choice('choice', [1, 2, 3])
     assert choice.default == 1
     with pytest.raises(ValueError, match='default value should be'):
-        choice = hp_module.Choice('choice', [1, 2, 3], default=4)
+        hp_module.Choice('choice', [1, 2, 3], default=4)
 
 
 @pytest.mark.parametrize(
@@ -212,7 +212,7 @@ def test_Choice_ordered(values, ordered_arg, ordered_val):
 
 def test_Choice_ordered_invalid():
     with pytest.raises(ValueError, match='must be `False`'):
-        choice = hp_module.Choice('a', ['a', 'b'], ordered=True)
+        hp_module.Choice('a', ['a', 'b'], ordered=True)
 
 
 def test_Choice_types():

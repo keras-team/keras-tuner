@@ -18,18 +18,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from ..engine import trial as trial_lib
 from ..engine import tuner as tuner_module
-from ..engine import oracle as oracle_module
-from ..engine import hyperparameters as hp_module
-from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 
 import collections
 import copy
-import json
 import numpy as np
 import os
-import random
 from tensorflow import keras
 
 

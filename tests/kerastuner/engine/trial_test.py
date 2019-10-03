@@ -14,7 +14,6 @@
 
 from kerastuner.engine import hyperparameters as hp_module
 from kerastuner.engine import trial as trial_module
-from kerastuner.protos import kerastuner_pb2
 
 
 def test_trial_proto():
@@ -46,6 +45,3 @@ def test_trial_proto():
     new_trial = trial_module.Trial.from_proto(proto)
     assert new_trial.score == -10
     assert new_trial.best_step == 3
-
-
-

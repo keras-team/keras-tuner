@@ -5,8 +5,6 @@ ignore =
     E121,E123,E126,E226,E24,E704,W503,W504
     # Function name should be lowercase
     N802
-    # imported but unused
-    F401
     # class name should use CapWords convention
     N801
     # lowercase ... imported as non lowercase
@@ -17,16 +15,14 @@ ignore =
     W291
     # constant ... imported as non constant
     N811
-    # local variable is assigned to but never used
-    F841
     # variable ... in function should be lowercase
     N806
-    # blank line at end of file
-    W391
 
 exclude = 
     *_pb2.py
     *_pb2_grpc.py
 
+#imported but unused in __init__.py, that's ok.
+per-file-ignores = **/__init__.py:F401
 
 max-line-length = 85

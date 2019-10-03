@@ -85,7 +85,7 @@ def test_set_history():
     ])
     values = [obs.value for obs in tracker.get_history('new_metric')]
     steps = [obs.step for obs in tracker.get_history('new_metric')]
-    assert values == [0.5, 1.5, 2.]
+    assert values == [[0.5], [1.5], [2.]]
     assert steps == [0, 1, 2]
 
 
