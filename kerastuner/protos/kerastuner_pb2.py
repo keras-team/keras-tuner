@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='kerastuner',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\"kerastuner/protos/kerastuner.proto\x12\nkerastuner\"\x82\x01\n\x05\x46loat\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x11\n\tmin_value\x18\x02 \x01(\x01\x12\x11\n\tmax_value\x18\x03 \x01(\x01\x12\x0c\n\x04step\x18\x04 \x01(\x01\x12&\n\x08sampling\x18\x05 \x01(\x0e\x32\x14.kerastuner.Sampling\x12\x0f\n\x07\x64\x65\x66\x61ult\x18\x06 \x01(\x01\"\x80\x01\n\x03Int\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x11\n\tmin_value\x18\x02 \x01(\x12\x12\x11\n\tmax_value\x18\x03 \x01(\x12\x12\x0c\n\x04step\x18\x04 \x01(\x12\x12&\n\x08sampling\x18\x05 \x01(\x0e\x32\x14.kerastuner.Sampling\x12\x0f\n\x07\x64\x65\x66\x61ult\x18\x06 \x01(\x12\"\x88\x03\n\x06\x43hoice\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x36\n\x0c\x66loat_values\x18\x02 \x01(\x0b\x32\x1e.kerastuner.Choice.FloatValuesH\x00\x12\x32\n\nint_values\x18\x03 \x01(\x0b\x32\x1c.kerastuner.Choice.IntValuesH\x00\x12\x38\n\rstring_values\x18\x04 \x01(\x0b\x32\x1f.kerastuner.Choice.StringValuesH\x00\x12\x15\n\x0bint_default\x18\x05 \x01(\x12H\x01\x12\x17\n\rfloat_default\x18\x06 \x01(\x01H\x01\x12\x18\n\x0estring_default\x18\x07 \x01(\tH\x01\x12\x0f\n\x07ordered\x18\x08 \x01(\x08\x1a\x1d\n\x0b\x46loatValues\x12\x0e\n\x06values\x18\x01 \x03(\x01\x1a\x1b\n\tIntValues\x12\x0e\n\x06values\x18\x01 \x03(\x12\x1a\x1e\n\x0cStringValues\x12\x0e\n\x06values\x18\x01 \x03(\tB\x08\n\x06valuesB\t\n\x07\x64\x65\x66\x61ult\"(\n\x07\x42oolean\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0f\n\x07\x64\x65\x66\x61ult\x18\x02 \x01(\x08\"\x96\x05\n\x0fHyperParameters\x12&\n\x0b\x66loat_space\x18\x01 \x03(\x0b\x32\x11.kerastuner.Float\x12\"\n\tint_space\x18\x02 \x03(\x0b\x32\x0f.kerastuner.Int\x12(\n\x0c\x63hoice_space\x18\x03 \x03(\x0b\x32\x12.kerastuner.Choice\x12*\n\rboolean_space\x18\x04 \x03(\x0b\x32\x13.kerastuner.Boolean\x12\x42\n\x0c\x66loat_values\x18\x05 \x03(\x0b\x32,.kerastuner.HyperParameters.FloatValuesEntry\x12>\n\nint_values\x18\x06 \x03(\x0b\x32*.kerastuner.HyperParameters.IntValuesEntry\x12\x44\n\rstring_values\x18\x07 \x03(\x0b\x32-.kerastuner.HyperParameters.StringValuesEntry\x12\x46\n\x0e\x62oolean_values\x18\x08 \x03(\x0b\x32..kerastuner.HyperParameters.BooleanValuesEntry\x1a\x32\n\x10\x46loatValuesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x01:\x02\x38\x01\x1a\x30\n\x0eIntValuesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x12:\x02\x38\x01\x1a\x33\n\x11StringValuesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a\x34\n\x12\x42ooleanValuesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x08:\x02\x38\x01*:\n\x08Sampling\x12\x08\n\x04NONE\x10\x00\x12\n\n\x06LINEAR\x10\x01\x12\x07\n\x03LOG\x10\x02\x12\x0f\n\x0bREVERSE_LOG\x10\x03\x62\x06proto3')
+  serialized_pb=_b('\n\"kerastuner/protos/kerastuner.proto\x12\nkerastuner\"\x82\x01\n\x05\x46loat\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x11\n\tmin_value\x18\x02 \x01(\x01\x12\x11\n\tmax_value\x18\x03 \x01(\x01\x12\x0c\n\x04step\x18\x04 \x01(\x01\x12&\n\x08sampling\x18\x05 \x01(\x0e\x32\x14.kerastuner.Sampling\x12\x0f\n\x07\x64\x65\x66\x61ult\x18\x06 \x01(\x01\"\x80\x01\n\x03Int\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x11\n\tmin_value\x18\x02 \x01(\x12\x12\x11\n\tmax_value\x18\x03 \x01(\x12\x12\x0c\n\x04step\x18\x04 \x01(\x12\x12&\n\x08sampling\x18\x05 \x01(\x0e\x32\x14.kerastuner.Sampling\x12\x0f\n\x07\x64\x65\x66\x61ult\x18\x06 \x01(\x12\"\x88\x03\n\x06\x43hoice\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x36\n\x0c\x66loat_values\x18\x02 \x01(\x0b\x32\x1e.kerastuner.Choice.FloatValuesH\x00\x12\x32\n\nint_values\x18\x03 \x01(\x0b\x32\x1c.kerastuner.Choice.IntValuesH\x00\x12\x38\n\rstring_values\x18\x04 \x01(\x0b\x32\x1f.kerastuner.Choice.StringValuesH\x00\x12\x15\n\x0bint_default\x18\x05 \x01(\x12H\x01\x12\x17\n\rfloat_default\x18\x06 \x01(\x01H\x01\x12\x18\n\x0estring_default\x18\x07 \x01(\tH\x01\x12\x0f\n\x07ordered\x18\x08 \x01(\x08\x1a\x1d\n\x0b\x46loatValues\x12\x0e\n\x06values\x18\x01 \x03(\x01\x1a\x1b\n\tIntValues\x12\x0e\n\x06values\x18\x01 \x03(\x12\x1a\x1e\n\x0cStringValues\x12\x0e\n\x06values\x18\x01 \x03(\tB\x08\n\x06valuesB\t\n\x07\x64\x65\x66\x61ult\"(\n\x07\x42oolean\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0f\n\x07\x64\x65\x66\x61ult\x18\x02 \x01(\x08\"\x96\x05\n\x0fHyperParameters\x12&\n\x0b\x66loat_space\x18\x01 \x03(\x0b\x32\x11.kerastuner.Float\x12\"\n\tint_space\x18\x02 \x03(\x0b\x32\x0f.kerastuner.Int\x12(\n\x0c\x63hoice_space\x18\x03 \x03(\x0b\x32\x12.kerastuner.Choice\x12*\n\rboolean_space\x18\x04 \x03(\x0b\x32\x13.kerastuner.Boolean\x12\x42\n\x0c\x66loat_values\x18\x05 \x03(\x0b\x32,.kerastuner.HyperParameters.FloatValuesEntry\x12>\n\nint_values\x18\x06 \x03(\x0b\x32*.kerastuner.HyperParameters.IntValuesEntry\x12\x44\n\rstring_values\x18\x07 \x03(\x0b\x32-.kerastuner.HyperParameters.StringValuesEntry\x12\x46\n\x0e\x62oolean_values\x18\x08 \x03(\x0b\x32..kerastuner.HyperParameters.BooleanValuesEntry\x1a\x32\n\x10\x46loatValuesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x01:\x02\x38\x01\x1a\x30\n\x0eIntValuesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x12:\x02\x38\x01\x1a\x33\n\x11StringValuesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a\x34\n\x12\x42ooleanValuesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x08:\x02\x38\x01\"0\n\x11MetricObservation\x12\r\n\x05value\x18\x01 \x03(\x02\x12\x0c\n\x04step\x18\x02 \x01(\x03\"V\n\rMetricHistory\x12\x33\n\x0cobservations\x18\x01 \x03(\x0b\x32\x1d.kerastuner.MetricObservation\x12\x10\n\x08maximize\x18\x02 \x01(\x08\"\x95\x01\n\x0eMetricsTracker\x12\x38\n\x07metrics\x18\x01 \x03(\x0b\x32\'.kerastuner.MetricsTracker.MetricsEntry\x1aI\n\x0cMetricsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12(\n\x05value\x18\x02 \x01(\x0b\x32\x19.kerastuner.MetricHistory:\x02\x38\x01\"\xf3\x01\n\x05Trial\x12\x34\n\x0fhyperparameters\x18\x01 \x01(\x0b\x32\x1b.kerastuner.HyperParameters\x12\x10\n\x08trial_id\x18\x02 \x01(\t\x12\'\n\x06status\x18\x03 \x01(\x0e\x32\x17.kerastuner.TrialStatus\x12+\n\x07metrics\x18\x04 \x01(\x0b\x32\x1a.kerastuner.MetricsTracker\x12&\n\x05score\x18\x05 \x01(\x0b\x32\x17.kerastuner.Trial.Score\x1a$\n\x05Score\x12\r\n\x05value\x18\x01 \x01(\x02\x12\x0c\n\x04step\x18\x02 \x01(\x03*:\n\x08Sampling\x12\x08\n\x04NONE\x10\x00\x12\n\n\x06LINEAR\x10\x01\x12\x07\n\x03LOG\x10\x02\x12\x0f\n\x0bREVERSE_LOG\x10\x03*Z\n\x0bTrialStatus\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0b\n\x07RUNNING\x10\x01\x12\x08\n\x04IDLE\x10\x02\x12\x0b\n\x07INVALID\x10\x03\x12\x0b\n\x07STOPPED\x10\x04\x12\r\n\tCOMPLETED\x10\x05\x62\x06proto3')
 )
 
 _SAMPLING = _descriptor.EnumDescriptor(
@@ -49,16 +49,61 @@ _SAMPLING = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1416,
-  serialized_end=1474,
+  serialized_start=1952,
+  serialized_end=2010,
 )
 _sym_db.RegisterEnumDescriptor(_SAMPLING)
 
 Sampling = enum_type_wrapper.EnumTypeWrapper(_SAMPLING)
+_TRIALSTATUS = _descriptor.EnumDescriptor(
+  name='TrialStatus',
+  full_name='kerastuner.TrialStatus',
+  filename=None,
+  file=DESCRIPTOR,
+  values=[
+    _descriptor.EnumValueDescriptor(
+      name='UNKNOWN', index=0, number=0,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='RUNNING', index=1, number=1,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='IDLE', index=2, number=2,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='INVALID', index=3, number=3,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='STOPPED', index=4, number=4,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='COMPLETED', index=5, number=5,
+      serialized_options=None,
+      type=None),
+  ],
+  containing_type=None,
+  serialized_options=None,
+  serialized_start=2012,
+  serialized_end=2102,
+)
+_sym_db.RegisterEnumDescriptor(_TRIALSTATUS)
+
+TrialStatus = enum_type_wrapper.EnumTypeWrapper(_TRIALSTATUS)
 NONE = 0
 LINEAR = 1
 LOG = 2
 REVERSE_LOG = 3
+UNKNOWN = 0
+RUNNING = 1
+IDLE = 2
+INVALID = 3
+STOPPED = 4
+COMPLETED = 5
 
 
 
@@ -635,6 +680,246 @@ _HYPERPARAMETERS = _descriptor.Descriptor(
   serialized_end=1414,
 )
 
+
+_METRICOBSERVATION = _descriptor.Descriptor(
+  name='MetricObservation',
+  full_name='kerastuner.MetricObservation',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='value', full_name='kerastuner.MetricObservation.value', index=0,
+      number=1, type=2, cpp_type=6, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='step', full_name='kerastuner.MetricObservation.step', index=1,
+      number=2, type=3, cpp_type=2, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1416,
+  serialized_end=1464,
+)
+
+
+_METRICHISTORY = _descriptor.Descriptor(
+  name='MetricHistory',
+  full_name='kerastuner.MetricHistory',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='observations', full_name='kerastuner.MetricHistory.observations', index=0,
+      number=1, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='maximize', full_name='kerastuner.MetricHistory.maximize', index=1,
+      number=2, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1466,
+  serialized_end=1552,
+)
+
+
+_METRICSTRACKER_METRICSENTRY = _descriptor.Descriptor(
+  name='MetricsEntry',
+  full_name='kerastuner.MetricsTracker.MetricsEntry',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='key', full_name='kerastuner.MetricsTracker.MetricsEntry.key', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='value', full_name='kerastuner.MetricsTracker.MetricsEntry.value', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=_b('8\001'),
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1631,
+  serialized_end=1704,
+)
+
+_METRICSTRACKER = _descriptor.Descriptor(
+  name='MetricsTracker',
+  full_name='kerastuner.MetricsTracker',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='metrics', full_name='kerastuner.MetricsTracker.metrics', index=0,
+      number=1, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[_METRICSTRACKER_METRICSENTRY, ],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1555,
+  serialized_end=1704,
+)
+
+
+_TRIAL_SCORE = _descriptor.Descriptor(
+  name='Score',
+  full_name='kerastuner.Trial.Score',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='value', full_name='kerastuner.Trial.Score.value', index=0,
+      number=1, type=2, cpp_type=6, label=1,
+      has_default_value=False, default_value=float(0),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='step', full_name='kerastuner.Trial.Score.step', index=1,
+      number=2, type=3, cpp_type=2, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1914,
+  serialized_end=1950,
+)
+
+_TRIAL = _descriptor.Descriptor(
+  name='Trial',
+  full_name='kerastuner.Trial',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='hyperparameters', full_name='kerastuner.Trial.hyperparameters', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='trial_id', full_name='kerastuner.Trial.trial_id', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='status', full_name='kerastuner.Trial.status', index=2,
+      number=3, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='metrics', full_name='kerastuner.Trial.metrics', index=3,
+      number=4, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='score', full_name='kerastuner.Trial.score', index=4,
+      number=5, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[_TRIAL_SCORE, ],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1707,
+  serialized_end=1950,
+)
+
 _FLOAT.fields_by_name['sampling'].enum_type = _SAMPLING
 _INT.fields_by_name['sampling'].enum_type = _SAMPLING
 _CHOICE_FLOATVALUES.containing_type = _CHOICE
@@ -673,12 +958,26 @@ _HYPERPARAMETERS.fields_by_name['float_values'].message_type = _HYPERPARAMETERS_
 _HYPERPARAMETERS.fields_by_name['int_values'].message_type = _HYPERPARAMETERS_INTVALUESENTRY
 _HYPERPARAMETERS.fields_by_name['string_values'].message_type = _HYPERPARAMETERS_STRINGVALUESENTRY
 _HYPERPARAMETERS.fields_by_name['boolean_values'].message_type = _HYPERPARAMETERS_BOOLEANVALUESENTRY
+_METRICHISTORY.fields_by_name['observations'].message_type = _METRICOBSERVATION
+_METRICSTRACKER_METRICSENTRY.fields_by_name['value'].message_type = _METRICHISTORY
+_METRICSTRACKER_METRICSENTRY.containing_type = _METRICSTRACKER
+_METRICSTRACKER.fields_by_name['metrics'].message_type = _METRICSTRACKER_METRICSENTRY
+_TRIAL_SCORE.containing_type = _TRIAL
+_TRIAL.fields_by_name['hyperparameters'].message_type = _HYPERPARAMETERS
+_TRIAL.fields_by_name['status'].enum_type = _TRIALSTATUS
+_TRIAL.fields_by_name['metrics'].message_type = _METRICSTRACKER
+_TRIAL.fields_by_name['score'].message_type = _TRIAL_SCORE
 DESCRIPTOR.message_types_by_name['Float'] = _FLOAT
 DESCRIPTOR.message_types_by_name['Int'] = _INT
 DESCRIPTOR.message_types_by_name['Choice'] = _CHOICE
 DESCRIPTOR.message_types_by_name['Boolean'] = _BOOLEAN
 DESCRIPTOR.message_types_by_name['HyperParameters'] = _HYPERPARAMETERS
+DESCRIPTOR.message_types_by_name['MetricObservation'] = _METRICOBSERVATION
+DESCRIPTOR.message_types_by_name['MetricHistory'] = _METRICHISTORY
+DESCRIPTOR.message_types_by_name['MetricsTracker'] = _METRICSTRACKER
+DESCRIPTOR.message_types_by_name['Trial'] = _TRIAL
 DESCRIPTOR.enum_types_by_name['Sampling'] = _SAMPLING
+DESCRIPTOR.enum_types_by_name['TrialStatus'] = _TRIALSTATUS
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 Float = _reflection.GeneratedProtocolMessageType('Float', (_message.Message,), {
@@ -772,9 +1071,54 @@ _sym_db.RegisterMessage(HyperParameters.IntValuesEntry)
 _sym_db.RegisterMessage(HyperParameters.StringValuesEntry)
 _sym_db.RegisterMessage(HyperParameters.BooleanValuesEntry)
 
+MetricObservation = _reflection.GeneratedProtocolMessageType('MetricObservation', (_message.Message,), {
+  'DESCRIPTOR' : _METRICOBSERVATION,
+  '__module__' : 'kerastuner.protos.kerastuner_pb2'
+  # @@protoc_insertion_point(class_scope:kerastuner.MetricObservation)
+  })
+_sym_db.RegisterMessage(MetricObservation)
+
+MetricHistory = _reflection.GeneratedProtocolMessageType('MetricHistory', (_message.Message,), {
+  'DESCRIPTOR' : _METRICHISTORY,
+  '__module__' : 'kerastuner.protos.kerastuner_pb2'
+  # @@protoc_insertion_point(class_scope:kerastuner.MetricHistory)
+  })
+_sym_db.RegisterMessage(MetricHistory)
+
+MetricsTracker = _reflection.GeneratedProtocolMessageType('MetricsTracker', (_message.Message,), {
+
+  'MetricsEntry' : _reflection.GeneratedProtocolMessageType('MetricsEntry', (_message.Message,), {
+    'DESCRIPTOR' : _METRICSTRACKER_METRICSENTRY,
+    '__module__' : 'kerastuner.protos.kerastuner_pb2'
+    # @@protoc_insertion_point(class_scope:kerastuner.MetricsTracker.MetricsEntry)
+    })
+  ,
+  'DESCRIPTOR' : _METRICSTRACKER,
+  '__module__' : 'kerastuner.protos.kerastuner_pb2'
+  # @@protoc_insertion_point(class_scope:kerastuner.MetricsTracker)
+  })
+_sym_db.RegisterMessage(MetricsTracker)
+_sym_db.RegisterMessage(MetricsTracker.MetricsEntry)
+
+Trial = _reflection.GeneratedProtocolMessageType('Trial', (_message.Message,), {
+
+  'Score' : _reflection.GeneratedProtocolMessageType('Score', (_message.Message,), {
+    'DESCRIPTOR' : _TRIAL_SCORE,
+    '__module__' : 'kerastuner.protos.kerastuner_pb2'
+    # @@protoc_insertion_point(class_scope:kerastuner.Trial.Score)
+    })
+  ,
+  'DESCRIPTOR' : _TRIAL,
+  '__module__' : 'kerastuner.protos.kerastuner_pb2'
+  # @@protoc_insertion_point(class_scope:kerastuner.Trial)
+  })
+_sym_db.RegisterMessage(Trial)
+_sym_db.RegisterMessage(Trial.Score)
+
 
 _HYPERPARAMETERS_FLOATVALUESENTRY._options = None
 _HYPERPARAMETERS_INTVALUESENTRY._options = None
 _HYPERPARAMETERS_STRINGVALUESENTRY._options = None
 _HYPERPARAMETERS_BOOLEANVALUESENTRY._options = None
+_METRICSTRACKER_METRICSENTRY._options = None
 # @@protoc_insertion_point(module_scope)

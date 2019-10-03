@@ -19,23 +19,23 @@ from __future__ import print_function
 import numpy as np
 from tensorflow import keras
 
+from ..protos import kerastuner_pb2
+
 
 class MetricObservation(object):
 
     def __init__(self, value, step):
+        if not isinstance(value, list):
+            value = [value]
         self.value = value
         self.step = step
 
     def append(self, value):
         if not isinstance(value, list):
             value = [value]
-        if not isinstance(self.value, list):
-            self.value = [self.value]
         self.value += value
 
     def mean(self):
-        if not isinstance(self.value, list):
-            return self.value
         return np.mean(self.value)
 
     def get_config(self):
@@ -51,6 +51,18 @@ class MetricObservation(object):
             return False
         return (other.value == self.value and
                 other.step == self.step)
+
+    def __repr__(self):
+        return 'MetricObservation(value={}, step={})'.format(
+            self.value, self.step)
+
+    def to_proto(self):
+        return kerastuner_pb2.MetricObservation(
+            value=self.value, step=self.step)
+
+    @classmethod
+    def from_proto(cls, proto):
+        return cls(value=list(proto.value), step=proto.step)
 
 
 class MetricHistory(object):
@@ -72,7 +84,7 @@ class MetricHistory(object):
 
     def get_best_value(self):
         values = list(
-            obs.value for obs in self._observations.values())
+            obs.mean() for obs in self._observations.values())
         if not values:
             return None
         if self.direction == 'min':
@@ -129,6 +141,19 @@ class MetricHistory(object):
         instance = cls(config['direction'])
         instance.set_history([MetricObservation.from_config(obs)
                               for obs in config['observations']])
+        return instance
+
+    def to_proto(self):
+        return kerastuner_pb2.MetricHistory(
+            observations=[obs.to_proto() for obs in self.get_history()],
+            maximize=self.direction == 'max')
+
+    @classmethod
+    def from_proto(cls, proto):
+        direction = 'max' if proto.maximize else 'min'
+        instance = cls(direction)
+        instance.set_history([
+            MetricObservation.from_proto(p) for p in proto.observations])
         return instance
 
 
@@ -208,6 +233,19 @@ class MetricsTracker(object):
         instance.metrics = {
             name: MetricHistory.from_config(metric_history)
             for name, metric_history in config['metrics'].items()}
+        return instance
+
+    def to_proto(self):
+        return kerastuner_pb2.MetricsTracker(metrics={
+            name: metric_history.to_proto()
+            for name, metric_history in self.metrics.items()})
+
+    @classmethod
+    def from_proto(cls, proto):
+        instance = cls()
+        instance.metrics = {
+            name: MetricHistory.from_proto(metric_history)
+            for name, metric_history in proto.metrics.items()}
         return instance
 
     def _assert_exists(self, name):

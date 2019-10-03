@@ -21,11 +21,12 @@ import hashlib
 import random
 import time
 
-from kerastuner.engine import stateful
-from . import metrics_tracking
 from . import hyperparameters as hp_module
+from . import metrics_tracking
+from . import stateful
 from ..abstractions import display
 from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
+from ..protos import kerastuner_pb2
 
 
 class TrialStatus:
@@ -94,7 +95,68 @@ class Trial(stateful.Stateful):
         state_data = tf_utils.read_file(fname)
         return cls.from_state(state_data)
 
+    def to_proto(self):
+        if self.score is not None:
+            score = kerastuner_pb2.Trial.Score(
+                value=self.score, step=self.best_step)
+        else:
+            score = None
+        proto = kerastuner_pb2.Trial(
+            trial_id=self.trial_id,
+            hyperparameters=self.hyperparameters.to_proto(),
+            score=score,
+            status=_convert_trial_status_to_proto(self.status),
+            metrics=self.metrics.to_proto())
+        return proto
+
+    @classmethod
+    def from_proto(cls, proto):
+        instance = cls(
+            hp_module.HyperParameters.from_proto(proto.hyperparameters),
+            trial_id=proto.trial_id,
+            status=_convert_trial_status_to_str(proto.status))
+        if proto.HasField('score'):
+            instance.score = proto.score.value
+            instance.best_step = proto.score.step
+        return instance
+
 
 def generate_trial_id():
     s = str(time.time()) + str(random.randint(1, 1e7))
     return hashlib.sha256(s.encode('utf-8')).hexdigest()[:32]
+
+
+def _convert_trial_status_to_proto(status):
+    ts = kerastuner_pb2.TrialStatus
+    if status is None:
+        return ts.UNKNOWN
+    elif status == TrialStatus.RUNNING:
+        return ts.RUNNING
+    elif status == TrialStatus.IDLE:
+        return ts.IDLE
+    elif status == TrialStatus.INVALID:
+        return ts.INVALID
+    elif status == TrialStatus.STOPPED:
+        return ts.STOPPED
+    elif status == TrialStatus.COMPLETED:
+        return ts.COMPLETED
+    else:
+        raise ValueError('Unknown status {}'.format(status))
+
+
+def _convert_trial_status_to_str(status):
+    ts = kerastuner_pb2.TrialStatus
+    if status == ts.UNKNOWN:
+        return None
+    elif status == ts.RUNNING:
+        return TrialStatus.RUNNING
+    elif status == ts.IDLE:
+        return TrialStatus.IDLE
+    elif status == ts.INVALID:
+        return TrialStatus.INVALID
+    elif status == ts.STOPPED:
+        return TrialStatus.STOPPED
+    elif status == ts.COMPLETED:
+        return TrialStatus.COMPLETED
+    else:
+        raise ValueError('Unknown status {}'.format(status))
