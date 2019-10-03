@@ -36,8 +36,6 @@ def test_get_space():
         tuner_id = os.environ['KERASTUNER_TUNER_ID']
         if 'chief' in tuner_id:
             server = oracle_servicer.start_servicer(oracle)
-            time.sleep(3)
-            server.stop()
         else:
             client = oracle_client.OracleClient(oracle)
             retrieved_hps = client.get_space()
