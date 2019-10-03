@@ -30,7 +30,7 @@ def mock_distribute(fn, num_workers=2):
         # Run in distributed mode when present. Cloud oracle does not
         # run in this mode because the Cloud API coordinates workers.
         os.environ['KERASTUNER_DISTRIBUTED'] = 'True'
-        # The ID of this process. 'chief' should run a server.   
+        # The ID of this process. 'chief' should run a server.
         os.environ['KERASTUNER_TUNER_ID'] = 'chief'
         fn()
     chief_process = threading.Thread(target=chief_fn)
