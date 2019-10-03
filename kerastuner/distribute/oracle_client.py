@@ -15,7 +15,6 @@
 
 import grpc
 import os
-import time
 
 from ..engine import hyperparameters as hp_module
 from ..engine import trial as trial_module
@@ -30,7 +29,6 @@ class OracleClient(object):
         self._oracle = oracle
 
         # Allow time for the OracleServicer to come on-line.
-        time.sleep(3)
         ip_addr = os.environ['KERASTUNER_ORACLE_IP']
         port = os.environ['KERASTUNER_ORACLE_PORT']
         channel = grpc.insecure_channel(
@@ -49,7 +47,8 @@ class OracleClient(object):
             '`OracleClient` object has no attribute "{}"'.format(name))
 
     def get_space(self):
-        response = self.stub.GetSpace(service_pb2.GetSpaceRequest())
+        response = self.stub.GetSpace(
+            service_pb2.GetSpaceRequest(), wait_for_ready=True)
         return hp_module.HyperParameters.from_proto(response.hyperparameters)
 
     def update_space(self, hyperparameters):
@@ -58,15 +57,25 @@ class OracleClient(object):
 
     def create_trial(self, tuner_id):
         response = self.stub.CreateTrial(service_pb2.CreateTrialRequest(
-            tuner_id=tuner_id))
+            tuner_id=tuner_id), wait_for_ready=True)
         return trial_module.Trial.from_proto(response.trial)
 
     def update_trial(self, trial_id, metrics, step=0):
         response = self.stub.UpdateTrial(service_pb2.UpdateTrialRequest(
-            trial_id=trial_id, metrics=metrics, step=step))
+            trial_id=trial_id, metrics=metrics, step=step), wait_for_ready=True)
         return trial_module._convert_trial_status_to_str(response.status)
+
+    def end_trial(self, trial_id, status="COMPLETED"):
+        status = trial_module._convert_trial_status_to_proto(status)
+        self.stub.EndTrial(service_pb2.EndTrialRequest(
+            trial_id=trial_id, status=status), wait_for_ready=True)
 
     def get_trial(self, trial_id):
         response = self.stub.GetTrial(service_pb2.GetTrialRequest(
-            trial_id=trial_id))
+            trial_id=trial_id), wait_for_ready=True)
         return trial_module.Trial.from_proto(response.trial)
+
+    def get_best_trials(self, num_trials=1):
+        response = self.stub.GetBestTrials(service_pb2.GetBestTrialsRequest(
+            num_trials=num_trials), wait_for_ready=True)
+        return [trial_module.Trial.from_proto(trial) for trial in response.trials]

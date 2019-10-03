@@ -143,7 +143,7 @@ class Oracle(stateful.Stateful):
             values = response['values'] if 'values' in response else None
 
         hyperparameters = self.hyperparameters.copy()
-        hyperparameters.values = values
+        hyperparameters.values = values or {}
         trial = trial_lib.Trial(
             hyperparameters=hyperparameters,
             trial_id=trial_id,
