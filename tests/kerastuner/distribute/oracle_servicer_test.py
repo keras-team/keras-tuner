@@ -13,45 +13,30 @@
 # limitations under the License.
 """Tests for the OracleServicer class."""
 
-import grpc
 import os
-import time
 
 import kerastuner as kt
+from kerastuner.distribute import oracle_client
 from kerastuner.distribute import oracle_servicer
-from kerastuner.protos import service_pb2
-from kerastuner.protos import service_pb2_grpc
 from kerastuner.tuners import randomsearch
 from .. import mock_distribute
-
-
-def create_stub():
-    # Give the OracleServicer time to come on-line.
-    time.sleep(2)
-    ip_addr = os.environ['KERASTUNER_ORACLE_IP']
-    port = os.environ['KERASTUNER_ORACLE_PORT']
-    channel = grpc.insecure_channel(
-        '{}:{}'.format(ip_addr, port))
-    return service_pb2_grpc.OracleStub(channel)
 
 
 def test_get_space():
 
     def _test_get_space():
+        hps = kt.HyperParameters()
+        hps.Int('a', 0, 10, default=3)
+        oracle = randomsearch.RandomSearchOracle(
+            objective='score',
+            max_trials=10,
+            hyperparameters=hps)
         tuner_id = os.environ['KERASTUNER_TUNER_ID']
         if 'chief' in tuner_id:
-            hps = kt.HyperParameters()
-            hps.Int('a', 0, 10, default=3)
-            oracle = randomsearch.RandomSearchOracle(
-                objective='score',
-                max_trials=10,
-                hyperparameters=hps)
             oracle_servicer.start_servicer(oracle)
         else:
-            stub = create_stub()
-            space_response = stub.GetSpace(service_pb2.GetSpaceRequest())
-            retrieved_hps = kt.HyperParameters.from_proto(
-                space_response.hyperparameters)
+            client = oracle_client.OracleClient(oracle)
+            retrieved_hps = client.get_space()
             assert retrieved_hps.values == {'a': 3}
             assert len(retrieved_hps.space) == 1
 
@@ -61,29 +46,21 @@ def test_get_space():
 def test_update_space():
 
     def _test_update_space():
+        oracle = randomsearch.RandomSearchOracle(
+            objective='score',
+            max_trials=10)
         tuner_id = os.environ['KERASTUNER_TUNER_ID']
         if 'chief' in tuner_id:
-            oracle = randomsearch.RandomSearchOracle(
-                objective='score',
-                max_trials=10)
             oracle_servicer.start_servicer(oracle)
         else:
-            stub = create_stub()
-            space_response = stub.GetSpace(service_pb2.GetSpaceRequest())
-            retrieved_hps = kt.HyperParameters.from_proto(
-                space_response.hyperparameters)
-            assert len(retrieved_hps.space) == 0
+            client = oracle_client.OracleClient(oracle)
 
             hps = kt.HyperParameters()
             hps.Int('a', 0, 10, default=5)
             hps.Choice('b', [1, 2, 3])
-            request = service_pb2.UpdateSpaceRequest(
-                hyperparameters=hps.to_proto())
-            stub.UpdateSpace(request)
+            client.update_space(hps)
 
-            space_response = stub.GetSpace(service_pb2.GetSpaceRequest())
-            retrieved_hps = kt.HyperParameters.from_proto(
-                space_response.hyperparameters)
+            retrieved_hps = client.get_space()
             assert len(retrieved_hps.space) == 2
             assert retrieved_hps.values['a'] == 5
             assert retrieved_hps.values['b'] == 1
@@ -94,21 +71,19 @@ def test_update_space():
 def test_create_trial():
 
     def _test_create_trial():
+        hps = kt.HyperParameters()
+        hps.Int('a', 0, 10, default=5)
+        hps.Choice('b', [1, 2, 3])
+        oracle = randomsearch.RandomSearchOracle(
+            objective='score',
+            max_trials=10,
+            hyperparameters=hps)
         tuner_id = os.environ['KERASTUNER_TUNER_ID']
         if 'chief' in tuner_id:
-            hps = kt.HyperParameters()
-            hps.Int('a', 0, 10, default=5)
-            hps.Choice('b', [1, 2, 3])
-            oracle = randomsearch.RandomSearchOracle(
-                objective='score',
-                max_trials=10,
-                hyperparameters=hps)
             oracle_servicer.start_servicer(oracle)
         else:
-            stub = create_stub()
-            response = stub.CreateTrial(service_pb2.CreateTrialRequest(
-                tuner_id='worker0'))
-            trial = kt.engine.trial.Trial.from_proto(response.trial)
+            client = oracle_client.OracleClient(oracle)
+            trial = client.create_trial(tuner_id)
             assert trial.status == "RUNNING"
             a = trial.hyperparameters.get('a')
             assert a >= 0 and a <= 10

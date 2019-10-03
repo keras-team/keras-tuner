@@ -18,6 +18,7 @@ import os
 import time
 
 from ..engine import hyperparameters as hp_module
+from ..engine import trial as trial_module
 from ..protos import service_pb2
 from ..protos import service_pb2_grpc
 
@@ -42,6 +43,13 @@ class OracleServicer(service_pb2_grpc.OracleServicer):
         trial = self.oracle.create_trial(request.tuner_id)
         return service_pb2.CreateTrialResponse(
             trial=trial.to_proto())
+
+    def UpdateTrial(self, request, context):
+        status = self.oracle.update_trial(request.trial_id,
+                                          request.metrics,
+                                          step=request.step)
+        status_proto = trial_module._convert_trial_status_to_proto(status)
+        return service_pb2.UpdateTrialResponse(trial_status=status_proto)
 
 
 def start_servicer(oracle):
