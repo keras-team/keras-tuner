@@ -273,7 +273,7 @@ class Utils_2_x(proxy.UtilsBase):
             saved_model_path, path, output_tensor_names)
 
     def save_model(self, model, path, export_type="keras", tmp_path="/tmp/"):
-        KNOWN_OUTPUT_TYPES = [
+        known_output_types = [
             "keras",
             "keras_bundle",
             "tf",
@@ -282,16 +282,16 @@ class Utils_2_x(proxy.UtilsBase):
 
         # Not yet supported for tf 2.0 - numerous issues with GPU models, and
         # other issues we haven't debugged yet.
-        UNSUPPORTED_OUTPUT_TYPES = [
+        unsupported_output_types = [
             "tf_lite",
             "tf_optimized",
         ]
 
-        if export_type in UNSUPPORTED_OUTPUT_TYPES:
+        if export_type in unsupported_output_types:
             raise ValueError(
                 "Output type '%s' is not currently supported "
                 "when using tensorflow 2.x.  Valid output types are: %s" % (
-                    export_type, str(KNOWN_OUTPUT_TYPES)))
+                    export_type, str(known_output_types)))
 
         # Convert PosixPath to string, if necessary.
         path = str(path)
@@ -311,4 +311,4 @@ class Utils_2_x(proxy.UtilsBase):
             self.save_tflite(model, path, tmp_path)
         else:
             raise ValueError("Output type '%s' not in known types '%s'" % (
-                export_type, str(KNOWN_OUTPUT_TYPES)))
+                export_type, str(known_output_types)))

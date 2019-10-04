@@ -244,7 +244,7 @@ class Utils_1_x(proxy.UtilsBase):
                 to store temporary files.
         """
 
-        KNOWN_OUTPUT_TYPES = [
+        known_output_types = [
             "keras", "keras_bundle", "tf", "tf_frozen", "tf_optimized",
             "tf_lite"
         ]
@@ -267,4 +267,4 @@ class Utils_1_x(proxy.UtilsBase):
             self.save_tflite(model, path, tmp_path)
         else:
             raise ValueError("Output type '%s' not in known types '%s'" %
-                             (export_type, str(KNOWN_OUTPUT_TYPES)))
+                             (export_type, str(known_output_types)))

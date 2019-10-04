@@ -41,11 +41,11 @@ def _check_sampling_arg(sampling,
             '`sampling` and `step` cannot both be set, found '
             '`sampling`: ' + str(sampling) + ', `step`: ' + str(step))
 
-    _SAMPLING_VALUES = {'linear', 'log', 'reverse_log'}
+    _sampling_values = {'linear', 'log', 'reverse_log'}
     sampling = sampling.lower()
-    if sampling not in _SAMPLING_VALUES:
+    if sampling not in _sampling_values:
         raise ValueError(
-            '`sampling` must be one of ' + str(_SAMPLING_VALUES))
+            '`sampling` must be one of ' + str(_sampling_values))
     if sampling in {'log', 'reverse_log'} and min_value <= 0:
         raise ValueError(
             '`sampling="' + str(sampling) + '" is not supported for '
@@ -824,7 +824,7 @@ class HyperParameters(object):
     def _check_name_is_valid(self, name):
         if '/' in name or '=' in name or ',' in name:
             raise ValueError(
-                '`HyperParameter` names cannot contain "/", "=" or "," ' 
+                '`HyperParameter` names cannot contain "/", "=" or "," '
                 'characters.')
 
         for scope in self._scopes[::-1]:

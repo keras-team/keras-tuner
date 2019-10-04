@@ -135,7 +135,7 @@ def test_tuning_correctness(tmp_dir):
         tuner.oracle.trials.values(), key=lambda t: t.score)
     assert first_trial.score == min(m0_epochs)
     assert second_trial.score == min(m1_epochs)
-    assert (tuner.oracle.get_best_trials(1)[0].trial_id == 
+    assert (tuner.oracle.get_best_trials(1)[0].trial_id ==
             first_trial.trial_id)
 
 
