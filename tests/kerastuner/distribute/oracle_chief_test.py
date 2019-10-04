@@ -69,11 +69,6 @@ def test_update_space():
             oracle_chief.start_server(oracle)
         else:
             stub = create_stub()
-            space_response = stub.GetSpace(service_pb2.GetSpaceRequest())
-            retrieved_hps = kt.HyperParameters.from_proto(
-                space_response.hyperparameters)
-            assert len(retrieved_hps.space) == 0
-
             hps = kt.HyperParameters()
             hps.Int('a', 0, 10, default=5)
             hps.Choice('b', [1, 2, 3])
