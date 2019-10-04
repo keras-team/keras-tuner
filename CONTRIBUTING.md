@@ -54,3 +54,15 @@ information on using pull requests.
 
 This project follows [Google's Open Source Community
 Guidelines](https://opensource.google.com/conduct/).
+
+
+# Rebuilding Protos
+If you make changes to any `.proto` file, you'll have to rebuild the generated
+`*_pb2.py` files. To do this, run these commands from the root directory of this
+project:
+
+```
+pip install grpcio-tools
+python -m grpc_tools.protoc --python_out=. --grpc_python_out=. --proto_path=. kerastuner/protos/kerastuner.proto
+python -m grpc_tools.protoc --python_out=. --grpc_python_out=. --proto_path=. kerastuner/protos/service.proto
+```
