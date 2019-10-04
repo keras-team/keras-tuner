@@ -118,6 +118,8 @@ class Trial(stateful.Stateful):
         if proto.HasField('score'):
             instance.score = proto.score.value
             instance.best_step = proto.score.step
+        instance.metrics = metrics_tracking.MetricsTracker.from_proto(
+            proto.metrics)
         return instance
 
 

@@ -42,7 +42,7 @@ message CreateTrialResponse {
 
 message UpdateTrialRequest {
     string trial_id = 1;
-    map<string, float> metrics = 2;
+    map<string, double> metrics = 2;
     int64 step = 3;
 }
 

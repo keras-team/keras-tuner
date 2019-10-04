@@ -17,7 +17,7 @@ import os
 import pytest
 import tensorflow as tf
 import time
-from .mock_distribute import mock_distribute
+from . import mock_distribute
 
 
 @pytest.fixture(scope='module')
@@ -27,6 +27,9 @@ def tmp_dir(tmpdir_factory):
 
 def test_mock_distribute(tmp_dir):
     def process_fn():
+        # Wait, to test that other threads aren't overriding env vars.
+        time.sleep(1)
+        assert isinstance(os.environ, mock_distribute.MockEnvVars)
         tuner_id = os.environ['KERASTUNER_TUNER_ID']
         if 'worker' in tuner_id:
             # Give the chief process time to write its value,
@@ -37,7 +40,7 @@ def test_mock_distribute(tmp_dir):
         with tf.io.gfile.GFile(fname, 'w') as f:
             f.write(tuner_id)
 
-    mock_distribute(process_fn, num_workers=3)
+    mock_distribute.mock_distribute(process_fn, num_workers=3)
 
     for tuner_id in {'chief', 'worker0', 'worker1', 'worker2'}:
         fname = os.path.join(tmp_dir, tuner_id)
@@ -52,11 +55,11 @@ def test_exception_raising():
             raise ValueError('Found a worker error')
 
     with pytest.raises(ValueError, match='Found a worker error'):
-        mock_distribute(worker_error_fn, num_workers=2)
+        mock_distribute.mock_distribute(worker_error_fn, num_workers=2)
 
     def chief_error_fn():
         if 'chief' in os.environ['KERASTUNER_TUNER_ID']:
             raise ValueError('Found a chief error')
 
     with pytest.raises(ValueError, match='Found a chief error'):
-        mock_distribute(chief_error_fn, num_workers=2)
+        mock_distribute.mock_distribute(chief_error_fn, num_workers=2)
