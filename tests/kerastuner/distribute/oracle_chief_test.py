@@ -17,8 +17,8 @@ import os
 import time
 
 import kerastuner as kt
+from kerastuner.distribute import oracle_chief
 from kerastuner.distribute import oracle_client
-from kerastuner.distribute import oracle_servicer
 from kerastuner.engine import metrics_tracking
 from kerastuner.tuners import randomsearch
 from .. import mock_distribute
@@ -35,7 +35,7 @@ def test_get_space():
             hyperparameters=hps)
         tuner_id = os.environ['KERASTUNER_TUNER_ID']
         if 'chief' in tuner_id:
-            server = oracle_servicer.start_servicer(oracle)
+            server = oracle_chief.start_server(oracle)
         else:
             client = oracle_client.OracleClient(oracle)
             retrieved_hps = client.get_space()
@@ -53,7 +53,7 @@ def test_update_space():
             max_trials=10)
         tuner_id = os.environ['KERASTUNER_TUNER_ID']
         if 'chief' in tuner_id:
-            oracle_servicer.start_servicer(oracle)
+            oracle_chief.start_server(oracle)
         else:
             client = oracle_client.OracleClient(oracle)
 
@@ -82,7 +82,7 @@ def test_create_trial():
             hyperparameters=hps)
         tuner_id = os.environ['KERASTUNER_TUNER_ID']
         if 'chief' in tuner_id:
-            oracle_servicer.start_servicer(oracle)
+            oracle_chief.start_server(oracle)
         else:
             client = oracle_client.OracleClient(oracle)
             trial = client.create_trial(tuner_id)
@@ -106,7 +106,7 @@ def test_update_trial():
             hyperparameters=hps)
         tuner_id = os.environ['KERASTUNER_TUNER_ID']
         if 'chief' in tuner_id:
-            oracle_servicer.start_servicer(oracle)
+            oracle_chief.start_server(oracle)
         else:
             client = oracle_client.OracleClient(oracle)
             trial = client.create_trial(tuner_id)
@@ -131,7 +131,7 @@ def test_end_trial():
             hyperparameters=hps)
         tuner_id = os.environ['KERASTUNER_TUNER_ID']
         if 'chief' in tuner_id:
-            oracle_servicer.start_servicer(oracle)
+            oracle_chief.start_server(oracle)
         else:
             client = oracle_client.OracleClient(oracle)
             trial = client.create_trial(tuner_id)
@@ -156,7 +156,7 @@ def test_get_best_trials():
             hyperparameters=hps)
         tuner_id = os.environ['KERASTUNER_TUNER_ID']
         if 'chief' in tuner_id:
-            oracle_servicer.start_servicer(oracle)
+            oracle_chief.start_server(oracle)
         else:
             client = oracle_client.OracleClient(oracle)
             trial_scores = {}

@@ -11,10 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""OracleClient class."""
 
+from concurrent import futures
 import grpc
 import os
+import time
 
 from ..engine import hyperparameters as hp_module
 from ..engine import trial as trial_module
@@ -22,60 +23,58 @@ from ..protos import service_pb2
 from ..protos import service_pb2_grpc
 
 
-class OracleClient(object):
-    """Wraps an `Oracle` on a worker to send requests to the chief."""
+class OracleServicer(service_pb2_grpc.OracleServicer):
 
     def __init__(self, oracle):
-        self._oracle = oracle
+        self.oracle = oracle
 
-        # Allow time for the OracleServicer to come on-line.
-        ip_addr = os.environ['KERASTUNER_ORACLE_IP']
-        port = os.environ['KERASTUNER_ORACLE_PORT']
-        channel = grpc.insecure_channel(
-            '{}:{}'.format(ip_addr, port))
-        self.stub = service_pb2_grpc.OracleStub(channel)
+    def GetSpace(self, request, context):
+        hps = self.oracle.get_space()
+        return service_pb2.GetSpaceResponse(
+            hyperparameters=hps.to_proto())
 
-    def __getattr__(self, name):
-        whitelisted_attrs = {
-            'objective',
-            'max_trials',
-            'allow_new_entries',
-            'tune_new_entries'}
-        if name in whitelisted_attrs:
-            return getattr(self._oracle, name)
-        raise AttributeError(
-            '`OracleClient` object has no attribute "{}"'.format(name))
+    def UpdateSpace(self, request, context):
+        hps = hp_module.HyperParameters.from_proto(
+            request.hyperparameters)
+        self.oracle.update_space(hps)
+        return service_pb2.UpdateSpaceResponse()
 
-    def get_space(self):
-        response = self.stub.GetSpace(
-            service_pb2.GetSpaceRequest(), wait_for_ready=True)
-        return hp_module.HyperParameters.from_proto(response.hyperparameters)
+    def CreateTrial(self, request, context):
+        trial = self.oracle.create_trial(request.tuner_id)
+        return service_pb2.CreateTrialResponse(trial=trial.to_proto())
 
-    def update_space(self, hyperparameters):
-        self.stub.UpdateSpace(service_pb2.UpdateSpaceRequest(
-            hyperparameters=hyperparameters.to_proto()), wait_for_ready=True)
+    def UpdateTrial(self, request, context):
+        status = self.oracle.update_trial(request.trial_id,
+                                          request.metrics,
+                                          step=request.step)
+        status_proto = trial_module._convert_trial_status_to_proto(status)
+        return service_pb2.UpdateTrialResponse(status=status_proto)
 
-    def create_trial(self, tuner_id):
-        response = self.stub.CreateTrial(service_pb2.CreateTrialRequest(
-            tuner_id=tuner_id), wait_for_ready=True)
-        return trial_module.Trial.from_proto(response.trial)
+    def EndTrial(self, request, context):
+        status = trial_module._convert_trial_status_to_str(request.status)
+        self.oracle.end_trial(request.trial_id, status)
+        return service_pb2.EndTrialResponse()
 
-    def update_trial(self, trial_id, metrics, step=0):
-        response = self.stub.UpdateTrial(service_pb2.UpdateTrialRequest(
-            trial_id=trial_id, metrics=metrics, step=step), wait_for_ready=True)
-        return trial_module._convert_trial_status_to_str(response.status)
+    def GetTrial(self, request, context):
+        trial = self.oracle.get_trial(request.trial_id)
+        return service_pb2.GetTrialResponse(trial=trial.to_proto())
 
-    def end_trial(self, trial_id, status="COMPLETED"):
-        status = trial_module._convert_trial_status_to_proto(status)
-        self.stub.EndTrial(service_pb2.EndTrialRequest(
-            trial_id=trial_id, status=status), wait_for_ready=True)
+    def GetBestTrials(self, request, context):
+        trials = self.oracle.get_best_trials(request.num_trials)
+        return service_pb2.GetBestTrialsResponse(
+            trials=[trial.to_proto() for trial in trials])
 
-    def get_trial(self, trial_id):
-        response = self.stub.GetTrial(service_pb2.GetTrialRequest(
-            trial_id=trial_id), wait_for_ready=True)
-        return trial_module.Trial.from_proto(response.trial)
 
-    def get_best_trials(self, num_trials=1):
-        response = self.stub.GetBestTrials(service_pb2.GetBestTrialsRequest(
-            num_trials=num_trials), wait_for_ready=True)
-        return [trial_module.Trial.from_proto(trial) for trial in response.trials]
+def start_server(oracle):
+    """Starts the `OracleServicer` used to manage distributed requests."""
+    ip_addr = os.environ['KERASTUNER_ORACLE_IP']
+    port = os.environ['KERASTUNER_ORACLE_PORT']
+    server = grpc.server(
+        futures.ThreadPoolExecutor(max_workers=10))
+    service_pb2_grpc.add_OracleServicer_to_server(
+        OracleServicer(oracle), server)
+    server.add_insecure_port('{}:{}'.format(ip_addr, port))
+    server.start()
+    while True:
+        # The server does not block otherwise.
+        time.sleep(10)

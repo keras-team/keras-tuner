@@ -8,17 +8,16 @@ ignore =
     # class name should use CapWords convention
     N801
     # lowercase ... imported as non lowercase
+    # Useful to ignore for "import keras.backend as K"
     N812
     # do not use bare 'except'
     E722
-    # trailing whitespace
-    W291
     # constant ... imported as non constant
+    # Useful to ignore for
+    # from kerastuner.abstractions.tensorflow import TENSORFLOW as tf
     N811
-    # variable ... in function should be lowercase
-    N806
 
-exclude = 
+exclude =
     *_pb2.py
     *_pb2_grpc.py
 
