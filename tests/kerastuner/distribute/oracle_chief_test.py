@@ -14,7 +14,6 @@
 """Tests for the OracleServicer class."""
 
 import os
-import time
 
 import kerastuner as kt
 from kerastuner.distribute import oracle_chief
@@ -35,7 +34,7 @@ def test_get_space():
             hyperparameters=hps)
         tuner_id = os.environ['KERASTUNER_TUNER_ID']
         if 'chief' in tuner_id:
-            server = oracle_chief.start_server(oracle)
+            oracle_chief.start_server(oracle)
         else:
             client = oracle_client.OracleClient(oracle)
             retrieved_hps = client.get_space()

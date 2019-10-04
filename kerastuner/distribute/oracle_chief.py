@@ -18,6 +18,7 @@ import os
 import time
 
 from ..engine import hyperparameters as hp_module
+from ..engine import trial as trial_module
 from ..protos import service_pb2
 from ..protos import service_pb2_grpc
 
@@ -40,8 +41,28 @@ class OracleServicer(service_pb2_grpc.OracleServicer):
 
     def CreateTrial(self, request, context):
         trial = self.oracle.create_trial(request.tuner_id)
-        return service_pb2.CreateTrialResponse(
-            trial=trial.to_proto())
+        return service_pb2.CreateTrialResponse(trial=trial.to_proto())
+
+    def UpdateTrial(self, request, context):
+        status = self.oracle.update_trial(request.trial_id,
+                                          request.metrics,
+                                          step=request.step)
+        status_proto = trial_module._convert_trial_status_to_proto(status)
+        return service_pb2.UpdateTrialResponse(status=status_proto)
+
+    def EndTrial(self, request, context):
+        status = trial_module._convert_trial_status_to_str(request.status)
+        self.oracle.end_trial(request.trial_id, status)
+        return service_pb2.EndTrialResponse()
+
+    def GetTrial(self, request, context):
+        trial = self.oracle.get_trial(request.trial_id)
+        return service_pb2.GetTrialResponse(trial=trial.to_proto())
+
+    def GetBestTrials(self, request, context):
+        trials = self.oracle.get_best_trials(request.num_trials)
+        return service_pb2.GetBestTrialsResponse(
+            trials=[trial.to_proto() for trial in trials])
 
 
 def start_server(oracle):
@@ -55,5 +76,5 @@ def start_server(oracle):
     server.add_insecure_port('{}:{}'.format(ip_addr, port))
     server.start()
     while True:
-        # The server does not block.
+        # The server does not block otherwise.
         time.sleep(10)
