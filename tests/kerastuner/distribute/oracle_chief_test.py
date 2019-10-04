@@ -18,7 +18,7 @@ import os
 import time
 
 import kerastuner as kt
-from kerastuner.distribute import oracle_servicer
+from kerastuner.distribute import oracle_chief
 from kerastuner.protos import service_pb2
 from kerastuner.protos import service_pb2_grpc
 from kerastuner.tuners import randomsearch
@@ -46,7 +46,7 @@ def test_get_space():
                 objective='score',
                 max_trials=10,
                 hyperparameters=hps)
-            oracle_servicer.start_servicer(oracle)
+            oracle_chief.start_server(oracle)
         else:
             stub = create_stub()
             space_response = stub.GetSpace(service_pb2.GetSpaceRequest())
@@ -66,7 +66,7 @@ def test_update_space():
             oracle = randomsearch.RandomSearchOracle(
                 objective='score',
                 max_trials=10)
-            oracle_servicer.start_servicer(oracle)
+            oracle_chief.start_server(oracle)
         else:
             stub = create_stub()
             space_response = stub.GetSpace(service_pb2.GetSpaceRequest())
@@ -103,7 +103,7 @@ def test_create_trial():
                 objective='score',
                 max_trials=10,
                 hyperparameters=hps)
-            oracle_servicer.start_servicer(oracle)
+            oracle_chief.start_server(oracle)
         else:
             stub = create_stub()
             response = stub.CreateTrial(service_pb2.CreateTrialRequest(

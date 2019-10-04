@@ -44,7 +44,7 @@ class OracleServicer(service_pb2_grpc.OracleServicer):
             trial=trial.to_proto())
 
 
-def start_servicer(oracle):
+def start_server(oracle):
     """Starts the `OracleServicer` used to manage distributed requests."""
     ip_addr = os.environ['KERASTUNER_ORACLE_IP']
     port = os.environ['KERASTUNER_ORACLE_PORT']
