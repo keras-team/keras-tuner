@@ -74,6 +74,7 @@ class BaseTuner(stateful.Stateful):
         # Ops and metadata
         self.directory = directory or '.'
         self.project_name = project_name or 'untitled_project'
+        self.oracle.set_project_dir(self.directory, self.project_name)
 
         # Logs etc
         self.logger = logger
@@ -135,11 +136,14 @@ class BaseTuner(stateful.Stateful):
             self.logger.register_trial(trial.trial_id, trial.get_state())
 
     def on_trial_end(self, trial):
+        # Send status to Logger
+        if self.logger:
+            self.logger.report_trial_state(trial.trial_id, trial.get_state())
+
         self.oracle.end_trial(
             trial.trial_id, trial_module.TrialStatus.COMPLETED)
         self.oracle.update_space(trial.hyperparameters)
         self._display.on_trial_end(trial)
-        self._save_trial(trial)
         self.save()
 
     def on_search_end(self):
@@ -208,11 +212,10 @@ class BaseTuner(stateful.Stateful):
         pass
 
     def save(self):
-        self.oracle.save(self._get_oracle_fname())
         super(BaseTuner, self).save(self._get_tuner_fname())
 
     def reload(self):
-        self.oracle.reload(self._get_oracle_fname())
+        self.oracle.reload()
         super(BaseTuner, self).reload(self._get_tuner_fname())
 
     @property
@@ -230,22 +233,7 @@ class BaseTuner(stateful.Stateful):
         utils.create_directory(dirname)
         return dirname
 
-    def _save_trial(self, trial):
-        # Write trial status to trial directory
-        trial_id = trial.trial_id
-        trial.save(os.path.join(
-            self.get_trial_dir(trial_id),
-            'trial.json'))
-        # Send status to Logger
-        if self.logger:
-            self.logger.report_trial_state(trial_id, trial.get_state())
-
     def _get_tuner_fname(self):
         return os.path.join(
             self.project_dir,
             'tuner_' + str(self.tuner_id) + '.json')
-
-    def _get_oracle_fname(self):
-        return os.path.join(
-            self.project_dir,
-            'oracle_' + str(self.tuner_id) + '.json')

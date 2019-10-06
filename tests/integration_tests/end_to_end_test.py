@@ -19,9 +19,9 @@ from tensorflow import keras
 import kerastuner
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def tmp_dir(tmpdir_factory):
-    return tmpdir_factory.mktemp('integration_test')
+    return tmpdir_factory.mktemp('integration_test', numbered=True)
 
 
 mnist_data = None

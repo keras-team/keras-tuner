@@ -32,9 +32,9 @@ VAL_INPUTS = np.random.random(size=(NUM_SAMPLES, INPUT_DIM))
 VAL_TARGETS = np.random.randint(0, NUM_CLASSES, size=(NUM_SAMPLES,))
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def tmp_dir(tmpdir_factory):
-    return tmpdir_factory.mktemp('integration_test')
+    return tmpdir_factory.mktemp('integration_test', numbered=True)
 
 
 def test_base_tuner(tmp_dir):
