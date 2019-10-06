@@ -18,6 +18,7 @@ from __future__ import division
 from __future__ import print_function
 
 import copy
+import gc
 import os
 import traceback
 
@@ -25,11 +26,11 @@ import traceback
 import tensorflow as tf
 from tensorflow import keras
 
+from .. import utils
+from ..abstractions import display
 from . import base_tuner
 from . import tuner_utils
 from .. import config as config_module
-from .. import utils
-from ..abstractions import display
 
 
 class Tuner(base_tuner.BaseTuner):
@@ -203,7 +204,8 @@ class Tuner(base_tuner.BaseTuner):
 
         while 1:
             # clean-up TF graph from previously stored (defunct) graph
-            utils.clear_tf_session()
+            keras.backend.clear_session()
+            gc.collect()
             self._stats.num_generated_models += 1
             fail_streak += 1
             try:
@@ -230,7 +232,7 @@ class Tuner(base_tuner.BaseTuner):
                     'a valid Model instance.')
 
             # Check model size.
-            size = utils.maybe_compute_model_size(model)
+            size = tuner_utils.maybe_compute_model_size(model)
             if self.max_model_size and size > self.max_model_size:
                 oversized_streak += 1
                 self._stats.num_oversized_models += 1
