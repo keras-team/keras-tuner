@@ -26,7 +26,6 @@ import traceback
 import tensorflow as tf
 from tensorflow import keras
 
-from .. import utils
 from ..abstractions import display
 from . import base_tuner
 from . import tuner_utils
