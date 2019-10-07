@@ -1,0 +1,21 @@
+site_name: Keras Tuner
+theme:
+  name: mkdocs
+
+docs_dir: sources
+repo_url: https://github.com/keras-team/keras-tuner
+edit_uri: ""
+site_description: 'Documentation for Keras Tuner.'
+
+nav:
+    - Home: index.md
+    - Tutorials:
+      - Tutorial1: tutorials/tutorial1.md
+      - Tutorial2: tutorials/tutorial2.md
+    - Documentation:
+      - Tuners: documentation/tuners.md
+      - Hypermodels: documentation/hypermodels.md
+      - Hyperparameters: documentation/hyperparameters.md
+    - Examples:
+      - helloworld: examples/helloworld.md
+    - Contributing Guide: contributing.md
