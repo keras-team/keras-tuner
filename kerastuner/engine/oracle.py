@@ -279,11 +279,18 @@ class Oracle(stateful.Stateful):
             tuner_id: self.trials[trial_id]
             for tuner_id, trial_id in state['ongoing_trials'].items()}
 
-    def set_project_dir(self, directory, project_name):
-        """Sets the project directory and reloads the Oracle."""
+    def set_project_dir(self, directory, project_name, reload=True):
+        """Sets the project directory and reloads the Oracle.
+
+        Arguments:
+          directory: The base directory for the project.
+          project_name: The name of the project.
+          reload: Whether to reload the Oracle if an existing project
+            of the same name is found.
+        """
         self.directory = directory
         self.project_name = project_name
-        if tf.io.gfile.exists(self._get_oracle_fname()):
+        if reload and tf.io.gfile.exists(self._get_oracle_fname()):
             self.reload()
 
     @property
@@ -307,7 +314,12 @@ class Oracle(stateful.Stateful):
             trial_state = json.loads(trial_data)
             trial = trial_lib.Trial.from_state(trial_state)
             self.trials[trial.trial_id] = trial
-        super(Oracle, self).reload(self._get_oracle_fname())
+        try:
+            super(Oracle, self).reload(self._get_oracle_fname())
+        except KeyError:
+            raise RuntimeError(
+                'Error reloading `Oracle` from existing project: {}'.format(
+                    self.project_dir))
 
     def _get_oracle_fname(self):
         return os.path.join(

@@ -11,19 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Keras Tuner utilities."""
+"""Oracle aliases."""
 
-
-import tensorflow as tf
-
-
-def create_directory(path, remove_existing=False):
-    # Create the directory if it doesn't exist.
-    if not tf.io.gfile.exists(path):
-        tf.io.gfile.makedirs(path)
-
-    # If it does exist, and remove_existing is specified,
-    # the directory will be removed and recreated.
-    elif remove_existing:
-        tf.io.gfile.rmtree(path)
-        tf.io.gfile.makedirs(path)
+# TODO: Add HyperBandOracle when it's implementation can be separated from HyperBand Tuner.
+from ..tuners.randomsearch import RandomSearchOracle as RandomSearch
+from ..tuners.bayesian import BayesionOptimizationOracle as BayesianOptimization

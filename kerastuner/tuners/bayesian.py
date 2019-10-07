@@ -71,9 +71,9 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         self._seed_state = self.seed
         self._tried_so_far = set()
         self._max_collisions = 20
-        self._num_trials = 0
-        self._score = {}
-        self._values = {}
+        # self._num_trials = 0
+        # self._score = {}
+        # self._values = {}
         self._x = None
         self._y = None
         self.gpr = gaussian_process.GaussianProcessRegressor(
@@ -82,21 +82,23 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
 
     def _populate_space(self, trial_id):
         # Generate enough samples before training Gaussian process.
-        if self._num_trials < self.num_initial_points or len(self._score) < 2:
-            self._num_trials += 1
+        completed_trials = [t for t in self.trials if t.status == "COMPLETED"]
+        if len(self.trials) < self.num_initial_points or len(completed_trials) < 2:
             values = self._new_trial()
-            self._values[trial_id] = values
             return {'status': trial_lib.TrialStatus.RUNNING,
                     'values': values}
         values = self._to_hp_dict(self._generate_vector())
-        self._values[trial_id] = values
         return {'status': trial_lib.TrialStatus.RUNNING,
                 'values': values}
 
     def end_trial(self, trial_id, status):
         super(BayesianOptimizationOracle, self).end_trial(trial_id, status)
         if status == trial_lib.TrialStatus.COMPLETED:
-            self._score[trial_id] = self.trials[trial_id].score
+            score = self.trials[trial_id].score
+            if self.objective.direction == 'max':
+                # Always frame the optimization as a minimization for scipy.minimize.
+                score = -1*score
+            self._score[trial_id] = score
             # Update Gaussian process with existing samples
             if len(self._score) >= self.num_initial_points:
                 x, y = self._get_training_data()
@@ -138,9 +140,9 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         self._x = state['x']
         self._y = state['y']
         # Remove the unfinished trial_id.
-        for key in [key for key in self._values if key not in self._score]:
-            self._tried_so_far.remove(self._compute_values_hash(self._values[key]))
-            self._values.pop(key)
+        # for key in [key for key in self._values if key not in self._score]:
+        #     self._tried_so_far.remove(self._compute_values_hash(self._values[key]))
+        #     self._values.pop(key)
         self.gpr = gaussian_process.GaussianProcessRegressor(
             kernel=gaussian_process.kernels.ConstantKernel(1.0),
             alpha=self.alpha)
@@ -176,13 +178,32 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
     def _get_training_data(self):
         x = []
         y = []
-        for trial_id in self._values:
-            values = self._values[trial_id]
+        for trial in self.trials.items():
+            if trial.status != "COMPLETED":
+                continue
+
+            trial_values = trial.hyperparameters.values
+            score = trial.score
+
             if trial_id not in self._score:
                 continue
             score = self._score[trial_id]
+            if self.objective.direction == 'max':
+                # Always frame the optimization as a minimization for scipy.minimize.
+                score = -1*score
 
+            # Create a vector for each trial.hyperparameters.
             vector = [0] * len(self.hyperparameters.space)
+            for i, hp in enumerate(self.hyperparameters.space):
+                # Hyperparameters could have been added to the study since
+                # the trial was run.
+                if hp.name in trial_values:
+                    trial_value = trial_values[name]
+                else:
+                    trial_value = default_value
+
+
+
             for name, value in values.items():
                 index = self._get_hp_index(name)
                 hp = self.hyperparameters.space[index]
@@ -256,7 +277,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             if isinstance(hp, hp_module.Choice):
                 bound = [0, len(hp.values)]
             elif isinstance(hp, hp_module.Fixed):
-                # Fixed values are excluded form the vector.
+                # Fixed values are excluded from the vector.
                 continue
             else:
                 bound = [hp.min_value, hp.max_value]
