@@ -1,5 +1,4 @@
 import pytest
-import os
 import tensorflow as tf
 from kerastuner.engine import hyperparameters as hp_module
 from kerastuner.tuners import bayesian as bo_module

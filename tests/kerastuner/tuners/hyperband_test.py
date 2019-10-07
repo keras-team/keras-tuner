@@ -15,7 +15,6 @@
 from unittest import mock
 
 import numpy as np
-import os
 import pytest
 import tensorflow as tf
 
@@ -112,6 +111,7 @@ def test_hyperband_save_load_middle_of_bracket(tmp_dir):
     oracle.save()
     oracle = hyperband_module.HyperbandOracle(
         objective='score', max_trials=50, hyperparameters=hps)
+    oracle.set_project_dir(tmp_dir, 'untitled')
     oracle.reload()
 
     trials = []
@@ -184,11 +184,11 @@ def test_hyperband_save_load_at_the_end_of_bracket(tmp_dir):
     for trial in trials:
         oracle.end_trial(trial.trial_id, 'COMPLETED')
 
-    fname = os.path.join(tmp_dir, 'oracle')
-    oracle.save(fname)
+    oracle.save()
     oracle = hyperband_module.HyperbandOracle(
         objective='score', max_trials=50, hyperparameters=hps)
-    oracle.reload(fname)
+    oracle.set_project_dir(tmp_dir, 'untitled3')
+    oracle.reload()
 
     trials = []
     for i in range(oracle._model_sequence[1]):
@@ -237,11 +237,11 @@ def test_hyperband_save_load_at_the_end_of_bandit(tmp_dir):
             oracle.update_trial(trial.trial_id, {'score': 1.})
             oracle.end_trial(trial.trial_id, 'COMPLETED')
 
-    fname = os.path.join(tmp_dir, 'oracle')
-    oracle.save(fname)
+    oracle.save()
     oracle = hyperband_module.HyperbandOracle(
         objective='score', max_trials=50, hyperparameters=hps)
-    oracle.reload(fname)
+    oracle.set_project_dir(tmp_dir, 'untitled')
+    oracle.reload()
 
     trials = []
     for i in range(oracle._model_sequence[0]):
