@@ -35,6 +35,9 @@ install:
     # install portpicker for mock distribution framework.
   - travis_retry conda install portpicker
 
+  # install tools for building the docs
+  - pip install mkdocs git+https://github.com/gabrieldemarmiesse/keras-autodoc.git@v0.1.3
+
   - pip install -e .[tests] --progress-bar off
 
 # command to run tests
@@ -42,7 +45,7 @@ script:
   - if [[ "$TEST_MODE" == "INTEGRATION_TESTS" ]]; then
       PYTHONPATH=$PWD:$PYTHONPATH py.test tests/integration_tests;
     elif [[ "$TEST_MODE" == "FLAKE8" ]]; then
-      flake8;
+      flake8 && cd kerastuner_docs && python autogen.py && mkdocs build;
     else
       PYTHONPATH=$PWD:$PYTHONPATH py.test tests/kerastuner --cov-config .coveragerc --cov=kerastuner;
     fi
