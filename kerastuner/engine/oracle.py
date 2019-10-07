@@ -159,6 +159,8 @@ class Oracle(stateful.Stateful):
         if status == trial_lib.TrialStatus.RUNNING:
             self.ongoing_trials[tuner_id] = trial
             self.trials[trial_id] = trial
+            self._save_trial(trial)
+            self.save()
 
         return trial
 
@@ -185,6 +187,7 @@ class Oracle(stateful.Stateful):
                     self.objective, metric_name)
                 trial.metrics.register(metric_name, direction=direction)
             trial.metrics.update(metric_name, metric_value, step=step)
+        self._save_trial(trial)
         # To signal early stopping, set Trial.status to "STOPPED".
         return trial.status
 
@@ -271,6 +274,9 @@ class Oracle(stateful.Stateful):
         state['ongoing_trials'] = {
             tuner_id: trial.trial_id
             for tuner_id, trial in self.ongoing_trials.items()}
+        # Hyperparameters are part of the state because they can be added to
+        # during the course of the search.
+        state['hyperparameters'] = self.hyperparameters.get_config()
         return state
 
     def set_state(self, state):
@@ -278,12 +284,16 @@ class Oracle(stateful.Stateful):
         self.ongoing_trials = {
             tuner_id: self.trials[trial_id]
             for tuner_id, trial_id in state['ongoing_trials'].items()}
+        self.hyperparameters = hp_module.HyperParameters.from_config(
+            state['hyperparameters'])
 
-    def set_project_dir(self, directory, project_name):
+    def set_project_dir(self, directory, project_name, reload=True):
         """Sets the project directory and reloads the Oracle."""
         self.directory = directory
         self.project_name = project_name
-        if tf.io.gfile.exists(self._get_oracle_fname()):
+        if reload and tf.io.gfile.exists(self._get_oracle_fname()):
+            tf.compat.v1.logging.info('Reloading Oracle from {}'.format(
+                self._get_oracle_fname()))
             self.reload()
 
     @property
@@ -299,6 +309,7 @@ class Oracle(stateful.Stateful):
         super(Oracle, self).save(self._get_oracle_fname())
 
     def reload(self):
+        # Reload trials from their own files.
         trial_fnames = tf.io.gfile.glob(os.path.join(
             self.project_dir, 'trial_*', 'trial.json'))
         for fname in trial_fnames:

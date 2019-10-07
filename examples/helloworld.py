@@ -1,3 +1,7 @@
+""" A simple helloworld example
+
+Different workflows are shown here.
+"""
 from tensorflow import keras
 from tensorflow.keras import layers
 

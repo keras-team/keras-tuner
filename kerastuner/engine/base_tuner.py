@@ -18,6 +18,7 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+import tensorflow as tf
 
 from .. import utils
 from ..abstractions import display
@@ -44,6 +45,8 @@ class BaseTuner(stateful.Stateful):
         logger: Optional. Instance of Logger class, used for streaming data
             to Cloud Service for monitoring.
         tuner_id: Optional. Used only with multi-worker DistributionStrategies.
+        reload: Whether an existing project of the same name should be reloaded
+            if one is found.
     """
 
     def __init__(self,
@@ -52,11 +55,18 @@ class BaseTuner(stateful.Stateful):
                  directory=None,
                  project_name=None,
                  logger=None,
-                 tuner_id=None):
+                 tuner_id=None,
+                 reload=True):
+        # Ops and metadata
+        self.directory = directory or '.'
+        self.project_name = project_name or 'untitled_project'
+
         if not isinstance(oracle, oracle_module.Oracle):
             raise ValueError('Expected oracle to be '
                              'an instance of Oracle, got: %s' % (oracle,))
         self.oracle = oracle
+        self.oracle.set_project_dir(
+            self.directory, self.project_name, reload=reload)
 
         if isinstance(hypermodel, hm_module.HyperModel):
             self.hypermodel = hypermodel
@@ -71,11 +81,6 @@ class BaseTuner(stateful.Stateful):
         # To support tuning distribution.
         self.tuner_id = tuner_id if tuner_id is not None else 0
 
-        # Ops and metadata
-        self.directory = directory or '.'
-        self.project_name = project_name or 'untitled_project'
-        self.oracle.set_project_dir(self.directory, self.project_name)
-
         # Logs etc
         self.logger = logger
         self._display = tuner_utils.Display()
@@ -84,6 +89,11 @@ class BaseTuner(stateful.Stateful):
         hp = self.oracle.get_space()
         self.hypermodel.build(hp)
         self.oracle.update_space(hp)
+
+        if reload and tf.io.gfile.exists(self._get_tuner_fname()):
+            tf.compat.v1.logging.info('Reloading Tuner from {}'.format(
+                self._get_tuner_fname()))
+            self.reload()
 
     def search(self, *fit_args, **fit_kwargs):
         self.on_search_begin()

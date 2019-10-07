@@ -14,6 +14,7 @@
 """Tests for the OracleServicer class."""
 
 import os
+import pytest
 
 import kerastuner as kt
 from kerastuner.distribute import oracle_chief
@@ -23,7 +24,12 @@ from kerastuner.tuners import randomsearch
 from .. import mock_distribute
 
 
-def test_get_space():
+@pytest.fixture(scope='function')
+def tmp_dir(tmpdir_factory):
+    return tmpdir_factory.mktemp('integration_test', numbered=True)
+
+
+def test_get_space(tmp_dir):
 
     def _test_get_space():
         hps = kt.HyperParameters()
@@ -32,6 +38,7 @@ def test_get_space():
             objective='score',
             max_trials=10,
             hyperparameters=hps)
+        oracle.set_project_dir(tmp_dir, 'untitled')
         tuner_id = os.environ['KERASTUNER_TUNER_ID']
         if 'chief' in tuner_id:
             oracle_chief.start_server(oracle)
@@ -44,12 +51,13 @@ def test_get_space():
     mock_distribute.mock_distribute(_test_get_space)
 
 
-def test_update_space():
+def test_update_space(tmp_dir):
 
     def _test_update_space():
         oracle = randomsearch.RandomSearchOracle(
             objective='score',
             max_trials=10)
+        oracle.set_project_dir(tmp_dir, 'untitled')
         tuner_id = os.environ['KERASTUNER_TUNER_ID']
         if 'chief' in tuner_id:
             oracle_chief.start_server(oracle)
@@ -69,7 +77,7 @@ def test_update_space():
     mock_distribute.mock_distribute(_test_update_space)
 
 
-def test_create_trial():
+def test_create_trial(tmp_dir):
 
     def _test_create_trial():
         hps = kt.HyperParameters()
@@ -79,6 +87,7 @@ def test_create_trial():
             objective='score',
             max_trials=10,
             hyperparameters=hps)
+        oracle.set_project_dir(tmp_dir, 'untitled')
         tuner_id = os.environ['KERASTUNER_TUNER_ID']
         if 'chief' in tuner_id:
             oracle_chief.start_server(oracle)
@@ -94,7 +103,7 @@ def test_create_trial():
     mock_distribute.mock_distribute(_test_create_trial)
 
 
-def test_update_trial():
+def test_update_trial(tmp_dir):
 
     def _test_update_trial():
         hps = kt.HyperParameters()
@@ -103,6 +112,7 @@ def test_update_trial():
             objective='score',
             max_trials=10,
             hyperparameters=hps)
+        oracle.set_project_dir(tmp_dir, 'untitled')
         tuner_id = os.environ['KERASTUNER_TUNER_ID']
         if 'chief' in tuner_id:
             oracle_chief.start_server(oracle)
@@ -119,7 +129,7 @@ def test_update_trial():
     mock_distribute.mock_distribute(_test_update_trial)
 
 
-def test_end_trial():
+def test_end_trial(tmp_dir):
 
     def _test_end_trial():
         hps = kt.HyperParameters()
@@ -128,6 +138,7 @@ def test_end_trial():
             objective='score',
             max_trials=10,
             hyperparameters=hps)
+        oracle.set_project_dir(tmp_dir, 'untitled')
         tuner_id = os.environ['KERASTUNER_TUNER_ID']
         if 'chief' in tuner_id:
             oracle_chief.start_server(oracle)
@@ -143,7 +154,7 @@ def test_end_trial():
     mock_distribute.mock_distribute(_test_end_trial)
 
 
-def test_get_best_trials():
+def test_get_best_trials(tmp_dir):
 
     def _test_get_best_trials():
         hps = kt.HyperParameters()
@@ -153,6 +164,7 @@ def test_get_best_trials():
             objective=kt.Objective('score', direction='max'),
             max_trials=10,
             hyperparameters=hps)
+        oracle.set_project_dir(tmp_dir, 'untitled')
         tuner_id = os.environ['KERASTUNER_TUNER_ID']
         if 'chief' in tuner_id:
             oracle_chief.start_server(oracle)
