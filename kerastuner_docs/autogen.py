@@ -47,7 +47,7 @@ kerastuner_dir = pathlib.Path(__file__).resolve().parents[1]
 
 
 def generate(dest_dir):
-    template_dir = kerastuner_dir / 'docs' / 'templates'
+    template_dir = kerastuner_dir / 'kerastuner_docs' / 'templates'
     keras_autodoc.generate(
         dest_dir,
         template_dir,
@@ -64,4 +64,4 @@ def generate(dest_dir):
 
 
 if __name__ == '__main__':
-    generate(kerastuner_dir / 'docs' / 'sources')
+    generate(kerastuner_dir / 'kerastuner_docs' / 'sources')
