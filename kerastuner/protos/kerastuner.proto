@@ -17,14 +17,21 @@ syntax = "proto3";
 
 package kerastuner;
 
-import "google/protobuf/struct.proto";
-
 
 enum Sampling {
     NONE = 0;
     LINEAR = 1;
     LOG = 2;
     REVERSE_LOG = 3;
+}
+
+message Value {
+    oneof kind {
+        sint64 int_value = 1;
+        double float_value = 2;
+        string string_value = 3;
+        bool boolean_value = 4;
+    }
 }
 
 message Float {
@@ -47,8 +54,8 @@ message Int {
 
 message Choice {
     string name = 1;
-    repeated google.protobuf.Value values = 2;
-    google.protobuf.Value default = 3;
+    repeated Value values = 2;
+    Value default = 3;
     bool ordered = 4;
 }
 
@@ -66,7 +73,7 @@ message HyperParameters {
     }
     Space space = 1;
 
-    map<string, google.protobuf.Value> values = 2;
+    map<string, Value> values = 2;
 }
 
 message MetricObservation {

@@ -26,8 +26,8 @@ def test_trial_proto():
     trial.metrics.update('score', 10, step=1)
 
     proto = trial.to_proto()
-    assert len(proto.hyperparameters.int_space) == 1
-    assert proto.hyperparameters.int_values['a'] == 3
+    assert len(proto.hyperparameters.space.int_space) == 1
+    assert proto.hyperparameters.values['a'].int_value == 3
     assert not proto.HasField('score')
 
     new_trial = trial_module.Trial.from_proto(proto)

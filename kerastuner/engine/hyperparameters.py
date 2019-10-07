@@ -164,18 +164,29 @@ class Choice(HyperParameter):
 
     @classmethod
     def from_proto(cls, proto):
+        values = [getattr(val, val.WhichOneof('kind')) for val in proto.values]
+        default = getattr(proto.default, proto.default.WhichOneof('kind'), None)
         return cls(
             name=proto.name,
-            values=proto.values,
+            values=values,
             ordered=proto.ordered,
-            default=proto.default)
+            default=default)
 
     def to_proto(self):
+        if self._type == str:
+            values = [kerastuner_pb2.Value(string_value=v) for v in self.values]
+            default = kerastuner_pb2.Value(string_value=self.default)
+        elif self._type == int:
+            values = [kerastuner_pb2.Value(int_value=v) for v in self.values]
+            default = kerastuner_pb2.Value(int_value=self.default)
+        else:
+            values = [kerastuner_pb2.Value(float_value=v) for v in self.values]
+            default = kerastuner_pb2.Value(float_value=self.default)
         return kerastuner_pb2.Choice(
             name=self.name,
-            values=self.values,
             ordered=self.ordered,
-            default=self.default)
+            values=values,
+            default=default)
 
 
 class Int(HyperParameter):
@@ -718,7 +729,7 @@ class HyperParameters(object):
                          hp.get_config())
 
         for name, val in proto.values.items():
-            hps.values[name] = val
+            hps.values[name] = getattr(val, val.WhichOneof('kind'))
 
         return hps
 
@@ -739,22 +750,20 @@ class HyperParameters(object):
             else:
                 raise ValueError('Unrecognized HP type: {}'.format(hp))
 
-        float_values = {}
-        int_values = {}
-        string_values = {}
-        boolean_values = {}
+        values = {}
         for name, value in self.values.items():
             if isinstance(value, float):
-                float_values[name] = value
+                val = kerastuner_pb2.Value(float_value=value)
             elif isinstance(value, int):
-                int_values[name] = value
+                val = kerastuner_pb2.Value(int_value=value)
             elif isinstance(value, str):
-                string_values[name] = value
+                val = kerastuner_pb2.Value(string_value=value)
             elif isinstance(value, bool):
-                boolean_values[name] = value
+                val = kerastuner_pb2.Value(boolean_value=value)
             else:
                 raise ValueError(
                     'Unrecognized value type: {}'.format(value))
+            values[name] = val
 
         return kerastuner_pb2.HyperParameters(
             space=kerastuner_pb2.HyperParameters.Space(
@@ -762,7 +771,7 @@ class HyperParameters(object):
                 int_space=int_space,
                 choice_space=choice_space,
                 boolean_space=boolean_space),
-            values=self.values)
+            values=values)
 
     def _get_name(self, name, scopes=None):
         """Returns a name qualified by `name_scopes`."""
