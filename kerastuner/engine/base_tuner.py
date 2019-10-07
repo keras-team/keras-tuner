@@ -215,7 +215,6 @@ class BaseTuner(stateful.Stateful):
         super(BaseTuner, self).save(self._get_tuner_fname())
 
     def reload(self):
-        self.oracle.reload()
         super(BaseTuner, self).reload(self._get_tuner_fname())
 
     @property

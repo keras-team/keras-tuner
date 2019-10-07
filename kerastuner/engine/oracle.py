@@ -314,11 +314,6 @@ class Oracle(stateful.Stateful):
             self.project_dir,
             'oracle.json')
 
-    def _reload_if_exists(self):
-        if tf.io.gfile.exists(self._get_oracle_fname()):
-            # TODO: Logging.info saying reloading is happening.
-            self.reload()
-
     def _compute_values_hash(self, values):
         keys = sorted(values.keys())
         s = ''.join(str(k) + '=' + str(values[k]) for k in keys)
