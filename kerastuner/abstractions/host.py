@@ -23,7 +23,7 @@ from time import time
 import tensorflow as tf
 import kerastuner as kt
 from .display import subsection, display_settings, display_setting, fatal
-from kerastuner.abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
+from .. import utils
 
 
 class Host():
@@ -69,9 +69,9 @@ class Host():
             fatal('Result dir and tmp dir must be different')
 
         # create directory if needed
-        tf_utils.create_directory(self.results_dir)
-        tf_utils.create_directory(self.tmp_dir, remove_existing=True)
-        tf_utils.create_directory(self.export_dir)
+        utils.create_directory(self.results_dir)
+        utils.create_directory(self.tmp_dir, remove_existing=True)
+        utils.create_directory(self.export_dir)
 
     def get_status(self, no_cach=False):
         """

@@ -19,13 +19,13 @@ from __future__ import print_function
 
 import os
 
+from .. import utils
+from ..abstractions import display
 from . import hypermodel as hm_module
 from . import oracle as oracle_module
 from . import stateful
 from . import trial as trial_module
 from . import tuner_utils
-from ..abstractions import display
-from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 
 
 class BaseTuner(stateful.Stateful):
@@ -220,14 +220,14 @@ class BaseTuner(stateful.Stateful):
         dirname = os.path.join(
             self.directory,
             self.project_name)
-        tf_utils.create_directory(dirname)
+        utils.create_directory(dirname)
         return dirname
 
     def get_trial_dir(self, trial_id):
         dirname = os.path.join(
             self.project_dir,
             'trial_' + str(trial_id))
-        tf_utils.create_directory(dirname)
+        utils.create_directory(dirname)
         return dirname
 
     def _save_trial(self, trial):

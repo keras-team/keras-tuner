@@ -19,13 +19,13 @@ from __future__ import print_function
 
 import hashlib
 import random
+import tensorflow as tf
 import time
 
 from . import hyperparameters as hp_module
 from . import metrics_tracking
 from . import stateful
 from ..abstractions import display
-from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
 from ..protos import kerastuner_pb2
 
 
@@ -92,7 +92,8 @@ class Trial(stateful.Stateful):
 
     @classmethod
     def load(cls, fname):
-        state_data = tf_utils.read_file(fname)
+        with tf.io.gfile.GFile(fname, 'r') as f:
+            state_data = f.read()
         return cls.from_state(state_data)
 
     def to_proto(self):

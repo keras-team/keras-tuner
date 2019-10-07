@@ -11,28 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-import gc
-import numpy as np
-from tensorflow.python import Session, ConfigProto
-from tensorflow.python.keras import backend as K
+"""Keras Tuner utilities."""
 
 
-def maybe_compute_model_size(model):
-    """Compute the size of a given model, if it has been built."""
-    if model.built:
-        params = [K.count_params(p) for p in model.trainable_weights]
-        return int(np.sum(params))
-    return 0
+import tensorflow as tf
 
 
-def clear_tf_session():
-    """Clear tensorflow graph to avoid OOM issues"""
-    K.clear_session()
-    # K.get_session().close() # unsure if it is needed
-    gc.collect()
+def create_directory(path, remove_existing=False):
+    # Create the directory if it doesn't exist.
+    if not tf.io.gfile.exists(path):
+        tf.io.gfile.makedirs(path)
 
-    if hasattr(K, 'set_session'):
-        cfg = ConfigProto()
-        cfg.gpu_options.allow_growth = True  # pylint: disable=no-member
-        K.set_session(Session(config=cfg))
+    # If it does exist, and remove_existing is specified,
+    # the directory will be removed and recreated.
+    elif remove_existing:
+        tf.io.gfile.rmtree(path)
+        tf.io.gfile.makedirs(path)

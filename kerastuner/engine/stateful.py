@@ -18,8 +18,7 @@ from __future__ import division
 from __future__ import print_function
 
 import json
-
-from ..abstractions.tensorflow import TENSORFLOW_UTILS as tf_utils
+import tensorflow as tf
 
 
 class Stateful(object):
@@ -33,10 +32,12 @@ class Stateful(object):
     def save(self, fname):
         state = self.get_state()
         state_json = json.dumps(state)
-        tf_utils.write_file(fname, state_json)
+        with tf.io.gfile.GFile(fname, 'w') as f:
+            f.write(state_json)
         return str(fname)
 
     def reload(self, fname):
-        state_data = tf_utils.read_file(fname)
+        with tf.io.gfile.GFile(fname, 'r') as f:
+            state_data = f.read()
         state = json.loads(state_data)
         self.set_state(state)
