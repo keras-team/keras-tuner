@@ -85,6 +85,7 @@ class Oracle(stateful.Stateful):
         # tuner_id -> Trial
         self.ongoing_trials = {}
 
+        # Set in `BaseTuner` via `set_project_dir`.
         self.directory = None
         self.project_name = None
 
