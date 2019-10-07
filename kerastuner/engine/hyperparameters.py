@@ -164,33 +164,18 @@ class Choice(HyperParameter):
 
     @classmethod
     def from_proto(cls, proto):
-        values = getattr(proto, proto.WhichOneof('values')).values
-        default = getattr(proto, proto.WhichOneof('default'), None)
         return cls(
             name=proto.name,
-            values=values,
+            values=proto.values,
             ordered=proto.ordered,
-            default=default)
+            default=proto.default)
 
     def to_proto(self):
-        kwargs = {}
-        if self._type == str:
-            kwargs['string_values'] = kerastuner_pb2.Choice.StringValues(
-                values=self.values)
-            kwargs['string_default'] = self.default
-        elif self._type == int:
-            kwargs['int_values'] = kerastuner_pb2.Choice.IntValues(
-                values=self.values)
-            kwargs['int_default'] = self.default
-        else:
-            kwargs['float_values'] = kerastuner_pb2.Choice.FloatValues(
-                values=self.values)
-            kwargs['float_default'] = self.default
-
         return kerastuner_pb2.Choice(
             name=self.name,
+            values=self.values,
             ordered=self.ordered,
-            **kwargs)
+            default=self.default)
 
 
 class Int(HyperParameter):
@@ -718,13 +703,13 @@ class HyperParameters(object):
         hps = cls()
 
         space = []
-        for float_proto in proto.float_space:
+        for float_proto in proto.space.float_space:
             space.append(Float.from_proto(float_proto))
-        for int_proto in proto.int_space:
+        for int_proto in proto.space.int_space:
             space.append(Int.from_proto(int_proto))
-        for choice_proto in proto.choice_space:
+        for choice_proto in proto.space.choice_space:
             space.append(Choice.from_proto(choice_proto))
-        for boolean_proto in proto.boolean_space:
+        for boolean_proto in proto.space.boolean_space:
             space.append(Boolean.from_proto(boolean_proto))
 
         for hp in space:
@@ -732,14 +717,8 @@ class HyperParameters(object):
                          hp.__class__.__name__,
                          hp.get_config())
 
-        for name, float_val in proto.float_values.items():
-            hps.values[name] = float_val
-        for name, int_val in proto.int_values.items():
-            hps.values[name] = int_val
-        for name, string_val in proto.string_values.items():
-            hps.values[name] = string_val
-        for name, boolean_val in proto.boolean_values.items():
-            hps.values[name] = boolean_val
+        for name, val in proto.values.items():
+            hps.values[name] = val
 
         return hps
 
@@ -778,14 +757,12 @@ class HyperParameters(object):
                     'Unrecognized value type: {}'.format(value))
 
         return kerastuner_pb2.HyperParameters(
-            float_space=float_space,
-            int_space=int_space,
-            choice_space=choice_space,
-            boolean_space=boolean_space,
-            float_values=float_values,
-            int_values=int_values,
-            string_values=string_values,
-            boolean_values=boolean_values)
+            space=kerastuner_pb2.HyperParameters.Space(
+                float_space=float_space,
+                int_space=int_space,
+                choice_space=choice_space,
+                boolean_space=boolean_space),
+            values=self.values)
 
     def _get_name(self, name, scopes=None):
         """Returns a name qualified by `name_scopes`."""
