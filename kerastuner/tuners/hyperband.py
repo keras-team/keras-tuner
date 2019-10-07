@@ -102,6 +102,7 @@ class HyperbandOracle(oracle_module.Oracle):
         score = self.trials[trial_id].score
         self._candidate_score[
             self._trial_id_to_candidate_index[trial_id]] = score
+        self.save()
 
     def _populate_space(self, trial_id):
         space = self.hyperparameters.space

@@ -5,9 +5,9 @@ from kerastuner.engine import hyperparameters as hp_module
 from kerastuner.tuners import bayesian as bo_module
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def tmp_dir(tmpdir_factory):
-    return tmpdir_factory.mktemp('bayesian_test')
+    return tmpdir_factory.mktemp('bayesian_test', numbered=True)
 
 
 def build_model(hp):
@@ -35,6 +35,7 @@ def test_bayesian_oracle(tmp_dir):
     hps.Choice('e', [9, 0], default=9)
     oracle = bo_module.BayesianOptimizationOracle(
         objective='score', max_trials=20, hyperparameters=hps)
+    oracle.set_project_dir(tmp_dir, 'untitled')
     for i in range(5):
         trial = oracle.create_trial(str(i))
         oracle.update_trial(trial.trial_id, {'score': i})
@@ -50,6 +51,7 @@ def test_bayesian_oracle_with_zero_y(tmp_dir):
     hps.Choice('e', [9, 0], default=9)
     oracle = bo_module.BayesianOptimizationOracle(
         objective='score', max_trials=20, hyperparameters=hps)
+    oracle.set_project_dir(tmp_dir, 'untitled')
     for i in range(5):
         trial = oracle.create_trial(str(i))
         oracle.update_trial(trial.trial_id, {'score': 0})
@@ -61,6 +63,7 @@ def test_bayesian_dynamic_space(tmp_dir):
     hps.Choice('a', [1, 2], default=1)
     oracle = bo_module.BayesianOptimizationOracle(
         objective='val_acc', max_trials=20)
+    oracle.set_project_dir(tmp_dir, 'untitled')
     oracle.hyperparameters = hps
     for i in range(10):
         oracle._populate_space(str(i))
@@ -83,17 +86,18 @@ def test_bayesian_save_reload(tmp_dir):
     hps.Choice('e', [9, 0], default=9)
     oracle = bo_module.BayesianOptimizationOracle(
         objective='score', max_trials=20, hyperparameters=hps)
+    oracle.set_project_dir(tmp_dir, 'untitled')
 
     for _ in range(3):
         trial = oracle.create_trial('tuner_id')
         oracle.update_trial(trial.trial_id, {'score': 1.})
         oracle.end_trial(trial.trial_id, "COMPLETED")
 
-    fname = os.path.join(tmp_dir, 'oracle')
-    oracle.save(fname)
+    oracle.save()
     oracle = bo_module.BayesianOptimizationOracle(
         objective='score', max_trials=20, hyperparameters=hps)
-    oracle.reload(fname)
+    oracle.set_project_dir(tmp_dir, 'untitled')
+    oracle.reload()
 
     for trial_id in range(3):
         trial = oracle.create_trial('tuner_id')
@@ -121,5 +125,6 @@ def test_save_before_result(tmp_dir):
     hps.Choice('e', [9, 0], default=9)
     oracle = bo_module.BayesianOptimizationOracle(
         objective='score', max_trials=10, hyperparameters=hps)
+    oracle.set_project_dir(tmp_dir, 'untitled')
     oracle._populate_space(str(1))
-    oracle.save(os.path.join(tmp_dir, 'temp_oracle'))
+    oracle.save()
