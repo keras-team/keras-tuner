@@ -160,6 +160,9 @@ class Oracle(stateful.Stateful):
             self.ongoing_trials[tuner_id] = trial
             self.trials[trial_id] = trial
 
+        self._save_trial(trial)
+        self.save()
+
         return trial
 
     def update_trial(self, trial_id, metrics, step=0):
@@ -185,6 +188,7 @@ class Oracle(stateful.Stateful):
                     self.objective, metric_name)
                 trial.metrics.register(metric_name, direction=direction)
             trial.metrics.update(metric_name, metric_value, step=step)
+        self._save_trial(trial)
         # To signal early stopping, set Trial.status to "STOPPED".
         return trial.status
 

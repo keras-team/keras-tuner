@@ -1,0 +1,1 @@
+{"trial_id": "7343433f0e8e0ee2cc322eddd67fcb2d", "hyperparameters": {"space": [{"class_name": "Float", "config": {"name": "bias", "default": -100.0, "min_value": -100.0, "max_value": 100.0, "step": null, "sampling": null}}], "values": {}}, "metrics": {"metrics": {}}, "score": null, "best_step": null, "status": "STOPPED"}
