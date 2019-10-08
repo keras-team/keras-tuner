@@ -288,12 +288,12 @@ class Oracle(stateful.Stateful):
         self.hyperparameters = hp_module.HyperParameters.from_config(
             state['hyperparameters'])
 
-    def set_project_dir(self, directory, project_name, reload=True):
+    def set_project_dir(self, directory, project_name, load_existing=True):
         """Sets the project directory and reloads the Oracle."""
         self.directory = directory
         self.project_name = project_name
-        if reload and tf.io.gfile.exists(self._get_oracle_fname()):
-            tf.compat.v1.logging.info('Reloading Oracle from {}'.format(
+        if load_existing and tf.io.gfile.exists(self._get_oracle_fname()):
+            tf.get_logger().info('Reloading Oracle from {}'.format(
                 self._get_oracle_fname()))
             self.reload()
 

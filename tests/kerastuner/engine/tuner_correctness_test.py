@@ -223,7 +223,7 @@ def test_metric_direction_inferred_from_objective(tmp_dir):
     assert trial.metrics.get_direction('a') == 'min'
 
 
-def test_reload_false(tmp_dir):
+def test_load_existing_false(tmp_dir):
     tuner = kerastuner.tuners.RandomSearch(
         hypermodel=build_model,
         objective='val_accuracy',
@@ -238,5 +238,5 @@ def test_reload_false(tmp_dir):
         objective='val_accuracy',
         max_trials=2,
         directory=tmp_dir,
-        reload=False)
+        load_existing=False)
     assert len(new_tuner.oracle.trials) == 0

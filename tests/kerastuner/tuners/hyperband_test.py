@@ -39,7 +39,7 @@ def test_hyperband_oracle(tmp_dir):
     hps.Choice('e', [9, 0], default=9)
     oracle = hyperband_module.HyperbandOracle(
         objective='score', max_trials=100, hyperparameters=hps)
-    oracle.set_project_dir(tmp_dir, 'untitled', reload=False)
+    oracle.set_project_dir(tmp_dir, 'untitled')
     assert oracle._num_brackets == 3
     assert len(oracle.trials) == 0
 

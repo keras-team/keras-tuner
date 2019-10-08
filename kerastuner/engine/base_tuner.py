@@ -45,8 +45,8 @@ class BaseTuner(stateful.Stateful):
         logger: Optional. Instance of Logger class, used for streaming data
             to Cloud Service for monitoring.
         tuner_id: Optional. Used only with multi-worker DistributionStrategies.
-        reload: Whether an existing project of the same name should be reloaded
-            if one is found.
+        load_existing: Whether an existing project of the same name should be
+            reloaded if one is found.
     """
 
     def __init__(self,
@@ -56,7 +56,7 @@ class BaseTuner(stateful.Stateful):
                  project_name=None,
                  logger=None,
                  tuner_id=None,
-                 reload=True):
+                 load_existing=True):
         # Ops and metadata
         self.directory = directory or '.'
         self.project_name = project_name or 'untitled_project'
@@ -66,7 +66,7 @@ class BaseTuner(stateful.Stateful):
                              'an instance of Oracle, got: %s' % (oracle,))
         self.oracle = oracle
         self.oracle.set_project_dir(
-            self.directory, self.project_name, reload=reload)
+            self.directory, self.project_name, load_existing=load_existing)
 
         if isinstance(hypermodel, hm_module.HyperModel):
             self.hypermodel = hypermodel
@@ -90,8 +90,8 @@ class BaseTuner(stateful.Stateful):
         self.hypermodel.build(hp)
         self.oracle.update_space(hp)
 
-        if reload and tf.io.gfile.exists(self._get_tuner_fname()):
-            tf.compat.v1.logging.info('Reloading Tuner from {}'.format(
+        if load_existing and tf.io.gfile.exists(self._get_tuner_fname()):
+            tf.get_logger().info('Reloading Tuner from {}'.format(
                 self._get_tuner_fname()))
             self.reload()
 

@@ -111,7 +111,7 @@ def test_bayesian_optimization_tuner(tmp_dir):
         build_model,
         objective='val_accuracy',
         max_trials=15,
-    )
+        directory=tmp_dir)
     assert isinstance(tuner.oracle, bo_module.BayesianOptimizationOracle)
 
 

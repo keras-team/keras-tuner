@@ -73,8 +73,8 @@ class Tuner(base_tuner.BaseTuner):
         logger: Optional. Instance of Logger class, used for streaming data
             to Cloud Service for monitoring.
         tuner_id: Optional. Used only with multi-worker DistributionStrategies.
-        reload: Whether an existing project of the same name should be reloaded
-            if one is found.
+        load_existing: Whether an existing project of the same name should be
+            reloaded if one is found.
     """
 
     def __init__(self,
@@ -89,14 +89,14 @@ class Tuner(base_tuner.BaseTuner):
                  project_name=None,
                  logger=None,
                  tuner_id=None,
-                 reload=True):
+                 load_existing=True):
         super(Tuner, self).__init__(oracle=oracle,
                                     hypermodel=hypermodel,
                                     directory=directory,
                                     project_name=project_name,
                                     logger=logger,
                                     tuner_id=tuner_id,
-                                    reload=reload)
+                                    load_existing=load_existing)
 
         # Global search options
         self.max_model_size = max_model_size
