@@ -75,14 +75,14 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         # self._score = {}
         # self._values = {}
         self.gpr = gaussian_process.GaussianProcessRegressor(
-            kernel=gaussian_process.kernels.ConstantKernel(1.0),
             alpha=self.alpha)
 
     def _populate_space(self, trial_id):
         # Generate enough samples before training Gaussian process.
-        completed_trials = [t for t in self.trials.values() if t.status == "COMPLETED"]
+        completed_trials = [t for t in self.trials.values()
+                            if t.status == "COMPLETED"]
         if len(self.trials) < self.num_initial_points or len(completed_trials) < 2:
-            values = self._new_trial()
+            values = self._random_trial()
             return {'status': trial_lib.TrialStatus.RUNNING,
                     'values': values}
 
@@ -139,7 +139,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             kernel=gaussian_process.kernels.ConstantKernel(1.0),
             alpha=self.alpha)
 
-    def _new_trial(self):
+    def _random_trial(self):
         """Fill a given hyperparameter space with values.
 
         Returns:
@@ -189,7 +189,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                 if hp.name in trial_values:
                     trial_value = trial_values[hp.name]
                 else:
-                    trial_value = default_value
+                    trial_value = hp.default
 
                 # Embed an HP value into a continuous space.
                 if isinstance(hp, hp_module.Boolean):
@@ -222,9 +222,9 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             vector_index += 1
 
             if isinstance(hp, hp_module.Boolean):
-                value = True if round(value) == 1 else False
+                value = True if int(round(value)) == 1 else False
             if isinstance(hp, hp_module.Choice):
-                value = hp.values[round(value)]
+                value = hp.values[int(round(value))]
             elif isinstance(hp, hp_module.Int):
                 if hp.step is not None:
                     value = int(self._find_closest(value, hp))
@@ -239,13 +239,13 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
 
         return values
 
-    def _find_closest(val, hp):
+    def _find_closest(self, val, hp):
         values = [hp.min_value]
         while values[-1] + hp.step <= hp.max_value:
             values.append(values[-1] + hp.step)
 
         array = np.asarray(values)
-        index = (np.abs(values - value)).argmin()
+        index = (np.abs(values - val)).argmin()
         return array[index]
 
     def _get_hp_index(self, name):
@@ -263,8 +263,8 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         for hp in self._nonfixed_space():
             if isinstance(hp, hp_module.Boolean):
                 bound = [0, 1]
-            if isinstance(hp, hp_module.Choice):
-                bound = [0, len(hp.values)]
+            elif isinstance(hp, hp_module.Choice):
+                bound = [0, len(hp.values) - 1]
             else:
                 bound = [hp.min_value, hp.max_value]
             bounds.append(bound)
