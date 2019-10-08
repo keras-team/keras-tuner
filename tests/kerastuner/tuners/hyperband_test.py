@@ -39,7 +39,7 @@ def test_hyperband_oracle(tmp_dir):
     hps.Choice('e', [9, 0], default=9)
     oracle = hyperband_module.HyperbandOracle(
         objective='score', max_trials=100, hyperparameters=hps)
-    oracle.set_project_dir(tmp_dir, 'untitled')
+    oracle._set_project_dir(tmp_dir, 'untitled')
     assert oracle._num_brackets == 3
     assert len(oracle.trials) == 0
 
@@ -71,7 +71,7 @@ def test_hyperband_dynamic_space(tmp_dir):
     hps.Choice('a', [1, 2], default=1)
     oracle = hyperband_module.HyperbandOracle(
         objective='score', max_trials=50, hyperparameters=hps)
-    oracle.set_project_dir(tmp_dir, 'untitled')
+    oracle._set_project_dir(tmp_dir, 'untitled')
     hps.Choice('b', [3, 4], default=3)
     values = oracle._populate_space('0')['values']
     assert 'b' in values
@@ -96,7 +96,7 @@ def test_hyperband_save_load_middle_of_bracket(tmp_dir):
     hps.Choice('e', [9, 0], default=9)
     oracle = hyperband_module.HyperbandOracle(
         objective='score', max_trials=50, hyperparameters=hps)
-    oracle.set_project_dir(tmp_dir, 'untitled')
+    oracle._set_project_dir(tmp_dir, 'untitled')
 
     trials = []
     for i in range(3):
@@ -108,11 +108,11 @@ def test_hyperband_save_load_middle_of_bracket(tmp_dir):
         oracle.update_trial(trial.trial_id, {'score': 1.})
         oracle.end_trial(trial.trial_id, "COMPLETED")
 
-    oracle.save()
+    oracle._save()
     oracle = hyperband_module.HyperbandOracle(
         objective='score', max_trials=50, hyperparameters=hps)
-    oracle.set_project_dir(tmp_dir, 'untitled')
-    oracle.reload()
+    oracle._set_project_dir(tmp_dir, 'untitled')
+    oracle._reload()
 
     trials = []
     for i in range(oracle._model_sequence[0] - 2):
@@ -138,13 +138,13 @@ def test_hyperband_save_load_at_begining(tmp_dir):
     hps.Choice('e', [9, 0], default=9)
     oracle = hyperband_module.HyperbandOracle(
         objective='score', max_trials=50, hyperparameters=hps)
-    oracle.set_project_dir(tmp_dir, 'untitled')
+    oracle._set_project_dir(tmp_dir, 'untitled')
 
-    oracle.save()
+    oracle._save()
     oracle = hyperband_module.HyperbandOracle(
         objective='score', max_trials=50, hyperparameters=hps)
-    oracle.set_project_dir(tmp_dir, 'untitled')
-    oracle.reload()
+    oracle._set_project_dir(tmp_dir, 'untitled')
+    oracle._reload()
 
     trials = []
     for i in range(oracle._model_sequence[0]):
@@ -169,7 +169,7 @@ def test_hyperband_save_load_at_the_end_of_bracket(tmp_dir):
     hps.Choice('e', [9, 0], default=9)
     oracle = hyperband_module.HyperbandOracle(
         objective='score', max_trials=50, hyperparameters=hps)
-    oracle.set_project_dir(tmp_dir, 'untitled3')
+    oracle._set_project_dir(tmp_dir, 'untitled3')
 
     trials = []
     for i in range(oracle._model_sequence[0]):
@@ -184,11 +184,11 @@ def test_hyperband_save_load_at_the_end_of_bracket(tmp_dir):
     for trial in trials:
         oracle.end_trial(trial.trial_id, 'COMPLETED')
 
-    oracle.save()
+    oracle._save()
     oracle = hyperband_module.HyperbandOracle(
         objective='score', max_trials=50, hyperparameters=hps)
-    oracle.set_project_dir(tmp_dir, 'untitled3')
-    oracle.reload()
+    oracle._set_project_dir(tmp_dir, 'untitled3')
+    oracle._reload()
 
     trials = []
     for i in range(oracle._model_sequence[1]):
@@ -213,7 +213,7 @@ def test_hyperband_save_load_at_the_end_of_bandit(tmp_dir):
     hps.Choice('e', [9, 0], default=9)
     oracle = hyperband_module.HyperbandOracle(
         objective='score', max_trials=50, hyperparameters=hps)
-    oracle.set_project_dir(tmp_dir, 'untitled')
+    oracle._set_project_dir(tmp_dir, 'untitled')
 
     for bracket in range(oracle._num_brackets):
         trials = []
@@ -237,11 +237,11 @@ def test_hyperband_save_load_at_the_end_of_bandit(tmp_dir):
             oracle.update_trial(trial.trial_id, {'score': 1.})
             oracle.end_trial(trial.trial_id, 'COMPLETED')
 
-    oracle.save()
+    oracle._save()
     oracle = hyperband_module.HyperbandOracle(
         objective='score', max_trials=50, hyperparameters=hps)
-    oracle.set_project_dir(tmp_dir, 'untitled')
-    oracle.reload()
+    oracle._set_project_dir(tmp_dir, 'untitled')
+    oracle._reload()
 
     trials = []
     for i in range(oracle._model_sequence[0]):

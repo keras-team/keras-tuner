@@ -45,8 +45,8 @@ class BaseTuner(stateful.Stateful):
         logger: Optional. Instance of Logger class, used for streaming data
             to Cloud Service for monitoring.
         tuner_id: Optional. Used only with multi-worker DistributionStrategies.
-        load_existing: Whether an existing project of the same name should be
-            reloaded if one is found.
+        overwrite: Bool, default `False`. If `False`, reloads an existing project
+            of the same name if one is found. Otherwise, overwrites the project.
     """
 
     def __init__(self,
@@ -56,17 +56,19 @@ class BaseTuner(stateful.Stateful):
                  project_name=None,
                  logger=None,
                  tuner_id=None,
-                 load_existing=True):
+                 overwrite=False):
         # Ops and metadata
         self.directory = directory or '.'
         self.project_name = project_name or 'untitled_project'
+        if overwrite and tf.io.gfile.exists(self.project_dir):
+            tf.io.gfile.rmtree(self.project_dir)
 
         if not isinstance(oracle, oracle_module.Oracle):
             raise ValueError('Expected oracle to be '
                              'an instance of Oracle, got: %s' % (oracle,))
         self.oracle = oracle
-        self.oracle.set_project_dir(
-            self.directory, self.project_name, load_existing=load_existing)
+        self.oracle._set_project_dir(
+            self.directory, self.project_name, overwrite=overwrite)
 
         if isinstance(hypermodel, hm_module.HyperModel):
             self.hypermodel = hypermodel
@@ -90,7 +92,7 @@ class BaseTuner(stateful.Stateful):
         self.hypermodel.build(hp)
         self.oracle.update_space(hp)
 
-        if load_existing and tf.io.gfile.exists(self._get_tuner_fname()):
+        if not overwrite and tf.io.gfile.exists(self._get_tuner_fname()):
             tf.get_logger().info('Reloading Tuner from {}'.format(
                 self._get_tuner_fname()))
             self.reload()

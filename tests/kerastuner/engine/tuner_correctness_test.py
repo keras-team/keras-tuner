@@ -207,7 +207,7 @@ def test_metric_direction_inferred_from_objective(tmp_dir):
     oracle = kerastuner.tuners.randomsearch.RandomSearchOracle(
         objective=kerastuner.Objective('a', 'max'),
         max_trials=1)
-    oracle.set_project_dir(tmp_dir, 'untitled_project')
+    oracle._set_project_dir(tmp_dir, 'untitled_project')
     trial = oracle.create_trial('tuner0')
     oracle.update_trial(trial.trial_id, {'a': 1})
     trial = oracle.get_trial(trial.trial_id)
@@ -216,14 +216,14 @@ def test_metric_direction_inferred_from_objective(tmp_dir):
     oracle = kerastuner.tuners.randomsearch.RandomSearchOracle(
         objective=kerastuner.Objective('a', 'min'),
         max_trials=1)
-    oracle.set_project_dir(tmp_dir, 'untitled_project2')
+    oracle._set_project_dir(tmp_dir, 'untitled_project2')
     trial = oracle.create_trial('tuner0')
     oracle.update_trial(trial.trial_id, {'a': 1})
     trial = oracle.get_trial(trial.trial_id)
     assert trial.metrics.get_direction('a') == 'min'
 
 
-def test_load_existing_false(tmp_dir):
+def test_overwrite_true(tmp_dir):
     tuner = kerastuner.tuners.RandomSearch(
         hypermodel=build_model,
         objective='val_accuracy',
@@ -238,5 +238,5 @@ def test_load_existing_false(tmp_dir):
         objective='val_accuracy',
         max_trials=2,
         directory=tmp_dir,
-        load_existing=False)
+        overwrite=True)
     assert len(new_tuner.oracle.trials) == 0

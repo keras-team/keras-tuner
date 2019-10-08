@@ -38,7 +38,7 @@ def test_get_space(tmp_dir):
             objective='score',
             max_trials=10,
             hyperparameters=hps)
-        oracle.set_project_dir(tmp_dir, 'untitled')
+        oracle._set_project_dir(tmp_dir, 'untitled')
         tuner_id = os.environ['KERASTUNER_TUNER_ID']
         if 'chief' in tuner_id:
             oracle_chief.start_server(oracle)
@@ -57,7 +57,7 @@ def test_update_space(tmp_dir):
         oracle = randomsearch.RandomSearchOracle(
             objective='score',
             max_trials=10)
-        oracle.set_project_dir(tmp_dir, 'untitled')
+        oracle._set_project_dir(tmp_dir, 'untitled')
         tuner_id = os.environ['KERASTUNER_TUNER_ID']
         if 'chief' in tuner_id:
             oracle_chief.start_server(oracle)
@@ -87,7 +87,7 @@ def test_create_trial(tmp_dir):
             objective='score',
             max_trials=10,
             hyperparameters=hps)
-        oracle.set_project_dir(tmp_dir, 'untitled')
+        oracle._set_project_dir(tmp_dir, 'untitled')
         tuner_id = os.environ['KERASTUNER_TUNER_ID']
         if 'chief' in tuner_id:
             oracle_chief.start_server(oracle)
@@ -112,7 +112,7 @@ def test_update_trial(tmp_dir):
             objective='score',
             max_trials=10,
             hyperparameters=hps)
-        oracle.set_project_dir(tmp_dir, 'untitled')
+        oracle._set_project_dir(tmp_dir, 'untitled')
         tuner_id = os.environ['KERASTUNER_TUNER_ID']
         if 'chief' in tuner_id:
             oracle_chief.start_server(oracle)
@@ -138,7 +138,7 @@ def test_end_trial(tmp_dir):
             objective='score',
             max_trials=10,
             hyperparameters=hps)
-        oracle.set_project_dir(tmp_dir, 'untitled')
+        oracle._set_project_dir(tmp_dir, 'untitled')
         tuner_id = os.environ['KERASTUNER_TUNER_ID']
         if 'chief' in tuner_id:
             oracle_chief.start_server(oracle)
@@ -164,7 +164,7 @@ def test_get_best_trials(tmp_dir):
             objective=kt.Objective('score', direction='max'),
             max_trials=10,
             hyperparameters=hps)
-        oracle.set_project_dir(tmp_dir, 'untitled')
+        oracle._set_project_dir(tmp_dir, 'untitled')
         tuner_id = os.environ['KERASTUNER_TUNER_ID']
         if 'chief' in tuner_id:
             oracle_chief.start_server(oracle)

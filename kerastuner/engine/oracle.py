@@ -161,7 +161,7 @@ class Oracle(stateful.Stateful):
             self.ongoing_trials[tuner_id] = trial
             self.trials[trial_id] = trial
             self._save_trial(trial)
-            self.save()
+            self._save()
 
         return trial
 
@@ -215,7 +215,7 @@ class Oracle(stateful.Stateful):
         if status == trial_lib.TrialStatus.COMPLETED:
             self._score_trial(trial)
         self._save_trial(trial)
-        self.save()
+        self._save()
 
     def get_space(self):
         """Returns the `HyperParameters` search space."""
@@ -288,31 +288,31 @@ class Oracle(stateful.Stateful):
         self.hyperparameters = hp_module.HyperParameters.from_config(
             state['hyperparameters'])
 
-    def set_project_dir(self, directory, project_name, load_existing=True):
+    def _set_project_dir(self, directory, project_name, overwrite=False):
         """Sets the project directory and reloads the Oracle."""
-        self.directory = directory
-        self.project_name = project_name
-        if load_existing and tf.io.gfile.exists(self._get_oracle_fname()):
+        self._directory = directory
+        self._project_name = project_name
+        if not overwrite and tf.io.gfile.exists(self._get_oracle_fname()):
             tf.get_logger().info('Reloading Oracle from {}'.format(
                 self._get_oracle_fname()))
-            self.reload()
+            self._reload()
 
     @property
-    def project_dir(self):
+    def _project_dir(self):
         dirname = os.path.join(
-            self.directory,
-            self.project_name)
+            self._directory,
+            self._project_name)
         utils.create_directory(dirname)
         return dirname
 
-    def save(self):
+    def _save(self):
         # `self.trials` are saved in their own, Oracle-agnostic files.
         super(Oracle, self).save(self._get_oracle_fname())
 
-    def reload(self):
+    def _reload(self):
         # Reload trials from their own files.
         trial_fnames = tf.io.gfile.glob(os.path.join(
-            self.project_dir, 'trial_*', 'trial.json'))
+            self._project_dir, 'trial_*', 'trial.json'))
         for fname in trial_fnames:
             with tf.io.gfile.GFile(fname, 'r') as f:
                 trial_data = f.read()
@@ -323,7 +323,7 @@ class Oracle(stateful.Stateful):
 
     def _get_oracle_fname(self):
         return os.path.join(
-            self.project_dir,
+            self._project_dir,
             'oracle.json')
 
     def _compute_values_hash(self, values):
@@ -347,7 +347,7 @@ class Oracle(stateful.Stateful):
 
     def _get_trial_dir(self, trial_id):
         dirname = os.path.join(
-            self.project_dir,
+            self._project_dir,
             'trial_' + str(trial_id))
         utils.create_directory(dirname)
         return dirname
