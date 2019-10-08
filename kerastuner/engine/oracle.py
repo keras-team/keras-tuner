@@ -161,7 +161,7 @@ class Oracle(stateful.Stateful):
             self.ongoing_trials[tuner_id] = trial
             self.trials[trial_id] = trial
             self._save_trial(trial)
-            self._save()
+            self.save()
 
         return trial
 
@@ -215,7 +215,7 @@ class Oracle(stateful.Stateful):
         if status == trial_lib.TrialStatus.COMPLETED:
             self._score_trial(trial)
         self._save_trial(trial)
-        self._save()
+        self.save()
 
     def get_space(self):
         """Returns the `HyperParameters` search space."""
@@ -295,7 +295,7 @@ class Oracle(stateful.Stateful):
         if not overwrite and tf.io.gfile.exists(self._get_oracle_fname()):
             tf.get_logger().info('Reloading Oracle from {}'.format(
                 self._get_oracle_fname()))
-            self._reload()
+            self.reload()
 
     @property
     def _project_dir(self):
@@ -305,11 +305,11 @@ class Oracle(stateful.Stateful):
         utils.create_directory(dirname)
         return dirname
 
-    def _save(self):
+    def save(self):
         # `self.trials` are saved in their own, Oracle-agnostic files.
         super(Oracle, self).save(self._get_oracle_fname())
 
-    def _reload(self):
+    def reload(self):
         # Reload trials from their own files.
         trial_fnames = tf.io.gfile.glob(os.path.join(
             self._project_dir, 'trial_*', 'trial.json'))
