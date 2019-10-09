@@ -77,7 +77,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
     def _populate_space(self, trial_id):
         # Generate enough samples before training Gaussian process.
         completed_trials = [t for t in self.trials.values()
-                            if t.status == "COMPLETED"]
+                            if t.status == 'COMPLETED']
         if len(self.trials) < self.num_initial_points or len(completed_trials) < 2:
             values = self._random_trial()
             return {'status': trial_lib.TrialStatus.RUNNING,
