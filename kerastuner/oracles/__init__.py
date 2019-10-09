@@ -13,7 +13,7 @@
 # limitations under the License.
 """Oracle aliases."""
 
-# TODO: Add HyperBandOracle when it's implementation can be separated
+# TODO: Add HyperBandOracle when its implementation can be separated
 # from HyperBand Tuner.
 from ..tuners.randomsearch import RandomSearchOracle as RandomSearch
 from ..tuners.bayesian import BayesianOptimizationOracle as BayesianOptimization
