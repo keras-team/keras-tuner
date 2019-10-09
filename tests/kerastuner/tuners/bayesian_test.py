@@ -1,6 +1,9 @@
+import numpy as np
 import pytest
 import tensorflow as tf
+import kerastuner as kt
 from kerastuner.engine import hyperparameters as hp_module
+from kerastuner.engine import trial as trial_module
 from kerastuner.tuners import bayesian as bo_module
 
 
@@ -127,3 +130,97 @@ def test_save_before_result(tmp_dir):
     oracle._set_project_dir(tmp_dir, 'untitled')
     oracle._populate_space(str(1))
     oracle.save()
+
+
+def test_bayesian_oracle_maximize(tmp_dir):
+    hps = hp_module.HyperParameters()
+    hps.Int('a', -100, 100)
+
+    oracle = bo_module.BayesianOptimizationOracle(
+        objective=kt.Objective('score', direction='max'),
+        max_trials=20,
+        hyperparameters=hps,
+        num_initial_points=2)
+    oracle._set_project_dir(tmp_dir, 'untitled')
+
+    # Make examples with high 'a' and high score.
+    for i in range(5):
+        trial = trial_module.Trial(hyperparameters=hps.copy())
+        trial.hyperparameters.values['a'] = 10*i
+        trial.score = i
+        trial.status = 'COMPLETED'
+        oracle.trials[trial.trial_id] = trial
+
+    # Make examples with low 'a' and low score
+    for i in range(5):
+        trial = trial_module.Trial(hyperparameters=hps.copy())
+        trial.hyperparameters.values['a'] = -10*i
+        trial.score = -i
+        trial.status = 'COMPLETED'
+        oracle.trials[trial.trial_id] = trial
+
+    trial = oracle.create_trial('tuner0')
+    assert trial.status == 'RUNNING'
+    # Assert that the oracle suggests hps it thinks will maximize.
+    assert trial.hyperparameters.get('a') > 0
+
+
+def test_hyperparameters_added(tmp_dir):
+    hps = hp_module.HyperParameters()
+    hps.Int('a', -100, 100)
+
+    oracle = bo_module.BayesianOptimizationOracle(
+        objective=kt.Objective('score', direction='max'),
+        max_trials=20,
+        hyperparameters=hps,
+        num_initial_points=2)
+    oracle._set_project_dir(tmp_dir, 'untitled')
+
+    # Populate initial trials.
+    for i in range(10):
+        trial = trial_module.Trial(hyperparameters=hps.copy())
+        trial.hyperparameters.values['a'] = 10*i
+        trial.score = i
+        trial.status = 'COMPLETED'
+        oracle.trials[trial.trial_id] = trial
+
+    # Update the space.
+    new_hps = hp_module.HyperParameters()
+    new_hps.Float('b', 3.2, 6.4, step=0.2, default=3.6)
+    new_hps.Boolean('c', default=True)
+    oracle.update_space(new_hps)
+
+    # Make sure fitting still works, with 'b' taking default in
+    # prior trials.
+    x, _ = oracle._vectorize_trials()
+    assert np.allclose(x[:, 1], 3.6)
+    assert np.allclose(x[:, 2], 1)
+
+    # Make a new trial, it should have b set.
+    trial = oracle.create_trial('tuner0')
+    assert trial.status == 'RUNNING'
+    assert 'b' in trial.hyperparameters.values
+    assert 'c' in trial.hyperparameters.values
+
+
+def test_step_respected(tmp_dir):
+    hps = hp_module.HyperParameters()
+    hps.Float('c', 0, 10, step=3)
+    oracle = bo_module.BayesianOptimizationOracle(
+        objective=kt.Objective('score', direction='max'),
+        max_trials=20,
+        hyperparameters=hps,
+        num_initial_points=2)
+    oracle._set_project_dir(tmp_dir, 'untitled')
+
+    # Populate initial trials.
+    for i in range(10):
+        trial = trial_module.Trial(hyperparameters=hps.copy())
+        trial.hyperparameters.values['c'] = 3.
+        trial.score = i
+        trial.status = 'COMPLETED'
+        oracle.trials[trial.trial_id] = trial
+
+    trial = oracle.create_trial('tuner0')
+    # Check that oracle respects the `step` param.
+    assert trial.hyperparameters.get('c') in {0, 3, 6, 9}

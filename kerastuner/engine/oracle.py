@@ -319,7 +319,12 @@ class Oracle(stateful.Stateful):
             trial_state = json.loads(trial_data)
             trial = trial_lib.Trial.from_state(trial_state)
             self.trials[trial.trial_id] = trial
-        super(Oracle, self).reload(self._get_oracle_fname())
+        try:
+            super(Oracle, self).reload(self._get_oracle_fname())
+        except KeyError:
+            raise RuntimeError(
+                'Error reloading `Oracle` from existing project: {}'.format(
+                    self._project_dir))
 
     def _get_oracle_fname(self):
         return os.path.join(
