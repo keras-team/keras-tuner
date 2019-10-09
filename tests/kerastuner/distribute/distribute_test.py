@@ -13,10 +13,12 @@
 # limitations under the License.
 """Tests for distributed tuning."""
 
+import logging
 import os
 import numpy as np
 import threading
 import pytest
+import tensorflow as tf
 from tensorflow import keras
 from unittest import mock
 
@@ -38,18 +40,17 @@ def make_locking_fn(fn, lock):
 
 
 def test_random_search(tmp_dir):
-    num_workers = 1
+    num_workers = 3
     # TensorFlow model building and execution is not thread-safe.
-    lock = threading.Lock()
+    lock = threading.RLock()
     barrier = threading.Barrier(num_workers)
 
     def _test_random_search():
-        assert 'KERASTUNER_ORACLE_IP' in os.environ
         def build_model(hp):
             model = keras.Sequential()
-            for i in range(hp.Int('num_layers', 1, 10)):
+            for i in range(hp.Int('num_layers', 1, 3)):
                 model.add(keras.layers.Dense(
-                    hp.Int('num_units_%i' % i, 30, 100, step=10),
+                    hp.Int('num_units_%i' % i, 1, 3),
                     activation='relu'))
             model.add(keras.layers.Dense(1, activation='sigmoid'))
             model.compile('sgd', 'binary_crossentropy')
@@ -64,18 +65,24 @@ def test_random_search(tmp_dir):
             max_trials=3,
             directory=tmp_dir)
 
-        assert dist_utils.has_chief_oracle(), os.environ
-
         # Only workers make it to this point, server runs until thread stops.
+        assert dist_utils.has_chief_oracle()
+        assert not dist_utils.is_chief_oracle()
         assert isinstance(tuner.oracle, kt.distribute.oracle_client.OracleClient)
-        return
 
         with mock.patch.object(tuner, 'run_trial', make_locking_fn(tuner.run_trial, lock)):
             # TensorFlow Models are not thread-safe.
             tuner.search(x, y, validation_data=(x, y), epochs=1, batch_size=2)
 
-        barrier.wait(10)
-        models = tuner.get_best_models(2)
-        assert models[0].evaluate(x, y) < models[1].evaluate(x, y)
+        barrier.wait(60)
+        # Suppress warnings about optimizer state not being restored by tf.keras.
+        tf.get_logger().setLevel(logging.ERROR)
+        with lock:
+            trials = tuner.oracle.get_best_trials(3)
+            assert trials[0].score <= trials[1].score
+            assert trials[1].score <= trials[2].score
+
+            models = tuner.get_best_models(2)
+            #assert round(models[0].evaluate(x, y), 4) <= round(models[1].evaluate(x, y), 4)
 
     mock_distribute.mock_distribute(_test_random_search, num_workers)

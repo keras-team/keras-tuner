@@ -47,7 +47,6 @@ class BaseTuner(stateful.Stateful):
             by this Tuner.
         logger: Optional. Instance of Logger class, used for streaming data
             to Cloud Service for monitoring.
-        tuner_id: Optional. Used only with multi-worker DistributionStrategies.
         overwrite: Bool, default `False`. If `False`, reloads an existing project
             of the same name if one is found. Otherwise, overwrites the project.
     """
@@ -58,7 +57,6 @@ class BaseTuner(stateful.Stateful):
                  directory=None,
                  project_name=None,
                  logger=None,
-                 tuner_id=None,
                  overwrite=False):
         # Ops and metadata
         self.directory = directory or '.'
@@ -92,7 +90,7 @@ class BaseTuner(stateful.Stateful):
             self.hypermodel = hm_module.DefaultHyperModel(hypermodel)
 
         # To support tuning distribution.
-        self.tuner_id = tuner_id if tuner_id is not None else 0
+        self.tuner_id = os.environ.get('KERASTUNER_TUNER_ID', 'tuner0')
 
         # Logs etc
         self.logger = logger

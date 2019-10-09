@@ -72,7 +72,6 @@ class Tuner(base_tuner.BaseTuner):
             by this Tuner.
         logger: Optional. Instance of Logger class, used for streaming data
             to Cloud Service for monitoring.
-        tuner_id: Optional. Used only with multi-worker DistributionStrategies.
         overwrite: Bool, default `False`. If `False`, reloads an existing project
             of the same name if one is found. Otherwise, overwrites the project.
     """
@@ -95,7 +94,6 @@ class Tuner(base_tuner.BaseTuner):
                                     directory=directory,
                                     project_name=project_name,
                                     logger=logger,
-                                    tuner_id=tuner_id,
                                     overwrite=overwrite)
 
         # Global search options

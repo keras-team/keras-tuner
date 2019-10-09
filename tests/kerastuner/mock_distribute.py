@@ -40,6 +40,10 @@ class MockEnvVars(dict):
         if getattr(self.thread_local, 'environ', None) is None:
             self.thread_local.environ = self.initial_env_vars.copy()
 
+    def get(self, name, default=None):
+        self._setup_thread()
+        return self.thread_local.environ.get(name, default)
+
     def __setitem__(self, name, value):
         self._setup_thread()
         self.thread_local.environ[name] = value
@@ -47,6 +51,10 @@ class MockEnvVars(dict):
     def __getitem__(self, name):
         self._setup_thread()
         return self.thread_local.environ[name]
+
+    def __contains__(self, name):
+        self._setup_thread()
+        return name in self.thread_local.environ
 
 
 def mock_distribute(fn, num_workers=2):
