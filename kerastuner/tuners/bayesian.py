@@ -71,9 +71,6 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         self._seed_state = self.seed
         self._tried_so_far = set()
         self._max_collisions = 20
-        # self._num_trials = 0
-        # self._score = {}
-        # self._values = {}
         self.gpr = gaussian_process.GaussianProcessRegressor(
             alpha=self.alpha)
 
