@@ -223,4 +223,4 @@ def test_step_respected(tmp_dir):
 
     trial = oracle.create_trial('tuner0')
     # Check that oracle respects the `step` param.
-    assert trial.hyperparameters.get('c') in {3, 6, 9}
+    assert trial.hyperparameters.get('c') in {0, 3, 6, 9}
