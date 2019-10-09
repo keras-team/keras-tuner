@@ -76,7 +76,8 @@ def test_base_tuner_distribution(tmp_dir):
         barrier.wait(60)
 
         # Model is just a score.
-        scores = tuner.get_best_models(20)
+        scores = tuner.get_best_models(10)
+        assert len(scores)
         assert scores == sorted(copy.copy(scores), reverse=True)
 
     mock_distribute.mock_distribute(_test_base_tuner, num_workers=num_workers)
