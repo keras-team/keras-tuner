@@ -177,7 +177,8 @@ def test_get_with_conditional_scopes():
     with hp.conditional_scope('a', 3):
         hp.Fixed('b', 5)
         # This b is not currently active.
-        assert hp.get('b') is None
+        with pytest.raises(ValueError, match='is not currently active'):
+            hp.get('b')
 
     # Value corresponding to the currently active condition is returned.
     assert hp.get('b') == 4
@@ -442,3 +443,28 @@ def test_hyperparameters_proto():
     new_hps = hp_module.HyperParameters.from_proto(hps.to_proto())
     assert _sort_space(hps) == _sort_space(new_hps)
     assert hps.values == new_hps.values
+
+
+def test_dict_methods():
+    hps = hp_module.HyperParameters()
+    hps.Int('a', 0, 10, default=3)
+    hps.Choice('b', [1, 2], default=2)
+    with hps.conditional_scope('b', 1):
+        hps.Float('c', -10, 10, default=3)
+        # Don't allow access of a non-active param within its scope.
+        with pytest.raises(ValueError, match='is not currently active'):
+            hps['c']
+    with hps.conditional_scope('b', 2):
+        hps.Float('c', -30, -20, default=-25)
+
+    assert hps['a'] == 3
+    assert hps['b'] == 2
+    # Ok to access 'c' here since there is an active 'c'.
+    assert hps['c'] == -25
+    with pytest.raises(ValueError, match='Unknown parameter'):
+        hps['d']
+
+    assert 'a' in hps
+    assert 'b' in hps
+    assert 'c' in hps
+    assert 'd' not in hps
