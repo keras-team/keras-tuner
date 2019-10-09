@@ -402,9 +402,9 @@ def test_choice_proto():
     proto = hp.to_proto()
     assert proto.name == 'a'
     assert proto.ordered
-    assert np.allclose(proto.float_values.values, [2.3, 4.5, 6.3])
+    assert np.allclose([v.float_value for v in proto.values], [2.3, 4.5, 6.3])
     # Proto stores the implicit default.
-    assert np.isclose(proto.float_default, 2.3)
+    assert np.isclose(proto.default.float_value, 2.3)
 
     new_hp = hp_module.Choice.from_proto(proto)
     assert new_hp.name == 'a'

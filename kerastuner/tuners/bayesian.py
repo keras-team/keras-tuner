@@ -101,6 +101,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         bounds = self._get_hp_bounds()
         for _ in range(num_restarts):
             x0 = np.random.uniform(bounds[:, 0], bounds[:, 1])
+            # Sign of score is flipped when maximizing.
             result = scipy_optimize.minimize(_upper_confidence_bound,
                                              x0=x0,
                                              bounds=bounds,
