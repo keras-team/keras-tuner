@@ -22,6 +22,9 @@ import tensorflow as tf
 
 from .. import utils
 from ..abstractions import display
+from ..distribute import utils as dist_utils
+from ..distribute import oracle_chief
+from ..distribute import oracle_client
 from . import hypermodel as hm_module
 from . import oracle as oracle_module
 from . import stateful
@@ -69,6 +72,14 @@ class BaseTuner(stateful.Stateful):
         self.oracle = oracle
         self.oracle._set_project_dir(
             self.directory, self.project_name, overwrite=overwrite)
+
+        # Run in distributed mode.
+        if dist_utils.is_chief_oracle():
+            # Blocks forever.
+            oracle_chief.start_server(self.oracle)
+        elif dist_utils.has_chief_oracle():
+            # Proxies requests to the chief oracle.
+            self.oracle = oracle_client.OracleClient(self.oracle)
 
         if isinstance(hypermodel, hm_module.HyperModel):
             self.hypermodel = hypermodel

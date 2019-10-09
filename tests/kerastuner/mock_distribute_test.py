@@ -27,6 +27,7 @@ def tmp_dir(tmpdir_factory):
 
 def test_mock_distribute(tmp_dir):
     def process_fn():
+        assert 'KERASTUNER_ORACLE_IP' in os.environ
         # Wait, to test that other threads aren't overriding env vars.
         time.sleep(1)
         assert isinstance(os.environ, mock_distribute.MockEnvVars)
