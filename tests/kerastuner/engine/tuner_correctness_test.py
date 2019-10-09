@@ -30,9 +30,9 @@ VAL_INPUTS = np.random.random(size=(NUM_SAMPLES, INPUT_DIM))
 VAL_TARGETS = np.random.randint(0, NUM_CLASSES, size=(NUM_SAMPLES, 1))
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def tmp_dir(tmpdir_factory):
-    return tmpdir_factory.mktemp('integration_test')
+    return tmpdir_factory.mktemp('integration_test', numbered=True)
 
 
 def build_model(hp):
@@ -42,7 +42,9 @@ def build_model(hp):
                            activation='relu'),
         keras.layers.Dense(NUM_CLASSES, activation='softmax')
     ])
-    model.compile('rmsprop', 'mse', metrics=['accuracy'])
+    model.compile('rmsprop',
+                  'sparse_categorical_crossentropy',
+                  metrics=['accuracy'])
     return model
 
 
@@ -201,10 +203,11 @@ def test_checkpoint_removal(tmp_dir):
     assert not tf.io.gfile.exists(tuner._get_checkpoint_fname(trial_id, 10))
 
 
-def test_metric_direction_inferred_from_objective():
+def test_metric_direction_inferred_from_objective(tmp_dir):
     oracle = kerastuner.tuners.randomsearch.RandomSearchOracle(
         objective=kerastuner.Objective('a', 'max'),
         max_trials=1)
+    oracle._set_project_dir(tmp_dir, 'untitled_project')
     trial = oracle.create_trial('tuner0')
     oracle.update_trial(trial.trial_id, {'a': 1})
     trial = oracle.get_trial(trial.trial_id)
@@ -213,7 +216,27 @@ def test_metric_direction_inferred_from_objective():
     oracle = kerastuner.tuners.randomsearch.RandomSearchOracle(
         objective=kerastuner.Objective('a', 'min'),
         max_trials=1)
+    oracle._set_project_dir(tmp_dir, 'untitled_project2')
     trial = oracle.create_trial('tuner0')
     oracle.update_trial(trial.trial_id, {'a': 1})
     trial = oracle.get_trial(trial.trial_id)
     assert trial.metrics.get_direction('a') == 'min'
+
+
+def test_overwrite_true(tmp_dir):
+    tuner = kerastuner.tuners.RandomSearch(
+        hypermodel=build_model,
+        objective='val_accuracy',
+        max_trials=2,
+        directory=tmp_dir)
+    tuner.search(TRAIN_INPUTS, TRAIN_TARGETS,
+                 validation_data=(VAL_INPUTS, VAL_TARGETS))
+    assert len(tuner.oracle.trials) == 2
+
+    new_tuner = kerastuner.tuners.RandomSearch(
+        hypermodel=build_model,
+        objective='val_accuracy',
+        max_trials=2,
+        directory=tmp_dir,
+        overwrite=True)
+    assert len(new_tuner.oracle.trials) == 0

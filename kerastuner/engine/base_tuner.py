@@ -18,6 +18,7 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+import tensorflow as tf
 
 from .. import utils
 from ..abstractions import display
@@ -44,6 +45,8 @@ class BaseTuner(stateful.Stateful):
         logger: Optional. Instance of Logger class, used for streaming data
             to Cloud Service for monitoring.
         tuner_id: Optional. Used only with multi-worker DistributionStrategies.
+        overwrite: Bool, default `False`. If `False`, reloads an existing project
+            of the same name if one is found. Otherwise, overwrites the project.
     """
 
     def __init__(self,
@@ -52,11 +55,20 @@ class BaseTuner(stateful.Stateful):
                  directory=None,
                  project_name=None,
                  logger=None,
-                 tuner_id=None):
+                 tuner_id=None,
+                 overwrite=False):
+        # Ops and metadata
+        self.directory = directory or '.'
+        self.project_name = project_name or 'untitled_project'
+        if overwrite and tf.io.gfile.exists(self.project_dir):
+            tf.io.gfile.rmtree(self.project_dir)
+
         if not isinstance(oracle, oracle_module.Oracle):
             raise ValueError('Expected oracle to be '
                              'an instance of Oracle, got: %s' % (oracle,))
         self.oracle = oracle
+        self.oracle._set_project_dir(
+            self.directory, self.project_name, overwrite=overwrite)
 
         if isinstance(hypermodel, hm_module.HyperModel):
             self.hypermodel = hypermodel
@@ -71,10 +83,6 @@ class BaseTuner(stateful.Stateful):
         # To support tuning distribution.
         self.tuner_id = tuner_id if tuner_id is not None else 0
 
-        # Ops and metadata
-        self.directory = directory or '.'
-        self.project_name = project_name or 'untitled_project'
-
         # Logs etc
         self.logger = logger
         self._display = tuner_utils.Display()
@@ -83,6 +91,11 @@ class BaseTuner(stateful.Stateful):
         hp = self.oracle.get_space()
         self.hypermodel.build(hp)
         self.oracle.update_space(hp)
+
+        if not overwrite and tf.io.gfile.exists(self._get_tuner_fname()):
+            tf.get_logger().info('Reloading Tuner from {}'.format(
+                self._get_tuner_fname()))
+            self.reload()
 
     def search(self, *fit_args, **fit_kwargs):
         self.on_search_begin()
@@ -135,11 +148,14 @@ class BaseTuner(stateful.Stateful):
             self.logger.register_trial(trial.trial_id, trial.get_state())
 
     def on_trial_end(self, trial):
+        # Send status to Logger
+        if self.logger:
+            self.logger.report_trial_state(trial.trial_id, trial.get_state())
+
         self.oracle.end_trial(
             trial.trial_id, trial_module.TrialStatus.COMPLETED)
         self.oracle.update_space(trial.hyperparameters)
         self._display.on_trial_end(trial)
-        self._save_trial(trial)
         self.save()
 
     def on_search_end(self):
@@ -208,11 +224,9 @@ class BaseTuner(stateful.Stateful):
         pass
 
     def save(self):
-        self.oracle.save(self._get_oracle_fname())
         super(BaseTuner, self).save(self._get_tuner_fname())
 
     def reload(self):
-        self.oracle.reload(self._get_oracle_fname())
         super(BaseTuner, self).reload(self._get_tuner_fname())
 
     @property
@@ -230,22 +244,7 @@ class BaseTuner(stateful.Stateful):
         utils.create_directory(dirname)
         return dirname
 
-    def _save_trial(self, trial):
-        # Write trial status to trial directory
-        trial_id = trial.trial_id
-        trial.save(os.path.join(
-            self.get_trial_dir(trial_id),
-            'trial.json'))
-        # Send status to Logger
-        if self.logger:
-            self.logger.report_trial_state(trial_id, trial.get_state())
-
     def _get_tuner_fname(self):
         return os.path.join(
             self.project_dir,
             'tuner_' + str(self.tuner_id) + '.json')
-
-    def _get_oracle_fname(self):
-        return os.path.join(
-            self.project_dir,
-            'oracle_' + str(self.tuner_id) + '.json')
