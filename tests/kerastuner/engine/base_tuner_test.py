@@ -32,9 +32,9 @@ VAL_INPUTS = np.random.random(size=(NUM_SAMPLES, INPUT_DIM))
 VAL_TARGETS = np.random.randint(0, NUM_CLASSES, size=(NUM_SAMPLES,))
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def tmp_dir(tmpdir_factory):
-    return tmpdir_factory.mktemp('integration_test')
+    return tmpdir_factory.mktemp('integration_test', numbered=True)
 
 
 def test_base_tuner(tmp_dir):
@@ -78,7 +78,7 @@ def test_base_tuner(tmp_dir):
     assert models[0] == models_by_factor[0]
 
 
-def test_simple_sklearn_tuner():
+def test_simple_sklearn_tuner(tmp_dir):
     class SimpleSklearnTuner(base_tuner.BaseTuner):
         def run_trial(self, trial, x, y, validation_data):
             model = self.hypermodel.build(trial.hyperparameters)
@@ -109,7 +109,8 @@ def test_simple_sklearn_tuner():
         oracle=kerastuner.tuners.randomsearch.RandomSearchOracle(
             objective=kerastuner.Objective('score', 'max'),
             max_trials=2),
-        hypermodel=sklearn_build_fn)
+        hypermodel=sklearn_build_fn,
+        directory=tmp_dir)
     tuner.search(TRAIN_INPUTS,
                  TRAIN_TARGETS,
                  validation_data=(VAL_INPUTS, VAL_TARGETS))

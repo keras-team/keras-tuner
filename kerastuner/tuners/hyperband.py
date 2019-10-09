@@ -12,19 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import copy
-import queue
 import random
 
 from ..engine import multi_execution_tuner
 from ..engine import oracle as oracle_module
 from ..engine import trial as trial_lib
-
-
-def queue_to_list(queue):
-    ret_list = []
-    while not queue.empty():
-        ret_list.append(queue.get())
-    return ret_list
 
 
 class HyperbandOracle(oracle_module.Oracle):
@@ -81,7 +73,7 @@ class HyperbandOracle(oracle_module.Oracle):
         self.factor = factor
         self.min_epochs = min_epochs
         self.max_epochs = max_epochs
-        self._queue = queue.Queue()
+        self._queue = []
         self._trial_count = 0
         self._running = {}
         self._trial_id_to_candidate_index = {}
@@ -102,11 +94,12 @@ class HyperbandOracle(oracle_module.Oracle):
         score = self.trials[trial_id].score
         self._candidate_score[
             self._trial_id_to_candidate_index[trial_id]] = score
+        self.save()
 
     def _populate_space(self, trial_id):
         space = self.hyperparameters.space
         # Queue is not empty means it is in one bracket.
-        if not self._queue.empty():
+        if self._queue:
             return self._run_values(space, trial_id)
 
         # Wait the current bracket to finish.
@@ -128,7 +121,7 @@ class HyperbandOracle(oracle_module.Oracle):
     def _run_values(self, space, trial_id):
         self._trial_count += 1
         self._running[trial_id] = True
-        candidate_index = self._queue.get()
+        candidate_index = self._queue.pop(0)
         if candidate_index not in self._index_to_id:
             self._index_to_id[candidate_index] = trial_id
         candidate = self._candidates[candidate_index]
@@ -162,14 +155,14 @@ class HyperbandOracle(oracle_module.Oracle):
                 self._candidate_score.append(None)
 
         for index, instance in enumerate(self._candidates):
-            self._queue.put(index)
+            self._queue.append(index)
 
     def _select_candidates(self):
         sorted_candidates = sorted(list(range(len(self._candidates))),
                                    key=lambda i: self._candidate_score[i])
         num_selected_candidates = self._model_sequence[self._bracket_index]
         for index in sorted_candidates[:num_selected_candidates]:
-            self._queue.put(index)
+            self._queue.append(index)
 
     def _new_trial(self):
         """Fill a given hyperparameter space with values.
@@ -241,7 +234,7 @@ class HyperbandOracle(oracle_module.Oracle):
             'factor': self.factor,
             'min_epochs': self.min_epochs,
             'max_epochs': self.max_epochs,
-            'queue': queue_to_list(copy.copy(self._queue)),
+            'queue': copy.copy(self._queue),
             'trial_count': self._trial_count,
             'running': self._running,
             'trial_id_to_candidate_index': self._trial_id_to_candidate_index,
@@ -264,9 +257,7 @@ class HyperbandOracle(oracle_module.Oracle):
         self.factor = state['factor']
         self.min_epochs = state['min_epochs']
         self.max_epochs = state['max_epochs']
-        self._queue = queue.Queue()
-        for elem in state['queue']:
-            self._queue.put(elem)
+        self._queue = state['queue']
         self._trial_count = state['trial_count']
         self._running = state['running']
         self._trial_id_to_candidate_index = state['trial_id_to_candidate_index']
@@ -284,7 +275,7 @@ class HyperbandOracle(oracle_module.Oracle):
         # Put the unfinished trials back into the queue to be trained again.
         for trial_id, value in self._running.items():
             if value:
-                self._queue.put(self._trial_id_to_candidate_index[trial_id])
+                self._queue.append(self._trial_id_to_candidate_index[trial_id])
                 self._running[trial_id] = False
 
 
