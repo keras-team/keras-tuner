@@ -25,6 +25,15 @@ enum Sampling {
     REVERSE_LOG = 3;
 }
 
+message Value {
+    oneof kind {
+        sint64 int_value = 1;
+        double float_value = 2;
+        string string_value = 3;
+        bool boolean_value = 4;
+    }
+}
+
 message Float {
     string name = 1;
     double min_value = 2;
@@ -45,29 +54,9 @@ message Int {
 
 message Choice {
     string name = 1;
-
-    message FloatValues {
-        repeated double values = 1;
-    }
-    message IntValues {
-        repeated sint64 values = 1;
-    }
-    message StringValues {
-        repeated string values = 1;
-    }
-    oneof values {
-        FloatValues float_values = 2;
-        IntValues int_values = 3;
-        StringValues string_values = 4;
-    }
-
-    oneof default {
-        sint64 int_default = 5;
-        double float_default = 6;
-        string string_default = 7;
-    }
-
-    bool ordered = 8;
+    repeated Value values = 2;
+    Value default = 3;
+    bool ordered = 4;
 }
 
 message Boolean {
@@ -76,15 +65,15 @@ message Boolean {
 }
 
 message HyperParameters {
-    repeated Float float_space = 1;
-    repeated Int int_space = 2;
-    repeated Choice choice_space = 3;
-    repeated Boolean boolean_space = 4;
+    message Space {
+        repeated Float float_space = 1;
+        repeated Int int_space = 2;
+        repeated Choice choice_space = 3;
+        repeated Boolean boolean_space = 4;
+    }
+    Space space = 1;
 
-    map<string, double> float_values = 5;
-    map<string, sint64> int_values = 6;
-    map<string, string> string_values = 7;
-    map<string, bool> boolean_values = 8;
+    map<string, Value> values = 2;
 }
 
 message MetricObservation {
@@ -121,5 +110,4 @@ message Trial {
         int64 step = 2;
     }
     Score score = 5;
-
 }
