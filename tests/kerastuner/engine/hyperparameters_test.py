@@ -451,15 +451,18 @@ def test_dict_methods():
     hps.Choice('b', [1, 2], default=2)
     with hps.conditional_scope('b', 1):
         hps.Float('c', -10, 10, default=3)
+        # Don't allow access of a non-active param within its scope.
+        with pytest.raises(ValueError, match='is not currently active'):
+            hps['c']
     with hps.conditional_scope('b', 2):
         hps.Float('c', -30, -20, default=-25)
 
     assert hps['a'] == 3
     assert hps['b'] == 2
+    # Ok to access 'c' here since there is an active 'c'.
     assert hps['c'] == -25
     with pytest.raises(ValueError, match='Unknown parameter'):
         hps['d']
-    assert hps.get('d', default=7) == 7
 
     assert 'a' in hps
     assert 'b' in hps

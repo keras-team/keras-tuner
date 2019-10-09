@@ -558,7 +558,7 @@ class HyperParameters(object):
         self.values[full_name] = value
         return value
 
-    def get(self, name, default=None):
+    def get(self, name):
         """Return the current value of this HyperParameter."""
 
         # Fast path for most common case: accessing a non-conditional param.
@@ -572,8 +572,6 @@ class HyperParameters(object):
         if full_cond_name in self.values:
             if self._conditions_are_active():
                 return self.values[full_cond_name]
-            elif default is not None:
-                return default
             else:
                 raise ValueError(
                     'Conditional parameter {} is not currently active'.format(
@@ -595,9 +593,7 @@ class HyperParameters(object):
                 else:
                     found_inactive = True
 
-        if default is not None:
-            return default
-        elif found_inactive:
+        if found_inactive:
             raise ValueError(
                 'Conditional parameter {} is not currently active'.format(
                     full_cond_name))
@@ -609,10 +605,11 @@ class HyperParameters(object):
         return self.get(name)
 
     def __contains__(self, name):
-        # Valid hp values are only int, float, str.
-        indicator = self
-        item = self.get(name, default=indicator)
-        return item != indicator
+        try:
+            self.get(name)
+            return True
+        except ValueError:
+            return False
 
     def Choice(self,
                name,
