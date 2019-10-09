@@ -561,13 +561,8 @@ class HyperParameters(object):
     def get(self, name):
         """Return the current value of this HyperParameter."""
 
-        # Fast path for most common case: accessing a non-conditional param.
-        full_name = self._get_name(name, include_cond=False)
-        if full_name in self.values:
-            return self.values[full_name]
-
-        # Check if current scope contains the conditional param. If found but
-        # not active, raise an error.
+        # Fast path: check for a non-conditional param or for a conditional param
+        # that was defined in the current scope.
         full_cond_name = self._get_name(name)
         if full_cond_name in self.values:
             if self._conditions_are_active():
@@ -579,6 +574,7 @@ class HyperParameters(object):
 
         # Check for any active conditional param.
         found_inactive = False
+        full_name = self._get_name(name, include_cond=False)
         for name, val in self.values.items():
             hp_parts = self._get_name_parts(name)
             hp_scopes = hp_parts[:-1]
