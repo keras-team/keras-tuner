@@ -201,3 +201,26 @@ def test_hyperparameters_added(tmp_dir):
     assert trial.status == 'RUNNING'
     assert 'b' in trial.hyperparameters.values
     assert 'c' in trial.hyperparameters.values
+
+
+def test_step_respected(tmp_dir):
+    hps = hp_module.HyperParameters()
+    hps.Float('c', 0, 10, step=3)
+    oracle = bo_module.BayesianOptimizationOracle(
+        objective=kt.Objective('score', direction='max'),
+        max_trials=20,
+        hyperparameters=hps,
+        num_initial_points=2)
+    oracle._set_project_dir(tmp_dir, 'untitled')
+
+    # Populate initial trials.
+    for i in range(10):
+        trial = trial_module.Trial(hyperparameters=hps.copy())
+        trial.hyperparameters.values['c'] = 3.
+        trial.score = i
+        trial.status = 'COMPLETED'
+        oracle.trials[trial.trial_id] = trial
+
+    trial = oracle.create_trial('tuner0')
+    # Check that oracle respects the `step` param.
+    assert trial.hyperparameters.get('c') in {3, 6, 9}
