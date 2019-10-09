@@ -558,44 +558,61 @@ class HyperParameters(object):
         self.values[full_name] = value
         return value
 
-    def get(self, name):
+    def get(self, name, default=None):
         """Return the current value of this HyperParameter."""
 
-        # Most common case: not attempting to access a conditional parent
-        # or conditional child.
-        full_name = self._get_name(name)
+        # Fast path for most common case: accessing a non-conditional param.
+        full_name = self._get_name(name, include_cond=False)
         if full_name in self.values:
-            if self._conditions_are_active():
-                return self.values[full_name]
-            else:
-                # Sanity check for conditional HP usage.
-                return None
+            return self.values[full_name]
 
-        # Check parent/child conditions.
+        # Check if current scope contains the conditional param. If found but
+        # not active, raise an error.
+        full_cond_name = self._get_name(name)
+        if full_cond_name in self.values:
+            if self._conditions_are_active():
+                return self.values[full_cond_name]
+            elif default is not None:
+                return default
+            else:
+                raise ValueError(
+                    'Conditional parameter {} is not currently active'.format(
+                        full_cond_name))
+
+        # Check for any active conditional param.
         found_inactive = False
-        # Remove conditional scopes from name.
-        full_name_no_cond = '/'.join([
-            p for p in self._get_name_parts(full_name) if
-            not self._is_conditional_scope(p)])
-        for hp_name in self.values.keys():
-            hp_parts = self._get_name_parts(hp_name)
-            # Remove conditional scopes from name.
-            hp_name_no_cond = '/'.join(
-                [p for p in hp_parts
-                 if not self._is_conditional_scope(p)])
-            if hp_name_no_cond == full_name_no_cond:
-                # Check that this HP is active for this Trial.
-                if self._conditions_are_active(hp_parts):
-                    return self.values[hp_name]
+        for name, val in self.values.items():
+            hp_parts = self._get_name_parts(name)
+            hp_scopes = hp_parts[:-1]
+            hp_name = hp_parts[-1]
+            hp_full_name = self._get_name(
+                hp_name,
+                scopes=hp_scopes,
+                include_cond=False)
+            if full_name == hp_full_name:
+                if self._conditions_are_active(hp_scopes):
+                    return val
                 else:
                     found_inactive = True
 
-        if found_inactive:
-            # Sanity check, found only inactive conditional HPs.
-            return None
+        if default is not None:
+            return default
+        elif found_inactive:
+            raise ValueError(
+                'Conditional parameter {} is not currently active'.format(
+                    full_cond_name))
+        else:
+            raise ValueError(
+                'Unknown parameter: {}'.format(full_name))
 
-        raise ValueError(
-            'Unknown parameter: {}'.format(full_name_no_cond))
+    def __getitem__(self, name):
+        return self.get(name)
+
+    def __contains__(self, name):
+        # Valid hp values are only int, float, str.
+        indicator = self
+        item = self.get(name, default=indicator)
+        return item != indicator
 
     def Choice(self,
                name,
@@ -773,7 +790,7 @@ class HyperParameters(object):
                 boolean_space=boolean_space),
             values=values)
 
-    def _get_name(self, name, scopes=None):
+    def _get_name(self, name, scopes=None, include_cond=True):
         """Returns a name qualified by `name_scopes`."""
         if scopes is None:
             scopes = self._scopes
@@ -782,7 +799,7 @@ class HyperParameters(object):
         for scope in scopes:
             if self._is_name_scope(scope):
                 scope_strings.append(scope)
-            elif self._is_conditional_scope(scope):
+            elif self._is_conditional_scope(scope) and include_cond:
                 parent_name = scope['parent_name']
                 parent_values = scope['parent_values']
                 scope_string = '{name}={vals}'.format(
