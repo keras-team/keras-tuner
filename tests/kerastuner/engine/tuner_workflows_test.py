@@ -337,7 +337,8 @@ def test_restricted_space_using_defaults(tmp_dir):
     assert len(tuner.oracle.trials) == 4
     assert len(tuner.oracle.hyperparameters.space) == 2  # Nothing added
     for trial in tuner.oracle.trials.values():
-        assert len(trial.hyperparameters.space) == 2  # Nothing added
+        # Trials get default values but don't pass these on to the oracle.
+        assert len(trial.hyperparameters.space) >= 2
 
 
 def test_restricted_space_with_custom_defaults(tmp_dir):

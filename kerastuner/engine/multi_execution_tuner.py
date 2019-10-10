@@ -83,7 +83,7 @@ class MultiExecutionTuner(tuner_module.Tuner):
         # Run the training process multiple times.
         metrics = collections.defaultdict(list)
         for execution in range(self.executions_per_trial):
-            model = self._build_model(trial.hyperparameters.copy())
+            model = self._build_model(trial.hyperparameters)
             self._compile_model(model)
             fit_kwargs = copy.copy(fit_kwargs)
             fit_kwargs['callbacks'] = self._inject_callbacks(
