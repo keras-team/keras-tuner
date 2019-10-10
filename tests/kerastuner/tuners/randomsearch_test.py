@@ -25,6 +25,8 @@ def tmp_dir(tmpdir_factory):
 
 
 def test_update_space(tmp_dir):
+    # Tests that HyperParameters added after the first call to `build_model`
+    # are sent to the Oracle via oracle.update_space.
     def build_model(hp):
         model = tf.keras.Sequential()
         for i in range(hp.Int('layers', 0, 2)):
