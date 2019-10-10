@@ -16,4 +16,4 @@
 # TODO: Add HyperBandOracle when its implementation can be separated
 # from HyperBand Tuner.
 from ..tuners.randomsearch import RandomSearchOracle as RandomSearch
-from ..tuners.bayesian import BayesionOptimizationOracle as BayesianOptimization
+from ..tuners.bayesian import BayesianOptimizationOracle as BayesianOptimization

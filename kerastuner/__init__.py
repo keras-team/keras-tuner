@@ -16,6 +16,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from kerastuner import applications
+from kerastuner import oracles
 from kerastuner import tuners
 
 from kerastuner.engine.hyperparameters import HyperParameters

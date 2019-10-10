@@ -28,7 +28,6 @@ class OracleClient(object):
     def __init__(self, oracle):
         self._oracle = oracle
 
-        # Allow time for the OracleServicer to come on-line.
         ip_addr = os.environ['KERASTUNER_ORACLE_IP']
         port = os.environ['KERASTUNER_ORACLE_PORT']
         channel = grpc.insecure_channel(
