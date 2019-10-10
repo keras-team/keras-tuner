@@ -463,6 +463,23 @@ def test_subclass_model(tmp_dir):
     assert len(tuner.oracle.trials) == 2
 
 
+def test_subclass_model_loading(tmp_dir):
+    tuner = kerastuner.tuners.RandomSearch(
+        build_subclass_model,
+        objective='val_accuracy',
+        max_trials=2,
+        directory=tmp_dir)
+
+    tuner.search_space_summary()
+
+    tuner.search(x=TRAIN_INPUTS,
+                 y=TRAIN_TARGETS,
+                 epochs=2,
+                 validation_data=(VAL_INPUTS, VAL_TARGETS))
+    best_model = tuner.get_best_models()[0]
+    best_model.predict(TRAIN_INPUTS)
+
+
 def test_update_trial(tmp_dir):
     class MyOracle(kerastuner.Oracle):
 
