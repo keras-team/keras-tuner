@@ -476,8 +476,13 @@ def test_subclass_model_loading(tmp_dir):
                  y=TRAIN_TARGETS,
                  epochs=2,
                  validation_data=(VAL_INPUTS, VAL_TARGETS))
+
+    best_trial_score = tuner.oracle.get_best_trials()[0].score
+
     best_model = tuner.get_best_models()[0]
-    best_model.predict(TRAIN_INPUTS)
+    best_model_score = best_model.evaluate(VAL_INPUTS, VAL_TARGETS)[1]
+
+    assert best_model_score == best_trial_score
 
 
 def test_update_trial(tmp_dir):
