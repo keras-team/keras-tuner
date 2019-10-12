@@ -148,7 +148,7 @@ class HyperbandOracle(oracle_module.Oracle):
 
         new_bracket = {'bracket_num': self._current_bracket,
                        'rounds': self._get_num_rounds(self._current_bracket)})
-        self._random_trial(trial_id, new_bracket['rounds'])
+        return self._random_trial(trial_id, new_bracket['rounds'])
 
     def _remove_completed_brackets(self):
         # Filter out completed brackets.
