@@ -96,17 +96,8 @@ class HyperbandOracle(oracle_module.Oracle):
         self._brackets = [{'bracket_num': self._current_bracket,
                            'rounds': [[]]*self._get_num_rounds(self._current_bracket)}]
 
-
     def _populate_space(self, trial_id):
-        # Filter out completed brackets.
-        def _bracket_is_incomplete(bracket):
-            bracket_num = bracket['bracket_num']
-            rounds = bracket['rounds']
-            if len(rounds[-1]) == self._get_size(bracket_num, round_num=len(rounds) - 1):
-                # All trials have been created for the current bracket.
-                return False
-            return True
-        self._brackets = filter(_bracket_is_incomplete, self._brackets)
+        self._remove_completed_brackets()
 
         for bracket in self._brackets:
             bracket_num = bracket['bracket_num']
@@ -114,26 +105,17 @@ class HyperbandOracle(oracle_module.Oracle):
 
             if len(rounds[0]) < self._get_size(bracket_num, round_num=0):
                 # Populate the initial random trials for this bracket.
-                values = self._random_trial()
-                if values:
-                    rounds[0].append({'past_id': None, 'id': trial_id})
-                    return {'status': 'RUNNING', 'values': values}
-                elif self.ongoing_trials:
-                    # Can't create new random values, but successive halvings may still
-                    # be needed.
-                    return {'status': 'IDLE'}
-                else:
-                    # Collision and no ongoing trials should trigger exit.
-                    return {'status': 'STOPPED'}
+                return self._random_trial(trial_id, rounds)
             else:
-                # Try to populate successive halvings for this bracket.
+                # Try to populate successive halvings for this bracket, otherwise go to
+                # next bracket.
                 for round_num, round_info in enumerate(rounds[1:]):
                     size = self._get_size(bracket_num, round_num)
                     past_size = self._get_size(bracket_num, round_num - 1)
                     past_round_info = rounds[round_num - 1]
 
-                    # If more trials from the last round have completed than will be thrown
-                    # out, we can select one to run in the next round.
+                    # If more trials from the last round are ready than will be thrown
+                    # out, we can select the best to run for the next round.
                     already_selected = [info['past_id'] for info in round_info]
                     candidates = [self.trials[info['id']] for info in past_round_info
                                   if info['id'] not in already_running]
@@ -166,9 +148,24 @@ class HyperbandOracle(oracle_module.Oracle):
 
         new_bracket = {'bracket_num': self._current_bracket,
                        'rounds': self._get_num_rounds(self._current_bracket)})
+        self._random_trial(trial_id, new_bracket['rounds'])
+
+    def _remove_completed_brackets(self):
+        # Filter out completed brackets.
+        def _bracket_is_incomplete(bracket):
+            bracket_num = bracket['bracket_num']
+            rounds = bracket['rounds']
+            last_round = len(rounds) - 1
+            if len(rounds[last_round]) == self._get_size(bracket_num, last_round):
+                # All trials have been created for the current bracket.
+                return False
+            return True
+        self._brackets = filter(_bracket_is_incomplete, self._brackets)
+
+    def _random_trial(self, trial_id, rounds):
         values = self._random_trial()
         if values:
-            new_bracket['rounds'][0].append({'past_id': None, 'id': trial_id})
+            rounds[0].append({'past_id': None, 'id': trial_id})
             return {'status': 'RUNNING', 'values': values}
         elif self.ongoing_trials:
             # Can't create new random values, but successive halvings may still
@@ -179,15 +176,15 @@ class HyperbandOracle(oracle_module.Oracle):
             return {'status': 'STOPPED'}
 
     def _get_size(self, bracket_num, round_num):
-            const = (self._get_num_brackets() + 1) / (bracket_num + 1)
-            return math.ceil(const * self.factor**(bracket_num - round_num))
+        const = (self._get_num_brackets() + 1) / (bracket_num + 1)
+        return math.ceil(const * self.factor**(bracket_num - round_num))
 
     def _get_epochs(self, bracket_num, round_num):
-            return math.ceil(self.max_epochs / self.factor**(bracket_num - round_num))
+        return math.ceil(self.max_epochs / self.factor**(bracket_num - round_num))
 
     def _get_num_rounds(self, bracket_num):
-            # Bracket 0 just runs random search, others do successive halving.
-            return bracket_num + 1
+        # Bracket 0 just runs random search, others do successive halving.
+        return bracket_num + 1
 
     def _get_num_brackets(self):
         epochs = self.max_epochs
@@ -197,7 +194,7 @@ class HyperbandOracle(oracle_module.Oracle):
             brackets += 1
         return brackets
 
-    def _random_trial(self):
+    def _random_values(self):
         """Fill a given hyperparameter space with values.
 
         Returns:
@@ -225,59 +222,36 @@ class HyperbandOracle(oracle_module.Oracle):
             break
         return values
 
-    def _make_bracket(self):
-        return self._current_bracket, [[]]*self._num_halvings(self._current_bracket)
-
-    @property
-    def _num_halvings(self, bracket):
-        return bracket
-
-    @property
-    def _iteration_sizes(self, bracket):
-        sizes = []
-        size = self.min_epochs
-        for _ in range(self._num_brackets - 1):
-            sizes.append(int(size))
-            size *= self.factor
-        sizes.append(self.max_epochs)
-        sizes.reverse()
-        return sizes
-
-    @property
-    def _bracket_epochs(self):
-        """Compute the sequence of epochs per bracket."""
-        sizes = []
-        size = self.min_epochs
-        for _ in range(self._num_brackets - 1):
-            sizes.append(int(size))
-            size *= self.factor
-        sizes.append(self.max_epochs)
-        return sizes
-
     def get_state(self):
         state = super(HyperbandOracle, self).get_state()
         state.update({
-            'seed': self.seed,
-            'factor': self.factor,
-            'min_epochs': self.min_epochs,
+            'max_sweeps': self.max_sweeps,
             'max_epochs': self.max_epochs,
+            'min_epochs': self.min_epochs,
+            'factor': self.factor,
+            'seed': self.seed,
             'max_collisions': self._max_collisions,
             'seed_state': self._seed_state,
             'tried_so_far': list(self._tried_so_far),
             'brackets': self._brackets
+            'current_bracket': self._current_bracket,
+            'current_sweep': self._current_sweep
         })
         return state
 
     def set_state(self, state):
         super(HyperbandOracle, self).set_state(state)
-        self.seed = state['seed']
-        self.factor = state['factor']
-        self.min_epochs = state['min_epochs']
+        self.max_sweeps = state['max_sweeps']
         self.max_epochs = state['max_epochs']
+        self.min_epochs = state['min_epochs']
+        self.factor = state['factor']
+        self.seed = state['seed']
         self._max_collisions = state['max_collisions']
         self._seed_state = state['seed_state']
         self._tried_so_far = set(state['tried_so_far'])
         self._brackets = state['brackets']
+        self._current_bracket = state['current_bracket']
+        self._current_sweep = state['current_sweep']
 
 
 class Hyperband(multi_execution_tuner.MultiExecutionTuner):
