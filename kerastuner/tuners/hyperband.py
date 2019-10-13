@@ -16,7 +16,6 @@ import random
 
 from ..engine import multi_execution_tuner
 from ..engine import oracle as oracle_module
-from ..engine import trial as trial_lib
 
 
 class HyperbandOracle(oracle_module.Oracle):
@@ -92,9 +91,10 @@ class HyperbandOracle(oracle_module.Oracle):
         self._tried_so_far = set()
 
         self._current_sweep = 0
-        self._current_bracket = 0
-        self._brackets = [{'bracket_num': self._current_bracket,
-                           'rounds': [[]]*self._get_num_rounds(self._current_bracket)}]
+        # Start with most aggressively halving bracket.
+        self._current_bracket = self._get_num_brackets() - 1
+        self._brackets = []
+        self._start_new_bracket()
 
     def _populate_space(self, trial_id):
         self._remove_completed_brackets()
@@ -107,48 +107,60 @@ class HyperbandOracle(oracle_module.Oracle):
                 # Populate the initial random trials for this bracket.
                 return self._random_trial(trial_id, rounds)
             else:
-                # Try to populate successive halvings for this bracket, otherwise go to
-                # next bracket.
-                for round_num, round_info in enumerate(rounds[1:]):
+                # Try to populate incomplete rounds for this bracket.
+                for round_num in range(1, len(rounds)):
+                    round_info = rounds[round_num]
+                    past_round_info = rounds[round_num - 1]
                     size = self._get_size(bracket_num, round_num)
                     past_size = self._get_size(bracket_num, round_num - 1)
-                    past_round_info = rounds[round_num - 1]
 
-                    # If more trials from the last round are ready than will be thrown
-                    # out, we can select the best to run for the next round.
+                    # If more trials from the last round are ready than will be
+                    # thrown out, we can select the best to run for the next round.
                     already_selected = [info['past_id'] for info in round_info]
-                    candidates = [self.trials[info['id']] for info in past_round_info
-                                  if info['id'] not in already_running]
+                    candidates = [self.trials[info['id']]
+                                  for info in past_round_info
+                                  if info['id'] not in already_selected]
                     candidates = [t for t in candidates if t.status == 'COMPLETED']
                     if len(candidates) > past_size - size:
-                        sorted_candidates = sorted(candidates,
-                                                   key=lambda t: t.score,
-                                                   reverse=self.objective.direction == 'max')
+                        sorted_candidates = sorted(
+                            candidates,
+                            key=lambda t: t.score,
+                            reverse=self.objective.direction == 'max')
                         best_trial = sorted_candidates[0]
 
                         values = best_trial.hyperparameters.values.copy()
                         values['tuner/trial_id'] = best_trial.trial_id
-                        values['tuner/epochs'] = self._get_epochs(bracket_num, round_num)
-                        values['tuner/initial_epoch'] = self._get_epochs(bracket_num, round_num - 1)
+                        values['tuner/epochs'] = self._get_epochs(
+                            bracket_num, round_num)
+                        values['tuner/initial_epoch'] = self._get_epochs(
+                            bracket_num, round_num - 1)
 
-                        round_info.append({'past_id': best_trial.trial_id, 'id': trial_id})
+                        round_info.append({'past_id': best_trial.trial_id,
+                                           'id': trial_id})
                         return {'status': 'RUNNING', 'values': values}
 
-        # No trials from current brackets can be run. Create a new bracket or wait if max_sweeps
-        # has been reached.
-        self._current_bracket += 1
-        if self._current_bracket == self._get_num_brackets():
-            self._current_bracket = 0
+        # No trials from current brackets can be run. Create a new bracket or wait
+        # if max_sweeps has been reached.
+        self._current_bracket -= 1
+        if self._current_bracket < 0:
+            self._current_bracket = self._get_num_brackets() - 1
             self._current_sweep += 1
 
         if self._current_sweep == self.max_sweeps:
             if self.ongoing_trials:
+                # Stop creating new brackets, but wait to complete other brackets.
                 return {'status': 'IDLE'}
             return {'status': 'STOPPED'}
 
-        new_bracket = {'bracket_num': self._current_bracket,
-                       'rounds': self._get_num_rounds(self._current_bracket)})
-        return self._random_trial(trial_id, new_bracket['rounds'])
+        self._start_new_bracket()
+        return self._random_trial(trial_id, self._brackets[-1]['rounds'])
+
+    def _start_new_bracket(self):
+        rounds = []
+        for _ in range(self._get_num_rounds(self._current_bracket)):
+            rounds.append([])
+        bracket = {'bracket_num': self._current_bracket, 'rounds': rounds}
+        self._brackets.append(bracket)
 
     def _remove_completed_brackets(self):
         # Filter out completed brackets.
@@ -160,10 +172,10 @@ class HyperbandOracle(oracle_module.Oracle):
                 # All trials have been created for the current bracket.
                 return False
             return True
-        self._brackets = filter(_bracket_is_incomplete, self._brackets)
+        self._brackets = list(filter(_bracket_is_incomplete, self._brackets))
 
     def _random_trial(self, trial_id, rounds):
-        values = self._random_trial()
+        values = self._random_values()
         if values:
             rounds[0].append({'past_id': None, 'id': trial_id})
             return {'status': 'RUNNING', 'values': values}
@@ -172,11 +184,12 @@ class HyperbandOracle(oracle_module.Oracle):
             # be needed.
             return {'status': 'IDLE'}
         else:
-            # Collision and no ongoing trials should trigger exit.
+            # Collision and no ongoing trials should trigger an exit.
             return {'status': 'STOPPED'}
 
     def _get_size(self, bracket_num, round_num):
-        const = (self._get_num_brackets() + 1) / (bracket_num + 1)
+        # Constant so that each bracket takes approx. the same amount of resources.
+        const = self._get_num_brackets() / (bracket_num + 1)
         return math.ceil(const * self.factor**(bracket_num - round_num))
 
     def _get_epochs(self, bracket_num, round_num):
@@ -233,7 +246,7 @@ class HyperbandOracle(oracle_module.Oracle):
             'max_collisions': self._max_collisions,
             'seed_state': self._seed_state,
             'tried_so_far': list(self._tried_so_far),
-            'brackets': self._brackets
+            'brackets': self._brackets,
             'current_bracket': self._current_bracket,
             'current_sweep': self._current_sweep
         })
