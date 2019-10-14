@@ -22,8 +22,8 @@ class HyperbandOracle(oracle_module.Oracle):
     """Oracle class for Hyperband.
 
     Note that to use this Oracle with your own subclassed Tuner, your Tuner
-    class must understand three special hyperparameters that may be set by
-    this Tuner:
+    class must understand three special hyperparameters that will optionally
+    be set by this Tuner:
 
       - tuner/trial_id: The trial_id of the Trial to load from when starting
           this trial.
@@ -39,14 +39,15 @@ class HyperbandOracle(oracle_module.Oracle):
         objective: String or `kerastuner.Objective`. If a string,
           the direction of the optimization (min or max) will be
           inferred.
-        max_trials: Int. Total number of trials
-            (model configurations) to test at most.
-            Note that the oracle may interrupt the search
-            before `max_trial` models have been tested.
+        max_sweeps: Int >= 1. The number of times to iterate over the full
+          Hyperband algorithm. This corresponds to a grid search over possible
+          B/nu ratios. One sweep will run approximately
+          `max_epochs*math.log(max_epochs, factor)**2` cumulative epochs
+          across all trials.
+        max_epochs: Int. The maximum number of epochs to train a model.
+        min_epochs: Int. The minimum number of epochs to train a model.
         factor: Int. Reduction factor for the number of epochs
             and number of models for each bracket.
-        min_epochs: Int. The minimum number of epochs to train a model.
-        max_epochs: Int. The maximum number of epochs to train a model.
         seed: Int. Random seed.
         hyperparameters: HyperParameters class instance.
             Can be used to override (or register in advance)
@@ -80,7 +81,7 @@ class HyperbandOracle(oracle_module.Oracle):
         if factor < 2:
             raise ValueError('factor needs to be a int larger than 1.')
 
-        self.max_sweeps = max_sweeps
+        self.max_sweeps = max_sweeps or float('inf')
         self.max_epochs = max_epochs
         self.min_epochs = min_epochs
         self.factor = factor
@@ -94,6 +95,7 @@ class HyperbandOracle(oracle_module.Oracle):
         # Start with most aggressively halving bracket.
         self._current_bracket = self._get_num_brackets() - 1
         self._brackets = []
+
         self._start_new_bracket()
 
     def _populate_space(self, trial_id):
@@ -105,7 +107,7 @@ class HyperbandOracle(oracle_module.Oracle):
 
             if len(rounds[0]) < self._get_size(bracket_num, round_num=0):
                 # Populate the initial random trials for this bracket.
-                return self._random_trial(trial_id, rounds)
+                return self._random_trial(trial_id, bracket)
             else:
                 # Try to populate incomplete rounds for this bracket.
                 for round_num in range(1, len(rounds)):
@@ -134,26 +136,28 @@ class HyperbandOracle(oracle_module.Oracle):
                             bracket_num, round_num)
                         values['tuner/initial_epoch'] = self._get_epochs(
                             bracket_num, round_num - 1)
+                        values['tuner/bracket'] = self._current_bracket
+                        values['tuner/round'] = round_num
 
                         round_info.append({'past_id': best_trial.trial_id,
                                            'id': trial_id})
                         return {'status': 'RUNNING', 'values': values}
 
-        # No trials from current brackets can be run. Create a new bracket or wait
-        # if max_sweeps has been reached.
-        self._current_bracket -= 1
-        if self._current_bracket < 0:
-            self._current_bracket = self._get_num_brackets() - 1
-            self._current_sweep += 1
+        # This is reached if no trials from current brackets can be run.
 
-        if self._current_sweep == self.max_sweeps:
+        # Max sweeps has been reached, no more brackets should be created.
+        if self._current_bracket == 0 and self._current_sweep + 1 == self.max_sweeps:
+            # Stop creating new brackets, but wait to complete other brackets.
             if self.ongoing_trials:
-                # Stop creating new brackets, but wait to complete other brackets.
                 return {'status': 'IDLE'}
-            return {'status': 'STOPPED'}
-
-        self._start_new_bracket()
-        return self._random_trial(trial_id, self._brackets[-1]['rounds'])
+            else:
+                self._increment_bracket_num()
+                return {'status': 'STOPPED'}
+        # Create a new bracket.
+        else:
+            self._increment_bracket_num()
+            self._start_new_bracket()
+            return self._random_trial(trial_id, self._brackets[-1])
 
     def _start_new_bracket(self):
         rounds = []
@@ -161,6 +165,12 @@ class HyperbandOracle(oracle_module.Oracle):
             rounds.append([])
         bracket = {'bracket_num': self._current_bracket, 'rounds': rounds}
         self._brackets.append(bracket)
+
+    def _increment_bracket_num(self):
+        self._current_bracket -= 1
+        if self._current_bracket < 0:
+            self._current_bracket = self._get_num_brackets() - 1
+            self._current_sweep += 1
 
     def _remove_completed_brackets(self):
         # Filter out completed brackets.
@@ -174,9 +184,15 @@ class HyperbandOracle(oracle_module.Oracle):
             return True
         self._brackets = list(filter(_bracket_is_incomplete, self._brackets))
 
-    def _random_trial(self, trial_id, rounds):
+    def _random_trial(self, trial_id, bracket):
+        bracket_num = bracket['bracket_num']
+        rounds = bracket['rounds']
         values = self._random_values()
         if values:
+            values['tuner/epochs'] = self._get_epochs(bracket_num, 0)
+            values['tuner/initial_epoch'] = 0
+            values['tuner/bracket'] = self._current_bracket
+            values['tuner/round'] = 0
             rounds[0].append({'past_id': None, 'id': trial_id})
             return {'status': 'RUNNING', 'values': values}
         elif self.ongoing_trials:
@@ -188,9 +204,10 @@ class HyperbandOracle(oracle_module.Oracle):
             return {'status': 'STOPPED'}
 
     def _get_size(self, bracket_num, round_num):
-        # Constant so that each bracket takes approx. the same amount of resources.
-        const = self._get_num_brackets() / (bracket_num + 1)
-        return math.ceil(const * self.factor**(bracket_num - round_num))
+        # Set up so that each bracket takes approx. the same amount of resources.
+        bracket0_end_size = math.ceil(1 + math.log(self.max_epochs, self.factor))
+        bracket_end_size = bracket0_end_size / (bracket_num + 1)
+        return math.ceil(bracket_end_size * self.factor**(bracket_num - round_num))
 
     def _get_epochs(self, bracket_num, round_num):
         return math.ceil(self.max_epochs / self.factor**(bracket_num - round_num))
@@ -279,20 +296,20 @@ class Hyperband(multi_execution_tuner.MultiExecutionTuner):
 
 
     Attributes:
-        oracle: Instance of Oracle class.
         hypermodel: Instance of HyperModel class
             (or callable that takes hyperparameters
             and returns a Model instance).
         objective: String. Name of model metric to minimize
             or maximize, e.g. "val_accuracy".
-        max_trials: Int. Total number of trials
-            (model configurations) to test at most.
-            Note that the oracle may interrupt the search
-            before `max_trial` models have been tested.
+        max_sweeps: Int >= 1. The number of times to iterate over the full
+          Hyperband algorithm. This corresponds to a grid search over possible
+          B/nu ratios. One sweep will run approximately
+          `max_epochs*math.log(max_epochs, factor)**2` cumulative epochs
+          across all trials.
+        max_epochs: Int. The maximum number of epochs to train a model.
+        min_epochs: Int. The minimum number of epochs to train a model.
         factor: Int. Reduction factor for the number of epochs
             and number of models for each bracket.
-        min_epochs: Int. Minimum number of epochs to train a model.
-        max_epochs: Int. Maximum number of epochs to train a model.
         seed: Int. Random seed.
         hyperparameters: HyperParameters class instance.
             Can be used to override (or register in advance)
@@ -313,10 +330,10 @@ class Hyperband(multi_execution_tuner.MultiExecutionTuner):
     def __init__(self,
                  hypermodel,
                  objective,
-                 max_trials,
+                 max_sweeps,
+                 max_epochs,
+                 min_epochs=1,
                  factor=3,
-                 min_epochs=3,
-                 max_epochs=10,
                  seed=None,
                  hyperparameters=None,
                  tune_new_entries=True,
@@ -324,11 +341,11 @@ class Hyperband(multi_execution_tuner.MultiExecutionTuner):
                  **kwargs):
         oracle = HyperbandOracle(
             objective,
-            max_trials,
-            seed=seed,
-            factor=factor,
-            min_epochs=min_epochs,
+            max_sweeps=max_sweeps,
             max_epochs=max_epochs,
+            min_epochs=min_epochs,
+            factor=factor,
+            seed=seed,
             hyperparameters=hyperparameters,
             tune_new_entries=tune_new_entries,
             allow_new_entries=allow_new_entries)
@@ -341,7 +358,7 @@ class Hyperband(multi_execution_tuner.MultiExecutionTuner):
         hp = trial.hyperparameters
         if 'tuner/epochs' in hp.values:
             fit_kwargs['epochs'] = hp.values['tuner/epochs']
-            fit_kwargs['initial_epoch'] = hp.values['tuner/epochs']
+            fit_kwargs['initial_epoch'] = hp.values['tuner/initial_epoch']
         super(Hyperband, self).run_trial(trial, *fit_args, **fit_kwargs)
 
     def _build_model(self, hp):
@@ -351,5 +368,5 @@ class Hyperband(multi_execution_tuner.MultiExecutionTuner):
             history_trial = self.oracle.get_trial(trial_id)
             # Load best checkpoint from this trial.
             model.load_weights(self._get_checkpoint_fname(
-                history_trial, history_trial.best_step))
+                history_trial.trial_id, history_trial.best_step))
         return model

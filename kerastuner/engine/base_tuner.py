@@ -234,9 +234,13 @@ class BaseTuner(stateful.Stateful):
         pass
 
     def save(self):
+        if not dist_utils.has_chief_oracle():
+            self.oracle.save()
         super(BaseTuner, self).save(self._get_tuner_fname())
 
     def reload(self):
+        if not dist_utils.has_chief_oracle():
+            self.oracle.reload()
         super(BaseTuner, self).reload(self._get_tuner_fname())
 
     @property
