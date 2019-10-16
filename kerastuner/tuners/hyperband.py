@@ -62,8 +62,8 @@ class HyperbandOracle(oracle_module.Oracle):
           inferred.
         max_epochs: Int. The maximum number of epochs to train one model. It is
           recommended to set this to a value slightly higher than the expected time
-          to convergence for your largest Model, and to use early stopping (for
-          example, via the `tf.keras.callbacks.EarlyStopping` callback).
+          to convergence for your largest Model, and to use early stopping during
+          training (for example, via `tf.keras.callbacks.EarlyStopping`).
         factor: Int. Reduction factor for the number of epochs
             and number of models for each bracket.
         hyperband_iterations: Int >= 1. The number of times to iterate over the full
@@ -328,8 +328,8 @@ class Hyperband(multi_execution_tuner.MultiExecutionTuner):
             or maximize, e.g. "val_accuracy".
         max_epochs: Int. The maximum number of epochs to train one model. It is
           recommended to set this to a value slightly higher than the expected time
-          to convergence for your largest Model, and to use early stopping (for
-          example, via the `tf.keras.callbacks.EarlyStopping` callback).
+          to convergence for your largest Model, and to use early stopping during
+          training (for example, via `tf.keras.callbacks.EarlyStopping`).
         factor: Int. Reduction factor for the number of epochs
             and number of models for each bracket.
         hyperband_iterations: Int >= 1. The number of times to iterate over the full
