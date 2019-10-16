@@ -42,9 +42,8 @@ def build_model(hp):
 def test_hyperband_oracle_bracket_configs(tmp_dir):
     oracle = hyperband_module.HyperbandOracle(
         objective='score',
-        max_sweeps=1,
+        hyperband_iterations=1,
         max_epochs=8,
-        min_epochs=1,
         factor=2)
     oracle._set_project_dir(tmp_dir, 'untitled')
 
@@ -69,9 +68,8 @@ def test_hyperband_oracle_one_sweep_single_thread(tmp_dir):
     oracle = hyperband_module.HyperbandOracle(
         hyperparameters=hp,
         objective=kt.Objective('score', 'max'),
-        max_sweeps=1,
+        hyperband_iterations=1,
         max_epochs=9,
-        min_epochs=1,
         factor=3)
     oracle._set_project_dir(tmp_dir, 'untitled')
 
@@ -94,7 +92,7 @@ def test_hyperband_oracle_one_sweep_single_thread(tmp_dir):
 
     # Iteration should now be complete.
     trial = oracle.create_trial('tuner0')
-    assert trial.status == 'STOPPED', oracle.max_sweeps
+    assert trial.status == 'STOPPED', oracle.hyperband_iterations
     assert len(oracle.ongoing_trials) == 0
 
     # Brackets should all be finished and removed.
@@ -111,9 +109,8 @@ def test_hyperband_oracle_one_sweep_parallel(tmp_dir):
     oracle = hyperband_module.HyperbandOracle(
         hyperparameters=hp,
         objective='score',
-        max_sweeps=1,
+        hyperband_iterations=1,
         max_epochs=4,
-        min_epochs=1,
         factor=2)
     oracle._set_project_dir(tmp_dir, 'untitled')
 
@@ -174,9 +171,8 @@ def test_hyperband_integration(tmp_dir):
     tuner = hyperband_module.Hyperband(
         objective='val_loss',
         hypermodel=build_model,
-        max_sweeps=2,
+        hyperband_iterations=2,
         max_epochs=6,
-        min_epochs=2,
         factor=3,
         directory=tmp_dir)
 
@@ -199,9 +195,8 @@ def test_hyperband_save_and_restore(tmp_dir):
     tuner = hyperband_module.Hyperband(
         objective='val_loss',
         hypermodel=build_model,
-        max_sweeps=1,
+        hyperband_iterations=1,
         max_epochs=7,
-        min_epochs=3,
         factor=2,
         directory=tmp_dir)
 
@@ -210,12 +205,12 @@ def test_hyperband_save_and_restore(tmp_dir):
 
     num_trials = len(tuner.oracle.trials)
     assert num_trials > 0
-    assert tuner.oracle._current_sweep == 1
+    assert tuner.oracle._current_iteration == 1
 
     tuner.save()
     tuner.trials = {}
-    tuner.oracle._current_sweep = 0
+    tuner.oracle._current_iteration = 0
     tuner.reload()
 
     assert len(tuner.oracle.trials) == num_trials
-    assert tuner.oracle._current_sweep == 1
+    assert tuner.oracle._current_iteration == 1

@@ -22,32 +22,55 @@ class HyperbandOracle(oracle_module.Oracle):
     """Oracle class for Hyperband.
 
     Note that to use this Oracle with your own subclassed Tuner, your Tuner
-    class must understand three special hyperparameters that will optionally
-    be set by this Tuner:
+    class must be able to handle in `Tuner.run_trial` three special hyperparameters
+    that will be set by this Tuner:
 
-      - tuner/trial_id: The trial_id of the Trial to load from when starting
-          this trial.
-      - tuner/initial_epoch: The initial epoch the Trial should be started
-          from.
-      - tuner/epochs: The cumulative number of epochs this Trial should be
-          trained.
+      - "tuner/trial_id": String, optionally set. The trial_id of the Trial to load
+          from when starting this trial.
+      - "tuner/initial_epoch": Int, always set. The initial epoch the Trial should be
+          started from.
+      - "tuner/epochs": Int, always set. The cumulative number of epochs this Trial
+          should be trained.
 
     These hyperparameters will be set during the "successive halving" portion
     of the Hyperband algorithm.
+
+    Example `run_trial`:
+
+    ```
+    def run_trial(self, trial, *args, **kwargs):
+        hp = trial.hyperparameters
+        if "tuner/trial_id" in hp:
+            past_trial = self.oracle.get_trial(hp['tuner/trial_id'])
+            model = self.load_model(past_trial)
+        else:
+            model = self.hypermodel.build(hp)
+
+        initial_epoch = hp['tuner/initial_epoch']
+        last_epoch = hp['tuner/epochs']
+
+        for epoch in range(initial_epoch, last_epoch):
+            self.on_epoch_begin(...)
+            for step in range(...):
+                # Run model training step here.
+            self.on_epoch_end(...)
+    ```
 
     Attributes:
         objective: String or `kerastuner.Objective`. If a string,
           the direction of the optimization (min or max) will be
           inferred.
-        max_sweeps: Int >= 1. The number of times to iterate over the full
-          Hyperband algorithm. This corresponds to a grid search over possible
-          B/nu ratios. One sweep will run approximately
-          `max_epochs*math.log(max_epochs, factor)**2` cumulative epochs
-          across all trials.
-        max_epochs: Int. The maximum number of epochs to train a model.
-        min_epochs: Int. The minimum number of epochs to train a model.
+        max_epochs: Int. The maximum number of epochs to train one model. It is
+          recommended to set this to a value slightly higher than the expected time
+          to convergence for your largest Model, and to use early stopping (for
+          example, via the `tf.keras.callbacks.EarlyStopping` callback).
         factor: Int. Reduction factor for the number of epochs
             and number of models for each bracket.
+        hyperband_iterations: Int >= 1. The number of times to iterate over the full
+          Hyperband algorithm. One iteration will run approximately
+          `max_epochs * (math.log(max_epochs, factor) ** 2)` cumulative epochs
+          across all trials. It is recommended to set this to as high a value
+          as is within your resource budget.
         seed: Int. Random seed.
         hyperparameters: HyperParameters class instance.
             Can be used to override (or register in advance)
@@ -65,10 +88,9 @@ class HyperbandOracle(oracle_module.Oracle):
 
     def __init__(self,
                  objective,
-                 max_sweeps,
                  max_epochs,
-                 min_epochs=1,
                  factor=3,
+                 hyperband_iterations=1,
                  seed=None,
                  hyperparameters=None,
                  allow_new_entries=True,
@@ -81,9 +103,11 @@ class HyperbandOracle(oracle_module.Oracle):
         if factor < 2:
             raise ValueError('factor needs to be a int larger than 1.')
 
-        self.max_sweeps = max_sweeps or float('inf')
+        self.hyperband_iterations = hyperband_iterations or float('inf')
         self.max_epochs = max_epochs
-        self.min_epochs = min_epochs
+        # Minimum epochs before successive halving, Hyperband sweeps through varying
+        # degress of aggressiveness.
+        self.min_epochs = 1
         self.factor = factor
 
         self.seed = seed or random.randint(1, 1e4)
@@ -91,7 +115,7 @@ class HyperbandOracle(oracle_module.Oracle):
         self._seed_state = self.seed
         self._tried_so_far = set()
 
-        self._current_sweep = 0
+        self._current_iteration = 0
         # Start with most aggressively halving bracket.
         self._current_bracket = self._get_num_brackets() - 1
         self._brackets = []
@@ -146,7 +170,8 @@ class HyperbandOracle(oracle_module.Oracle):
         # This is reached if no trials from current brackets can be run.
 
         # Max sweeps has been reached, no more brackets should be created.
-        if self._current_bracket == 0 and self._current_sweep + 1 == self.max_sweeps:
+        if (self._current_bracket == 0 and
+                self._current_iteration + 1 == self.hyperband_iterations):
             # Stop creating new brackets, but wait to complete other brackets.
             if self.ongoing_trials:
                 return {'status': 'IDLE'}
@@ -170,7 +195,7 @@ class HyperbandOracle(oracle_module.Oracle):
         self._current_bracket -= 1
         if self._current_bracket < 0:
             self._current_bracket = self._get_num_brackets() - 1
-            self._current_sweep += 1
+            self._current_iteration += 1
 
     def _remove_completed_brackets(self):
         # Filter out completed brackets.
@@ -255,7 +280,7 @@ class HyperbandOracle(oracle_module.Oracle):
     def get_state(self):
         state = super(HyperbandOracle, self).get_state()
         state.update({
-            'max_sweeps': self.max_sweeps,
+            'hyperband_iterations': self.hyperband_iterations,
             'max_epochs': self.max_epochs,
             'min_epochs': self.min_epochs,
             'factor': self.factor,
@@ -265,13 +290,13 @@ class HyperbandOracle(oracle_module.Oracle):
             'tried_so_far': list(self._tried_so_far),
             'brackets': self._brackets,
             'current_bracket': self._current_bracket,
-            'current_sweep': self._current_sweep
+            'current_iteration': self._current_iteration
         })
         return state
 
     def set_state(self, state):
         super(HyperbandOracle, self).set_state(state)
-        self.max_sweeps = state['max_sweeps']
+        self.hyperband_iterations = state['hyperband_iterations']
         self.max_epochs = state['max_epochs']
         self.min_epochs = state['min_epochs']
         self.factor = state['factor']
@@ -281,7 +306,7 @@ class HyperbandOracle(oracle_module.Oracle):
         self._tried_so_far = set(state['tried_so_far'])
         self._brackets = state['brackets']
         self._current_bracket = state['current_bracket']
-        self._current_sweep = state['current_sweep']
+        self._current_iteration = state['current_iteration']
 
 
 class Hyperband(multi_execution_tuner.MultiExecutionTuner):
@@ -301,15 +326,17 @@ class Hyperband(multi_execution_tuner.MultiExecutionTuner):
             and returns a Model instance).
         objective: String. Name of model metric to minimize
             or maximize, e.g. "val_accuracy".
-        max_sweeps: Int >= 1. The number of times to iterate over the full
-          Hyperband algorithm. This corresponds to a grid search over possible
-          B/nu ratios. One sweep will run approximately
-          `max_epochs*math.log(max_epochs, factor)**2` cumulative epochs
-          across all trials.
-        max_epochs: Int. The maximum number of epochs to train a model.
-        min_epochs: Int. The minimum number of epochs to train a model.
+        max_epochs: Int. The maximum number of epochs to train one model. It is
+          recommended to set this to a value slightly higher than the expected time
+          to convergence for your largest Model, and to use early stopping (for
+          example, via the `tf.keras.callbacks.EarlyStopping` callback).
         factor: Int. Reduction factor for the number of epochs
             and number of models for each bracket.
+        hyperband_iterations: Int >= 1. The number of times to iterate over the full
+          Hyperband algorithm. One iteration will run approximately
+          `max_epochs * (math.log(max_epochs, factor) ** 2)` cumulative epochs
+          across all trials. It is recommended to set this to as high a value
+          as is within your resource budget.
         seed: Int. Random seed.
         hyperparameters: HyperParameters class instance.
             Can be used to override (or register in advance)
@@ -330,10 +357,9 @@ class Hyperband(multi_execution_tuner.MultiExecutionTuner):
     def __init__(self,
                  hypermodel,
                  objective,
-                 max_sweeps,
                  max_epochs,
-                 min_epochs=1,
                  factor=3,
+                 hyperband_iterations=1,
                  seed=None,
                  hyperparameters=None,
                  tune_new_entries=True,
@@ -341,10 +367,9 @@ class Hyperband(multi_execution_tuner.MultiExecutionTuner):
                  **kwargs):
         oracle = HyperbandOracle(
             objective,
-            max_sweeps=max_sweeps,
             max_epochs=max_epochs,
-            min_epochs=min_epochs,
             factor=factor,
+            hyperband_iterations=hyperband_iterations,
             seed=seed,
             hyperparameters=hyperparameters,
             tune_new_entries=tune_new_entries,
