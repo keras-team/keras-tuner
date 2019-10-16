@@ -195,7 +195,7 @@ class Int(HyperParameter):
     Args:
         name: Str. Name of parameter. Must be unique.
         min_value: Int. Lower limit of range (included).
-        max_value: Int. Upper limit of range (excluded).
+        max_value: Int. Upper limit of range (included).
         step: Int. Step of range.
         sampling: Optional. One of "linear", "log",
             "reverse_log". Acts as a hint for an initial prior
@@ -220,7 +220,7 @@ class Int(HyperParameter):
         self.step = _check_int(step, arg='step')
         self.sampling = _check_sampling_arg(
             sampling, step, min_value, max_value, hp_type='int')
-        self._values = list(range(min_value, max_value, step))
+        self._values = list(range(min_value, max_value + 1, step))
 
     def __repr__(self):
         return ('Int(name: "{}", min_value: {}, max_value: {}, step: {}, '

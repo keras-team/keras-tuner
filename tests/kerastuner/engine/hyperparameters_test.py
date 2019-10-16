@@ -301,7 +301,8 @@ def test_Int():
         'rg', min_value=5, max_value=9, step=1, default=6)
     rg = hp_module.Int.from_config(rg.get_config())
     assert rg.default == 6
-    assert 5 <= rg.random_sample() < 9
+    assert rg._values == [5, 6, 7, 8, 9]
+    assert 5 <= rg.random_sample() <= 9
     assert isinstance(rg.random_sample(), int)
     assert rg.random_sample(123) == rg.random_sample(123)
     # No default
