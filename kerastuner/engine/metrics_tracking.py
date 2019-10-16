@@ -177,6 +177,10 @@ class MetricsTracker(object):
             raise ValueError('Metric already exists: %s' % (name,))
         if direction is None:
             direction = infer_metric_direction(name)
+            if direction is None:
+                # Objective direction is handled separately, but
+                # non-objective direction defaults to min.
+                direction = 'min'
         self.metrics[name] = MetricHistory(direction)
 
     def update(self, name, value, step=0):
@@ -280,11 +284,14 @@ def infer_metric_direction(metric):
         try:
             metric = keras.metrics.get(metric_name)
         except ValueError:
-            # Default to minimization for unknown metric.
-            return 'min'
+            try:
+                metric = keras.losses.get(metric_name)
+            except:
+                # Direction can't be inferred.
+                return None
 
-    # Metric class or function.
-    if isinstance(metric, keras.metrics.Metric):
+    # Metric class, Loss class, or function.
+    if isinstance(metric, (keras.metrics.Metric, keras.losses.Loss)):
         name = metric.__class__.__name__
         if name == 'MeanMetricWrapper':
             name = metric._fn.__name__
@@ -293,4 +300,8 @@ def infer_metric_direction(metric):
 
     if name in _MAX_METRICS or name in _MAX_METRIC_FNS:
         return 'max'
-    return 'min'
+    elif hasattr(keras.metrics, name) or hasattr(keras.losses, name):
+        return 'min'
+
+    # Direction can't be inferred.
+    return None
