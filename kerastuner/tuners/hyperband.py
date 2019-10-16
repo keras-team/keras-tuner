@@ -61,7 +61,7 @@ class HyperbandOracle(oracle_module.Oracle):
           the direction of the optimization (min or max) will be
           inferred.
         max_epochs: Int. The maximum number of epochs to train one model. It is
-          recommended to set this to a value slightly higher than the expected time
+          recommended to set this to a value slightly higher than the expected epochs
           to convergence for your largest Model, and to use early stopping during
           training (for example, via `tf.keras.callbacks.EarlyStopping`).
         factor: Int. Reduction factor for the number of epochs
