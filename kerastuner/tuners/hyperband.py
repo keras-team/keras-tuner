@@ -11,29 +11,66 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import copy
+import math
 import random
 
 from ..engine import multi_execution_tuner
 from ..engine import oracle as oracle_module
-from ..engine import trial as trial_lib
 
 
 class HyperbandOracle(oracle_module.Oracle):
     """Oracle class for Hyperband.
 
+    Note that to use this Oracle with your own subclassed Tuner, your Tuner
+    class must be able to handle in `Tuner.run_trial` three special hyperparameters
+    that will be set by this Tuner:
+
+      - "tuner/trial_id": String, optionally set. The trial_id of the Trial to load
+          from when starting this trial.
+      - "tuner/initial_epoch": Int, always set. The initial epoch the Trial should be
+          started from.
+      - "tuner/epochs": Int, always set. The cumulative number of epochs this Trial
+          should be trained.
+
+    These hyperparameters will be set during the "successive halving" portion
+    of the Hyperband algorithm.
+
+    Example `run_trial`:
+
+    ```
+    def run_trial(self, trial, *args, **kwargs):
+        hp = trial.hyperparameters
+        if "tuner/trial_id" in hp:
+            past_trial = self.oracle.get_trial(hp['tuner/trial_id'])
+            model = self.load_model(past_trial)
+        else:
+            model = self.hypermodel.build(hp)
+
+        initial_epoch = hp['tuner/initial_epoch']
+        last_epoch = hp['tuner/epochs']
+
+        for epoch in range(initial_epoch, last_epoch):
+            self.on_epoch_begin(...)
+            for step in range(...):
+                # Run model training step here.
+            self.on_epoch_end(...)
+    ```
+
     Attributes:
         objective: String or `kerastuner.Objective`. If a string,
           the direction of the optimization (min or max) will be
           inferred.
-        max_trials: Int. Total number of trials
-            (model configurations) to test at most.
-            Note that the oracle may interrupt the search
-            before `max_trial` models have been tested.
+        max_epochs: Int. The maximum number of epochs to train one model. It is
+          recommended to set this to a value slightly higher than the expected epochs
+          to convergence for your largest Model, and to use early stopping during
+          training (for example, via `tf.keras.callbacks.EarlyStopping`).
         factor: Int. Reduction factor for the number of epochs
             and number of models for each bracket.
-        min_epochs: Int. The minimum number of epochs to train a model.
-        max_epochs: Int. The maximum number of epochs to train a model.
+        hyperband_iterations: Int >= 1. The number of times to iterate over the full
+          Hyperband algorithm. One iteration will run approximately
+          `max_epochs * (math.log(max_epochs, factor) ** 2)` cumulative epochs
+          across all trials. It is recommended to set this to as high a value
+          as is within your resource budget.
         seed: Int. Random seed.
         hyperparameters: HyperParameters class instance.
             Can be used to override (or register in advance)
@@ -51,120 +88,168 @@ class HyperbandOracle(oracle_module.Oracle):
 
     def __init__(self,
                  objective,
-                 max_trials,
+                 max_epochs,
                  factor=3,
-                 min_epochs=3,
-                 max_epochs=10,
+                 hyperband_iterations=1,
                  seed=None,
                  hyperparameters=None,
                  allow_new_entries=True,
                  tune_new_entries=True):
         super(HyperbandOracle, self).__init__(
             objective=objective,
-            max_trials=max_trials,
             hyperparameters=hyperparameters,
             allow_new_entries=allow_new_entries,
             tune_new_entries=tune_new_entries)
-        if min_epochs >= max_epochs:
-            raise ValueError('max_epochs needs to be larger than min_epochs.')
         if factor < 2:
             raise ValueError('factor needs to be a int larger than 1.')
-        self.seed = seed or random.randint(1, 1e4)
-        self.factor = factor
-        self.min_epochs = min_epochs
+
+        self.hyperband_iterations = hyperband_iterations or float('inf')
         self.max_epochs = max_epochs
-        self._queue = []
-        self._trial_count = 0
-        self._running = {}
-        self._trial_id_to_candidate_index = {}
-        self._candidates = None
-        self._candidate_score = None
+        # Minimum epochs before successive halving, Hyperband sweeps through varying
+        # degress of aggressiveness.
+        self.min_epochs = 1
+        self.factor = factor
+
+        self.seed = seed or random.randint(1, 1e4)
         self._max_collisions = 20
         self._seed_state = self.seed
         self._tried_so_far = set()
-        self._index_to_id = {}
-        self._num_brackets = self._get_num_brackets()
-        self._bracket_index = self._num_brackets
-        self._model_sequence = self._get_model_sequence()
-        self._epoch_sequence = self._get_epoch_sequence()
 
-    def end_trial(self, trial_id, status):
-        super(HyperbandOracle, self).end_trial(trial_id, status)
-        self._running[trial_id] = False
-        score = self.trials[trial_id].score
-        self._candidate_score[
-            self._trial_id_to_candidate_index[trial_id]] = score
-        self.save()
+        self._current_iteration = 0
+        # Start with most aggressively halving bracket.
+        self._current_bracket = self._get_num_brackets() - 1
+        self._brackets = []
+
+        self._start_new_bracket()
 
     def _populate_space(self, trial_id):
-        space = self.hyperparameters.space
-        # Queue is not empty means it is in one bracket.
-        if self._queue:
-            return self._run_values(space, trial_id)
+        self._remove_completed_brackets()
 
-        # Wait the current bracket to finish.
-        if any([value for key, value in self._running.items()]):
-            return {'status': trial_lib.TrialStatus.IDLE}
+        for bracket in self._brackets:
+            bracket_num = bracket['bracket_num']
+            rounds = bracket['rounds']
 
-        # Start the next bracket if not end of bandit.
-        if self._bracket_index + 1 < self._num_brackets:
-            self._bracket_index += 1
-            self._select_candidates()
-        # If the current band ends.
+            if len(rounds[0]) < self._get_size(bracket_num, round_num=0):
+                # Populate the initial random trials for this bracket.
+                return self._random_trial(trial_id, bracket)
+            else:
+                # Try to populate incomplete rounds for this bracket.
+                for round_num in range(1, len(rounds)):
+                    round_info = rounds[round_num]
+                    past_round_info = rounds[round_num - 1]
+                    size = self._get_size(bracket_num, round_num)
+                    past_size = self._get_size(bracket_num, round_num - 1)
+
+                    # If more trials from the last round are ready than will be
+                    # thrown out, we can select the best to run for the next round.
+                    already_selected = [info['past_id'] for info in round_info]
+                    candidates = [self.trials[info['id']]
+                                  for info in past_round_info
+                                  if info['id'] not in already_selected]
+                    candidates = [t for t in candidates if t.status == 'COMPLETED']
+                    if len(candidates) > past_size - size:
+                        sorted_candidates = sorted(
+                            candidates,
+                            key=lambda t: t.score,
+                            reverse=self.objective.direction == 'max')
+                        best_trial = sorted_candidates[0]
+
+                        values = best_trial.hyperparameters.values.copy()
+                        values['tuner/trial_id'] = best_trial.trial_id
+                        values['tuner/epochs'] = self._get_epochs(
+                            bracket_num, round_num)
+                        values['tuner/initial_epoch'] = self._get_epochs(
+                            bracket_num, round_num - 1)
+                        values['tuner/bracket'] = self._current_bracket
+                        values['tuner/round'] = round_num
+
+                        round_info.append({'past_id': best_trial.trial_id,
+                                           'id': trial_id})
+                        return {'status': 'RUNNING', 'values': values}
+
+        # This is reached if no trials from current brackets can be run.
+
+        # Max sweeps has been reached, no more brackets should be created.
+        if (self._current_bracket == 0 and
+                self._current_iteration + 1 == self.hyperband_iterations):
+            # Stop creating new brackets, but wait to complete other brackets.
+            if self.ongoing_trials:
+                return {'status': 'IDLE'}
+            else:
+                self._increment_bracket_num()
+                return {'status': 'STOPPED'}
+        # Create a new bracket.
         else:
-            self._bracket_index = 0
-            self._generate_candidates()
-            self._index_to_id = {}
+            self._increment_bracket_num()
+            self._start_new_bracket()
+            return self._random_trial(trial_id, self._brackets[-1])
 
-        return self._run_values(space, trial_id)
+    def _start_new_bracket(self):
+        rounds = []
+        for _ in range(self._get_num_rounds(self._current_bracket)):
+            rounds.append([])
+        bracket = {'bracket_num': self._current_bracket, 'rounds': rounds}
+        self._brackets.append(bracket)
 
-    def _run_values(self, space, trial_id):
-        self._trial_count += 1
-        self._running[trial_id] = True
-        candidate_index = self._queue.pop(0)
-        if candidate_index not in self._index_to_id:
-            self._index_to_id[candidate_index] = trial_id
-        candidate = self._candidates[candidate_index]
-        self._trial_id_to_candidate_index[trial_id] = candidate_index
-        if candidate is not None:
-            values = self._copy_values(space, candidate)
-            if trial_id != self._index_to_id[candidate_index]:
-                values['tuner/trial_id'] = self._index_to_id[candidate_index]
-            values['tuner/epochs'] = self._epoch_sequence[self._bracket_index]
-            return {'status': trial_lib.TrialStatus.RUNNING,
-                    'values': values}
-        return {'status': trial_lib.TrialStatus.STOPPED}
+    def _increment_bracket_num(self):
+        self._current_bracket -= 1
+        if self._current_bracket < 0:
+            self._current_bracket = self._get_num_brackets() - 1
+            self._current_iteration += 1
 
-    @staticmethod
-    def _copy_values(space, values):
-        return_values = values.copy()
-        for hyperparameter in space:
-            if hyperparameter.name not in values:
-                return_values[hyperparameter.name] = hyperparameter.default
-        return return_values
+    def _remove_completed_brackets(self):
+        # Filter out completed brackets.
+        def _bracket_is_incomplete(bracket):
+            bracket_num = bracket['bracket_num']
+            rounds = bracket['rounds']
+            last_round = len(rounds) - 1
+            if len(rounds[last_round]) == self._get_size(bracket_num, last_round):
+                # All trials have been created for the current bracket.
+                return False
+            return True
+        self._brackets = list(filter(_bracket_is_incomplete, self._brackets))
 
-    def _generate_candidates(self):
-        self._candidates = []
-        self._candidate_score = []
-        num_models = self._model_sequence[0]
+    def _random_trial(self, trial_id, bracket):
+        bracket_num = bracket['bracket_num']
+        rounds = bracket['rounds']
+        values = self._random_values()
+        if values:
+            values['tuner/epochs'] = self._get_epochs(bracket_num, 0)
+            values['tuner/initial_epoch'] = 0
+            values['tuner/bracket'] = self._current_bracket
+            values['tuner/round'] = 0
+            rounds[0].append({'past_id': None, 'id': trial_id})
+            return {'status': 'RUNNING', 'values': values}
+        elif self.ongoing_trials:
+            # Can't create new random values, but successive halvings may still
+            # be needed.
+            return {'status': 'IDLE'}
+        else:
+            # Collision and no ongoing trials should trigger an exit.
+            return {'status': 'STOPPED'}
 
-        for index in range(num_models):
-            instance = self._new_trial()
-            if instance is not None:
-                self._candidates.append(instance)
-                self._candidate_score.append(None)
+    def _get_size(self, bracket_num, round_num):
+        # Set up so that each bracket takes approx. the same amount of resources.
+        bracket0_end_size = math.ceil(1 + math.log(self.max_epochs, self.factor))
+        bracket_end_size = bracket0_end_size / (bracket_num + 1)
+        return math.ceil(bracket_end_size * self.factor**(bracket_num - round_num))
 
-        for index, instance in enumerate(self._candidates):
-            self._queue.append(index)
+    def _get_epochs(self, bracket_num, round_num):
+        return math.ceil(self.max_epochs / self.factor**(bracket_num - round_num))
 
-    def _select_candidates(self):
-        sorted_candidates = sorted(list(range(len(self._candidates))),
-                                   key=lambda i: self._candidate_score[i])
-        num_selected_candidates = self._model_sequence[self._bracket_index]
-        for index in sorted_candidates[:num_selected_candidates]:
-            self._queue.append(index)
+    def _get_num_rounds(self, bracket_num):
+        # Bracket 0 just runs random search, others do successive halving.
+        return bracket_num + 1
 
-    def _new_trial(self):
+    def _get_num_brackets(self):
+        epochs = self.max_epochs
+        brackets = 0
+        while epochs >= self.min_epochs:
+            epochs = epochs / self.factor
+            brackets += 1
+        return brackets
+
+    def _random_values(self):
         """Fill a given hyperparameter space with values.
 
         Returns:
@@ -192,91 +277,36 @@ class HyperbandOracle(oracle_module.Oracle):
             break
         return values
 
-    def _get_num_brackets(self):
-        """Compute the number of brackets based on the scaling factor"""
-        n = 1
-        v = self.min_epochs
-        while v < self.max_epochs:
-            v *= self.factor
-            n += 1
-        return n
-
-    def _get_model_sequence(self):
-        sizes = []
-        size = self.min_epochs
-        for _ in range(self._num_brackets - 1):
-            sizes.append(int(size))
-            size *= self.factor
-        sizes.append(self.max_epochs)
-        sizes.reverse()
-        return sizes
-
-    def _get_epoch_sequence(self):
-        """Compute the sequence of epochs per bracket."""
-        sizes = []
-        size = self.min_epochs
-        for _ in range(self._num_brackets - 1):
-            sizes.append(int(size))
-            size *= self.factor
-        sizes.append(self.max_epochs)
-
-        previous_size = 0
-        output_sizes = []
-        for size in sizes:
-            output_sizes.append(size - previous_size)
-            previous_size = size
-        return output_sizes
-
     def get_state(self):
         state = super(HyperbandOracle, self).get_state()
         state.update({
-            'seed': self.seed,
-            'factor': self.factor,
-            'min_epochs': self.min_epochs,
+            'hyperband_iterations': self.hyperband_iterations,
             'max_epochs': self.max_epochs,
-            'queue': copy.copy(self._queue),
-            'trial_count': self._trial_count,
-            'running': self._running,
-            'trial_id_to_candidate_index': self._trial_id_to_candidate_index,
-            'candidates': self._candidates,
-            'candidate_score': self._candidate_score,
+            'min_epochs': self.min_epochs,
+            'factor': self.factor,
+            'seed': self.seed,
             'max_collisions': self._max_collisions,
             'seed_state': self._seed_state,
             'tried_so_far': list(self._tried_so_far),
-            'index_to_id': self._index_to_id,
-            'num_brackets': self._num_brackets,
-            'bracket_index': self._bracket_index,
-            'model_sequence': self._model_sequence,
-            'epoch_sequence': self._epoch_sequence
+            'brackets': self._brackets,
+            'current_bracket': self._current_bracket,
+            'current_iteration': self._current_iteration
         })
         return state
 
     def set_state(self, state):
         super(HyperbandOracle, self).set_state(state)
-        self.seed = state['seed']
-        self.factor = state['factor']
-        self.min_epochs = state['min_epochs']
+        self.hyperband_iterations = state['hyperband_iterations']
         self.max_epochs = state['max_epochs']
-        self._queue = state['queue']
-        self._trial_count = state['trial_count']
-        self._running = state['running']
-        self._trial_id_to_candidate_index = state['trial_id_to_candidate_index']
-        self._candidates = state['candidates']
-        self._candidate_score = state['candidate_score']
+        self.min_epochs = state['min_epochs']
+        self.factor = state['factor']
+        self.seed = state['seed']
         self._max_collisions = state['max_collisions']
         self._seed_state = state['seed_state']
         self._tried_so_far = set(state['tried_so_far'])
-        self._index_to_id = state['index_to_id']
-        self._num_brackets = state['num_brackets']
-        self._bracket_index = state['bracket_index']
-        self._model_sequence = state['model_sequence']
-        self._epoch_sequence = state['epoch_sequence']
-
-        # Put the unfinished trials back into the queue to be trained again.
-        for trial_id, value in self._running.items():
-            if value:
-                self._queue.append(self._trial_id_to_candidate_index[trial_id])
-                self._running[trial_id] = False
+        self._brackets = state['brackets']
+        self._current_bracket = state['current_bracket']
+        self._current_iteration = state['current_iteration']
 
 
 class Hyperband(multi_execution_tuner.MultiExecutionTuner):
@@ -291,20 +321,22 @@ class Hyperband(multi_execution_tuner.MultiExecutionTuner):
 
 
     Attributes:
-        oracle: Instance of Oracle class.
         hypermodel: Instance of HyperModel class
             (or callable that takes hyperparameters
             and returns a Model instance).
         objective: String. Name of model metric to minimize
             or maximize, e.g. "val_accuracy".
-        max_trials: Int. Total number of trials
-            (model configurations) to test at most.
-            Note that the oracle may interrupt the search
-            before `max_trial` models have been tested.
+        max_epochs: Int. The maximum number of epochs to train one model. It is
+          recommended to set this to a value slightly higher than the expected time
+          to convergence for your largest Model, and to use early stopping during
+          training (for example, via `tf.keras.callbacks.EarlyStopping`).
         factor: Int. Reduction factor for the number of epochs
             and number of models for each bracket.
-        min_epochs: Int. Minimum number of epochs to train a model.
-        max_epochs: Int. Maximum number of epochs to train a model.
+        hyperband_iterations: Int >= 1. The number of times to iterate over the full
+          Hyperband algorithm. One iteration will run approximately
+          `max_epochs * (math.log(max_epochs, factor) ** 2)` cumulative epochs
+          across all trials. It is recommended to set this to as high a value
+          as is within your resource budget.
         seed: Int. Random seed.
         hyperparameters: HyperParameters class instance.
             Can be used to override (or register in advance)
@@ -325,10 +357,9 @@ class Hyperband(multi_execution_tuner.MultiExecutionTuner):
     def __init__(self,
                  hypermodel,
                  objective,
-                 max_trials,
+                 max_epochs,
                  factor=3,
-                 min_epochs=3,
-                 max_epochs=10,
+                 hyperband_iterations=1,
                  seed=None,
                  hyperparameters=None,
                  tune_new_entries=True,
@@ -336,11 +367,10 @@ class Hyperband(multi_execution_tuner.MultiExecutionTuner):
                  **kwargs):
         oracle = HyperbandOracle(
             objective,
-            max_trials,
-            seed=seed,
-            factor=factor,
-            min_epochs=min_epochs,
             max_epochs=max_epochs,
+            factor=factor,
+            hyperband_iterations=hyperband_iterations,
+            seed=seed,
             hyperparameters=hyperparameters,
             tune_new_entries=tune_new_entries,
             allow_new_entries=allow_new_entries)
@@ -353,6 +383,7 @@ class Hyperband(multi_execution_tuner.MultiExecutionTuner):
         hp = trial.hyperparameters
         if 'tuner/epochs' in hp.values:
             fit_kwargs['epochs'] = hp.values['tuner/epochs']
+            fit_kwargs['initial_epoch'] = hp.values['tuner/initial_epoch']
         super(Hyperband, self).run_trial(trial, *fit_args, **fit_kwargs)
 
     def _build_model(self, hp):
@@ -362,10 +393,5 @@ class Hyperband(multi_execution_tuner.MultiExecutionTuner):
             history_trial = self.oracle.get_trial(trial_id)
             # Load best checkpoint from this trial.
             model.load_weights(self._get_checkpoint_fname(
-                history_trial, history_trial.best_step))
+                history_trial.trial_id, history_trial.best_step))
         return model
-
-    def _get_trial(self, trial_id):
-        for temp_trial in self.trials:
-            if temp_trial.trial_id == trial_id:
-                return temp_trial

@@ -142,7 +142,7 @@ class Oracle(stateful.Stateful):
 
         trial_id = trial_lib.generate_trial_id()
 
-        if len(self.trials) >= self.max_trials:
+        if self.max_trials and len(self.trials) >= self.max_trials:
             status = trial_lib.TrialStatus.STOPPED
             values = None
         else:

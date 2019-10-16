@@ -12,15 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest import mock
-
+import logging
 import numpy as np
 import pytest
 import tensorflow as tf
 
-from kerastuner.engine import hyperparameters
-from kerastuner.engine import trial as trial_module
-from kerastuner.engine import hyperparameters as hp_module
+import kerastuner as kt
 from kerastuner.tuners import hyperband as hyperband_module
 
 
@@ -29,298 +26,191 @@ def tmp_dir(tmpdir_factory):
     return tmpdir_factory.mktemp('hyperband_test', numbered=True)
 
 
-def test_hyperband_oracle(tmp_dir):
-    hps = hp_module.HyperParameters()
-
-    hps.Choice('a', [1, 2], default=1)
-    hps.Choice('b', [3, 4], default=3)
-    hps.Choice('c', [5, 6], default=5)
-    hps.Choice('d', [7, 8], default=7)
-    hps.Choice('e', [9, 0], default=9)
-    oracle = hyperband_module.HyperbandOracle(
-        objective='score', max_trials=100, hyperparameters=hps)
-    oracle._set_project_dir(tmp_dir, 'untitled')
-    assert oracle._num_brackets == 3
-    assert len(oracle.trials) == 0
-
-    for bracket in range(oracle._num_brackets):
-        trials = []
-        for i in range(oracle._model_sequence[bracket]):
-            trial = oracle.create_trial(i)
-            trials.append(trial)
-            hp = trial.hyperparameters
-            assert trial.status == 'RUNNING', i
-            assert (hp.values['tuner/epochs'] ==
-                    oracle._epoch_sequence[bracket])
-            if bracket > 0:
-                assert 'tuner/trial_id' in hp.values
-            else:
-                assert 'tuner/trial_id' not in hp.values
-
-        # Asking for more trials when bracket is not yet complete.
-        trial = oracle.create_trial('idle0')
-        assert trial.status == 'IDLE'
-
-        for trial in trials:
-            oracle.update_trial(trial.trial_id, {'score': 1.})
-            oracle.end_trial(trial.trial_id, 'COMPLETED')
-
-
-def test_hyperband_dynamic_space(tmp_dir):
-    hps = hp_module.HyperParameters()
-    hps.Choice('a', [1, 2], default=1)
-    oracle = hyperband_module.HyperbandOracle(
-        objective='score', max_trials=50, hyperparameters=hps)
-    oracle._set_project_dir(tmp_dir, 'untitled')
-    hps.Choice('b', [3, 4], default=3)
-    values = oracle._populate_space('0')['values']
-    assert 'b' in values
-    new_hps = hp_module.HyperParameters()
-    new_hps.Choice('c', [5, 6], default=5)
-    oracle.update_space(new_hps)
-    assert 'c' in oracle._populate_space('1')['values']
-    new_hps.Choice('d', [7, 8], default=7)
-    oracle.update_space(new_hps)
-    assert 'd' in oracle._populate_space('2')['values']
-    new_hps.Choice('e', [9, 0], default=9)
-    oracle.update_space(new_hps)
-    assert 'e' in oracle._populate_space('3')['values']
-
-
-def test_hyperband_save_load_middle_of_bracket(tmp_dir):
-    hps = hp_module.HyperParameters()
-    hps.Choice('a', [1, 2], default=1)
-    hps.Choice('b', [3, 4], default=3)
-    hps.Choice('c', [5, 6], default=5)
-    hps.Choice('d', [7, 8], default=7)
-    hps.Choice('e', [9, 0], default=9)
-    oracle = hyperband_module.HyperbandOracle(
-        objective='score', max_trials=50, hyperparameters=hps)
-    oracle._set_project_dir(tmp_dir, 'untitled')
-
-    trials = []
-    for i in range(3):
-        trial = oracle.create_trial(i)
-        trials.append(trial)
-
-    for i in range(2):
-        trial = trials[i]
-        oracle.update_trial(trial.trial_id, {'score': 1.})
-        oracle.end_trial(trial.trial_id, "COMPLETED")
-
-    oracle.save()
-    oracle = hyperband_module.HyperbandOracle(
-        objective='score', max_trials=50, hyperparameters=hps)
-    oracle._set_project_dir(tmp_dir, 'untitled')
-    oracle.reload()
-
-    trials = []
-    for i in range(oracle._model_sequence[0] - 2):
-        trial = oracle.create_trial(i + 2)
-        trials.append(trial)
-        assert trial.status == 'RUNNING'
-
-    # Asking for more trials when bracket is not yet complete.
-    trial = oracle.create_trial('idle0')
-    assert trial.status == 'IDLE'
-
-    for trial in trials:
-        oracle.update_trial(trial.trial_id, {'score': 1.})
-        oracle.end_trial(trial.trial_id, 'COMPLETED')
-
-
-def test_hyperband_save_load_at_begining(tmp_dir):
-    hps = hp_module.HyperParameters()
-    hps.Choice('a', [1, 2], default=1)
-    hps.Choice('b', [3, 4], default=3)
-    hps.Choice('c', [5, 6], default=5)
-    hps.Choice('d', [7, 8], default=7)
-    hps.Choice('e', [9, 0], default=9)
-    oracle = hyperband_module.HyperbandOracle(
-        objective='score', max_trials=50, hyperparameters=hps)
-    oracle._set_project_dir(tmp_dir, 'untitled')
-
-    oracle.save()
-    oracle = hyperband_module.HyperbandOracle(
-        objective='score', max_trials=50, hyperparameters=hps)
-    oracle._set_project_dir(tmp_dir, 'untitled')
-    oracle.reload()
-
-    trials = []
-    for i in range(oracle._model_sequence[0]):
-        trial = oracle.create_trial(i)
-        trials.append(trial)
-        assert trial.status == 'RUNNING'
-        oracle.update_trial(trial.trial_id, {'score': 1})
-
-    trial = oracle.create_trial('idle0')
-    assert trial.status == 'IDLE'
-
-    for trial in trials:
-        oracle.end_trial(trial.trial_id, 'COMPLETED')
-
-
-def test_hyperband_save_load_at_the_end_of_bracket(tmp_dir):
-    hps = hp_module.HyperParameters()
-    hps.Choice('a', [1, 2], default=1)
-    hps.Choice('b', [3, 4], default=3)
-    hps.Choice('c', [5, 6], default=5)
-    hps.Choice('d', [7, 8], default=7)
-    hps.Choice('e', [9, 0], default=9)
-    oracle = hyperband_module.HyperbandOracle(
-        objective='score', max_trials=50, hyperparameters=hps)
-    oracle._set_project_dir(tmp_dir, 'untitled3')
-
-    trials = []
-    for i in range(oracle._model_sequence[0]):
-        trial = oracle.create_trial(i)
-        trials.append(trial)
-        assert trial.status == 'RUNNING'
-        oracle.update_trial(trial.trial_id, {'score': 1})
-
-    trial = oracle.create_trial('idle0')
-    assert trial.status == 'IDLE'
-
-    for trial in trials:
-        oracle.end_trial(trial.trial_id, 'COMPLETED')
-
-    oracle.save()
-    oracle = hyperband_module.HyperbandOracle(
-        objective='score', max_trials=50, hyperparameters=hps)
-    oracle._set_project_dir(tmp_dir, 'untitled3')
-    oracle.reload()
-
-    trials = []
-    for i in range(oracle._model_sequence[1]):
-        trial = oracle.create_trial(i)
-        trials.append(trial)
-        assert trial.status == 'RUNNING'
-        oracle.update_trial(trial.trial_id, {'score': 1})
-
-    trial = oracle.create_trial('idle1')
-    assert trial.status == 'IDLE'
-
-    for trial in trials:
-        oracle.end_trial(trial.trial_id, 'COMPLETED')
-
-
-def test_hyperband_save_load_at_the_end_of_bandit(tmp_dir):
-    hps = hp_module.HyperParameters()
-    hps.Choice('a', [1, 2], default=1)
-    hps.Choice('b', [3, 4], default=3)
-    hps.Choice('c', [5, 6], default=5)
-    hps.Choice('d', [7, 8], default=7)
-    hps.Choice('e', [9, 0], default=9)
-    oracle = hyperband_module.HyperbandOracle(
-        objective='score', max_trials=50, hyperparameters=hps)
-    oracle._set_project_dir(tmp_dir, 'untitled')
-
-    for bracket in range(oracle._num_brackets):
-        trials = []
-        for i in range(oracle._model_sequence[bracket]):
-            trial = oracle.create_trial(i)
-            trials.append(trial)
-            hp = trial.hyperparameters
-            assert trial.status == 'RUNNING'
-            assert (hp.values['tuner/epochs'] ==
-                    oracle._epoch_sequence[bracket])
-            if bracket > 0:
-                assert 'tuner/trial_id' in hp.values
-            else:
-                assert 'tuner/trial_id' not in hp.values
-
-        # Asking for more trials when bracket is not yet complete.
-        trial = oracle.create_trial('idle0')
-        assert trial.status == 'IDLE'
-
-        for trial in trials:
-            oracle.update_trial(trial.trial_id, {'score': 1.})
-            oracle.end_trial(trial.trial_id, 'COMPLETED')
-
-    oracle.save()
-    oracle = hyperband_module.HyperbandOracle(
-        objective='score', max_trials=50, hyperparameters=hps)
-    oracle._set_project_dir(tmp_dir, 'untitled')
-    oracle.reload()
-
-    trials = []
-    for i in range(oracle._model_sequence[0]):
-        trial = oracle.create_trial(i)
-        trials.append(trial)
-        hp = trial.hyperparameters
-        assert trial.status == 'RUNNING'
-        assert (hp.values['tuner/epochs'] ==
-                oracle._epoch_sequence[0])
-        assert 'tuner/trial_id' not in hp.values
-
-    # Asking for more trials when bracket is not yet complete.
-    trial = oracle.create_trial('idle0')
-    assert trial.status == 'IDLE'
-
-    for trial in trials:
-        oracle.update_trial(trial.trial_id, {'score': 1.})
-        oracle.end_trial(trial.trial_id, 'COMPLETED')
-
-
 def build_model(hp):
     model = tf.keras.Sequential()
-    model.add(tf.keras.layers.Flatten(input_shape=(2, 2)))
-    for i in range(3):
-        model.add(tf.keras.layers.Dense(units=hp.Int('units_' + str(i),
-                                                     2, 4, 2),
-                                        activation='relu'))
-    model.add(tf.keras.layers.Dense(2, activation='softmax'))
-    model.compile(
-        optimizer=tf.keras.optimizers.Adam(
-            hp.Choice('learning_rate', [1e-2, 1e-3, 1e-4])),
-        loss='sparse_categorical_crossentropy',
-        metrics=['accuracy'])
+    for i in range(hp.Int('layers', 1, 3)):
+        model.add(tf.keras.layers.Dense(
+            hp.Int('units' + str(i), 1, 5),
+            activation='relu'))
+        model.add(tf.keras.layers.Lambda(
+            lambda x: x + hp.Float('bias' + str(i), -1, 1)))
+    model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
+    model.compile('sgd', 'mse')
     return model
 
 
-def mock_fit(**kwargs):
-    assert kwargs['epochs'] == 10
-    history = tf.keras.callbacks.History()
-    history.history = {'val_accuracy': 0.5}
-    return history
+def test_hyperband_oracle_bracket_configs(tmp_dir):
+    oracle = hyperband_module.HyperbandOracle(
+        objective='score',
+        hyperband_iterations=1,
+        max_epochs=8,
+        factor=2)
+    oracle._set_project_dir(tmp_dir, 'untitled')
+
+    # 8, 4, 2, 1 starting epochs.
+    assert oracle._get_num_brackets() == 4
+
+    assert oracle._get_num_rounds(bracket_num=3) == 4
+    assert oracle._get_size(bracket_num=3, round_num=0) == 8
+    assert oracle._get_epochs(bracket_num=3, round_num=0) == 1
+    assert oracle._get_size(bracket_num=3, round_num=3) == 1
+    assert oracle._get_epochs(bracket_num=3, round_num=3) == 8
+
+    assert oracle._get_num_rounds(bracket_num=0) == 1
+    assert oracle._get_size(bracket_num=0, round_num=0) == 4
+    assert oracle._get_epochs(bracket_num=0, round_num=0) == 8
 
 
-def mock_load(best_checkpoint):
-    assert 'epoch_0' in best_checkpoint
+def test_hyperband_oracle_one_sweep_single_thread(tmp_dir):
+    hp = kt.HyperParameters()
+    hp.Float('a', -100, 100)
+    hp.Float('b', -100, 100)
+    oracle = hyperband_module.HyperbandOracle(
+        hyperparameters=hp,
+        objective=kt.Objective('score', 'max'),
+        hyperband_iterations=1,
+        max_epochs=9,
+        factor=3)
+    oracle._set_project_dir(tmp_dir, 'untitled')
+
+    score = 0
+    for bracket_num in reversed(range(oracle._get_num_brackets())):
+        for round_num in range(oracle._get_num_rounds(bracket_num)):
+            for model_num in range(oracle._get_size(bracket_num, round_num)):
+                trial = oracle.create_trial('tuner0')
+                assert trial.status == 'RUNNING'
+                score += 1
+                oracle.update_trial(
+                    trial.trial_id,
+                    {'score': score})
+                oracle.end_trial(
+                    trial.trial_id,
+                    status='COMPLETED')
+            assert len(oracle._brackets[0]['rounds'][round_num]) == oracle._get_size(
+                bracket_num, round_num)
+        assert len(oracle._brackets) == 1
+
+    # Iteration should now be complete.
+    trial = oracle.create_trial('tuner0')
+    assert trial.status == 'STOPPED', oracle.hyperband_iterations
+    assert len(oracle.ongoing_trials) == 0
+
+    # Brackets should all be finished and removed.
+    assert len(oracle._brackets) == 0
+
+    best_trial = oracle.get_best_trials()[0]
+    assert best_trial.score == score
 
 
-@mock.patch('tensorflow.keras.Model.fit', side_effect=mock_fit)
-@mock.patch('tensorflow.keras.Model.load_weights', side_effect=mock_load)
-def test_hyperband_tuner(patch_fit, patch_load, tmp_dir):
-    x = np.random.rand(10, 2, 2).astype('float32')
-    y = np.random.randint(0, 1, (10,))
-    val_x = np.random.rand(10, 2, 2).astype('float32')
-    val_y = np.random.randint(0, 1, (10,))
+def test_hyperband_oracle_one_sweep_parallel(tmp_dir):
+    hp = kt.HyperParameters()
+    hp.Float('a', -100, 100)
+    hp.Float('b', -100, 100)
+    oracle = hyperband_module.HyperbandOracle(
+        hyperparameters=hp,
+        objective='score',
+        hyperband_iterations=1,
+        max_epochs=4,
+        factor=2)
+    oracle._set_project_dir(tmp_dir, 'untitled')
 
+    # All round 0 trials from different brackets can be run
+    # in parallel.
+    round0_trials = []
+    for i in range(10):
+        t = oracle.create_trial('tuner' + str(i))
+        assert t.status == 'RUNNING'
+        round0_trials.append(t)
+
+    assert len(oracle._brackets) == 3
+
+    # Round 1 can't be run until enough models from round 0
+    # have completed.
+    t = oracle.create_trial('tuner10')
+    assert t.status == 'IDLE'
+
+    for t in round0_trials:
+        oracle.update_trial(t.trial_id, {'score': 1})
+        oracle.end_trial(t.trial_id, 'COMPLETED')
+
+    round1_trials = []
+    for i in range(4):
+        t = oracle.create_trial('tuner' + str(i))
+        assert t.status == 'RUNNING'
+        round1_trials.append(t)
+
+    # Bracket 0 is complete as it only has round 0.
+    assert len(oracle._brackets) == 2
+
+    # Round 2 can't be run until enough models from round 1
+    # have completed.
+    t = oracle.create_trial('tuner10')
+    assert t.status == 'IDLE'
+
+    for t in round1_trials:
+        oracle.update_trial(t.trial_id, {'score': 1})
+        oracle.end_trial(t.trial_id, 'COMPLETED')
+
+    # Only one trial runs in round 2.
+    round2_trial = oracle.create_trial('tuner0')
+
+    assert len(oracle._brackets) == 1
+
+    # No more trials to run, but wait for existing brackets to end.
+    t = oracle.create_trial('tuner10')
+    assert t.status == 'IDLE'
+
+    oracle.update_trial(round2_trial.trial_id, {'score': 1})
+    oracle.end_trial(round2_trial.trial_id, 'COMPLETED')
+
+    t = oracle.create_trial('tuner10')
+    assert t.status == 'STOPPED', oracle._current_sweep
+
+
+def test_hyperband_integration(tmp_dir):
     tuner = hyperband_module.Hyperband(
-        build_model,
-        objective='val_accuracy',
-        max_trials=15,
-        factor=2,
-        min_epochs=1,
-        max_epochs=2,
+        objective='val_loss',
+        hypermodel=build_model,
+        hyperband_iterations=2,
+        max_epochs=6,
+        factor=3,
         directory=tmp_dir)
 
-    hp = hyperparameters.HyperParameters()
-    history_trial = trial_module.Trial(hyperparameters=hp.copy())
-    history_trial.score = 1
-    history_trial.best_step = 0
-    hp.values['tuner/epochs'] = 10
-    hp.values['tuner/trial_id'] = history_trial.trial_id
-    tuner.oracle.trials[history_trial.trial_id] = history_trial
+    x, y = np.ones((2, 5)), np.ones((2, 1))
+    tuner.search(x, y, validation_data=(x, y))
 
-    trial = trial_module.Trial(hyperparameters=hp)
-    tuner.oracle.trials[trial.trial_id] = trial
-    tuner.run_trial(
-        trial,
-        x=x,
-        y=y,
-        epochs=1,
-        validation_data=(val_x, val_y))
-    assert patch_fit.called
-    assert patch_load.called
+    # Make sure Oracle is registering new HPs.
+    updated_hps = tuner.oracle.get_space().values
+    assert 'units1' in updated_hps
+    assert 'bias1' in updated_hps
+
+    tf.get_logger().setLevel(logging.ERROR)
+
+    best_score = tuner.oracle.get_best_trials()[0].score
+    best_model = tuner.get_best_models()[0]
+    assert best_model.evaluate(x, y) == best_score
+
+
+def test_hyperband_save_and_restore(tmp_dir):
+    tuner = hyperband_module.Hyperband(
+        objective='val_loss',
+        hypermodel=build_model,
+        hyperband_iterations=1,
+        max_epochs=7,
+        factor=2,
+        directory=tmp_dir)
+
+    x, y = np.ones((2, 5)), np.ones((2, 1))
+    tuner.search(x, y, validation_data=(x, y))
+
+    num_trials = len(tuner.oracle.trials)
+    assert num_trials > 0
+    assert tuner.oracle._current_iteration == 1
+
+    tuner.save()
+    tuner.trials = {}
+    tuner.oracle._current_iteration = 0
+    tuner.reload()
+
+    assert len(tuner.oracle.trials) == num_trials
+    assert tuner.oracle._current_iteration == 1
