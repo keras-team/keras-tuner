@@ -13,20 +13,81 @@
 # limitations under the License.
 """Tuner for Scikit-learn Models."""
 import collections
-import math
 import numpy as np
 import os
 import pickle
-import random
 from sklearn import model_selection
 import tensorflow as tf
 
 from ..engine import base_tuner
 
+
 class Sklearn(base_tuner.BaseTuner):
     """Tuner for Scikit-learn Models.
 
-    Performs cross-validated hyperparameter searching.
+    Performs cross-validated hyperparameter search for Scikit-learn
+    models.
+
+    Attributes:
+      oracle: An instance of the `kerastuner.Oracle` class. Note that for
+        this `Tuner`, the `objective` for the `Oracle` should always be set
+        to `Objective('score', direction='max')`. Also, `Oracle`s that exploit
+        Neural-Network-specific training (e.g. `Hyperband`) should not be
+        used with this `Tuner`.
+      hypermodel: Instance of `HyperModel` class (or callable that takes a
+        `Hyperparameters` object and returns a Model instance).
+      scoring: An sklearn `scoring` function. For more information, see
+        `sklearn.metrics.make_scorer`. If not provided, the Model's default
+        scoring will be used via `model.score`. Note that if you are searching
+        across different Model families, the default scoring for these Models
+        will often be different. In this case you should supply `scoring` here
+        in order to make sure your Models are being scored on the same metric.
+      metrics: Additional `sklearn.metrics` functions to monitor during search.
+        Note that these metrics do not affect the search process.
+      cross_validation: An `sklearn.model_selection` Splitter class. Used to
+        determine how samples are split up into groups for cross-validation.
+      **kwargs: Keyword arguments relevant to all `Tuner` subclasses. Please
+        see the docstring for `Tuner`.
+
+
+    Example:
+
+    ```
+    import kerastuner as kt
+    from sklearn import ensemble
+    from sklearn import linear_model
+    from sklearn import metrics
+    from sklearn import model_selection
+
+    def build_model(hp):
+      model_type = hp.Choice('model_type', ['random_forest', 'ridge'])
+      if model_type == 'random_forest':
+        model = ensemble.RandomForestClassifier(
+            n_estimators=hp.Int('n_estimators', 10, 50, step=10),
+            max_depth=hp.Int('max_depth', 3, 10))
+      else:
+        model = linear_model.RidgeClassifier(
+            alpha=hp.Float('alpha', 1e-3, 1, sampling='log'))
+      return model
+
+    tuner = sklearn_tuner.Sklearn(
+        oracle=kt.oracles.BayesianOptimization(
+            objective=kt.Objective('score', 'max'),
+            max_trials=10),
+        hypermodel=build_model,
+        scoring=metrics.make_scorer(metrics.accuracy_score),
+        cross_validation=model_selection.StratifiedKFold(5),
+        directory='.',
+        project_name='my_project')
+
+    X, y = datasets.load_iris(return_X_y=True)
+    X_train, X_test, y_train, y_test = model_selection.train_test_split(
+        X, y, test_size=0.2)
+
+    tuner.search(X_train, y_train)
+
+    best_model = tuner.get_best_models(num_models=1)[0]
+    ````
     """
     def __init__(self,
                  oracle,
@@ -75,14 +136,20 @@ class Sklearn(base_tuner.BaseTuner):
             sample_weight_test = (
                 sample_weight[test_indices] if sample_weight is not None else None)
 
-            scoring = model.score if self.scoring is None else self.scoring
-            metrics['score'].append(scoring(X_test,
-                                            y_test,
-                                            sample_weight=sample_weight_test))
-            for metric in self.metrics:
-                metrics[metric.__name__].append(metric(X_test,
-                                                       y_test,
-                                                       sample_weight=sample_weight_test))
+            if self.scoring is None:
+                score = model.score(
+                    X_test, y_test, sample_weight=sample_weight_test)
+            else:
+                score = self.scoring(
+                    model, X_test, y_test, sample_weight=sample_weight_test)
+            metrics['score'].append(score)
+
+            if self.metrics:
+                y_test_pred = model.predict(X_test)
+                for metric in self.metrics:
+                    result = metric(
+                        y_test, y_test_pred, sample_weight=sample_weight_test)
+                    metrics[metric.__name__].append(result)
 
         trial_metrics = {name: np.mean(values) for name, values in metrics.items()}
         self.oracle.update_trial(trial.trial_id, trial_metrics)
