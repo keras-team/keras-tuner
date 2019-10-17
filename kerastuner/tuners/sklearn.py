@@ -15,8 +15,10 @@
 import collections
 import math
 import numpy as np
+import os
+import pickle
 import random
-import sklearn
+from sklearn import model_selection
 import tensorflow as tf
 
 from ..engine import base_tuner
@@ -31,7 +33,7 @@ class Sklearn(base_tuner.BaseTuner):
                  hypermodel,
                  scoring=None,
                  metrics=None,
-                 cross_validation=sklearn.model_selection.KFold(5, shuffle=True),
+                 cross_validation=model_selection.KFold(5, shuffle=True),
                  **kwargs):
         super(Sklearn, self).__init__(
             oracle=oracle,

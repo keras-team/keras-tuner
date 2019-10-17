@@ -261,4 +261,4 @@ class BaseTuner(stateful.Stateful):
     def _get_tuner_fname(self):
         return os.path.join(
             self.project_dir,
-            'tuner_' + str(self.tuner_id) + '.json')
+            str(self.tuner_id) + '.json')
