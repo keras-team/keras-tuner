@@ -17,6 +17,7 @@ import random
 import numpy as np
 
 from kerastuner.engine import metrics_tracking
+from tensorflow.keras import losses
 from tensorflow.keras import metrics
 
 
@@ -30,7 +31,6 @@ def test_register_from_metrics():
                                            'mean_squared_error'}
     assert tracker.metrics['categorical_accuracy'].direction == 'max'
     assert tracker.metrics['mean_squared_error'].direction == 'min'
-    # TODO: better coverage for direction inference.
 
 
 def test_register():
@@ -207,3 +207,54 @@ def test_metricstracker_proto():
     assert new_tracker.metrics['score'].get_history() == [
         metrics_tracking.MetricObservation([10, 20], 1),
         metrics_tracking.MetricObservation(30, 2)]
+
+
+def test_metric_direction_inference():
+    # Test min metrics.
+    assert metrics_tracking.infer_metric_direction('MAE') == 'min'
+    assert metrics_tracking.infer_metric_direction(
+        metrics.binary_crossentropy) == 'min'
+    assert metrics_tracking.infer_metric_direction(
+        metrics.FalsePositives()) == 'min'
+
+    # All losses in keras.losses are considered as 'min'.
+    assert metrics_tracking.infer_metric_direction(
+        'squared_hinge') == 'min'
+    assert metrics_tracking.infer_metric_direction(
+        losses.hinge) == 'min'
+    assert metrics_tracking.infer_metric_direction(
+        losses.CategoricalCrossentropy()) == 'min'
+
+    # Test max metrics.
+    assert metrics_tracking.infer_metric_direction(
+        'binary_accuracy') == 'max'
+    assert metrics_tracking.infer_metric_direction(
+        metrics.categorical_accuracy) == 'max'
+    assert metrics_tracking.infer_metric_direction(
+        metrics.Precision()) == 'max'
+
+    # Test unknown metrics.
+    assert metrics_tracking.infer_metric_direction('my_metric') is None
+
+    def my_metric_fn(x, y):
+        return x
+    assert metrics_tracking.infer_metric_direction(my_metric_fn) is None
+
+    class MyMetric(metrics.Metric):
+        def update_state(self, x, y):
+            return 1
+
+        def result(self):
+            return 1
+    assert metrics_tracking.infer_metric_direction(MyMetric()) is None
+
+    # Test special cases.
+    assert metrics_tracking.infer_metric_direction('loss') == 'min'
+    assert metrics_tracking.infer_metric_direction('acc') == 'max'
+    assert metrics_tracking.infer_metric_direction('val_acc') == 'max'
+    assert metrics_tracking.infer_metric_direction('crossentropy') == 'min'
+    assert metrics_tracking.infer_metric_direction('ce') == 'min'
+    assert metrics_tracking.infer_metric_direction('weighted_acc') == 'max'
+    assert metrics_tracking.infer_metric_direction('val_weighted_ce') == 'min'
+    assert metrics_tracking.infer_metric_direction(
+        'weighted_binary_accuracy') == 'max'

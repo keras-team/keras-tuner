@@ -35,7 +35,7 @@ def test_get_space(tmp_dir):
         hps = kt.HyperParameters()
         hps.Int('a', 0, 10, default=3)
         oracle = randomsearch.RandomSearchOracle(
-            objective='score',
+            objective=kt.Objective('score', 'max'),
             max_trials=10,
             hyperparameters=hps)
         oracle._set_project_dir(tmp_dir, 'untitled')
@@ -55,7 +55,7 @@ def test_update_space(tmp_dir):
 
     def _test_update_space():
         oracle = randomsearch.RandomSearchOracle(
-            objective='score',
+            objective=kt.Objective('score', 'max'),
             max_trials=10)
         oracle._set_project_dir(tmp_dir, 'untitled')
         tuner_id = os.environ['KERASTUNER_TUNER_ID']
@@ -84,7 +84,7 @@ def test_create_trial(tmp_dir):
         hps.Int('a', 0, 10, default=5)
         hps.Choice('b', [1, 2, 3])
         oracle = randomsearch.RandomSearchOracle(
-            objective='score',
+            objective=kt.Objective('score', 'max'),
             max_trials=10,
             hyperparameters=hps)
         oracle._set_project_dir(tmp_dir, 'untitled')
@@ -109,7 +109,7 @@ def test_update_trial(tmp_dir):
         hps = kt.HyperParameters()
         hps.Int('a', 0, 10, default=5)
         oracle = randomsearch.RandomSearchOracle(
-            objective='score',
+            objective=kt.Objective('score', 'max'),
             max_trials=10,
             hyperparameters=hps)
         oracle._set_project_dir(tmp_dir, 'untitled')
@@ -135,7 +135,7 @@ def test_end_trial(tmp_dir):
         hps = kt.HyperParameters()
         hps.Int('a', 0, 10, default=5)
         oracle = randomsearch.RandomSearchOracle(
-            objective='score',
+            objective=kt.Objective('score', 'max'),
             max_trials=10,
             hyperparameters=hps)
         oracle._set_project_dir(tmp_dir, 'untitled')

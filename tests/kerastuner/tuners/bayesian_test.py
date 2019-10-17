@@ -36,7 +36,9 @@ def test_bayesian_oracle(tmp_dir):
     hps.Fixed('d', 7)
     hps.Choice('e', [9, 0], default=9)
     oracle = bo_module.BayesianOptimizationOracle(
-        objective='score', max_trials=20, hyperparameters=hps)
+        objective=kt.Objective('score', 'max'),
+        max_trials=20,
+        hyperparameters=hps)
     oracle._set_project_dir(tmp_dir, 'untitled')
     for i in range(5):
         trial = oracle.create_trial(str(i))
@@ -52,7 +54,9 @@ def test_bayesian_oracle_with_zero_y(tmp_dir):
     hps.Fixed('d', 7)
     hps.Choice('e', [9, 0], default=9)
     oracle = bo_module.BayesianOptimizationOracle(
-        objective='score', max_trials=20, hyperparameters=hps)
+        objective=kt.Objective('score', 'max'),
+        max_trials=20,
+        hyperparameters=hps)
     oracle._set_project_dir(tmp_dir, 'untitled')
     for i in range(5):
         trial = oracle.create_trial(str(i))
@@ -87,7 +91,9 @@ def test_bayesian_save_reload(tmp_dir):
     hps.Choice('d', [7, 8], default=7)
     hps.Choice('e', [9, 0], default=9)
     oracle = bo_module.BayesianOptimizationOracle(
-        objective='score', max_trials=20, hyperparameters=hps)
+        objective=kt.Objective('score', 'max'),
+        max_trials=20,
+        hyperparameters=hps)
     oracle._set_project_dir(tmp_dir, 'untitled')
 
     for _ in range(3):
@@ -97,7 +103,9 @@ def test_bayesian_save_reload(tmp_dir):
 
     oracle.save()
     oracle = bo_module.BayesianOptimizationOracle(
-        objective='score', max_trials=20, hyperparameters=hps)
+        objective=kt.Objective('score', 'max'),
+        max_trials=20,
+        hyperparameters=hps)
     oracle._set_project_dir(tmp_dir, 'untitled')
     oracle.reload()
 
@@ -126,7 +134,9 @@ def test_save_before_result(tmp_dir):
     hps.Fixed('d', 7)
     hps.Choice('e', [9, 0], default=9)
     oracle = bo_module.BayesianOptimizationOracle(
-        objective='score', max_trials=10, hyperparameters=hps)
+        objective=kt.Objective('score', 'max'),
+        max_trials=10,
+        hyperparameters=hps)
     oracle._set_project_dir(tmp_dir, 'untitled')
     oracle._populate_space(str(1))
     oracle.save()

@@ -41,7 +41,7 @@ def build_model(hp):
 
 def test_hyperband_oracle_bracket_configs(tmp_dir):
     oracle = hyperband_module.HyperbandOracle(
-        objective='score',
+        objective=kt.Objective('score', 'max'),
         hyperband_iterations=1,
         max_epochs=8,
         factor=2)
@@ -108,7 +108,7 @@ def test_hyperband_oracle_one_sweep_parallel(tmp_dir):
     hp.Float('b', -100, 100)
     oracle = hyperband_module.HyperbandOracle(
         hyperparameters=hp,
-        objective='score',
+        objective=kt.Objective('score', 'max'),
         hyperband_iterations=1,
         max_epochs=4,
         factor=2)
