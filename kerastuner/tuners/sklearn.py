@@ -70,7 +70,7 @@ class Sklearn(base_tuner.BaseTuner):
             alpha=hp.Float('alpha', 1e-3, 1, sampling='log'))
       return model
 
-    tuner = sklearn_tuner.Sklearn(
+    tuner = kt.tuners.Sklearn(
         oracle=kt.oracles.BayesianOptimization(
             objective=kt.Objective('score', 'max'),
             max_trials=10),
