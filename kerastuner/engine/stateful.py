@@ -26,7 +26,7 @@ class Stateful(object):
     def get_state(self):
         raise NotImplementedError
 
-    def set_state(self):
+    def set_state(self, state):
         raise NotImplementedError
 
     def save(self, fname):
