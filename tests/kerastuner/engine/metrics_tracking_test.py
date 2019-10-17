@@ -247,3 +247,8 @@ def test_metric_direction_inference():
         def result(self):
             return 1
     assert metrics_tracking.infer_metric_direction(MyMetric()) is None
+
+    # Test special cases.
+    assert metrics_tracking.infer_metric_direction('loss') == 'min'
+    assert metrics_tracking.infer_metric_direction('acc') == 'max'
+    assert metrics_tracking.infer_metric_direction('val_acc') == 'max'

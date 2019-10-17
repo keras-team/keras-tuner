@@ -281,6 +281,9 @@ def infer_metric_direction(metric):
         if metric_name == 'loss':
             # Special-case the overall loss.
             return 'min'
+        elif metric_name == 'acc':
+            # These aliases didn't used to work with `metrics.get`
+            return 'max'
         try:
             metric = keras.metrics.get(metric_name)
         except ValueError:
