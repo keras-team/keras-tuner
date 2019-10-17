@@ -373,12 +373,13 @@ def _format_objective(objective):
     if isinstance(objective, str):
         direction = metrics_tracking.infer_metric_direction(objective)
         if direction is None:
-            raise ValueError(
+            error_msg = (
                 'Could not infer optimization direction ("min" or "max") '
-                'for unknown metric "' + objective + '". Please specify the '
-                'objective  as a `kerastuner.Objective`, for example'
-                '`kerastuner.Objective("{}", direction="min")`.'.format(
-                    objective))
+                'for unknown metric "{obj}". Please specify the objective  as'
+                'a `kerastuner.Objective`, for example `kerastuner.Objective('
+                '"{obj}", direction="min")`.')
+            error_msg = error_msg.format(obj=objective)
+            raise ValueError(error_msg)
         return Objective(name=objective, direction=direction)
     else:
         raise ValueError('`objective` not understood, expected str or '
