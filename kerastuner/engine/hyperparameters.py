@@ -192,6 +192,9 @@ class Choice(HyperParameter):
 class Int(HyperParameter):
     """Integer range.
 
+    Note that unlinke Python's `range` function, `max_value` is *included* in
+    the possible values this parameter can take on.
+
     Args:
         name: Str. Name of parameter. Must be unique.
         min_value: Int. Lower limit of range (included).
