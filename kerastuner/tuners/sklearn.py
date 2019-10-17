@@ -55,6 +55,7 @@ class Sklearn(base_tuner.BaseTuner):
     ```
     import kerastuner as kt
     from sklearn import ensemble
+    from sklearn import datasets
     from sklearn import linear_model
     from sklearn import metrics
     from sklearn import model_selection
