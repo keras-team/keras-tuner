@@ -252,3 +252,9 @@ def test_metric_direction_inference():
     assert metrics_tracking.infer_metric_direction('loss') == 'min'
     assert metrics_tracking.infer_metric_direction('acc') == 'max'
     assert metrics_tracking.infer_metric_direction('val_acc') == 'max'
+    assert metrics_tracking.infer_metric_direction('crossentropy') == 'min'
+    assert metrics_tracking.infer_metric_direction('ce') == 'min'
+    assert metrics_tracking.infer_metric_direction('weighted_acc') == 'max'
+    assert metrics_tracking.infer_metric_direction('val_weighted_ce') == 'min'
+    assert metrics_tracking.infer_metric_direction(
+        'weighted_binary_accuracy') == 'max'

@@ -276,14 +276,19 @@ def infer_metric_direction(metric):
     # Handle str input and get canonical object.
     if isinstance(metric, str):
         metric_name = metric
-        if len(metric_name) > 4 and metric_name[:4] == 'val_':
-            metric_name = metric_name[4:]
-        if metric_name == 'loss':
-            # Special-case the overall loss.
+
+        if metric_name.startswith('val_'):
+            metric_name = metric_name.replace('val_', '', 1)
+
+        if metric_name.startswith('weighted_'):
+            metric_name = metric_name.replace('weighted_', '', 1)
+
+        # Special-cases (from `keras/engine/training_utils.py`)
+        if metric_name in {'loss', 'crossentropy', 'ce'}:
             return 'min'
         elif metric_name == 'acc':
-            # These aliases didn't used to work with `metrics.get`
             return 'max'
+
         try:
             metric = keras.metrics.get(metric_name)
         except ValueError:
