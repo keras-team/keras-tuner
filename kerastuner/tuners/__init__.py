@@ -17,3 +17,4 @@ from __future__ import absolute_import
 from .bayesian import BayesianOptimization
 from .hyperband import Hyperband
 from .randomsearch import RandomSearch
+from .sklearn import Sklearn
