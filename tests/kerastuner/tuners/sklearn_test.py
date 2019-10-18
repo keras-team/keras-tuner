@@ -77,7 +77,7 @@ def test_sklearn_custom_scoring_and_cv(tmp_dir):
             max_trials=10),
         hypermodel=build_model,
         scoring=metrics.make_scorer(metrics.balanced_accuracy_score),
-        cross_validation=model_selection.StratifiedKFold(5),
+        cv=model_selection.StratifiedKFold(5),
         directory=tmp_dir)
 
     X = np.random.uniform(size=(50, 10))
@@ -158,7 +158,7 @@ def test_sklearn_cv_with_groups(tmp_dir):
             objective=kt.Objective('score', 'max'),
             max_trials=10),
         hypermodel=build_model,
-        cross_validation=model_selection.GroupKFold(5),
+        cv=model_selection.GroupKFold(5),
         directory=tmp_dir)
 
     X = np.random.uniform(size=(50, 10))
@@ -186,7 +186,7 @@ def test_sklearn_real_data(tmp_dir):
             max_trials=10),
         hypermodel=build_model,
         scoring=metrics.make_scorer(metrics.accuracy_score),
-        cross_validation=model_selection.StratifiedKFold(5),
+        cv=model_selection.StratifiedKFold(5),
         directory=tmp_dir)
 
     X, y = datasets.load_iris(return_X_y=True)

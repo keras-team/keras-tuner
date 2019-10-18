@@ -77,7 +77,7 @@ class Sklearn(base_tuner.BaseTuner):
             max_trials=10),
         hypermodel=build_model,
         scoring=metrics.make_scorer(metrics.accuracy_score),
-        cross_validation=model_selection.StratifiedKFold(5),
+        cv=model_selection.StratifiedKFold(5),
         directory='.',
         project_name='my_project')
 
@@ -95,7 +95,7 @@ class Sklearn(base_tuner.BaseTuner):
                  hypermodel,
                  scoring=None,
                  metrics=None,
-                 cross_validation=model_selection.KFold(5, shuffle=True),
+                 cv=model_selection.KFold(5, shuffle=True, random_state=1),
                  **kwargs):
         super(Sklearn, self).__init__(
             oracle=oracle,
@@ -110,7 +110,7 @@ class Sklearn(base_tuner.BaseTuner):
             metrics = [metrics]
         self.metrics = metrics
 
-        self.cross_validation = cross_validation
+        self.cv = cv
 
     def run_trial(self,
                   trial,
@@ -122,7 +122,7 @@ class Sklearn(base_tuner.BaseTuner):
         metrics = collections.defaultdict(list)
         # For cross-validation methods that expect a `groups` argument.
         cv_kwargs = {'groups': groups} if groups is not None else {}
-        for train_indices, test_indices in self.cross_validation.split(
+        for train_indices, test_indices in self.cv.split(
                 X, y, **cv_kwargs):
             X_train = X[train_indices]
             y_train = y[train_indices]
