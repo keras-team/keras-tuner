@@ -53,9 +53,9 @@ def test_sklearn_tuner_simple(tmp_dir):
         hypermodel=build_model,
         directory=tmp_dir)
 
-    X = np.random.uniform(size=(50, 10))
+    x = np.random.uniform(size=(50, 10))
     y = np.random.randint(0, 2, size=(50,))
-    tuner.search(X, y)
+    tuner.search(x, y)
 
     assert len(tuner.oracle.trials) == 10
 
@@ -67,7 +67,7 @@ def test_sklearn_tuner_simple(tmp_dir):
 
     # Make sure best model can be reloaded.
     best_model = tuner.get_best_models()[0]
-    best_model.score(X, y)
+    best_model.score(x, y)
 
 
 def test_sklearn_custom_scoring_and_cv(tmp_dir):
@@ -80,9 +80,9 @@ def test_sklearn_custom_scoring_and_cv(tmp_dir):
         cv=model_selection.StratifiedKFold(5),
         directory=tmp_dir)
 
-    X = np.random.uniform(size=(50, 10))
+    x = np.random.uniform(size=(50, 10))
     y = np.random.randint(0, 2, size=(50,))
-    tuner.search(X, y)
+    tuner.search(x, y)
 
     assert len(tuner.oracle.trials) == 10
 
@@ -94,7 +94,7 @@ def test_sklearn_custom_scoring_and_cv(tmp_dir):
 
     # Make sure best model can be reloaded.
     best_model = tuner.get_best_models()[0]
-    best_model.score(X, y)
+    best_model.score(x, y)
 
 
 def test_sklearn_additional_metrics(tmp_dir):
@@ -107,9 +107,9 @@ def test_sklearn_additional_metrics(tmp_dir):
                  metrics.recall_score],
         directory=tmp_dir)
 
-    X = np.random.uniform(size=(50, 10))
+    x = np.random.uniform(size=(50, 10))
     y = np.random.randint(0, 2, size=(50,))
-    tuner.search(X, y)
+    tuner.search(x, y)
 
     assert len(tuner.oracle.trials) == 10
 
@@ -123,7 +123,7 @@ def test_sklearn_additional_metrics(tmp_dir):
 
     # Make sure best model can be reloaded.
     best_model = tuner.get_best_models()[0]
-    best_model.score(X, y)
+    best_model.score(x, y)
 
 
 def test_sklearn_sample_weight(tmp_dir):
@@ -134,10 +134,10 @@ def test_sklearn_sample_weight(tmp_dir):
         hypermodel=build_model,
         directory=tmp_dir)
 
-    X = np.random.uniform(size=(50, 10))
+    x = np.random.uniform(size=(50, 10))
     y = np.random.randint(0, 2, size=(50,))
     sample_weight = np.random.uniform(0.1, 1, size=(50,))
-    tuner.search(X, y, sample_weight=sample_weight)
+    tuner.search(x, y, sample_weight=sample_weight)
 
     assert len(tuner.oracle.trials) == 10
 
@@ -149,7 +149,7 @@ def test_sklearn_sample_weight(tmp_dir):
 
     # Make sure best model can be reloaded.
     best_model = tuner.get_best_models()[0]
-    best_model.score(X, y)
+    best_model.score(x, y)
 
 
 def test_sklearn_cv_with_groups(tmp_dir):
@@ -161,10 +161,10 @@ def test_sklearn_cv_with_groups(tmp_dir):
         cv=model_selection.GroupKFold(5),
         directory=tmp_dir)
 
-    X = np.random.uniform(size=(50, 10))
+    x = np.random.uniform(size=(50, 10))
     y = np.random.randint(0, 2, size=(50,))
     groups = np.random.randint(0, 5, size=(50,))
-    tuner.search(X, y, groups=groups)
+    tuner.search(x, y, groups=groups)
 
     assert len(tuner.oracle.trials) == 10
 
@@ -176,7 +176,7 @@ def test_sklearn_cv_with_groups(tmp_dir):
 
     # Make sure best model can be reloaded.
     best_model = tuner.get_best_models()[0]
-    best_model.score(X, y)
+    best_model.score(x, y)
 
 
 def test_sklearn_real_data(tmp_dir):
@@ -189,17 +189,17 @@ def test_sklearn_real_data(tmp_dir):
         cv=model_selection.StratifiedKFold(5),
         directory=tmp_dir)
 
-    X, y = datasets.load_iris(return_X_y=True)
-    X_train, X_test, y_train, y_test = model_selection.train_test_split(
-        X, y, test_size=0.2)
+    x, y = datasets.load_iris(return_X_y=True)
+    x_train, x_test, y_train, y_test = model_selection.train_test_split(
+        x, y, test_size=0.2)
 
-    tuner.search(X_train, y_train)
+    tuner.search(x_train, y_train)
 
     best_models = tuner.get_best_models(10)
     best_model = best_models[0]
     worst_model = best_models[9]
-    best_model_score = best_model.score(X_test, y_test)
-    worst_model_score = worst_model.score(X_test, y_test)
+    best_model_score = best_model.score(x_test, y_test)
+    worst_model_score = worst_model.score(x_test, y_test)
 
     assert best_model_score > 0.9
     assert best_model_score > worst_model_score

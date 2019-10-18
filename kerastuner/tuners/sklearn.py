@@ -44,11 +44,10 @@ class Sklearn(base_tuner.BaseTuner):
         in order to make sure your Models are being scored on the same metric.
       metrics: Additional `sklearn.metrics` functions to monitor during search.
         Note that these metrics do not affect the search process.
-      cross_validation: An `sklearn.model_selection` Splitter class. Used to
+      cv: An `sklearn.model_selection` Splitter class. Used to
         determine how samples are split up into groups for cross-validation.
       **kwargs: Keyword arguments relevant to all `Tuner` subclasses. Please
         see the docstring for `Tuner`.
-
 
     Example:
 
@@ -111,6 +110,22 @@ class Sklearn(base_tuner.BaseTuner):
         self.metrics = metrics
 
         self.cv = cv
+
+    def search(self, X, y, sample_weight=None, groups=None):
+        """Performs hyperparameter search.
+
+        Arguments:
+          X: See docstring for `model.fit` for the `sklearn` Models being tuned.
+          y: See docstring for `model.fit` for the `sklearn` Models being tuned.
+          sample_weight: (Optional). See docstring for `model.fit` for the
+            `sklearn` Models being tuned.
+          groups: (Optional). Required for `sklearn.model_selection` Splitter
+            classes that split based on group labels (For example, see
+            `sklearn.model_selection.GroupKFold`).
+        """
+        # Only overridden for the docstring.
+        return super(Sklearn, self).search(
+            X, y, sample_weight=sample_weight, groups=groups)
 
     def run_trial(self,
                   trial,
