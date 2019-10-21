@@ -108,11 +108,11 @@ class BaseTuner(stateful.Stateful):
 
     def search(self, *fit_args, **fit_kwargs):
         """Performs a search for best hyperparameter configuations.
-        
+
         # Arguments:
-            *fit_args: Positional arguments that should be passed to 
+            *fit_args: Positional arguments that should be passed to
               `run_trial`, for example the training and validation data.
-            *fit_kwargs: Keyword arguments that should be passed to 
+            *fit_kwargs: Keyword arguments that should be passed to
               `run_trial`, for example the training and validation data.
         """
         self.on_search_begin()
@@ -185,14 +185,25 @@ class BaseTuner(stateful.Stateful):
         raise NotImplementedError
 
     def on_search_begin(self):
+        """A hook called at the beginning of `search`."""
         if self.logger:
             self.logger.register_tuner(self.get_state())
 
     def on_trial_begin(self, trial):
+        """A hook called before starting each trial.
+
+        # Arguments:
+            trial: A `Trial` instance.
+        """
         if self.logger:
             self.logger.register_trial(trial.trial_id, trial.get_state())
 
     def on_trial_end(self, trial):
+        """A hook called after each trial is run.
+
+        # Arguments:
+            trial: A `Trial` instance.
+        """
         # Send status to Logger
         if self.logger:
             self.logger.report_trial_state(trial.trial_id, trial.get_state())
@@ -204,13 +215,16 @@ class BaseTuner(stateful.Stateful):
         self.save()
 
     def on_search_end(self):
+        """A hook called at the end of `search`."""
         if self.logger:
             self.logger.exit()
 
     def get_best_models(self, num_models=1):
         """Returns the best model(s), as determined by the tuner's objective.
 
-        This method is only a convenience shortcut.
+        This method is only a convenience shortcut. For best performance, It is
+        recommended to retrain your Model on the full dataset using the best
+        hyperparameters found during `search`.
 
         Args:
             num_models (int, optional): Number of best models to return.
@@ -260,6 +274,10 @@ class BaseTuner(stateful.Stateful):
 
     @property
     def remaining_trials(self):
+        """Returns the number of trials remaining.
+
+        Will return `None` if `max_trials` is not set.
+        """
         return self.oracle.remaining_trials()
 
     def get_state(self):
@@ -269,11 +287,13 @@ class BaseTuner(stateful.Stateful):
         pass
 
     def save(self):
+        """Saves this object to its project directory."""
         if not dist_utils.has_chief_oracle():
             self.oracle.save()
         super(BaseTuner, self).save(self._get_tuner_fname())
 
     def reload(self):
+        """Reloads this object from its project directory."""
         if not dist_utils.has_chief_oracle():
             self.oracle.reload()
         super(BaseTuner, self).reload(self._get_tuner_fname())

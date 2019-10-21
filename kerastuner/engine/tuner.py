@@ -178,7 +178,9 @@ class Tuner(base_tuner.BaseTuner):
         The models are loaded with the weights corresponding to
         their best checkpoint (at the end of the best epoch of best trial).
 
-        This method is only a convenience shortcut.
+        This method is only a convenience shortcut. For best performance, It is
+        recommended to retrain your Model on the full dataset using the best
+        hyperparameters found during `search`.
 
         Args:
             num_models (int, optional): Number of best models to return.
