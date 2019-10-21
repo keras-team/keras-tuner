@@ -113,6 +113,18 @@ class Tuner(base_tuner.BaseTuner):
         self._save_n_checkpoints = 10
 
     def run_trial(self, trial, *fit_args, **fit_kwargs):
+        """Evaluates a set of hyperparameter values.
+
+        This method is called during `search` to evaluate a set of
+        hyperparameters.
+
+        # Arguments:
+            trial: A `Trial` instance that contains the information
+              needed to run this trial. `Hyperparameters` can be accessed
+              via `trial.hyperparameters`.
+            *fit_args: Positional arguments passed by `search`.
+            *fit_kwargs: Keyword arguments passed by `search`.
+        """
         # Patch fit arguments. During model `fit`, the patched
         # callbacks call: `self.on_epoch_begin`, `self.on_epoch_end`,
         # `self.on_batch_begin`, `self.on_batch_end`.
