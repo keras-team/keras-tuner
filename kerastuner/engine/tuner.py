@@ -155,15 +155,50 @@ class Tuner(base_tuner.BaseTuner):
         return model
 
     def on_epoch_begin(self, trial, model, epoch, logs=None):
+        """A hook called at the start of every epoch.
+
+        # Arguments:
+            trial: A `Trial` instance.
+            model: A Keras `Model`.
+            epoch: The current epoch number.
+            logs: Additional metrics.
+        """
         pass
 
     def on_batch_begin(self, trial, model, batch, logs):
+        """A hook called at the start of every batch.
+
+        # Arguments:
+            trial: A `Trial` instance.
+            model: A Keras `Model`.
+            batch: The current batch number within the
+              curent epoch.
+            logs: Additional metrics.
+        """
         pass
 
     def on_batch_end(self, trial, model, batch, logs=None):
+        """A hook called at the end of every batch.
+
+        # Arguments:
+            trial: A `Trial` instance.
+            model: A Keras `Model`.
+            batch: The current batch number within the
+              curent epoch.
+            logs: Additional metrics.
+        """
         pass
 
     def on_epoch_end(self, trial, model, epoch, logs=None):
+        """A hook called at the end of every epoch.
+
+        # Arguments:
+            trial: A `Trial` instance.
+            model: A Keras `Model`.
+            epoch: The current epoch number.
+            logs: Dict. Metrics for this epoch. This should include
+              the value of the objective for this epoch.
+        """
         self.save_model(trial.trial_id, model, step=epoch)
         # Report intermediate metrics to the `Oracle`.
         status = self.oracle.update_trial(
