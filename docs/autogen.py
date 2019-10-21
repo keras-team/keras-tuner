@@ -5,6 +5,8 @@ import shutil
 import keras_autodoc
 
 import kerastuner
+from kerastuner.engine.base_tuner import BaseTuner
+from kerastuner.engine.oracle import Oracle
 from kerastuner.engine.tuner import Tuner
 from kerastuner import applications
 
@@ -13,20 +15,28 @@ PAGES = [
     {
         'page': 'documentation/tuners.md',
         'classes': [
-            (Tuner, [Tuner.run_trial,
-                     Tuner.save_model,
+            kerastuner.BayesianOptimization,
+            kerastuner.Hyperband,
+            kerastuner.RandomSearch,
+            kerastuner.tuners.Sklearn,
+            (Tuner, [Tuner.get_best_models,
+                     Tuner.get_state,
                      Tuner.load_model,
                      Tuner.on_epoch_begin,
                      Tuner.on_batch_begin,
                      Tuner.on_batch_end,
                      Tuner.on_epoch_end,
-                     Tuner.get_best_models,
-                     Tuner.get_state,
-                     Tuner.set_state,
-                     Tuner.search]),
-            kerastuner.RandomSearch,
-            kerastuner.Hyperband,
-            kerastuner.BayesianOptimization
+                     Tuner.run_trial,
+                     Tuner.save_model,
+                     Tuner.search,
+                     Tuner.set_state]),
+            (BaseTuner, [BaseTuner.get_best_models,
+                         BaseTuner.get_state,
+                         BaseTuner.load_model,
+                         BaseTuner.run_trial,
+                         BaseTuner.save_model,
+                         BaseTuner.search,
+                         BaseTuner.set_state]),
         ]
     },
     {
@@ -39,7 +49,32 @@ PAGES = [
     },
     {
         'page': 'documentation/hyperparameters.md',
-        'classes': [kerastuner.HyperParameters],
+        'classes': [
+            (kerastuner.HyperParameters, [
+                kerastuner.HyperParameters.Boolean,
+                kerastuner.HyperParameters.Choice,
+                kerastuner.HyperParameters.Fixed,
+                kerastuner.HyperParameters.Float,
+                kerastuner.HyperParameters.Int,
+                kerastuner.HyperParameters.conditional_scope,
+                kerastuner.HyperParameters.get])
+        ]
+    },
+    {
+        'page': 'documentation/oracles.md',
+        'classes': [
+            kerastuner.oracles.BayesianOptimization,
+            kerastuner.oracles.Hyperband,
+            kerastuner.oracles.RandomSearch,
+            (Oracle, [Oracle._populate_space,
+                      Oracle._score_trial,
+                      Oracle.create_trial,
+                      Oracle.end_trial,
+                      Oracle.get_best_trials,
+                      Oracle.get_state,
+                      Oracle.set_state,
+                      Oracle.update_trial])
+        ]
     }
 ]
 
@@ -47,7 +82,7 @@ kerastuner_dir = pathlib.Path(__file__).resolve().parents[1]
 
 
 def generate(dest_dir):
-    template_dir = kerastuner_dir / 'kerastuner_docs' / 'templates'
+    template_dir = kerastuner_dir / 'docs' / 'templates'
     keras_autodoc.generate(
         dest_dir,
         template_dir,
@@ -64,4 +99,4 @@ def generate(dest_dir):
 
 
 if __name__ == '__main__':
-    generate(kerastuner_dir / 'kerastuner_docs' / 'sources')
+    generate(kerastuner_dir / 'docs' / 'sources')
