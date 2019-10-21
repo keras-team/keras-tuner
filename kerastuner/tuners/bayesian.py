@@ -18,14 +18,15 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
     be found in the following link:
     https://www.cse.wustl.edu/~garnett/cse515t/spring_2015/files/lecture_notes/12.pdf
 
-    Attributes:
+    # Arguments
         objective: String or `kerastuner.Objective`. If a string,
           the direction of the optimization (min or max) will be
           inferred.
         max_trials: Int. Total number of trials
             (model configurations) to test at most.
             Note that the oracle may interrupt the search
-            before `max_trial` models have been tested.
+            before `max_trial` models have been tested if the search space has been
+            exhausted.
         num_initial_points: Int. The number of randomly generated samples as initial
             training data for Bayesian optimization.
         alpha: Float. Value added to the diagonal of the kernel matrix
@@ -272,7 +273,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
 class BayesianOptimization(multi_execution_tuner.MultiExecutionTuner):
     """BayesianOptimization tuning with Gaussian process.
 
-    Args:
+    # Arguments:
         hypermodel: Instance of HyperModel class
             (or callable that takes hyperparameters
             and returns a Model instance).
@@ -281,7 +282,8 @@ class BayesianOptimization(multi_execution_tuner.MultiExecutionTuner):
         max_trials: Int. Total number of trials
             (model configurations) to test at most.
             Note that the oracle may interrupt the search
-            before `max_trial` models have been tested.
+            before `max_trial` models have been tested if the search space has
+            been exhausted.
         num_initial_points: Int. The number of randomly generated samples as initial
             training data for Bayesian optimization.
         alpha: Float or array-like. Value added to the diagonal of

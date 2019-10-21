@@ -37,7 +37,7 @@ class Tuner(base_tuner.BaseTuner):
 
     May be subclassed to create new tuners.
 
-    Args:
+    # Arguments:
         oracle: Instance of Oracle class.
         hypermodel: Instance of HyperModel class
             (or callable that takes hyperparameters
