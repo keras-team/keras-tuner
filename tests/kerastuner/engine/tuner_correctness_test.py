@@ -240,3 +240,13 @@ def test_overwrite_true(tmp_dir):
         directory=tmp_dir,
         overwrite=True)
     assert len(new_tuner.oracle.trials) == 0
+
+
+def test_error_on_unknown_objective_direction(tmp_dir):
+    with pytest.raises(ValueError,
+                       match='Could not infer optimization direction'):
+        kerastuner.tuners.RandomSearch(
+            hypermodel=build_model,
+            objective='custom_metric',
+            max_trials=2,
+            directory=tmp_dir)

@@ -222,6 +222,7 @@ def test_static_space(tmp_dir):
     hp.Int('num_layers', 1, 3, 1, default=2)
     hp.Int('units_0', 4, 6, 1, default=5)
     hp.Int('units_1', 4, 6, 1, default=5)
+    hp.Int('units_2', 4, 6, 1, default=5)
     hp.Choice('learning_rate', [0.01, 0.001])
     tuner = kerastuner.tuners.RandomSearch(
         build_model_static,
@@ -369,7 +370,7 @@ def test_restricted_space_with_custom_defaults(tmp_dir):
 
 def test_reparameterized_space(tmp_dir):
     hp = kerastuner.HyperParameters()
-    hp.Int('num_layers', 1, 3, 1, default=2)
+    hp.Int('num_layers', 1, 3, 1, default=3)
     hp.Choice('learning_rate', [0.01, 0.001, 0.0001])
 
     tuner = kerastuner.tuners.RandomSearch(
@@ -383,7 +384,7 @@ def test_reparameterized_space(tmp_dir):
         tune_new_entries=True)
 
     # Initial build model adds to the space.
-    assert len(tuner.oracle.hyperparameters.space) == 4
+    assert len(tuner.oracle.hyperparameters.space) == 5
     tuner.search(
         x=TRAIN_INPUTS,
         y=TRAIN_TARGETS,
@@ -391,7 +392,7 @@ def test_reparameterized_space(tmp_dir):
         validation_data=(VAL_INPUTS, VAL_TARGETS))
 
     assert len(tuner.oracle.trials) == 4
-    assert len(tuner.oracle.hyperparameters.space) == 4
+    assert len(tuner.oracle.hyperparameters.space) == 5
 
 
 def test_get_best_models(tmp_dir):
