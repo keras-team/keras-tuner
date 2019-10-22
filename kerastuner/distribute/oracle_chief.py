@@ -70,7 +70,7 @@ def start_server(oracle):
     ip_addr = os.environ['KERASTUNER_ORACLE_IP']
     port = os.environ['KERASTUNER_ORACLE_PORT']
     server = grpc.server(
-        futures.ThreadPoolExecutor(max_workers=10))
+        futures.ThreadPoolExecutor(max_workers=1))
     service_pb2_grpc.add_OracleServicer_to_server(
         OracleServicer(oracle), server)
     server.add_insecure_port('{}:{}'.format(ip_addr, port))
