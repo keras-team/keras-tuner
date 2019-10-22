@@ -45,7 +45,7 @@ script:
   - if [[ "$TEST_MODE" == "INTEGRATION_TESTS" ]]; then
       PYTHONPATH=$PWD:$PYTHONPATH py.test tests/integration_tests;
     elif [[ "$TEST_MODE" == "FLAKE8" ]]; then
-      flake8 && cd kerastuner_docs && python autogen.py && mkdocs build;
+      flake8 && cd docs && python autogen.py && mkdocs build;
     else
       PYTHONPATH=$PWD:$PYTHONPATH py.test tests/kerastuner --cov-config .coveragerc --cov=kerastuner;
     fi
