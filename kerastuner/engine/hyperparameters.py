@@ -64,7 +64,7 @@ def _check_int(val, arg):
 class HyperParameter(object):
     """HyperParameter base class.
 
-    Args:
+    # Arguments:
         name: Str. Name of parameter. Must be unique.
         default: Default value to return for the
             parameter.
@@ -92,7 +92,7 @@ class HyperParameter(object):
 class Choice(HyperParameter):
     """Choice of one value among a predefined set of possible values.
 
-    Args:
+    # Arguments:
         name: Str. Name of parameter. Must be unique.
         values: List of possible values. Values must be int, float,
             str, or bool. All values must be of the same type.
@@ -195,7 +195,7 @@ class Int(HyperParameter):
     Note that unlinke Python's `range` function, `max_value` is *included* in
     the possible values this parameter can take on.
 
-    Args:
+    # Arguments:
         name: Str. Name of parameter. Must be unique.
         min_value: Int. Lower limit of range (included).
         max_value: Int. Upper limit of range (included).
@@ -286,7 +286,7 @@ class Int(HyperParameter):
 class Float(HyperParameter):
     """Floating point range, can be evenly divided.
 
-    Args:
+    # Arguments:
         name: Str. Name of parameter. Must be unique.
         min_value: Float. Lower bound of the range.
         max_value: Float. Upper bound of the range.
@@ -385,7 +385,7 @@ class Float(HyperParameter):
 class Boolean(HyperParameter):
     """Choice between True and False.
 
-    Args:
+    # Arguments
         name: Str. Name of parameter. Must be unique.
         default: Default value to return for the parameter.
             If unspecified, the default value will be False.
@@ -420,7 +420,7 @@ class Boolean(HyperParameter):
 class Fixed(HyperParameter):
     """Fixed, untunable value.
 
-    Args:
+    # Arguments
         name: Str. Name of parameter. Must be unique.
         value: Value to use (can be any JSON-serializable
             Python type).
@@ -448,7 +448,7 @@ class Fixed(HyperParameter):
 class HyperParameters(object):
     """Container for both a hyperparameter space, and current values.
 
-    Attributes:
+    # Attributes:
         space: A list of HyperParameter instances.
         values: A dict mapping hyperparameter names to current values.
     """
@@ -482,10 +482,10 @@ class HyperParameters(object):
         Note that any Python code under this scope will execute
         regardless of whether the condition is met.
 
-        Arguments:
-          parent_name: The name of the HyperParameter to condition on.
-          parent_values: Values of the parent HyperParameter for which
-            HyperParameters under this scope should be considered valid.
+        # Arguments:
+            parent_name: The name of the HyperParameter to condition on.
+            parent_values: Values of the parent HyperParameter for which
+              HyperParameters under this scope should be considered valid.
         """
         full_parent_name = self._get_name(parent_name)
         if full_parent_name not in self.values:
@@ -854,12 +854,6 @@ def deserialize(config):
         config, module_objects=module_objects)
 
 
-HyperParameters.Choice.__doc__ == Choice.__doc__
-HyperParameters.Int.__doc__ == Int.__doc__
-HyperParameters.Float.__doc__ == Float.__doc__
-HyperParameters.Fixed.__doc__ == Fixed.__doc__
-
-
 def _log_sample(x, min_value, max_value, seed=None):
     """Applies log scale to a value in range [0, 1]."""
     return min_value * math.pow(max_value / min_value, x)
@@ -892,3 +886,21 @@ def _sampling_to_proto(sampling):
     if sampling == 'reverse_log':
         return kerastuner_pb2.Sampling.REVERSE_LOG
     raise ValueError('Unrecognized sampling: {}'.format(sampling))
+
+
+hp_method_docstring_addon = """
+        parent_name: (Optional) String. Specifies that this hyperparameter is
+          conditional. The name of the this hyperparameter's parent.
+        parent_values: (Optional) List. The values of the parent hyperparameter
+          for which this hyperparameter should be considered active.
+
+    # Returns:
+        The current value of this hyperparameter.
+"""
+
+
+HyperParameters.Boolean.__doc__ = Boolean.__doc__ + hp_method_docstring_addon
+HyperParameters.Choice.__doc__ = Choice.__doc__ + hp_method_docstring_addon
+HyperParameters.Int.__doc__ = Int.__doc__ + hp_method_docstring_addon
+HyperParameters.Float.__doc__ = Float.__doc__ + hp_method_docstring_addon
+HyperParameters.Fixed.__doc__ = Fixed.__doc__ + hp_method_docstring_addon

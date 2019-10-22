@@ -28,7 +28,7 @@ import random
 class RandomSearchOracle(oracle_module.Oracle):
     """Random search oracle.
 
-    Attributes:
+    # Arguments:
         objective: String or `kerastuner.Objective`. If a string,
           the direction of the optimization (min or max) will be
           inferred.
@@ -125,7 +125,7 @@ class RandomSearchOracle(oracle_module.Oracle):
 class RandomSearch(multi_execution_tuner.MultiExecutionTuner):
     """Random search tuner.
 
-    Attributes:
+    # Arguments:
         hypermodel: Instance of HyperModel class
             (or callable that takes hyperparameters
             and returns a Model instance).

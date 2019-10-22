@@ -13,9 +13,10 @@ nav:
       - Tutorial1: tutorials/tutorial1.md
       - Tutorial2: tutorials/tutorial2.md
     - Documentation:
+      - HyperModels: documentation/hypermodels.md
+      - HyperParameters: documentation/hyperparameters.md
+      - Oracles: documentation/oracles.md
       - Tuners: documentation/tuners.md
-      - Hypermodels: documentation/hypermodels.md
-      - Hyperparameters: documentation/hyperparameters.md
     - Examples:
-      - helloworld: examples/helloworld.md
+      - Hello World: examples/helloworld.md
     - Contributing Guide: contributing.md

@@ -28,30 +28,30 @@ class Sklearn(base_tuner.BaseTuner):
     Performs cross-validated hyperparameter search for Scikit-learn
     models.
 
-    Attributes:
-      oracle: An instance of the `kerastuner.Oracle` class. Note that for
-        this `Tuner`, the `objective` for the `Oracle` should always be set
-        to `Objective('score', direction='max')`. Also, `Oracle`s that exploit
-        Neural-Network-specific training (e.g. `Hyperband`) should not be
-        used with this `Tuner`.
-      hypermodel: Instance of `HyperModel` class (or callable that takes a
-        `Hyperparameters` object and returns a Model instance).
-      scoring: An sklearn `scoring` function. For more information, see
-        `sklearn.metrics.make_scorer`. If not provided, the Model's default
-        scoring will be used via `model.score`. Note that if you are searching
-        across different Model families, the default scoring for these Models
-        will often be different. In this case you should supply `scoring` here
-        in order to make sure your Models are being scored on the same metric.
-      metrics: Additional `sklearn.metrics` functions to monitor during search.
-        Note that these metrics do not affect the search process.
-      cv: An `sklearn.model_selection` Splitter class. Used to
-        determine how samples are split up into groups for cross-validation.
-      **kwargs: Keyword arguments relevant to all `Tuner` subclasses. Please
-        see the docstring for `Tuner`.
+    # Arguments:
+        oracle: An instance of the `kerastuner.Oracle` class. Note that for
+          this `Tuner`, the `objective` for the `Oracle` should always be set
+          to `Objective('score', direction='max')`. Also, `Oracle`s that exploit
+          Neural-Network-specific training (e.g. `Hyperband`) should not be
+          used with this `Tuner`.
+        hypermodel: Instance of `HyperModel` class (or callable that takes a
+          `Hyperparameters` object and returns a Model instance).
+        scoring: An sklearn `scoring` function. For more information, see
+          `sklearn.metrics.make_scorer`. If not provided, the Model's default
+          scoring will be used via `model.score`. Note that if you are searching
+          across different Model families, the default scoring for these Models
+          will often be different. In this case you should supply `scoring` here
+          in order to make sure your Models are being scored on the same metric.
+        metrics: Additional `sklearn.metrics` functions to monitor during search.
+          Note that these metrics do not affect the search process.
+        cv: An `sklearn.model_selection` Splitter class. Used to
+          determine how samples are split up into groups for cross-validation.
+        **kwargs: Keyword arguments relevant to all `Tuner` subclasses. Please
+          see the docstring for `Tuner`.
 
     Example:
 
-    ```
+    ```python
     import kerastuner as kt
     from sklearn import ensemble
     from sklearn import datasets
@@ -87,7 +87,7 @@ class Sklearn(base_tuner.BaseTuner):
     tuner.search(X_train, y_train)
 
     best_model = tuner.get_best_models(num_models=1)[0]
-    ````
+    ```
     """
     def __init__(self,
                  oracle,

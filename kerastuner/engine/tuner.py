@@ -37,7 +37,7 @@ class Tuner(base_tuner.BaseTuner):
 
     May be subclassed to create new tuners.
 
-    Args:
+    # Arguments:
         oracle: Instance of Oracle class.
         hypermodel: Instance of HyperModel class
             (or callable that takes hyperparameters
@@ -113,6 +113,18 @@ class Tuner(base_tuner.BaseTuner):
         self._save_n_checkpoints = 10
 
     def run_trial(self, trial, *fit_args, **fit_kwargs):
+        """Evaluates a set of hyperparameter values.
+
+        This method is called during `search` to evaluate a set of
+        hyperparameters.
+
+        # Arguments:
+            trial: A `Trial` instance that contains the information
+              needed to run this trial. `Hyperparameters` can be accessed
+              via `trial.hyperparameters`.
+            *fit_args: Positional arguments passed by `search`.
+            *fit_kwargs: Keyword arguments passed by `search`.
+        """
         # Patch fit arguments. During model `fit`, the patched
         # callbacks call: `self.on_epoch_begin`, `self.on_epoch_end`,
         # `self.on_batch_begin`, `self.on_batch_end`.
@@ -143,15 +155,50 @@ class Tuner(base_tuner.BaseTuner):
         return model
 
     def on_epoch_begin(self, trial, model, epoch, logs=None):
+        """A hook called at the start of every epoch.
+
+        # Arguments:
+            trial: A `Trial` instance.
+            model: A Keras `Model`.
+            epoch: The current epoch number.
+            logs: Additional metrics.
+        """
         pass
 
     def on_batch_begin(self, trial, model, batch, logs):
+        """A hook called at the start of every batch.
+
+        # Arguments:
+            trial: A `Trial` instance.
+            model: A Keras `Model`.
+            batch: The current batch number within the
+              curent epoch.
+            logs: Additional metrics.
+        """
         pass
 
     def on_batch_end(self, trial, model, batch, logs=None):
+        """A hook called at the end of every batch.
+
+        # Arguments:
+            trial: A `Trial` instance.
+            model: A Keras `Model`.
+            batch: The current batch number within the
+              curent epoch.
+            logs: Additional metrics.
+        """
         pass
 
     def on_epoch_end(self, trial, model, epoch, logs=None):
+        """A hook called at the end of every epoch.
+
+        # Arguments:
+            trial: A `Trial` instance.
+            model: A Keras `Model`.
+            epoch: The current epoch number.
+            logs: Dict. Metrics for this epoch. This should include
+              the value of the objective for this epoch.
+        """
         self.save_model(trial.trial_id, model, step=epoch)
         # Report intermediate metrics to the `Oracle`.
         status = self.oracle.update_trial(
@@ -166,7 +213,9 @@ class Tuner(base_tuner.BaseTuner):
         The models are loaded with the weights corresponding to
         their best checkpoint (at the end of the best epoch of best trial).
 
-        This method is only a convenience shortcut.
+        This method is only a convenience shortcut. For best performance, It is
+        recommended to retrain your Model on the full dataset using the best
+        hyperparameters found during `search`.
 
         Args:
             num_models (int, optional): Number of best models to return.
