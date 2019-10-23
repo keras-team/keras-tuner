@@ -41,9 +41,9 @@ python run_tuning.py
 Keras Tuner also supports data parallelism via `tf.distribute`. Data parallelism and distributed tuning can be combined. For example, if you have 10 workers with 4 GPUs on each worker, you can run 10 parallel trials with each trial training on 4 GPUs by using `tf.distribute.MirroredStrategy`. You can also run each trial on TPUs via `tf.distribute.experimental.TPUStrategy`. Currently `tf.distribute.MultiWorkerMirroredStrategy` is not supported, but support for this is on the roadmap.
 
 
-## Example
+### Example code
 
-When the enviroment variables described above are set, the example below will run distributed tuning and will also use data parallelism within each trial via `tf.distribute`. The example loads MNIST from `tensorflow_datasets` and uses the Hyperband algorithm.
+When the enviroment variables described above are set, the example below will run distributed tuning and will also use data parallelism within each trial via `tf.distribute`. The example loads MNIST from `tensorflow_datasets` and uses hyperband for the hyperparameter search.
 
 
 ```python
@@ -95,11 +95,11 @@ def convert_dataset(item):
 def main():
     """Runs the hyperparameter search."""
     tuner = kt.Hyperband(
+        hypermodel=build_model,
+        objective='val_accuracy',
         max_epochs=8,
         factor=2,
         hyperband_iterations=3,
-        hypermodel=build_model,
-        objective='val_accuracy',
         distribution_strategy=tf.distribute.MirroredStrategy(),
         directory='results_dir',
         project_name='mnist')
