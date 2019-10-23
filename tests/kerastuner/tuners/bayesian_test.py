@@ -1,3 +1,4 @@
+import math
 import numpy as np
 import pytest
 import tensorflow as tf
@@ -234,3 +235,84 @@ def test_step_respected(tmp_dir):
     trial = oracle.create_trial('tuner0')
     # Check that oracle respects the `step` param.
     assert trial.hyperparameters.get('c') in {0, 3, 6, 9}
+
+
+def test_float_optimization(tmp_dir):
+
+    def build_model(hp):
+        # Maximum at a=-1, b=1, c=1, d=0 with score=3
+        return -1*hp['a']**3 + hp['b']**3 + hp['c'] - abs(hp['d'])
+
+    class PolynomialTuner(kt.engine.base_tuner.BaseTuner):
+
+        def run_trial(self, trial):
+            hps = trial.hyperparameters
+            score = self.hypermodel.build(hps)
+            self.oracle.update_trial(trial.trial_id, {'score': score})
+
+    hps = hp_module.HyperParameters()
+    hps.Float('a', -1, 1)
+    hps.Float('b', -1, 1)
+    hps.Float('c', -1, 1)
+    hps.Float('d', -1, 1)
+
+    tuner = PolynomialTuner(
+        hypermodel=build_model,
+        oracle=kt.oracles.BayesianOptimization(
+            objective=kt.Objective('score', 'max'),
+            hyperparameters=hps,
+            max_trials=50),
+        directory=tmp_dir)
+
+    tuner.search()
+
+    atol, rtol = 1e-2, 1e-2
+    best_trial = tuner.oracle.get_best_trials()[0]
+    best_hps = best_trial.hyperparameters
+
+    assert np.isclose(best_trial.score, 3, atol=atol, rtol=rtol)
+    assert np.isclose(best_hps['a'], -1, atol=atol, rtol=rtol)
+    assert np.isclose(best_hps['b'], 1, atol=atol, rtol=rtol)
+    assert np.isclose(best_hps['c'], 1, atol=atol, rtol=rtol)
+    assert np.isclose(best_hps['d'], 0, atol=atol, rtol=rtol)
+
+
+def test_distributed_optimization(tmp_dir):
+
+    hps = hp_module.HyperParameters()
+    hps.Int('a', 0, 10)
+    hps.Float('b', -1, 1)
+    hps.Float('c', 1e-5, 1e-2, sampling='log')
+
+    def evaluate(hp):
+        # Minimum at a=4, b=1, c=1e-3 with score=-1
+        return abs(hp['a'] - 4) - hp['b'] + abs(3 + math.log(hp['c'], 10))
+
+    oracle = bo_module.BayesianOptimizationOracle(
+        objective=kt.Objective('score', 'min'),
+        hyperparameters=hps,
+        max_trials=40)
+    oracle._set_project_dir(tmp_dir, 'untitled')
+
+    tuners = 2
+
+    for _ in range(10):
+        trials = []
+        for i in range(tuners):
+            trial = oracle.create_trial('tuner_' + str(i))
+            trials.append(trial)
+        for trial in trials:
+            oracle.update_trial(
+                trial.trial_id,
+                {'score': evaluate(trial.hyperparameters)})
+        for trial in trials:
+            oracle.end_trial(trial.trial_id, 'COMPLETED')
+
+    atol, rtol = 1e-2, 1e-2
+    best_trial = oracle.get_best_trials()[0]
+    best_hps = best_trial.hyperparameters
+
+    assert np.isclose(best_trial.score, -1, atol=atol, rtol=rtol), best_hps.values
+    assert np.isclose(best_hps['a'], 4, atol=atol, rtol=rtol)
+    assert np.isclose(best_hps['b'], 1, atol=atol, rtol=rtol)
+    assert np.isclose(best_hps['c'], 1e-3, atol=atol, rtol=rtol)
