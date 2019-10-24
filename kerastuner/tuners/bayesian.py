@@ -262,15 +262,6 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         bounds = []
         for hp in self._nonfixed_space():
             bounds.append([0, 1])
-            continue
-
-            if isinstance(hp, hp_module.Boolean):
-                bound = [0, 1]
-            elif isinstance(hp, hp_module.Choice):
-                bound = [0, len(hp.values) - 1]
-            else:
-                bound = [hp.min_value, hp.max_value]
-            bounds.append(bound)
         return np.array(bounds)
 
 
