@@ -11,7 +11,6 @@ nav:
     - Home: index.md
     - Tutorials:
       - Distributed Tuning: tutorials/distributed-tuning.md
-      - Tutorial2: tutorials/tutorial2.md
     - Documentation:
       - HyperModels: documentation/hypermodels.md
       - HyperParameters: documentation/hyperparameters.md

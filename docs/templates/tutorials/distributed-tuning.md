@@ -1,6 +1,6 @@
 # Distributed Tuning
 
-Keras Tuner makes it easy to perform distributed hyperparameter search. No changes to your code are needed to scale up from running single-threaded locally to running on dozens or hundreds of workers in parallel. Distributed Keras Tuner uses a chief-worker model. The chief runs a service to which the workers report results and query for the hyperparameters to try next. The chief should be run on a single-CPU worker (or alternatively as a separate process on one of the workers).
+Keras Tuner makes it easy to perform distributed hyperparameter search. No changes to your code are needed to scale up from running single-threaded locally to running on dozens or hundreds of workers in parallel. Distributed Keras Tuner uses a chief-worker model. The chief runs a service to which the workers report results and query for the hyperparameters to try next. The chief should be run on a single-threaded CPU instance (or alternatively as a separate process on one of the workers).
 
 ### Configuring distributed mode
 
@@ -8,9 +8,9 @@ Configuring distributed mode for Keras Tuner only requires setting three environ
 
 **KERASTUNER_TUNER_ID**: This should be set to "chief" for the chief process. Other workers should be passed a unique ID (by convention, "tuner0", "tuner1", etc).
 
-**KERASTUNER_ORACLE_IP**: The IP address of the chief service.
+**KERASTUNER_ORACLE_IP**: The IP address or hostname that the chief service should run on. All workers should be able to resolve and access this address.
 
-**KERASTUNER_ORACLE_PORT**: The port that the chief service should run on.
+**KERASTUNER_ORACLE_PORT**: The port that the chief service should run on. This can be freely chosen, but must be a port that is accessible to the other workers. Instances communicate via the [gRPC](https://www.grpc.io) protocol.
 
 The same code can be run on all workers. Additional considerations for distributed mode are:
 
@@ -18,7 +18,7 @@ The same code can be run on all workers. Additional considerations for distribut
 - All workers should be able to access the necessary training and validation data needed for tuning.
 - To support fault-tolerance, `overwrite` should be kept as `False` in `Tuner.__init__` (`False` is the default).
 
-Example chief setup (sample code for `run_tuning.py` at bottom of page):
+Example bash script for chief service (sample code for `run_tuning.py` at bottom of page):
 
 ```bash
 export KERASTUNER_TUNER_ID="chief"
@@ -27,7 +27,7 @@ export KERASTUNER_ORACLE_PORT="8000"
 python run_tuning.py
 ```
 
-Example worker setup:
+Example bash script for worker:
 
 ```bash
 export KERASTUNER_TUNER_ID="tuner0"
@@ -38,7 +38,7 @@ python run_tuning.py
 
 ### Data parallelism with tf.distribute
 
-Keras Tuner also supports data parallelism via `tf.distribute`. Data parallelism and distributed tuning can be combined. For example, if you have 10 workers with 4 GPUs on each worker, you can run 10 parallel trials with each trial training on 4 GPUs by using `tf.distribute.MirroredStrategy`. You can also run each trial on TPUs via `tf.distribute.experimental.TPUStrategy`. Currently `tf.distribute.MultiWorkerMirroredStrategy` is not supported, but support for this is on the roadmap.
+Keras Tuner also supports data parallelism via [tf.distribute](https://www.tensorflow.org/tutorials/distribute/keras). Data parallelism and distributed tuning can be combined. For example, if you have 10 workers with 4 GPUs on each worker, you can run 10 parallel trials with each trial training on 4 GPUs by using [tf.distribute.MirroredStrategy](https://www.tensorflow.org/api_docs/python/tf/distribute/MirroredStrategy). You can also run each trial on TPUs via [tf.distribute.experimental.TPUStrategy](https://www.tensorflow.org/api_docs/python/tf/distribute/experimental/TPUStrategy). Currently [tf.distribute.MultiWorkerMirroredStrategy](https://www.tensorflow.org/api_docs/python/tf/distribute/experimental/MultiWorkerMirroredStrategy) is not supported, but support for this is on the roadmap.
 
 
 ### Example code
