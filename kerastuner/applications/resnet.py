@@ -23,15 +23,34 @@ from kerastuner.engine import hypermodel
 
 
 class HyperResNet(hypermodel.HyperModel):
-    """A ResNet HyperModel."""
+    """A ResNet HyperModel.
+
+    # Arguments:
+
+        include_top: whether to include the fully-connected
+            layer at the top of the network.
+        input_shape: Optional shape tuple, e.g. `(256, 256, 3)`.
+              One of `input_shape` or `input_tensor` must be
+              specified.
+        input_tensor: Optional Keras tensor (i.e. output of
+            `layers.Input()`) to use as image input for the model.
+              One of `input_shape` or `input_tensor` must be
+              specified.
+        classes: optional number of classes to classify images
+            into, only to be specified if `include_top` is True,
+            and if no `weights` argument is specified.
+        **kwargs: Additional keyword arguments that apply to all
+            HyperModels. See `kerastuner.HyperModel`.
+    """
 
     def __init__(self,
                  include_top=True,
                  input_shape=None,
                  input_tensor=None,
-                 classes=None):
+                 classes=None,
+                 **kwargs):
 
-        super(HyperResNet, self).__init__()
+        super(HyperResNet, self).__init__(**kwargs)
         if include_top and classes is None:
             raise ValueError('You must specify `classes` when '
                              '`include_top=True`')

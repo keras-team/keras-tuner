@@ -37,6 +37,14 @@ class HyperModel(object):
         self.build = self._tunable_aware_build
 
     def build(self, hp):
+        """Builds a model.
+
+        # Arguments:
+            hp: A `HyperParameters` instance.
+
+        # Returns:
+            A model instance.
+        """
         raise NotImplementedError
 
     def _tunable_aware_build(self, hp):
