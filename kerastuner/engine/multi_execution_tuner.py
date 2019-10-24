@@ -18,7 +18,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from ..engine import tuner as tuner_module
+from . import tuner as tuner_module
+from . import tuner_utils
 
 import collections
 import copy
@@ -83,13 +84,15 @@ class MultiExecutionTuner(tuner_module.Tuner):
         # Run the training process multiple times.
         metrics = collections.defaultdict(list)
         for execution in range(self.executions_per_trial):
-            model = self._build_model(trial.hyperparameters)
-            self._compile_model(model)
             fit_kwargs = copy.copy(fit_kwargs)
-            fit_kwargs['callbacks'] = self._inject_callbacks(
-                original_callbacks, trial, execution)
+            callbacks = fit_kwargs.get('callbacks', [])
+            callbacks = self._deepcopy_callbacks(callbacks)
+            self._configure_tensorboard_dir(callbacks, trial.trial_id, execution)
+            callbacks.append(tuner_utils.TunerCallback(self, trial))
             # Only checkpoint the best epoch across all executions.
-            fit_kwargs['callbacks'].append(model_checkpoint)
+            callbacks.append(model_checkpoint)
+
+            model = self.hypermodel.build(trial.hyperparameters)
             history = model.fit(*fit_args, **fit_kwargs)
             for metric, epoch_values in history.history.items():
                 if self.oracle.objective.direction == 'min':
@@ -105,14 +108,12 @@ class MultiExecutionTuner(tuner_module.Tuner):
         self.oracle.update_trial(
             trial.trial_id, metrics=averaged_metrics, step=self._reported_step)
 
-    def _inject_callbacks(self, callbacks, trial, execution=0):
-        callbacks = super(MultiExecutionTuner, self)._inject_callbacks(
-            callbacks, trial)
+    def _configure_tensorboard_dir(self, callbacks, trial_id, execution=0):
         for callback in callbacks:
             # Patching tensorboard log dir
             if callback.__class__.__name__ == 'TensorBoard':
                 callback.log_dir = os.path.join(
-                    # Super patches in the Trial dir.
                     callback.log_dir,
+                    trial_id,
                     'execution{}'.format(execution))
         return callbacks

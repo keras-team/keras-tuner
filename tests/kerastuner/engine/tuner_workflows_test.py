@@ -110,7 +110,8 @@ def test_basic_tuner_attributes(tmp_dir):
     assert tuner.oracle.max_trials == 2
     assert tuner.executions_per_trial == 3
     assert tuner.directory == tmp_dir
-    assert tuner.hypermodel.__class__.__name__ == 'DefaultHyperModel'
+    assert tuner.hypermodel.__class__.__name__ == 'KerasModelWrapper'
+    assert tuner.hypermodel.hypermodel.__class__.__name__ == 'DefaultHyperModel'
     assert len(tuner.oracle.hyperparameters.space) == 3  # default search space
     assert len(tuner.oracle.hyperparameters.values) == 3  # default search space
 
@@ -152,7 +153,8 @@ def test_hypermodel_with_dynamic_space(tmp_dir):
         executions_per_trial=3,
         directory=tmp_dir)
 
-    assert tuner.hypermodel == hypermodel
+    # tuner.hypermodel is a KerasModelWrapper
+    assert tuner.hypermodel.hypermodel == hypermodel
 
     tuner.search_space_summary()
 
@@ -178,9 +180,9 @@ def test_override_compile(tmp_dir):
         directory=tmp_dir)
 
     assert tuner.oracle.objective.name == 'val_mse'
-    assert tuner.optimizer == 'rmsprop'
-    assert tuner.loss == 'sparse_categorical_crossentropy'
-    assert tuner.metrics == ['mse', 'accuracy']
+    assert tuner.hypermodel.optimizer == 'rmsprop'
+    assert tuner.hypermodel.loss == 'sparse_categorical_crossentropy'
+    assert tuner.hypermodel.metrics == ['mse', 'accuracy']
 
     tuner.search_space_summary()
 
@@ -191,8 +193,7 @@ def test_override_compile(tmp_dir):
 
     tuner.results_summary()
 
-    model = tuner._build_model(tuner.oracle.hyperparameters)
-    tuner._compile_model(model)
+    model = tuner.hypermodel.build(tuner.oracle.hyperparameters)
     assert model.optimizer.__class__.__name__ == 'RMSprop'
     assert model.loss == 'sparse_categorical_crossentropy'
     assert len(model.metrics) == 2
