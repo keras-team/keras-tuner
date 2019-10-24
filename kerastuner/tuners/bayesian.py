@@ -28,8 +28,10 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             Note that the oracle may interrupt the search
             before `max_trial` models have been tested if the search space has been
             exhausted.
-        num_initial_points: Int. The number of randomly generated samples as initial
-            training data for Bayesian optimization.
+        num_initial_points: (Optional) Int. The number of randomly generated samples
+            as initial training data for Bayesian optimization. If not specified,
+            a value of 3 times the dimensionality of the hyperparameter space is
+            used.
         alpha: Float. Value added to the diagonal of the kernel matrix
             during fitting. It represents the expected amount of noise
             in the observed performances in Bayesian optimization.
