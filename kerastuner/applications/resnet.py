@@ -47,17 +47,8 @@ class HyperResNet(hypermodel.HyperModel):
 
     def build(self, hp):
         version = hp.Choice('version', ['v1', 'v2', 'next'], default='v2')
-
-        # Version-conditional hyperparameters.
-        with hp.name_scope(version):
-            conv3_depth = hp.Choice(
-                'conv3_depth',
-                [4] if version == 'next' else [4, 8],
-                default=4)
-            conv4_depth = hp.Choice(
-                'conv4_depth',
-                [6, 23] if version == 'next' else [6, 23, 36],
-                default=6)
+        conv3_depth = hp.Choice('conv3_depth', [4, 8])
+        conv4_depth = hp.Choice('conv4_depth', [6, 23, 36])
 
         # Version-conditional fixed parameters
         preact = True if version == 'v2' else False

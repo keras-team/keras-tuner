@@ -43,8 +43,8 @@ def test_hyperparameter_existence_and_defaults():
     hypermodel = resnet.HyperResNet(input_shape=(256, 256, 3), classes=10)
     hypermodel.build(hp)
     assert hp.get('version') == 'v2'
-    assert hp.get('v2/conv3_depth') == 4
-    assert hp.get('v2/conv4_depth') == 6
+    assert hp.get('conv3_depth') == 4
+    assert hp.get('conv4_depth') == 6
     assert hp.get('learning_rate') == 0.01
     assert hp.get('pooling') == 'avg'
 
@@ -61,11 +61,12 @@ def test_include_top_false():
 def test_hyperparameter_override():
     hp = hp_module.HyperParameters()
     hp.Choice('version', ['v1'])
+    hp.Fixed('conv3_depth', 10)
     hypermodel = resnet.HyperResNet(input_shape=(256, 256, 3), classes=10)
     hypermodel.build(hp)
     assert hp.get('version') == 'v1'
-    assert hp.get('v1/conv3_depth') == 4
-    assert hp.get('v1/conv4_depth') == 6
+    assert hp.get('conv3_depth') == 10
+    assert hp.get('conv4_depth') == 6
 
 
 def test_input_tensor():
