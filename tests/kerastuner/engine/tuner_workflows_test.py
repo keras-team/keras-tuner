@@ -17,6 +17,7 @@ import os
 
 import numpy as np
 
+import tensorflow as tf
 from tensorflow import keras
 import kerastuner
 
@@ -539,3 +540,53 @@ def test_objective_formats():
         'accuracy', 'loss'])
     assert obj == [kerastuner.Objective('accuracy', 'max'),
                    kerastuner.Objective('loss', 'min')]
+
+
+def test_tunable_false_hypermodel(tmp_dir):
+    def build_model(hp):
+        input_shape = (256, 256, 3)
+        inputs = tf.keras.Input(shape=input_shape)
+
+        with hp.name_scope('xception'):
+            # Tune the pooling of Xception by supplying the search space
+            # beforehand.
+            hp.Choice('pooling', ['avg', 'max'])
+            xception = kerastuner.applications.HyperXception(
+                include_top=False,
+                input_shape=input_shape,
+                tunable=False).build(hp)
+        x = xception(inputs)
+
+        x = tf.keras.layers.Dense(
+            hp.Int('hidden_units', 50, 100, step=10),
+            activation='relu')(x)
+        outputs = tf.keras.layers.Dense(NUM_CLASSES, activation='softmax')(x)
+
+        model = tf.keras.Model(inputs, outputs)
+
+        optimizer = tf.keras.optimizers.get(hp.Choice('optimizer', ['adam', 'sgd']))
+        optimizer.learning_rate = hp.Float(
+            'learning_rate', 1e-4, 1e-2, sampling='log')
+
+        model.compile(optimizer, loss='sparse_categorical_crossentropy')
+        return model
+
+    tuner = kerastuner.RandomSearch(
+        objective='val_loss',
+        hypermodel=build_model,
+        max_trials=4,
+        directory=tmp_dir)
+
+    x = np.random.random(size=(2, 256, 256, 3))
+    y = np.random.randint(0, NUM_CLASSES, size=(2,))
+
+    tuner.search(x, y, validation_data=(x, y), batch_size=2)
+
+    hps = tuner.oracle.get_space()
+    assert 'xception/pooling' in hps
+    assert 'hidden_units' in hps
+    assert 'optimizer' in hps
+    assert 'learning_rate' in hps
+
+    # Make sure no HPs from building xception were added.
+    assert len(hps.space) == 4

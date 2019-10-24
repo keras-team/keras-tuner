@@ -19,12 +19,32 @@ from __future__ import print_function
 
 
 class HyperModel(object):
+    """Defines a searchable space of Models and builds Models from this space.
+
+    Attributes:
+        name: The name of this HyperModel.
+        tunable: Whether the hyperparameters defined in this hypermodel
+          should be added to search space. If `False`, either the search
+          space for these parameters must be defined in advance, or the
+          default values will be used.
+    """
 
     def __init__(self, name=None, tunable=True):
         self.name = name
+        self.tunable = tunable
+
+        self._build = self.build
+        self.build = self._tunable_aware_build
 
     def build(self, hp):
         raise NotImplementedError
+
+    def _tunable_aware_build(self, hp):
+        if not self.tunable:
+            # Copy `HyperParameters` object so that new entries are not added
+            # to the search space.
+            hp = hp.copy()
+        return self._build(hp)
 
 
 class DefaultHyperModel(HyperModel):
