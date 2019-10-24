@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import math
 import numpy as np
 import pytest
 
@@ -263,37 +262,48 @@ def test_sampling_arg():
         hp_module.Int('j', 0, 10, sampling='invalid')
 
 
-def test_sampling_random_state():
+def test_log_sampling_random_state():
     f = hp_module.Float('f', 1e-3, 1e3, sampling='log')
     rand_sample = f.random_sample()
     assert rand_sample >= f.min_value
     assert rand_sample <= f.max_value
 
-    def log_scale(x, min_value, max_value):
-        return math.log(x/min_value) / math.log(max_value/min_value)
+    val = 1e-3
+    prob = hp_module.value_to_cumulative_prob(val, f)
+    assert prob == 0
+    new_val = hp_module.cumulative_prob_to_value(prob, f)
+    assert np.isclose(val, new_val)
 
-    x = 1e-1
-    min_value, max_value = 1e-10, 1e10
-    # Scale x to [0, 1].
-    x_scaled = log_scale(x, min_value, max_value)
-    # Scale back.
-    x_rescaled = hp_module._log_sample(x_scaled, min_value, max_value)
-    assert np.allclose(x, x_rescaled)
+    val = 1
+    prob = hp_module.value_to_cumulative_prob(val, f)
+    assert prob == 0.5
+    new_val = hp_module.cumulative_prob_to_value(prob, f)
+    assert np.isclose(val, new_val)
 
+    val = 1e3
+    prob = hp_module.value_to_cumulative_prob(val, f)
+    assert prob == 1
+    new_val = hp_module.cumulative_prob_to_value(prob, f)
+    assert np.isclose(val, new_val)
+
+
+def test_reverse_log_sampling_random_state():
     f = hp_module.Float('f', 1e-3, 1e3, sampling='reverse_log')
     rand_sample = f.random_sample()
     assert rand_sample >= f.min_value
     assert rand_sample <= f.max_value
 
-    def reverse_log_scale(x, a, b):
-        return 1 - math.log((b + a - x) / a) / math.log(b/a)
+    val = 1e-3
+    prob = hp_module.value_to_cumulative_prob(val, f)
+    assert prob == 0
+    new_val = hp_module.cumulative_prob_to_value(prob, f)
+    assert np.isclose(val, new_val)
 
-    x = 1e5
-    min_value, max_value = 1e-10, 1e10
-    x_scaled = reverse_log_scale(x, min_value, max_value)
-    x_rescaled = hp_module._reverse_log_sample(
-        x_scaled, min_value, max_value)
-    assert np.allclose(x, x_rescaled)
+    val = 1
+    prob = hp_module.value_to_cumulative_prob(val, f)
+    assert prob > 0 and prob < 1
+    new_val = hp_module.cumulative_prob_to_value(prob, f)
+    assert np.isclose(val, new_val)
 
 
 def test_Int():
@@ -301,7 +311,6 @@ def test_Int():
         'rg', min_value=5, max_value=9, step=1, default=6)
     rg = hp_module.Int.from_config(rg.get_config())
     assert rg.default == 6
-    assert rg._values == [5, 6, 7, 8, 9]
     assert 5 <= rg.random_sample() <= 9
     assert isinstance(rg.random_sample(), int)
     assert rg.random_sample(123) == rg.random_sample(123)

@@ -4,7 +4,6 @@ import numpy as np
 from scipy import optimize as scipy_optimize
 from sklearn import exceptions
 from sklearn import gaussian_process
-from sklearn import preprocessing
 
 from ..engine import hyperparameters as hp_module
 from ..engine import multi_execution_tuner
@@ -198,14 +197,9 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                 else:
                     trial_value = hp.default
 
-                # Embed an HP value into a continuous space.
-                if isinstance(hp, hp_module.Boolean):
-                    val = 1 if trial_value else 0
-                elif isinstance(hp, hp_module.Choice):
-                    val = hp.values.index(trial_value)
-                else:
-                    val = trial_value
-                vector.append(val)
+                # Embed an HP value into the continuous space [0, 1].
+                prob = hp_module.value_to_cumulative_prob(trial_value, hp)
+                vector.append(prob)
 
             if trial in ongoing_trials:
                 # "Hallucinate" the results of ongoing trials. This ensures that
@@ -219,6 +213,8 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                 # Always frame the optimization as a minimization for scipy.minimize.
                 if self.objective.direction == 'max':
                     score = -1*score
+            else:
+                continue
 
             x.append(vector)
             y.append(score)
@@ -236,24 +232,10 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                 values[hp.name] = hp.value
                 continue
 
-            value = vector[vector_index]
+            prob = vector[vector_index]
             vector_index += 1
 
-            if isinstance(hp, hp_module.Boolean):
-                value = True if int(round(value)) == 1 else False
-            if isinstance(hp, hp_module.Choice):
-                value = hp.values[int(round(value))]
-            elif isinstance(hp, hp_module.Int):
-                if hp.step is not None:
-                    value = int(self._find_closest(value, hp))
-                else:
-                    value = round(value)
-            elif isinstance(hp, hp_module.Float):
-                if hp.step is not None:
-                    value = self._find_closest(value, hp)
-                else:
-                    value = value
-            values[hp.name] = value
+            values[hp.name] = hp_module.cumulative_prob_to_value(prob, hp)
 
         return values
 
@@ -279,6 +261,9 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
     def _get_hp_bounds(self):
         bounds = []
         for hp in self._nonfixed_space():
+            bounds.append([0, 1])
+            continue
+
             if isinstance(hp, hp_module.Boolean):
                 bound = [0, 1]
             elif isinstance(hp, hp_module.Choice):
