@@ -17,5 +17,5 @@ tmp.py
 .coverage.*
 htmlcov
 old_code/
-kerastuner_docs/site
-kerastuner_docs/sources
+docs/site
+docs/sources
