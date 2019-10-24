@@ -39,6 +39,7 @@ def test_bayesian_oracle(tmp_dir):
     oracle = bo_module.BayesianOptimizationOracle(
         objective=kt.Objective('score', 'max'),
         max_trials=20,
+        num_initial_points=2,
         hyperparameters=hps)
     oracle._set_project_dir(tmp_dir, 'untitled')
     for i in range(5):
@@ -57,6 +58,7 @@ def test_bayesian_oracle_with_zero_y(tmp_dir):
     oracle = bo_module.BayesianOptimizationOracle(
         objective=kt.Objective('score', 'max'),
         max_trials=20,
+        num_initial_points=2,
         hyperparameters=hps)
     oracle._set_project_dir(tmp_dir, 'untitled')
     for i in range(5):
@@ -69,7 +71,7 @@ def test_bayesian_dynamic_space(tmp_dir):
     hps = hp_module.HyperParameters()
     hps.Choice('a', [1, 2], default=1)
     oracle = bo_module.BayesianOptimizationOracle(
-        objective='val_acc', max_trials=20)
+        objective='val_acc', max_trials=20, num_initial_points=10)
     oracle._set_project_dir(tmp_dir, 'untitled')
     oracle.hyperparameters = hps
     for i in range(10):
