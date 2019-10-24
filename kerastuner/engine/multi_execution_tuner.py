@@ -72,7 +72,6 @@ class MultiExecutionTuner(tuner_module.Tuner):
         pass
 
     def run_trial(self, trial, *fit_args, **fit_kwargs):
-        original_callbacks = fit_kwargs.get('callbacks', [])[:]
         model_checkpoint = keras.callbacks.ModelCheckpoint(
             filepath=self._get_checkpoint_fname(
                 trial.trial_id, self._reported_step),
@@ -85,7 +84,7 @@ class MultiExecutionTuner(tuner_module.Tuner):
         metrics = collections.defaultdict(list)
         for execution in range(self.executions_per_trial):
             fit_kwargs = copy.copy(fit_kwargs)
-            callbacks = fit_kwargs.get('callbacks', [])
+            callbacks = fit_kwargs.pop('callbacks', [])
             callbacks = self._deepcopy_callbacks(callbacks)
             self._configure_tensorboard_dir(callbacks, trial.trial_id, execution)
             callbacks.append(tuner_utils.TunerCallback(self, trial))
@@ -93,7 +92,7 @@ class MultiExecutionTuner(tuner_module.Tuner):
             callbacks.append(model_checkpoint)
 
             model = self.hypermodel.build(trial.hyperparameters)
-            history = model.fit(*fit_args, **fit_kwargs)
+            history = model.fit(*fit_args, **fit_kwargs, callbacks=callbacks)
             for metric, epoch_values in history.history.items():
                 if self.oracle.objective.direction == 'min':
                     best_value = np.min(epoch_values)
