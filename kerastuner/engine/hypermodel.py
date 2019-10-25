@@ -53,7 +53,9 @@ class KerasHyperModel(HyperModel):
                  optimizer=None,
                  loss=None,
                  metrics=None,
-                 distribution_strategy=None):
+                 distribution_strategy=None,
+                 **kwargs):
+        super(KerasHyperModel, self).__init__(**kwargs)
         self.hypermodel = get_hypermodel(hypermodel)
         self.max_model_size = max_model_size
         self.optimizer = optimizer
