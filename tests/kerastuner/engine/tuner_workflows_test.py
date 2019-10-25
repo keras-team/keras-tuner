@@ -540,3 +540,29 @@ def test_objective_formats():
         'accuracy', 'loss'])
     assert obj == [kerastuner.Objective('accuracy', 'max'),
                    kerastuner.Objective('loss', 'min')]
+
+
+def test_get_best_hyperparameters(tmp_dir):
+    hp1 = kerastuner.HyperParameters()
+    hp1.Fixed('a', 1)
+    trial1 = kerastuner.engine.trial.Trial(hyperparameters=hp1)
+    trial1.status = 'COMPLETED'
+    trial1.score = 10
+
+    hp2 = kerastuner.HyperParameters()
+    hp2.Fixed('a', 2)
+    trial2 = kerastuner.engine.trial.Trial(hyperparameters=hp2)
+    trial2.status = 'COMPLETED'
+    trial2.score = 9
+
+    tuner = kerastuner.RandomSearch(
+        objective='val_accuracy',
+        hypermodel=build_model,
+        max_trials=2,
+        directory=tmp_dir)
+
+    tuner.oracle.trials = {trial1.trial_id: trial1,
+                           trial2.trial_id: trial2}
+
+    hps = tuner.get_best_hyperparameters()[0]
+    assert hps['a'] == 1

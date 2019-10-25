@@ -212,22 +212,45 @@ class BaseTuner(stateful.Stateful):
             self.logger.exit()
 
     def get_best_models(self, num_models=1):
-        """Returns the best model(s), as determined by the tuner's objective.
+        """Returns the best model(s), as determined by the objective.
 
         This method is only a convenience shortcut. For best performance, It is
         recommended to retrain your Model on the full dataset using the best
         hyperparameters found during `search`.
 
-        Args:
-            num_models (int, optional): Number of best models to return.
+        # Arguments:
+            num_models (int, optional). Number of best models to return.
                 Models will be returned in sorted order. Defaults to 1.
 
-        Returns:
+        # Returns:
             List of trained model instances.
         """
         best_trials = self.oracle.get_best_trials(num_models)
         models = [self.load_model(trial) for trial in best_trials]
         return models
+
+    def get_best_hyperparameters(self, num_trials=1):
+        """Returns the best hyperparameters, as determined by the objective.
+
+        This method can be used to reinstantiate the (untrained) best model
+        found during the search process.
+
+        Example:
+
+        ```python
+        best_hp = tuner.get_best_hyperparameters()[0]
+        model = tuner.hypermodel.build(best_hp)
+        ```
+
+        # Arguments:
+            num_trials: (int, optional). Number of `HyperParameters` objects to
+              return. `HyperParameters` will be returned in sorted order based on
+              trial performance.
+
+        # Returns:
+            List of `HyperParameter` objects.
+        """
+        return [t.hyperparameters for t in self.oracle.get_best_trials(num_trials)]
 
     def search_space_summary(self, extended=False):
         """Print search space summary.

@@ -2,6 +2,7 @@ import random
 
 import numpy as np
 from scipy import optimize as scipy_optimize
+from sklearn import exceptions
 from sklearn import gaussian_process
 
 from ..engine import hyperparameters as hp_module
@@ -27,8 +28,10 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             Note that the oracle may interrupt the search
             before `max_trial` models have been tested if the search space has been
             exhausted.
-        num_initial_points: Int. The number of randomly generated samples as initial
-            training data for Bayesian optimization.
+        num_initial_points: (Optional) Int. The number of randomly generated samples
+            as initial training data for Bayesian optimization. If not specified,
+            a value of 3 times the dimensionality of the hyperparameter space is
+            used.
         alpha: Float. Value added to the diagonal of the kernel matrix
             during fitting. It represents the expected amount of noise
             in the observed performances in Bayesian optimization.
@@ -52,7 +55,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
     def __init__(self,
                  objective,
                  max_trials,
-                 num_initial_points=2,
+                 num_initial_points=None,
                  alpha=1e-4,
                  beta=2.6,
                  seed=None,
@@ -73,20 +76,34 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         self._tried_so_far = set()
         self._max_collisions = 20
         self.gpr = gaussian_process.GaussianProcessRegressor(
+            kernel=gaussian_process.kernels.Matern(),
+            n_restarts_optimizer=20,
+            normalize_y=True,
             alpha=self.alpha)
 
     def _populate_space(self, trial_id):
         # Generate enough samples before training Gaussian process.
         completed_trials = [t for t in self.trials.values()
                             if t.status == 'COMPLETED']
-        if len(self.trials) < self.num_initial_points or len(completed_trials) < 2:
+
+        # Use 3 times the dimensionality of the space as the default number of
+        # random points.
+        dimensions = len(self.hyperparameters.space)
+        num_initial_points = self.num_initial_points or 3 * dimensions
+        if len(completed_trials) < num_initial_points:
             values = self._random_trial()
             return {'status': trial_lib.TrialStatus.RUNNING,
                     'values': values}
 
         # Fit a GPR to the completed trials and return the predicted optimum values.
         x, y = self._vectorize_trials()
-        self.gpr.fit(x, y)
+        try:
+            self.gpr.fit(x, y)
+        except exceptions.ConvergenceWarning:
+            # If convergence of the GPR fails, create a random trial.
+            values = self._random_trial()
+            return {'status': trial_lib.TrialStatus.RUNNING,
+                    'values': values}
 
         def _upper_confidence_bound(x):
             x = x.reshape(1, -1)
@@ -95,7 +112,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
 
         optimal_val = float('inf')
         optimal_x = None
-        num_restarts = 25
+        num_restarts = 50
         bounds = self._get_hp_bounds()
         for _ in range(num_restarts):
             x0 = np.random.uniform(bounds[:, 0], bounds[:, 1])
@@ -169,18 +186,10 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
     def _vectorize_trials(self):
         x = []
         y = []
+        ongoing_trials = {t for t in self.ongoing_trials.values()}
         for trial in self.trials.values():
-            if trial.status != "COMPLETED":
-                continue
-
+            # Create a vector representation of each Trial's hyperparameters.
             trial_values = trial.hyperparameters.values
-            score = trial.score
-
-            # Always frame the optimization as a minimization for scipy.minimize.
-            if self.objective.direction == 'max':
-                score = -1*score
-
-            # Create a vector representation for each Trial's hyperparameters.
             vector = []
             for hp in self._nonfixed_space():
                 # Hyperparameters could have been added to the study since
@@ -190,22 +199,30 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                 else:
                     trial_value = hp.default
 
-                # Embed an HP value into a continuous space.
-                if isinstance(hp, hp_module.Boolean):
-                    val = 1 if trial_value else 0
-                elif isinstance(hp, hp_module.Choice):
-                    val = hp.values.index(trial_value)
-                else:
-                    val = trial_value
-                vector.append(val)
+                # Embed an HP value into the continuous space [0, 1].
+                prob = hp_module.value_to_cumulative_prob(trial_value, hp)
+                vector.append(prob)
+
+            if trial in ongoing_trials:
+                # "Hallucinate" the results of ongoing trials. This ensures that
+                # repeat trials are not selected when running distributed.
+                x_h = np.array(vector).reshape((1, -1))
+                y_h_mean, y_h_std = self.gpr.predict(x_h, return_std=True)
+                # Give a pessimistic estimate of the ongoing trial.
+                score = y_h_mean[0] + y_h_std[0]
+            elif trial.status == 'COMPLETED':
+                score = trial.score
+                # Always frame the optimization as a minimization for scipy.minimize.
+                if self.objective.direction == 'max':
+                    score = -1*score
+            else:
+                continue
 
             x.append(vector)
             y.append(score)
 
         x = np.array(x)
-        max_score = np.max(np.abs(y))
-        if max_score > 0:
-            y = np.array(y) / max_score
+        y = np.array(y)
         return x, y
 
     def _vector_to_values(self, vector):
@@ -217,24 +234,10 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                 values[hp.name] = hp.value
                 continue
 
-            value = vector[vector_index]
+            prob = vector[vector_index]
             vector_index += 1
 
-            if isinstance(hp, hp_module.Boolean):
-                value = True if int(round(value)) == 1 else False
-            if isinstance(hp, hp_module.Choice):
-                value = hp.values[int(round(value))]
-            elif isinstance(hp, hp_module.Int):
-                if hp.step is not None:
-                    value = int(self._find_closest(value, hp))
-                else:
-                    value = round(value)
-            elif isinstance(hp, hp_module.Float):
-                if hp.step is not None:
-                    value = self._find_closest(value, hp)
-                else:
-                    value = value
-            values[hp.name] = value
+            values[hp.name] = hp_module.cumulative_prob_to_value(prob, hp)
 
         return values
 
@@ -260,13 +263,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
     def _get_hp_bounds(self):
         bounds = []
         for hp in self._nonfixed_space():
-            if isinstance(hp, hp_module.Boolean):
-                bound = [0, 1]
-            elif isinstance(hp, hp_module.Choice):
-                bound = [0, len(hp.values) - 1]
-            else:
-                bound = [hp.min_value, hp.max_value]
-            bounds.append(bound)
+            bounds.append([0, 1])
         return np.array(bounds)
 
 

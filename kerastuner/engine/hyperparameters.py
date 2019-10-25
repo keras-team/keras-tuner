@@ -19,6 +19,7 @@ from __future__ import print_function
 
 import contextlib
 import math
+import numpy as np
 import random
 
 from tensorflow import keras
@@ -223,7 +224,6 @@ class Int(HyperParameter):
         self.step = _check_int(step, arg='step')
         self.sampling = _check_sampling_arg(
             sampling, step, min_value, max_value, hp_type='int')
-        self._values = list(range(min_value, max_value + 1, step))
 
     def __repr__(self):
         return ('Int(name: "{}", min_value: {}, max_value: {}, step: {}, '
@@ -237,17 +237,8 @@ class Int(HyperParameter):
 
     def random_sample(self, seed=None):
         random_state = random.Random(seed)
-        if self.sampling in {'log', 'reverse_log'}:
-            cdf = float(random_state.random())
-            if self.sampling == 'log':
-                random_sample = _log_sample(
-                    cdf, self.min_value, self.max_value)
-            elif self.sampling == 'reverse_log':
-                random_sample = _reverse_log_sample(
-                    cdf, self.min_value, self.max_value)
-            return int(random_sample)
-
-        return random_state.choice(self._values)
+        prob = float(random_state.random())
+        return cumulative_prob_to_value(prob, self)
 
     @property
     def default(self):
@@ -339,21 +330,8 @@ class Float(HyperParameter):
 
     def random_sample(self, seed=None):
         random_state = random.Random(seed)
-        if self.step is not None:
-            width = self.max_value - self.min_value
-            value = self.min_value + float(random_state.random()) * width
-            quantized_value = round(value / self.step) * self.step
-            return quantized_value
-        elif self.sampling in {'log', 'reverse_log'}:
-            cdf = float(random_state.random())
-            if self.sampling == 'log':
-                random_sample = _log_sample(
-                    cdf, self.min_value, self.max_value)
-            elif self.sampling == 'reverse_log':
-                random_sample = _reverse_log_sample(
-                    cdf, self.min_value, self.max_value)
-            return random_sample
-        return random_state.uniform(self.min_value, self.max_value)
+        prob = float(random_state.random())
+        return cumulative_prob_to_value(prob, self)
 
     def get_config(self):
         config = super(Float, self).get_config()
@@ -854,14 +832,69 @@ def deserialize(config):
         config, module_objects=module_objects)
 
 
-def _log_sample(x, min_value, max_value, seed=None):
-    """Applies log scale to a value in range [0, 1]."""
-    return min_value * math.pow(max_value / min_value, x)
+def cumulative_prob_to_value(prob, hp):
+    """Convert a value from [0, 1] to a hyperparameter value."""
+    if isinstance(hp, Fixed):
+        return hp.value
+    elif isinstance(hp, Boolean):
+        return bool(prob >= 0.5)
+    elif isinstance(hp, Choice):
+        ele_prob = 1 / len(hp.values)
+        index = math.floor(prob / ele_prob)
+        return hp.values[index]
+    elif isinstance(hp, (Int, Float)):
+        sampling = hp.sampling or 'linear'
+        if sampling == 'linear':
+            value = prob * (hp.max_value - hp.min_value) + hp.min_value
+        elif sampling == 'log':
+            value = hp.min_value * math.pow(hp.max_value / hp.min_value, prob)
+        elif sampling == 'reverse_log':
+            value = (hp.max_value + hp.min_value -
+                     hp.min_value * math.pow(hp.max_value / hp.min_value, 1 - prob))
+        else:
+            raise ValueError('Unrecognized sampling value: {}'.format(sampling))
+
+        if hp.step is not None:
+            values = np.arange(hp.min_value, hp.max_value + 1e-7, step=hp.step)
+            closest_index = np.abs(values - value).argmin()
+            value = values[closest_index]
+
+        if isinstance(hp, Int):
+            return int(value)
+        return value
+    else:
+        raise ValueError('Unrecognized HyperParameter type: {}'.format(hp))
 
 
-def _reverse_log_sample(x, min_value, max_value, seed=None):
-    """Applies reverse log scale to a value in range [0, 1]."""
-    return max_value + min_value - min_value * math.pow(max_value / min_value, 1 - x)
+def value_to_cumulative_prob(value, hp):
+    """Convert a hyperparameter value to [0, 1]."""
+    if isinstance(hp, Fixed):
+        return 0.5
+    if isinstance(hp, Boolean):
+        # Center the value in its probability bucket.
+        if value:
+            return 0.75
+        return 0.25
+    elif isinstance(hp, Choice):
+        ele_prob = 1 / len(hp.values)
+        index = hp.values.index(value)
+        # Center the value in its probability bucket.
+        return (index + 0.5) * ele_prob
+    elif isinstance(hp, (Int, Float)):
+        sampling = hp.sampling or 'linear'
+        if sampling == 'linear':
+            return (value - hp.min_value) / (hp.max_value - hp.min_value)
+        elif sampling == 'log':
+            return (math.log(value / hp.min_value) /
+                    math.log(hp.max_value / hp.min_value))
+        elif sampling == 'reverse_log':
+            return (
+                1. - math.log((hp.max_value + hp.min_value - value) / hp.min_value) /
+                math.log(hp.max_value / hp.min_value))
+        else:
+            raise ValueError('Unrecognized sampling value: {}'.format(sampling))
+    else:
+        raise ValueError('Unrecognized HyperParameter type: {}'.format(hp))
 
 
 def _sampling_from_proto(sampling):

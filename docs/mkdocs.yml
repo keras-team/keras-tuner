@@ -10,8 +10,7 @@ site_description: 'Documentation for Keras Tuner.'
 nav:
     - Home: index.md
     - Tutorials:
-      - Tutorial1: tutorials/tutorial1.md
-      - Tutorial2: tutorials/tutorial2.md
+      - Distributed Tuning: tutorials/distributed-tuning.md
     - Documentation:
       - HyperModels: documentation/hypermodels.md
       - HyperParameters: documentation/hyperparameters.md
