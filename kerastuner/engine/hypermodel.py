@@ -44,7 +44,7 @@ class DefaultHyperModel(HyperModel):
         self.build = build
 
 
-class KerasModelWrapper(HyperModel):
+class KerasHyperModel(HyperModel):
     """Builds and compiles a Keras Model with optional compile overrides."""
 
     def __init__(self,

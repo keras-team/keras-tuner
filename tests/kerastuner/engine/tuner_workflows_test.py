@@ -110,7 +110,7 @@ def test_basic_tuner_attributes(tmp_dir):
     assert tuner.oracle.max_trials == 2
     assert tuner.executions_per_trial == 3
     assert tuner.directory == tmp_dir
-    assert tuner.hypermodel.__class__.__name__ == 'KerasModelWrapper'
+    assert tuner.hypermodel.__class__.__name__ == 'KerasHyperModel'
     assert tuner.hypermodel.hypermodel.__class__.__name__ == 'DefaultHyperModel'
     assert len(tuner.oracle.hyperparameters.space) == 3  # default search space
     assert len(tuner.oracle.hyperparameters.values) == 3  # default search space

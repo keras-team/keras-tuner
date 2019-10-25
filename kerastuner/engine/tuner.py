@@ -85,13 +85,15 @@ class Tuner(base_tuner.BaseTuner):
                  tuner_id=None,
                  overwrite=False):
 
-        hypermodel = hm_module.KerasModelWrapper(
-            hypermodel,
-            max_model_size=max_model_size,
-            optimizer=optimizer,
-            loss=loss,
-            metrics=metrics,
-            distribution_strategy=distribution_strategy)
+        # Subclasses of `KerasHyperModel` are not automatically wrapped.
+        if not isinstance(hypermodel, hm_module.KerasHyperModel):
+            hypermodel = hm_module.KerasHyperModel(
+                hypermodel,
+                max_model_size=max_model_size,
+                optimizer=optimizer,
+                loss=loss,
+                metrics=metrics,
+                distribution_strategy=distribution_strategy)
 
         super(Tuner, self).__init__(oracle=oracle,
                                     hypermodel=hypermodel,
