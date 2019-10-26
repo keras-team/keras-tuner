@@ -79,18 +79,10 @@ class BaseTuner(stateful.Stateful):
             # Proxies requests to the chief oracle.
             self.oracle = oracle_client.OracleClient(self.oracle)
 
-        if isinstance(hypermodel, hm_module.HyperModel):
-            self.hypermodel = hypermodel
-        else:
-            if not callable(hypermodel):
-                raise ValueError(
-                    'The `hypermodel` argument should be either '
-                    'a callable with signature `build(hp)` returning a model, '
-                    'or an instance of `HyperModel`.')
-            self.hypermodel = hm_module.DefaultHyperModel(hypermodel)
-
         # To support tuning distribution.
         self.tuner_id = os.environ.get('KERASTUNER_TUNER_ID', 'tuner0')
+
+        self.hypermodel = hm_module.get_hypermodel(hypermodel)
 
         # Logs etc
         self.logger = logger
