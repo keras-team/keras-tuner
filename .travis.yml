@@ -36,7 +36,7 @@ install:
   - travis_retry conda install portpicker
 
   # install tools for building the docs
-  - pip install mkdocs git+https://github.com/keras-team/keras-autodoc.git@v0.2.0
+  - pip install mkdocs git+https://github.com/keras-team/keras-autodoc.git@v0.3.0
 
   - pip install -e .[tests] --progress-bar off
 
