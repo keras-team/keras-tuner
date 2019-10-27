@@ -201,5 +201,5 @@ def test_sklearn_real_data(tmp_dir):
     best_model_score = best_model.score(x_test, y_test)
     worst_model_score = worst_model.score(x_test, y_test)
 
-    assert best_model_score > 0.9
+    assert best_model_score >= 0.9
     assert best_model_score > worst_model_score
