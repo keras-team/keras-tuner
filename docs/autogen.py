@@ -56,9 +56,9 @@ PAGES = {
         kerastuner.HyperParameters.get
     ],
     'documentation/oracles.md': [
-        kerastuner.oracles.BayesianOptimization,
-        kerastuner.oracles.Hyperband,
-        kerastuner.oracles.RandomSearch,
+        'kerastuner.oracles.BayesianOptimization',
+        'kerastuner.oracles.Hyperband',
+        'kerastuner.oracles.RandomSearch',
         Oracle,
         Oracle._populate_space,
         Oracle._score_trial,
