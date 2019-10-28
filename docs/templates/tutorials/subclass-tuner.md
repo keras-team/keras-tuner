@@ -18,6 +18,39 @@ import kerastuner as kt
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
+
+def build_model(hp):
+    """Builds a convolutional model."""
+    inputs = tf.keras.Input(shape=(28, 28, 1))
+    x = inputs
+    for i in range(hp.Int('conv_layers', 1, 3, default=3)):
+        x = tf.keras.layers.Conv2D(
+            filters=hp.Int('filters_' + str(i), 4, 32, step=4, default=8),
+            kernel_size=hp.Int('kernel_size_' + str(i), 3, 5),
+            activation='relu',
+            padding='same')(x)
+
+        if hp.Choice('pooling' + str(i), ['max', 'avg']) == 'max':
+            x = tf.keras.layers.MaxPooling2D()(x)
+        else:
+            x = tf.keras.layers.AveragePooling2D()(x)
+
+        x = tf.keras.layers.BatchNormalization()(x)
+        x = tf.keras.layers.ReLU()(x)
+
+    if hp.Choice('global_pooling', ['max', 'avg']) == 'max':
+        x = tf.keras.layers.GlobalMaxPooling2D()(x)
+    else:
+        x = tf.keras.layers.GlobalAveragePooling2D()(x)
+    outputs = tf.keras.layers.Dense(10, activation='softmax')(x)
+
+    model = tf.keras.Model(inputs, outputs)
+
+    optimizer = hp.Choice('optimizer', ['adam', 'sgd'])
+    model.compile(optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    return model
+
+
 class MyTuner(kt.Tuner):
 
     def run_trial(self, trial, train_ds):
@@ -43,29 +76,57 @@ class MyTuner(kt.Tuner):
                 loss = tf.keras.losses.sparse_categorical_crossentropy(
                     labels, logits)
                 # Add any regularization losses.
-                loss += tf.math.add_n(model.losses)
+                if model.losses:
+                    loss += tf.math.add_n(model.losses)
                 gradients = tape.gradient(loss, model.trainable_variables)
             optimizer.apply_gradients(zip(gradients, model.trainable_variables))
             epoch_loss_metric.update_state(loss)
             return loss
 
+        # `self.on_epoch_end` reports results to the `Oracle` and saves the
+        # current state of the Model. The other hooks called here only log values
+        # for display but can also be overridden. For use cases where there is no
+        # natural concept of epoch, you do not have to call any of these hooks. In
+        # this case you should instead call `self.oracle.update_trial` and
+        # `self.oracle.save_model` manually.
         for epoch in range(10):
+            print('Epoch: {}'.format(epoch))
+
             self.on_epoch_begin(trial, model, epoch, logs={})
-            for batch, (x, y) in enumerate(train_ds):
+            for batch, data in enumerate(train_ds):
                 self.on_batch_begin(trial, model, batch, logs={})
-                batch_loss = run_train_step(x, y).numpy()
+                batch_loss = run_train_step(data).numpy()
                 self.on_batch_end(trial, model, batch, logs={'loss': batch_loss})
+
+                if batch % 100 == 0:
+                    loss = epoch_loss_metric.result().numpy()
+                    print('Batch: {}, Average Loss: {}'.format(batch, loss))
+
             epoch_loss = epoch_loss_metric.result().numpy()
-            self.on_epoch_end(trial, model, epochs, logs={'loss': epoch_loss})
+            self.on_epoch_end(trial, model, epoch, logs={'loss': epoch_loss})
             epoch_loss_metric.reset_states()
 
 
-tuner = MyTuner(
-    oracle=kt.oracles.BayesianOptimization(
-        objective='loss',
-        max_trials=40),
-    hypermodel=build_model,
-    directory='results',
-    project_name='mnist_custom_training')
+def main():
+  tuner = MyTuner(
+      oracle=kt.oracles.BayesianOptimization(
+          objective=kt.Objective('loss', 'min'),
+          max_trials=2),
+      hypermodel=build_model,
+      directory='results',
+      project_name='mnist_custom_training')
 
+  mnist_data = tfds.load('mnist')
+  mnist_train, mnist_test = mnist_data['train'], mnist_data['test']
+  mnist_train = mnist_train.shuffle(1000)
 
+  tuner.search(train_ds=mnist_train)
+
+  best_hps = tuner.get_best_hyperparameters()[0]
+  print(best_hps.values)
+
+  best_model = tuner.get_best_models()[0]
+  
+if __name__ == '__main__':
+  main()
+```
