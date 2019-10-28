@@ -29,12 +29,40 @@ from .. import config as config_module
 
 
 class HyperModel(object):
+    """Defines a searchable space of Models and builds Models from this space.
+
+    # Attributes:
+        name: The name of this HyperModel.
+        tunable: Whether the hyperparameters defined in this hypermodel
+          should be added to search space. If `False`, either the search
+          space for these parameters must be defined in advance, or the
+          default values will be used.
+    """
 
     def __init__(self, name=None, tunable=True):
         self.name = name
+        self.tunable = tunable
+
+        self._build = self.build
+        self.build = self._build_wrapper
 
     def build(self, hp):
+        """Builds a model.
+
+        # Arguments:
+            hp: A `HyperParameters` instance.
+
+        # Returns:
+            A model instance.
+        """
         raise NotImplementedError
+
+    def _build_wrapper(self, hp):
+        if not self.tunable:
+            # Copy `HyperParameters` object so that new entries are not added
+            # to the search space.
+            hp = hp.copy()
+        return self._build(hp)
 
 
 class DefaultHyperModel(HyperModel):
