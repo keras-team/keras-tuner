@@ -44,7 +44,7 @@ class HyperModel(object):
         self.tunable = tunable
 
         self._build = self.build
-        self.build = self._tunable_aware_build
+        self.build = self._build_wrapper
 
     def build(self, hp):
         """Builds a model.
