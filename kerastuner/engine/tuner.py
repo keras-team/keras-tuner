@@ -18,18 +18,13 @@ from __future__ import division
 from __future__ import print_function
 
 import copy
-import gc
 import os
-import traceback
-
 
 import tensorflow as tf
-from tensorflow import keras
 
-from ..abstractions import display
 from . import base_tuner
+from . import hypermodel as hm_module
 from . import tuner_utils
-from .. import config as config_module
 
 
 class Tuner(base_tuner.BaseTuner):
@@ -89,6 +84,17 @@ class Tuner(base_tuner.BaseTuner):
                  logger=None,
                  tuner_id=None,
                  overwrite=False):
+
+        # Subclasses of `KerasHyperModel` are not automatically wrapped.
+        if not isinstance(hypermodel, hm_module.KerasHyperModel):
+            hypermodel = hm_module.KerasHyperModel(
+                hypermodel,
+                max_model_size=max_model_size,
+                optimizer=optimizer,
+                loss=loss,
+                metrics=metrics,
+                distribution_strategy=distribution_strategy)
+
         super(Tuner, self).__init__(oracle=oracle,
                                     hypermodel=hypermodel,
                                     directory=directory,
@@ -96,18 +102,7 @@ class Tuner(base_tuner.BaseTuner):
                                     logger=logger,
                                     overwrite=overwrite)
 
-        # Global search options
-        self.max_model_size = max_model_size
         self.distribution_strategy = distribution_strategy
-
-        # Compilation options
-        self.optimizer = optimizer
-        self.loss = loss
-        self.metrics = metrics
-
-        # Private internal state
-        self._max_fail_streak = 5
-        self._stats = tuner_utils.TunerStats()
 
         # Save only the last N checkpoints.
         self._save_n_checkpoints = 10
@@ -125,16 +120,23 @@ class Tuner(base_tuner.BaseTuner):
             *fit_args: Positional arguments passed by `search`.
             *fit_kwargs: Keyword arguments passed by `search`.
         """
-        # Patch fit arguments. During model `fit`, the patched
-        # callbacks call: `self.on_epoch_begin`, `self.on_epoch_end`,
-        # `self.on_batch_begin`, `self.on_batch_end`.
+        # Handle any callbacks passed to `fit`.
         fit_kwargs = copy.copy(fit_kwargs)
-        original_callbacks = fit_kwargs.get('callbacks', [])[:]
-        fit_kwargs['callbacks'] = self._inject_callbacks(
-            original_callbacks, trial)
-        model = self._build_model(trial.hyperparameters)
-        self._compile_model(model)
-        model.fit(*fit_args, **fit_kwargs)
+        callbacks = fit_kwargs.pop('callbacks', [])
+        callbacks = self._deepcopy_callbacks(callbacks)
+        self._configure_tensorboard_dir(callbacks, trial.trial_id)
+        # `TunerCallback` calls:
+        # - `Tuner.on_epoch_begin`
+        # - `Tuner.on_batch_begin`
+        # - `Tuner.on_batch_end`
+        # - `Tuner.on_epoch_end`
+        # These methods report results to the `Oracle` and save the trained Model. If
+        # you are subclassing `Tuner` to write a custom training loop, you should
+        # make calls to these methods within `run_trial`.
+        callbacks.append(tuner_utils.TunerCallback(self, trial))
+
+        model = self.hypermodel.build(trial.hyperparameters)
+        model.fit(*fit_args, **fit_kwargs, callbacks=callbacks)
 
     def save_model(self, trial_id, model, step=0):
         epoch = step
@@ -145,7 +147,6 @@ class Tuner(base_tuner.BaseTuner):
 
     def load_model(self, trial):
         model = self.hypermodel.build(trial.hyperparameters)
-        self._compile_model(model)
         # Reload best checkpoint. The Oracle scores the Trial and also
         # indicates at what epoch the best value of the objective was
         # obtained.
@@ -227,126 +228,25 @@ class Tuner(base_tuner.BaseTuner):
         # Method only exists in this class for the docstring override.
         return super(Tuner, self).get_best_models(num_models)
 
-    def get_state(self):
-        state = {'stats': self._stats.get_config()}
-        return state
-
-    def set_state(self, state):
-        self._stats = tuner_utils.TunerStats.from_config(state['stats'])
-
-    def _build_model(self, hp):
-        """Return a never seen before model instance, compiled.
-
-        Args:
-            hp: Instance of HyperParameters with populated values.
-                These values will be used to instantiate a model
-                using the tuner's hypermodel.
-
-        Returns:
-            A compiled Model instance.
-
-        Raises:
-            RuntimeError: If we cannot generate
-                a unique Model instance.
-        """
-        fail_streak = 0
-        oversized_streak = 0
-
-        while 1:
-            # clean-up TF graph from previously stored (defunct) graph
-            keras.backend.clear_session()
-            gc.collect()
-            self._stats.num_generated_models += 1
-            fail_streak += 1
-            try:
-                with tuner_utils.maybe_distribute(self.distribution_strategy):
-                    model = self.hypermodel.build(hp)
-            except:
-                if config_module.DEBUG:
-                    traceback.print_exc()
-
-                self._stats.num_invalid_models += 1
-                display.warning('Invalid model %s/%s' %
-                                (self._stats.num_invalid_models,
-                                 self._max_fail_streak))
-
-                if self._stats.num_invalid_models >= self._max_fail_streak:
-                    raise RuntimeError(
-                        'Too many failed attempts to build model.')
-                continue
-
-            # Stop if `build()` does not return a valid model.
-            if not isinstance(model, keras.models.Model):
-                raise RuntimeError(
-                    'Model-building function did not return '
-                    'a valid Model instance.')
-
-            # Check model size.
-            size = tuner_utils.maybe_compute_model_size(model)
-            if self.max_model_size and size > self.max_model_size:
-                oversized_streak += 1
-                self._stats.num_oversized_models += 1
-                display.warning(
-                    'Oversized model: %s parameters -- skipping' % (size))
-                if oversized_streak >= self._max_fail_streak:
-                    raise RuntimeError(
-                        'Too many consecutive oversized models.')
-                continue
-            break
-
-        return self._compile_model(model)
-
-    def _compile_model(self, model):
-        with tuner_utils.maybe_distribute(self.distribution_strategy):
-            if not model.optimizer:
-                if not self.optimizer:
-                    raise ValueError(
-                        'The hypermodel returned a model '
-                        'that was not compiled. In this case, you '
-                        'should pass the arguments `optimizer`, `loss`, '
-                        'and `metrics` to the Tuner constructor, so '
-                        'that the Tuner will able to compile the model.')
-                model.compile(
-                    optimizer=self.optimizer, loss=self.loss, metrics=self.metrics)
-            elif self.optimizer or self.loss or self.metrics:
-                compile_kwargs = {
-                    'optimizer': model.optimizer,
-                    'loss': model.loss,
-                    'metrics': model.metrics,
-                }
-                if self.loss:
-                    compile_kwargs['loss'] = self.loss
-                if self.optimizer:
-                    compile_kwargs['optimizer'] = self.optimizer
-                if self.metrics:
-                    compile_kwargs['metrics'] = self.metrics
-                model.compile(**compile_kwargs)
-            return model
-
-    def _inject_callbacks(self, callbacks, trial):
-        # Deepcopy and patch callbacks if needed
-        if callbacks:
-            try:
-                callbacks = copy.deepcopy(callbacks)
-            except:
-                raise ValueError(
-                    'All callbacks used during a search '
-                    'should be deep-copyable (since they are '
-                    'reused across trials). '
-                    'It is not possible to do `copy.deepcopy(%s)`' %
-                    (callbacks,))
-            for callback in callbacks:
-                # Patching tensorboard log dir
-                if callback.__class__.__name__ == 'TensorBoard':
-                    callback.log_dir = os.path.join(
-                        callback.log_dir,
-                        str(trial.trial_id))
-        else:
-            callbacks = []
-
-        # Add callback to call back the tuner during `fit`.
-        callbacks.append(tuner_utils.TunerCallback(self, trial))
+    def _deepcopy_callbacks(self, callbacks):
+        try:
+            callbacks = copy.deepcopy(callbacks)
+        except:
+            raise ValueError(
+                'All callbacks used during a search '
+                'should be deep-copyable (since they are '
+                'reused across trials). '
+                'It is not possible to do `copy.deepcopy(%s)`' %
+                (callbacks,))
         return callbacks
+
+    def _configure_tensorboard_dir(self, callbacks, trial_id):
+        for callback in callbacks:
+            # Patching tensorboard log dir
+            if callback.__class__.__name__ == 'TensorBoard':
+                callback.log_dir = os.path.join(
+                    callback.log_dir,
+                    str(trial_id))
 
     def _get_checkpoint_dir(self, trial_id, epoch):
         return os.path.join(
