@@ -31,7 +31,7 @@ from .. import config as config_module
 class HyperModel(object):
     """Defines a searchable space of Models and builds Models from this space.
 
-    Attributes:
+    # Attributes:
         name: The name of this HyperModel.
         tunable: Whether the hyperparameters defined in this hypermodel
           should be added to search space. If `False`, either the search
@@ -57,7 +57,7 @@ class HyperModel(object):
         """
         raise NotImplementedError
 
-    def _tunable_aware_build(self, hp):
+    def _build_wrapper(self, hp):
         if not self.tunable:
             # Copy `HyperParameters` object so that new entries are not added
             # to the search space.
