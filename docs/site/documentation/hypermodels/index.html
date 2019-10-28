@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../../img/favicon.ico">
+        <title>HyperModels - Keras Tuner</title>
+        <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+        <script src="../../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../../js/bootstrap-3.0.3.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script> 
+    </head>
+
+    <body>
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+            <div class="container">
+
+                <!-- Collapsed navigation -->
+                <div class="navbar-header">
+                    <!-- Expander button -->
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="../..">Keras Tuner</a>
+                </div>
+
+                <!-- Expanded navigation -->
+                <div class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li >
+                                <a href="../..">Home</a>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Tutorials <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../../tutorials/distributed-tuning/">Distributed Tuning</a>
+</li>
+                                    
+<li >
+    <a href="../../tutorials/subclass-tuner/">Subclassing Tuner for Custom Training Loops</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="dropdown active">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Documentation <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li class="active">
+    <a href="./">HyperModels</a>
+</li>
+                                    
+<li >
+    <a href="../hyperparameters/">HyperParameters</a>
+</li>
+                                    
+<li >
+    <a href="../oracles/">Oracles</a>
+</li>
+                                    
+<li >
+    <a href="../tuners/">Tuners</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Examples <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../../examples/helloworld/">Hello World</a>
+</li>
+                                </ul>
+                            </li>
+                            <li >
+                                <a href="../../contributing/">Contributing Guide</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li >
+                                <a rel="next" href="../../tutorials/subclass-tuner/">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li >
+                                <a rel="prev" href="../hyperparameters/">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="https://github.com/keras-team/keras-tuner"><i class="fa fa-github"></i> GitHub</a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+        <li class="main active"><a href="#hypermodel-class">HyperModel class:</a></li>
+        <li class="main "><a href="#build-method">build method:</a></li>
+        <li class="main "><a href="#hyperxception-class">HyperXception class:</a></li>
+        <li class="main "><a href="#hyperresnet-class">HyperResNet class:</a></li>
+    </ul>
+</div></div>
+                <div class="col-md-9" role="main">
+
+<p><span style="float:right;"><a href="https://github.com/keras-team/keras-tuner/blob/master/kerastuner/engine/hypermodel.py#L31">[source]</a></span></p>
+<h3 id="hypermodel-class">HyperModel class:</h3>
+<pre><code class="python">kerastuner.engine.hypermodel.HyperModel(name=None, tunable=True)
+</code></pre>
+
+<p>Defines a searchable space of Models and builds Models from this space.</p>
+<p><strong>Attributes:</strong></p>
+<ul>
+<li><strong>name</strong>: The name of this HyperModel.</li>
+<li><strong>tunable</strong>: Whether the hyperparameters defined in this hypermodel
+  should be added to search space. If <code>False</code>, either the search
+  space for these parameters must be defined in advance, or the
+  default values will be used.</li>
+</ul>
+<hr />
+<h3 id="build-method">build method:</h3>
+<pre><code class="python">HyperModel.build(hp)
+</code></pre>
+
+<p>Builds a model.</p>
+<p><strong>Arguments:</strong></p>
+<ul>
+<li><strong>hp</strong>: A <code>HyperParameters</code> instance.</li>
+</ul>
+<p><strong>Returns:</strong></p>
+<p>A model instance.</p>
+<hr />
+<p><span style="float:right;"><a href="https://github.com/keras-team/keras-tuner/blob/master/kerastuner/applications/xception.py#L22">[source]</a></span></p>
+<h3 id="hyperxception-class">HyperXception class:</h3>
+<pre><code class="python">kerastuner.applications.xception.HyperXception(include_top=True, input_shape=None, input_tensor=None, classes=None, **kwargs)
+</code></pre>
+
+<p>An Xception HyperModel.</p>
+<p><strong>Arguments:</strong></p>
+<ul>
+<li><strong>include_top</strong>: whether to include the fully-connected
+    layer at the top of the network.</li>
+<li><strong>input_shape</strong>: Optional shape tuple, e.g. <code>(256, 256, 3)</code>.
+      One of <code>input_shape</code> or <code>input_tensor</code> must be
+      specified.</li>
+<li><strong>input_tensor</strong>: Optional Keras tensor (i.e. output of
+    <code>layers.Input()</code>) to use as image input for the model.
+      One of <code>input_shape</code> or <code>input_tensor</code> must be
+      specified.</li>
+<li><strong>classes</strong>: optional number of classes to classify images
+    into, only to be specified if <code>include_top</code> is True,
+    and if no <code>weights</code> argument is specified.</li>
+<li><strong>**kwargs</strong>: Additional keyword arguments that apply to all
+    HyperModels. See <code>kerastuner.HyperModel</code>.</li>
+</ul>
+<hr />
+<p><span style="float:right;"><a href="https://github.com/keras-team/keras-tuner/blob/master/kerastuner/applications/resnet.py#L25">[source]</a></span></p>
+<h3 id="hyperresnet-class">HyperResNet class:</h3>
+<pre><code class="python">kerastuner.applications.resnet.HyperResNet(include_top=True, input_shape=None, input_tensor=None, classes=None, **kwargs)
+</code></pre>
+
+<p>A ResNet HyperModel.</p>
+<p><strong>Arguments:</strong></p>
+<ul>
+<li><strong>include_top</strong>: whether to include the fully-connected
+    layer at the top of the network.</li>
+<li><strong>input_shape</strong>: Optional shape tuple, e.g. <code>(256, 256, 3)</code>.
+      One of <code>input_shape</code> or <code>input_tensor</code> must be
+      specified.</li>
+<li><strong>input_tensor</strong>: Optional Keras tensor (i.e. output of
+    <code>layers.Input()</code>) to use as image input for the model.
+      One of <code>input_shape</code> or <code>input_tensor</code> must be
+      specified.</li>
+<li><strong>classes</strong>: optional number of classes to classify images
+    into, only to be specified if <code>include_top</code> is True,
+    and if no <code>weights</code> argument is specified.</li>
+<li><strong>**kwargs</strong>: Additional keyword arguments that apply to all
+    HyperModels. See <code>kerastuner.HyperModel</code>.</li>
+</ul>
+<hr /></div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../../js/base.js" defer></script>
+        <script src="../../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form role="form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
