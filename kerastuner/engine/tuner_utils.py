@@ -17,7 +17,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import contextlib
 import math
 import numpy as np
 import six
@@ -103,15 +102,6 @@ class Display(object):
         trial.summary()
 
 
-@contextlib.contextmanager
-def maybe_distribute(distribution_strategy):
-    if distribution_strategy is None:
-        yield
-    else:
-        with distribution_strategy.scope():
-            yield
-
-
 def average_histories(histories):
     """Averages the per-epoch metrics from multiple executions."""
     averaged = {}
@@ -126,11 +116,3 @@ def average_histories(histories):
     # Convert {str: [float]} to [{str: float}]
     averaged = [dict(zip(metrics, vals)) for vals in zip(*averaged.values())]
     return averaged
-
-
-def maybe_compute_model_size(model):
-    """Compute the size of a given model, if it has been built."""
-    if model.built:
-        params = [keras.backend.count_params(p) for p in model.trainable_weights]
-        return int(np.sum(params))
-    return 0
