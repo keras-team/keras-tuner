@@ -309,7 +309,7 @@ def test_distributed_optimization(tmp_dir):
     best_hps = best_trial.hyperparameters
 
     # The minimum is not always found but it is always close.
-    assert best_trial.score < -0.95, best_hps.values
+    assert best_trial.score < -0.8, best_hps.values
     assert np.isclose(best_hps['a'], 4, atol=atol, rtol=rtol)
     assert np.isclose(best_hps['b'], 1, atol=atol, rtol=rtol)
     assert np.isclose(best_hps['c'], 1e-3, atol=atol, rtol=rtol)

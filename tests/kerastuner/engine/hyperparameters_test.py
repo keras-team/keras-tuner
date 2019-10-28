@@ -230,7 +230,7 @@ def test_Float():
         'linear', min_value=0.5, max_value=9.5, step=0.1, default=9.)
     linear = hp_module.Float.from_config(linear.get_config())
     assert linear.default == 9.
-    assert 0.5 <= linear.random_sample() < 9.5
+    assert 0.5 <= linear.random_sample() <= 9.5
     assert isinstance(linear.random_sample(), float)
     assert linear.random_sample(123) == linear.random_sample(123)
 
