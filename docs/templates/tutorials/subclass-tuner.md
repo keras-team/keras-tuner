@@ -3,7 +3,7 @@
 The `Tuner` class at `kerastuner.engine.tuner.Tuner` can be subclassed to support advanced uses such as:
 
 - Custom training loops (GANs, reinforement learning, etc.)
-- Adding hyperparameters for preprocessing data.
+- Adding hyperparameters outside of the model builing function (preprocessing, data augmentation, test time augmentation, etc.)
 
 This tutorial will not cover subclassing to support non-Keras models. To accomplish this, you can subclass the `kerastuner.engine.base_tuner.BaseTuner` class (See `kerastuner.tuners.sklearn.Sklearn` for an example).
 
