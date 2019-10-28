@@ -58,8 +58,8 @@ def build_model(hp):
     x = inputs
     for i in range(hp.Int('conv_layers', 1, 3, default=3)):
         x = tf.keras.layers.Conv2D(
-            filters=hp.Int('filters_' + str(i), 4, 32, step=4, default=8)
-            kernel_size=hp.Int('kernel_size_' + str(i), 3, 5)
+            filters=hp.Int('filters_' + str(i), 4, 32, step=4, default=8),
+            kernel_size=hp.Int('kernel_size_' + str(i), 3, 5),
             activation='relu',
             padding='same')(x)
 

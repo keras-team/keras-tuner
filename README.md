@@ -1,17 +1,23 @@
 # Keras Tuner
 
-An hyperparameter tuner for [Keras](https://keras.io), specifically for `tf.keras` with TensorFlow 2.0.
+A hyperparameter tuner for [Keras](https://keras.io), specifically for `tf.keras` with TensorFlow 2.0.
 
-**Status: Beta.**
+Full documentation and tutorials available on the [Keras Tuner website.](https://keras-team.github.io/keras-tuner/)
 
 ## Installation
 
 Requirements:
 
 - Python 3.6
-- TensorFlow 2.0 (Beta-1 release or higher)
+- TensorFlow 2.0
 
-Installation process:
+Install latest release:
+
+```
+pip install -U keras-tuner
+```
+
+Install from source:
 
 ```
 git clone https://github.com/keras-team/keras-tuner.git
