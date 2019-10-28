@@ -11,7 +11,55 @@ This tutorial will not cover subclassing to support non-Keras models. To accompl
 
 `Tuner.search` can be passed any arguments. These arguments will be passed directly to `Tuner.run_trial`, along with a `Trial` object that contains information about the current trial, including hyperparameters and the status of the trial. Typically, `Tuner.run_trial` is the only method that users need to override when subclassing `Tuner`.
 
-### Example
+### Overriding `run_trial`.
+
+There are two ways to write `run_trial`. One is to leverage `Tuner`'s built-in callback hooks, which send the value of the `objective` to the `Oracle` and save the latest state of the Model. These hooks are:
+
+* `self.on_epoch_end`: Must be called. Reports results to the `Oracle` and saves the Model. The `logs` dictionary passed to this method must contain the `objective` name.
+* `self.on_epoch_begin`, `self.on_batch_begin`, `self.on_batch_end`: Optional. These methods do nothing in `Tuner`, but are useful to provide as hooks if you expect users of your subclass to create their own subclasses that override these parts of the training process.
+
+```python
+class MyTuner(kt.Tuner):
+
+    def run_trial(self, trial, ...):
+        model = self.hypermodel.build(trial.hyperparameters)
+        for epoch in range(10):
+              epoch_loss = ...
+              self.on_epoch_end(trial, model, epoch, logs={'loss': epoch_loss})
+```
+
+Alternatively, you can instead directly call the methods used to report results to the `Oracle` and save the Model. This can allow more flexibility for use cases where there is no natural concept of epoch or where you do not want to report results to the `Oracle` after each epoch. These methods are:
+
+* `self.oracle.update_trial`: Reports current results to the `Oracle`. The `metrics` dictionary passed to this method must contain the `objective` name.
+* `self.save_model`: Saves the trained model.
+
+```python
+class MyTuner(kt.Tuner):
+
+    def run_trial(self, trial, ...):
+        model = self.hypermodel.build(trial.hyperparameters)
+        score = ...
+        self.oracle.update_trial(trial.trial_id, {'score': score})
+        self.oracle.save_model(trail.trial_id, model)
+```
+
+### Adding HyperParameters during preprocessing, evaluation, etc.
+
+New `HyperParameter`s can be defined anywhere in `run_trial`, in the same way that `HyperParameter`s are defined in a `HyperModel`. These hyperparameters take on their default value the first time they are encountered, and thereafter are tuned by the `Oracle`.
+
+```python
+class MyTuner(kt.Tuner):
+    
+    def run_trial(self, trial, ...):
+        hp = trial.hyperparameters
+        model = self.hypermodel.build(hp)
+
+        batch_size = hp.Int('batch_size', 32, 128, step=32)
+        random_flip = hp.Boolean('random_flip')
+        ...
+```
+
+### End-to-end Example:
 
 ```python
 import kerastuner as kt
