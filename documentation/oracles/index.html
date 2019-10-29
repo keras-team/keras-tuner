@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../../img/favicon.ico">
+        <title>Oracles - Keras Tuner</title>
+        <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+        <link href="../../extra.css" rel="stylesheet">
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+        <script src="../../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../../js/bootstrap-3.0.3.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script> 
+    </head>
+
+    <body>
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+            <div class="container">
+
+                <!-- Collapsed navigation -->
+                <div class="navbar-header">
+                    <!-- Expander button -->
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="../..">Keras Tuner</a>
+                </div>
+
+                <!-- Expanded navigation -->
+                <div class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li >
+                                <a href="../..">Home</a>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Tutorials <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../../tutorials/distributed-tuning/">Distributed Tuning</a>
+</li>
+                                    
+<li >
+    <a href="../../tutorials/subclass-tuner/">Subclassing Tuner for Custom Training Loops</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="dropdown active">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Documentation <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../hypermodels/">HyperModels</a>
+</li>
+                                    
+<li >
+    <a href="../hyperparameters/">HyperParameters</a>
+</li>
+                                    
+<li class="active">
+    <a href="./">Oracles</a>
+</li>
+                                    
+<li >
+    <a href="../tuners/">Tuners</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Examples <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../../examples/helloworld/">Hello World</a>
+</li>
+                                </ul>
+                            </li>
+                            <li >
+                                <a href="../../contributing/">Contributing Guide</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li >
+                                <a rel="next" href="../hyperparameters/">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li >
+                                <a rel="prev" href="../tuners/">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="https://github.com/keras-team/keras-tuner"><i class="fa fa-github"></i> GitHub</a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+        <li class="main active"><a href="#oracles">Oracles</a></li>
+            <li><a href="#bayesianoptimizationoracle-class">BayesianOptimizationOracle class:</a></li>
+            <li><a href="#hyperbandoracle-class">HyperbandOracle class:</a></li>
+            <li><a href="#randomsearchoracle-class">RandomSearchOracle class:</a></li>
+            <li><a href="#oracle-class">Oracle class:</a></li>
+            <li><a href="#_populate_space-method">_populate_space method:</a></li>
+            <li><a href="#_score_trial-method">_score_trial method:</a></li>
+            <li><a href="#create_trial-method">create_trial method:</a></li>
+            <li><a href="#end_trial-method">end_trial method:</a></li>
+            <li><a href="#get_best_trials-method">get_best_trials method:</a></li>
+            <li><a href="#get_state-method">get_state method:</a></li>
+            <li><a href="#set_state-method">set_state method:</a></li>
+            <li><a href="#update_trial-method">update_trial method:</a></li>
+    </ul>
+</div></div>
+                <div class="col-md-9" role="main">
+
+<h1 id="oracles">Oracles</h1>
+<p>Each <code>Oracle</code> class implements a particular hyperparameter tuning algorithm. An <code>Oracle</code> is passed as an argument to a <code>Tuner</code>. The <code>Oracle</code> tells the <code>Tuner</code> which hyperparameters should be tried next. </p>
+<p>Most <code>Oracle</code> classes can be combined with any user-defined <code>Tuner</code> subclass. <code>Hyperband</code> requires the <code>Tuner</code> class to implement additional <code>Oracle</code>-specific functionality (see <code>Hyperband</code> documentation). If you do not need to subclass <code>Tuner</code> (the most common case), we also provide a number of convenience classes that package a <code>Tuner</code> and an <code>Oracle</code> together (e.g <code>kerastuner.RandomSearch</code>, <code>kerastuner.BayesianOptimization</code>, and <code>kerastuner.Hyperband</code>).</p>
+<p><span style="float:right;"><a href="https://github.com/keras-team/keras-tuner/blob/master/kerastuner/tuners/bayesian.py#L14">[source]</a></span></p>
+<h3 id="bayesianoptimizationoracle-class">BayesianOptimizationOracle class:</h3>
+<pre><code class="python">kerastuner.oracles.BayesianOptimization(objective, max_trials, num_initial_points=None, alpha=0.0001, beta=2.6, seed=None, hyperparameters=None, allow_new_entries=True, tune_new_entries=True)
+</code></pre>
+
+<p>Bayesian optimization oracle.</p>
+<p>It uses Bayesian optimization with a underlying Gaussian process model.
+The acquisition function used is upper confidence bound (UCB), which can
+be found in the following link:
+https://www.cse.wustl.edu/~garnett/cse515t/spring_2015/files/lecture_notes/12.pdf</p>
+<p><strong>Arguments</strong></p>
+<ul>
+<li><strong>objective</strong>: String or <code>kerastuner.Objective</code>. If a string,
+  the direction of the optimization (min or max) will be
+  inferred.</li>
+<li><strong>max_trials</strong>: Int. Total number of trials
+    (model configurations) to test at most.
+    Note that the oracle may interrupt the search
+    before <code>max_trial</code> models have been tested if the search space has been
+    exhausted.</li>
+<li><strong>num_initial_points</strong>: (Optional) Int. The number of randomly generated samples
+    as initial training data for Bayesian optimization. If not specified,
+    a value of 3 times the dimensionality of the hyperparameter space is
+    used.</li>
+<li><strong>alpha</strong>: Float. Value added to the diagonal of the kernel matrix
+    during fitting. It represents the expected amount of noise
+    in the observed performances in Bayesian optimization.</li>
+<li><strong>beta</strong>: Float. The balancing factor of exploration and exploitation.
+    The larger it is, the more explorative it is.</li>
+<li><strong>seed</strong>: Int. Random seed.</li>
+<li><strong>hyperparameters</strong>: HyperParameters class instance.
+    Can be used to override (or register in advance)
+    hyperparamters in the search space.</li>
+<li><strong>tune_new_entries</strong>: Whether hyperparameter entries
+    that are requested by the hypermodel
+    but that were not specified in <code>hyperparameters</code>
+    should be added to the search space, or not.
+    If not, then the default value for these parameters
+    will be used.</li>
+<li><strong>allow_new_entries</strong>: Whether the hypermodel is allowed
+    to request hyperparameter entries not listed in
+    <code>hyperparameters</code>.</li>
+</ul>
+<hr />
+<p><span style="float:right;"><a href="https://github.com/keras-team/keras-tuner/blob/master/kerastuner/tuners/hyperband.py#L21">[source]</a></span></p>
+<h3 id="hyperbandoracle-class">HyperbandOracle class:</h3>
+<pre><code class="python">kerastuner.oracles.Hyperband(objective, max_epochs, factor=3, hyperband_iterations=1, seed=None, hyperparameters=None, allow_new_entries=True, tune_new_entries=True)
+</code></pre>
+
+<p>Oracle class for Hyperband.</p>
+<p>Note that to use this Oracle with your own subclassed Tuner, your Tuner
+class must be able to handle in <code>Tuner.run_trial</code> three special hyperparameters
+that will be set by this Tuner:</p>
+<ul>
+<li>"tuner/trial_id": String, optionally set. The trial_id of the Trial to load
+from when starting this trial.</li>
+<li>"tuner/initial_epoch": Int, always set. The initial epoch the Trial should be
+started from.</li>
+<li>"tuner/epochs": Int, always set. The cumulative number of epochs this Trial
+should be trained.</li>
+</ul>
+<p>These hyperparameters will be set during the "successive halving" portion
+of the Hyperband algorithm.</p>
+<p>Example <code>run_trial</code>:</p>
+<pre><code>def run_trial(self, trial, *args, **kwargs):
+    hp = trial.hyperparameters
+    if &quot;tuner/trial_id&quot; in hp:
+        past_trial = self.oracle.get_trial(hp['tuner/trial_id'])
+        model = self.load_model(past_trial)
+    else:
+        model = self.hypermodel.build(hp)
+
+    initial_epoch = hp['tuner/initial_epoch']
+    last_epoch = hp['tuner/epochs']
+
+    for epoch in range(initial_epoch, last_epoch):
+        self.on_epoch_begin(...)
+        for step in range(...):
+            # Run model training step here.
+        self.on_epoch_end(...)
+</code></pre>
+
+<p><strong>Arguments:</strong></p>
+<ul>
+<li><strong>objective</strong>: String or <code>kerastuner.Objective</code>. If a string,
+  the direction of the optimization (min or max) will be
+  inferred.</li>
+<li><strong>max_epochs</strong>: Int. The maximum number of epochs to train one model. It is
+  recommended to set this to a value slightly higher than the expected epochs
+  to convergence for your largest Model, and to use early stopping during
+  training (for example, via <code>tf.keras.callbacks.EarlyStopping</code>).</li>
+<li><strong>factor</strong>: Int. Reduction factor for the number of epochs
+    and number of models for each bracket.</li>
+<li><strong>hyperband_iterations</strong>: Int &gt;= 1. The number of times to iterate over the full
+  Hyperband algorithm. One iteration will run approximately
+  <code>max_epochs * (math.log(max_epochs, factor) ** 2)</code> cumulative epochs
+  across all trials. It is recommended to set this to as high a value
+  as is within your resource budget.</li>
+<li><strong>seed</strong>: Int. Random seed.</li>
+<li><strong>hyperparameters</strong>: HyperParameters class instance.
+    Can be used to override (or register in advance)
+    hyperparamters in the search space.</li>
+<li><strong>tune_new_entries</strong>: Whether hyperparameter entries
+    that are requested by the hypermodel
+    but that were not specified in <code>hyperparameters</code>
+    should be added to the search space, or not.
+    If not, then the default value for these parameters
+    will be used.</li>
+<li><strong>allow_new_entries</strong>: Whether the hypermodel is allowed
+    to request hyperparameter entries not listed in
+    <code>hyperparameters</code>.</li>
+</ul>
+<hr />
+<p><span style="float:right;"><a href="https://github.com/keras-team/keras-tuner/blob/master/kerastuner/tuners/randomsearch.py#L28">[source]</a></span></p>
+<h3 id="randomsearchoracle-class">RandomSearchOracle class:</h3>
+<pre><code class="python">kerastuner.oracles.RandomSearch(objective, max_trials, seed=None, hyperparameters=None, allow_new_entries=True, tune_new_entries=True)
+</code></pre>
+
+<p>Random search oracle.</p>
+<p><strong>Arguments:</strong></p>
+<ul>
+<li><strong>objective</strong>: String or <code>kerastuner.Objective</code>. If a string,
+  the direction of the optimization (min or max) will be
+  inferred.</li>
+<li><strong>max_trials</strong>: Int. Total number of trials
+    (model configurations) to test at most.
+    Note that the oracle may interrupt the search
+    before <code>max_trial</code> models have been tested.</li>
+<li><strong>seed</strong>: Int. Random seed.</li>
+<li><strong>hyperparameters</strong>: HyperParameters class instance.
+    Can be used to override (or register in advance)
+    hyperparamters in the search space.</li>
+<li><strong>tune_new_entries</strong>: Whether hyperparameter entries
+    that are requested by the hypermodel
+    but that were not specified in <code>hyperparameters</code>
+    should be added to the search space, or not.
+    If not, then the default value for these parameters
+    will be used.</li>
+<li><strong>allow_new_entries</strong>: Whether the hypermodel is allowed
+    to request hyperparameter entries not listed in
+    <code>hyperparameters</code>.</li>
+</ul>
+<hr />
+<p><span style="float:right;"><a href="https://github.com/keras-team/keras-tuner/blob/master/kerastuner/engine/oracle.py#L36">[source]</a></span></p>
+<h3 id="oracle-class">Oracle class:</h3>
+<pre><code class="python">kerastuner.engine.oracle.Oracle(objective, max_trials=None, hyperparameters=None, allow_new_entries=True, tune_new_entries=True)
+</code></pre>
+
+<p>Implements a hyperparameter optimization algorithm.</p>
+<p>Attributes:
+objective: String. Name of model metric to minimize
+or maximize, e.g. "val_accuracy".
+max_trials: The maximum number of hyperparameter
+combinations to try.
+hyperparameters: HyperParameters class instance.
+Can be used to override (or register in advance)
+hyperparamters in the search space.
+tune_new_entries: Whether hyperparameter entries
+that are requested by the hypermodel
+but that were not specified in <code>hyperparameters</code>
+should be added to the search space, or not.
+If not, then the default value for these parameters
+will be used.
+allow_new_entries: Whether the hypermodel is allowed
+to request hyperparameter entries not listed in
+<code>hyperparameters</code>.</p>
+<hr />
+<h3 id="_populate_space-method">_populate_space method:</h3>
+<pre><code class="python">Oracle._populate_space(trial_id)
+</code></pre>
+
+<p>Fill the hyperparameter space with values for a trial.</p>
+<p>This method should be overrridden in subclasses and called in
+<code>create_trial</code> in order to populate the hyperparameter space with
+values.</p>
+<p>Args:
+<code>trial_id</code>: The id for this Trial.</p>
+<p>Returns:
+A dictionary with keys "values" and "status", where "values" is
+a mapping of parameter names to suggested values, and "status"
+is the TrialStatus that should be returned for this trial (one
+of "RUNNING", "IDLE", or "STOPPED").</p>
+<hr />
+<h3 id="_score_trial-method">_score_trial method:</h3>
+<pre><code class="python">Oracle._score_trial(trial)
+</code></pre>
+
+<p>Score a completed <code>Trial</code>.</p>
+<p>This method can be overridden in subclasses to provide a score for
+a set of hyperparameter values. This method is called from <code>end_trial</code>
+on completed <code>Trial</code>s.</p>
+<p>Args:
+trial: A completed <code>Trial</code> object.</p>
+<hr />
+<h3 id="create_trial-method">create_trial method:</h3>
+<pre><code class="python">Oracle.create_trial(tuner_id)
+</code></pre>
+
+<p>Create a new <code>Trial</code> to be run by the <code>Tuner</code>.</p>
+<p>A <code>Trial</code> corresponds to a unique set of hyperparameters to be run
+by <code>Tuner.run_trial</code>.</p>
+<p>Args:
+tuner_id: A ID that identifies the <code>Tuner</code> requesting a
+<code>Trial</code>. <code>Tuners</code> that should run the same trial (for instance,
+when running a multi-worker model) should have the same ID.</p>
+<p>Returns:
+A <code>Trial</code> object containing a set of hyperparameter values to run
+in a <code>Tuner</code>.</p>
+<hr />
+<h3 id="end_trial-method">end_trial method:</h3>
+<pre><code class="python">Oracle.end_trial(trial_id, status='COMPLETED')
+</code></pre>
+
+<p>Record the measured objective for a set of parameter values.</p>
+<p>Args:
+trial_id: String. Unique id for this trial.
+status: String, one of "COMPLETED", "INVALID". A status of
+"INVALID" means a trial has crashed or been deemed
+infeasible.</p>
+<hr />
+<h3 id="get_best_trials-method">get_best_trials method:</h3>
+<pre><code class="python">Oracle.get_best_trials(num_trials=1)
+</code></pre>
+
+<p>Returns the best <code>Trial</code>s.</p>
+<hr />
+<h3 id="get_state-method">get_state method:</h3>
+<pre><code class="python">Oracle.get_state()
+</code></pre>
+
+<p>Returns the current state of this object.</p>
+<p>This method is called during <code>save</code>.</p>
+<hr />
+<h3 id="set_state-method">set_state method:</h3>
+<pre><code class="python">Oracle.set_state(state)
+</code></pre>
+
+<p>Sets the current state of this object.</p>
+<p>This method is called during <code>reload</code>.</p>
+<p><strong>Arguments:</strong></p>
+<p>state: Dict. The state to restore for this object.</p>
+<hr />
+<h3 id="update_trial-method">update_trial method:</h3>
+<pre><code class="python">Oracle.update_trial(trial_id, metrics, step=0)
+</code></pre>
+
+<p>Used by a worker to report the status of a trial.</p>
+<p>Args:
+trial_id: A previously seen trial id.
+metrics: Dict of float. The current value of this
+trial's metrics.
+step: (Optional) Float. Used to report intermediate results. The
+current value in a timeseries representing the state of the
+trial. This is the value that <code>metrics</code> will be associated with.</p>
+<p>Returns:
+Trial object. Trial.status will be set to "STOPPED" if the Trial
+should be stopped early.</p>
+<hr /></div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../../js/base.js" defer></script>
+        <script src="../../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form role="form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

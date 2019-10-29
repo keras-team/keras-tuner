@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../../img/favicon.ico">
+        <title>HyperParameters - Keras Tuner</title>
+        <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+        <link href="../../extra.css" rel="stylesheet">
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+        <script src="../../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../../js/bootstrap-3.0.3.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script> 
+    </head>
+
+    <body>
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+            <div class="container">
+
+                <!-- Collapsed navigation -->
+                <div class="navbar-header">
+                    <!-- Expander button -->
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="../..">Keras Tuner</a>
+                </div>
+
+                <!-- Expanded navigation -->
+                <div class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li >
+                                <a href="../..">Home</a>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Tutorials <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../../tutorials/distributed-tuning/">Distributed Tuning</a>
+</li>
+                                    
+<li >
+    <a href="../../tutorials/subclass-tuner/">Subclassing Tuner for Custom Training Loops</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="dropdown active">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Documentation <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../hypermodels/">HyperModels</a>
+</li>
+                                    
+<li class="active">
+    <a href="./">HyperParameters</a>
+</li>
+                                    
+<li >
+    <a href="../oracles/">Oracles</a>
+</li>
+                                    
+<li >
+    <a href="../tuners/">Tuners</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Examples <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../../examples/helloworld/">Hello World</a>
+</li>
+                                </ul>
+                            </li>
+                            <li >
+                                <a href="../../contributing/">Contributing Guide</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li >
+                                <a rel="next" href="../hypermodels/">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li >
+                                <a rel="prev" href="../oracles/">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="https://github.com/keras-team/keras-tuner"><i class="fa fa-github"></i> GitHub</a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+        <li class="main active"><a href="#hyperparameters">HyperParameters</a></li>
+            <li><a href="#example-building-a-model-using-hyperparameters">Example: Building a Model using HyperParameters</a></li>
+            <li><a href="#hyperparameters-class">HyperParameters class:</a></li>
+            <li><a href="#boolean-method">Boolean method:</a></li>
+            <li><a href="#choice-method">Choice method:</a></li>
+            <li><a href="#fixed-method">Fixed method:</a></li>
+            <li><a href="#float-method">Float method:</a></li>
+            <li><a href="#int-method">Int method:</a></li>
+            <li><a href="#conditional_scope-method">conditional_scope method:</a></li>
+            <li><a href="#get-method">get method:</a></li>
+    </ul>
+</div></div>
+                <div class="col-md-9" role="main">
+
+<h1 id="hyperparameters">HyperParameters</h1>
+<p>The <code>HyperParameters</code> class serves as a hyerparameter container. A <code>HyperParameters</code> instance contains information about both the search space and the current values of each hyperparameter. </p>
+<p>Hyperparameters can be defined inline with the model-building code that uses them. This saves you from having to write boilerplate code and helps to make the code more maintainable.</p>
+<h3 id="example-building-a-model-using-hyperparameters">Example: Building a Model using <code>HyperParameters</code></h3>
+<pre><code class="python">import kerastuner as kt
+import tensorflow as tf
+
+def build_model(hp):
+    model = tf.keras.Sequential()
+    for i in range(hp.Int('layers', 3, 10)):
+        model.add(tf.keras.layers.Dense(
+            units=hp.Int('units_' + str(i), 50, 100, step=10),
+            activation=hp.Choice('act_' + str(i), ['relu', 'tanh'])))
+    model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
+    model.compile('adam', 'binary_crossentropy', metrics=['accuracy'])
+    return model
+
+hp = kt.HyperParameters()
+model = build_model(hp)
+assert 'layers' in hp
+assert 'units_0' in hp
+
+# Restrict the search space.
+hp = kt.HyperParameters()
+hp.Fixed('layers', 5)
+model = build_model(hp)
+assert hp['layers'] == 5
+
+# Reparametrize the search space.
+hp = kt.HyperParameters()
+hp.Int('layers', 20, 30)
+model = build_model(hp)
+assert hp['layers'] &gt;= 20
+</code></pre>
+
+<p><span style="float:right;"><a href="https://github.com/keras-team/keras-tuner/blob/master/kerastuner/engine/hyperparameters.py#L426">[source]</a></span></p>
+<h3 id="hyperparameters-class">HyperParameters class:</h3>
+<pre><code class="python">kerastuner.engine.hyperparameters.HyperParameters()
+</code></pre>
+
+<p>Container for both a hyperparameter space, and current values.</p>
+<p><strong>Attributes:</strong></p>
+<ul>
+<li><strong>space</strong>: A list of HyperParameter instances.</li>
+<li><strong>values</strong>: A dict mapping hyperparameter names to current values.</li>
+</ul>
+<hr />
+<h3 id="boolean-method">Boolean method:</h3>
+<pre><code class="python">HyperParameters.Boolean(name, default=False, parent_name=None, parent_values=None)
+</code></pre>
+
+<p>Choice between True and False.</p>
+<p><strong>Arguments</strong></p>
+<ul>
+<li><strong>name</strong>: Str. Name of parameter. Must be unique.</li>
+<li><strong>default</strong>: Default value to return for the parameter.
+    If unspecified, the default value will be False.</li>
+</ul>
+<p>parent_name: (Optional) String. Specifies that this hyperparameter is
+conditional. The name of the this hyperparameter's parent.
+parent_values: (Optional) List. The values of the parent hyperparameter
+for which this hyperparameter should be considered active.</p>
+<p><strong>Returns:</strong></p>
+<p>The current value of this hyperparameter.</p>
+<hr />
+<h3 id="choice-method">Choice method:</h3>
+<pre><code class="python">HyperParameters.Choice(name, values, ordered=None, default=None, parent_name=None, parent_values=None)
+</code></pre>
+
+<p>Choice of one value among a predefined set of possible values.</p>
+<p><strong>Arguments:</strong></p>
+<ul>
+<li><strong>name</strong>: Str. Name of parameter. Must be unique.</li>
+<li><strong>values</strong>: List of possible values. Values must be int, float,
+    str, or bool. All values must be of the same type.</li>
+<li><strong>ordered</strong>: Whether the values passed should be considered to
+    have an ordering. This defaults to <code>True</code> for float/int
+    values. Must be <code>False</code> for any other values.</li>
+<li><strong>default</strong>: Default value to return for the parameter.
+    If unspecified, the default value will be:<ul>
+<li>None if None is one of the choices in <code>values</code></li>
+<li>The first entry in <code>values</code> otherwise.</li>
+</ul>
+</li>
+</ul>
+<p>parent_name: (Optional) String. Specifies that this hyperparameter is
+conditional. The name of the this hyperparameter's parent.
+parent_values: (Optional) List. The values of the parent hyperparameter
+for which this hyperparameter should be considered active.</p>
+<p><strong>Returns:</strong></p>
+<p>The current value of this hyperparameter.</p>
+<hr />
+<h3 id="fixed-method">Fixed method:</h3>
+<pre><code class="python">HyperParameters.Fixed(name, value, parent_name=None, parent_values=None)
+</code></pre>
+
+<p>Fixed, untunable value.</p>
+<p><strong>Arguments</strong></p>
+<ul>
+<li><strong>name</strong>: Str. Name of parameter. Must be unique.</li>
+<li><strong>value</strong>: Value to use (can be any JSON-serializable
+    Python type).</li>
+</ul>
+<p>parent_name: (Optional) String. Specifies that this hyperparameter is
+conditional. The name of the this hyperparameter's parent.
+parent_values: (Optional) List. The values of the parent hyperparameter
+for which this hyperparameter should be considered active.</p>
+<p><strong>Returns:</strong></p>
+<p>The current value of this hyperparameter.</p>
+<hr />
+<h3 id="float-method">Float method:</h3>
+<pre><code class="python">HyperParameters.Float(name, min_value, max_value, step=None, sampling=None, default=None, parent_name=None, parent_values=None)
+</code></pre>
+
+<p>Floating point range, can be evenly divided.</p>
+<p><strong>Arguments:</strong></p>
+<ul>
+<li><strong>name</strong>: Str. Name of parameter. Must be unique.</li>
+<li><strong>min_value</strong>: Float. Lower bound of the range.</li>
+<li><strong>max_value</strong>: Float. Upper bound of the range.</li>
+<li><strong>step</strong>: Optional. Float, e.g. 0.1.
+    smallest meaningful distance between two values.
+    Whether step should be specified is Oracle dependent,
+    since some Oracles can infer an optimal step automatically.</li>
+<li><strong>sampling</strong>: Optional. One of "linear", "log",
+    "reverse_log". Acts as a hint for an initial prior
+    probability distribution for how this value should
+    be sampled, e.g. "log" will assign equal
+    probabilities to each order of magnitude range.</li>
+<li><strong>default</strong>: Default value to return for the parameter.
+    If unspecified, the default value will be
+    <code>min_value</code>.</li>
+</ul>
+<p>parent_name: (Optional) String. Specifies that this hyperparameter is
+conditional. The name of the this hyperparameter's parent.
+parent_values: (Optional) List. The values of the parent hyperparameter
+for which this hyperparameter should be considered active.</p>
+<p><strong>Returns:</strong></p>
+<p>The current value of this hyperparameter.</p>
+<hr />
+<h3 id="int-method">Int method:</h3>
+<pre><code class="python">HyperParameters.Int(name, min_value, max_value, step=1, sampling=None, default=None, parent_name=None, parent_values=None)
+</code></pre>
+
+<p>Integer range.</p>
+<p>Note that unlinke Python's <code>range</code> function, <code>max_value</code> is <em>included</em> in
+the possible values this parameter can take on.</p>
+<p><strong>Arguments:</strong></p>
+<ul>
+<li><strong>name</strong>: Str. Name of parameter. Must be unique.</li>
+<li><strong>min_value</strong>: Int. Lower limit of range (included).</li>
+<li><strong>max_value</strong>: Int. Upper limit of range (included).</li>
+<li><strong>step</strong>: Int. Step of range.</li>
+<li><strong>sampling</strong>: Optional. One of "linear", "log",
+    "reverse_log". Acts as a hint for an initial prior
+    probability distribution for how this value should
+    be sampled, e.g. "log" will assign equal
+    probabilities to each order of magnitude range.</li>
+<li><strong>default</strong>: Default value to return for the parameter.
+    If unspecified, the default value will be
+    <code>min_value</code>.</li>
+</ul>
+<p>parent_name: (Optional) String. Specifies that this hyperparameter is
+conditional. The name of the this hyperparameter's parent.
+parent_values: (Optional) List. The values of the parent hyperparameter
+for which this hyperparameter should be considered active.</p>
+<p><strong>Returns:</strong></p>
+<p>The current value of this hyperparameter.</p>
+<hr />
+<h3 id="conditional_scope-method">conditional_scope method:</h3>
+<pre><code class="python">HyperParameters.conditional_scope(parent_name, parent_values)
+</code></pre>
+
+<p>Opens a scope to create conditional HyperParameters.</p>
+<p>All HyperParameters created under this scope will only be active
+when the parent HyperParameter specified by <code>parent_name</code> is
+equal to one of the values passed in <code>parent_values</code>.</p>
+<p>When the condition is not met, creating a HyperParameter under
+this scope will register the HyperParameter, but will return
+<code>None</code> rather than a concrete value.</p>
+<p>Note that any Python code under this scope will execute
+regardless of whether the condition is met.</p>
+<p><strong>Arguments:</strong></p>
+<ul>
+<li><strong>parent_name</strong>: The name of the HyperParameter to condition on.</li>
+<li><strong>parent_values</strong>: Values of the parent HyperParameter for which
+  HyperParameters under this scope should be considered valid.</li>
+</ul>
+<hr />
+<h3 id="get-method">get method:</h3>
+<pre><code class="python">HyperParameters.get(name)
+</code></pre>
+
+<p>Return the current value of this HyperParameter.</p>
+<hr /></div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../../js/base.js" defer></script>
+        <script src="../../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form role="form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
