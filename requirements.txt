@@ -1,0 +1,10 @@
+attrs
+cprint
+numpy
+tabulate
+termcolor
+tqdm
+terminaltables
+pathlib
+scipy
+scikit-learn
