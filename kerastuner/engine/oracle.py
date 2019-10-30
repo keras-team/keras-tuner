@@ -92,7 +92,7 @@ class Oracle(stateful.Stateful):
     def _populate_space(self, trial_id):
         """Fill the hyperparameter space with values for a trial.
 
-        This method should be overrridden in subclasses and called in
+        This method should be overridden in subclasses and called in
         `create_trial` in order to populate the hyperparameter space with
         values.
 
