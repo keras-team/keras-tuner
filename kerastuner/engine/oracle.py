@@ -293,7 +293,7 @@ class Oracle(stateful.Stateful):
         self._directory = directory
         self._project_name = project_name
         if not overwrite and tf.io.gfile.exists(self._get_oracle_fname()):
-            tf.get_logger().info('Reloading Oracle from {}'.format(
+            tf.get_logger().info('Reloading Oracle from existing project {}'.format(
                 self._get_oracle_fname()))
             self.reload()
 
@@ -323,8 +323,10 @@ class Oracle(stateful.Stateful):
             super(Oracle, self).reload(self._get_oracle_fname())
         except KeyError:
             raise RuntimeError(
-                'Error reloading `Oracle` from existing project: {}'.format(
-                    self._project_dir))
+                'Error reloading `Oracle` from existing project. If you did not '
+                'mean to reload from an existing project, change the `project_name` '
+                'or pass `overwrite=True` when creating the `Tuner`. Found existing '
+                'project at: {}'.format(self._project_dir))
 
     def _get_oracle_fname(self):
         return os.path.join(

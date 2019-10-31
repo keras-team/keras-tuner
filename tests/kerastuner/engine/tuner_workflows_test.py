@@ -617,3 +617,27 @@ def test_get_best_hyperparameters(tmp_dir):
 
     hps = tuner.get_best_hyperparameters()[0]
     assert hps['a'] == 1
+
+
+def test_reloading_error_message(tmp_dir):
+    shared_dir = tmp_dir
+
+    tuner = kerastuner.tuners.RandomSearch(
+        build_model,
+        objective='val_accuracy',
+        max_trials=2,
+        executions_per_trial=3,
+        directory=shared_dir)
+
+    tuner.search(x=TRAIN_INPUTS,
+                 y=TRAIN_TARGETS,
+                 epochs=2,
+                 validation_data=(VAL_INPUTS, VAL_TARGETS))
+
+    with pytest.raises(RuntimeError, match='pass `overwrite=True`'):
+        kerastuner.tuners.BayesianOptimization(
+            build_model,
+            objective='val_accuracy',
+            max_trials=2,
+            executions_per_trial=3,
+            directory=shared_dir)
