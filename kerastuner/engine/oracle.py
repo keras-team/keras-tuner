@@ -293,7 +293,7 @@ class Oracle(stateful.Stateful):
         self._directory = directory
         self._project_name = project_name
         if not overwrite and tf.io.gfile.exists(self._get_oracle_fname()):
-            tf.get_logger().info('Reloading Oracle from {}'.format(
+            tf.get_logger().info('Reloading Oracle from existing project {}'.format(
                 self._get_oracle_fname()))
             self.reload()
 
