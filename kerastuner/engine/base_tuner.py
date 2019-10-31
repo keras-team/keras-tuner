@@ -203,7 +203,8 @@ class BaseTuner(stateful.Stateful):
         self.oracle.end_trial(
             trial.trial_id, trial_module.TrialStatus.COMPLETED)
         self.oracle.update_space(trial.hyperparameters)
-        self._display.on_trial_end(trial)
+        # Display needs the updated trial scored by the Oracle.
+        self._display.on_trial_end(self.oracle.get_trial(trial.trial_id))
         self.save()
 
     def on_search_end(self):
@@ -280,12 +281,12 @@ class BaseTuner(stateful.Stateful):
         """
         display.section('Results summary')
         display.display_setting('Results in %s' % self.project_dir)
-        best_trials = self.oracle.get_best_trials(num_trials)
         display.display_setting('Showing %d best trials' % num_trials)
+        display.display_setting('{}'.format(self.oracle.objective))
+
+        best_trials = self.oracle.get_best_trials(num_trials)
         for trial in best_trials:
-            display.display_setting(
-                'Objective: {} Score: {}'.format(
-                    self.oracle.objective, trial.score))
+            trial.summary()
 
     @property
     def remaining_trials(self):

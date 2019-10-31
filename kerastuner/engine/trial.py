@@ -52,16 +52,19 @@ class Trial(stateful.Stateful):
         self.status = status
 
     def summary(self):
+        """Displays a summary of this Trial."""
         display.section('Trial summary')
-        if self.hyperparameters.values:
-            display.subsection('Hp values:')
-            display.display_settings(self.hyperparameters.values)
-        else:
-            display.subsection('Hp values: default configuration.')
+        display.display_setting('Trial ID: {}'.format(self.trial_id))
+
         if self.score is not None:
             display.display_setting('Score: {}'.format(self.score))
-        if self.best_step is not None:
             display.display_setting('Best step: {}'.format(self.best_step))
+
+        display.subsection('Hyperparameters:')
+        if self.hyperparameters.values:
+            display.display_settings(self.hyperparameters.values)
+        else:
+            display.display_setting('default configuration')
 
     def get_state(self):
         return {
