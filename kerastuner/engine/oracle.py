@@ -323,7 +323,9 @@ class Oracle(stateful.Stateful):
             super(Oracle, self).reload(self._get_oracle_fname())
         except KeyError:
             raise RuntimeError(
-                'Error reloading `Oracle` from existing project: {}'.format(
+                'Error reloading `Oracle` from existing project. If you did not '
+                'mean to reload from an existing project, pass `overwrite=True` '
+                'when creating the `Tuner`. Found existing project at: {}'.format(
                     self._project_dir))
 
     def _get_oracle_fname(self):
