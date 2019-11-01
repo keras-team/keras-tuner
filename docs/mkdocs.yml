@@ -6,6 +6,7 @@ docs_dir: sources
 repo_url: https://github.com/keras-team/keras-tuner
 edit_uri: ""
 site_description: 'Documentation for Keras Tuner.'
+extra_css: [extra.css]
 
 nav:
     - Home: index.md
