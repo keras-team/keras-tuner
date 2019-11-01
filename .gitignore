@@ -19,3 +19,4 @@ htmlcov
 old_code/
 docs/site
 docs/sources
+!docs/sources/extra.css
