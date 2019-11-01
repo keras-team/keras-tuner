@@ -91,6 +91,8 @@ def generate(dest_dir):
     (dest_dir / 'index.md').write_text(index, encoding='utf-8')
     shutil.copyfile(kerastuner_dir / 'CONTRIBUTING.md',
                     dest_dir / 'contributing.md')
+    shutil.copyfile(kerastuner_dir / 'docs' / 'extra.css',
+                    dest_dir / 'extra.css')
 
 
 if __name__ == '__main__':
