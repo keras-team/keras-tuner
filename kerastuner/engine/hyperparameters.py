@@ -841,6 +841,9 @@ def cumulative_prob_to_value(prob, hp):
     elif isinstance(hp, Choice):
         ele_prob = 1 / len(hp.values)
         index = math.floor(prob / ele_prob)
+        # Can happen when `prob` is very close to 1.
+        if index == len(hp.values):
+            index = index - 1
         return hp.values[index]
     elif isinstance(hp, (Int, Float)):
         sampling = hp.sampling or 'linear'
