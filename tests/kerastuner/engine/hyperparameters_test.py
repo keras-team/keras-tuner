@@ -478,3 +478,13 @@ def test_dict_methods():
     assert 'b' in hps
     assert 'c' in hps
     assert 'd' not in hps
+
+
+def test_prob_one_choice():
+    hp = hp_module.Choice('a', [0, 1, 2])
+    # Check that boundaries are valid.
+    value = hp_module.cumulative_prob_to_value(1, hp)
+    assert value == 2
+
+    value = hp_module.cumulative_prob_to_value(0, hp)
+    assert value == 0
