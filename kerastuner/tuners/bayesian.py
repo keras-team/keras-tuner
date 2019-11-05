@@ -80,7 +80,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             n_restarts_optimizer=20,
             normalize_y=True,
             alpha=self.alpha,
-            seed=self.seed)
+            random_state=self.seed)
 
     def _populate_space(self, trial_id):
         # Generate enough samples before training Gaussian process.
