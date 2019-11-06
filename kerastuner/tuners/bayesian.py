@@ -116,7 +116,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         optimal_x = None
         num_restarts = 50
         bounds = self._get_hp_bounds()
-        x_seeds = self._random_state.uniform(bounds[:, 0], bounds[:, 1],
+        x_seeds = self._random_state.uniform(bounds[:, 0], bounds[:, 1], 
                                              size=(num_restarts, bounds.shape[0]))
         for x_try in x_seeds:
             # Sign of score is flipped when maximizing.
