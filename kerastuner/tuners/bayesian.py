@@ -75,6 +75,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         self._seed_state = self.seed
         self._tried_so_far = set()
         self._max_collisions = 20
+        self._random_state = np.random.RandomState(self.seed)
         self.gpr = gaussian_process.GaussianProcessRegressor(
             kernel=gaussian_process.kernels.Matern(),
             n_restarts_optimizer=20,
@@ -115,11 +116,11 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         optimal_x = None
         num_restarts = 50
         bounds = self._get_hp_bounds()
-        for _ in range(num_restarts):
-            x0 = np.random.uniform(bounds[:, 0], bounds[:, 1])
+        x_seeds = self._random_state.uniform(bounds[:, 0], bounds[:, 1],size=(num_restarts, bounds.shape[0]))
+        for x_try in x_seeds:
             # Sign of score is flipped when maximizing.
             result = scipy_optimize.minimize(_upper_confidence_bound,
-                                             x0=x0,
+                                             x0=x_try,
                                              bounds=bounds,
                                              method='L-BFGS-B')
             if result.fun[0] < optimal_val:
