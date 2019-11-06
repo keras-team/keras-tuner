@@ -79,7 +79,8 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             kernel=gaussian_process.kernels.Matern(),
             n_restarts_optimizer=20,
             normalize_y=True,
-            alpha=self.alpha)
+            alpha=self.alpha,
+            random_state=self.seed)
 
     def _populate_space(self, trial_id):
         # Generate enough samples before training Gaussian process.
