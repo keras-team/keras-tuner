@@ -57,12 +57,12 @@ class HyperModel(object):
         """
         raise NotImplementedError
 
-    def _build_wrapper(self, hp):
+    def _build_wrapper(self, hp, *args, **kwargs):
         if not self.tunable:
             # Copy `HyperParameters` object so that new entries are not added
             # to the search space.
             hp = hp.copy()
-        return self._build(hp)
+        return self._build(hp, *args, **kwargs)
 
 
 class DefaultHyperModel(HyperModel):
