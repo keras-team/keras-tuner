@@ -9,7 +9,7 @@ from ..engine import hyperparameters as hp_module
 from ..engine import multi_execution_tuner
 from ..engine import oracle as oracle_module
 from ..engine import trial as trial_lib
-
+from ..engine import tuner_utils as utils
 
 class BayesianOptimizationOracle(oracle_module.Oracle):
     """Bayesian optimization oracle.
@@ -32,6 +32,8 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             as initial training data for Bayesian optimization. If not specified,
             a value of 3 times the dimensionality of the hyperparameter space is
             used.
+        acq: String. Acquisition function. 'ucb' for Upper Confidence Bound
+            or 'ei' for Expected Improvement.
         alpha: Float. Value added to the diagonal of the kernel matrix
             during fitting. It represents the expected amount of noise
             in the observed performances in Bayesian optimization.
@@ -56,6 +58,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                  objective,
                  max_trials,
                  num_initial_points=None,
+                 acq='ucb',
                  alpha=1e-4,
                  beta=2.6,
                  seed=None,
@@ -71,6 +74,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         self.num_initial_points = num_initial_points
         self.alpha = alpha
         self.beta = beta
+        self.acq = acq
         self.seed = seed or random.randint(1, 1e4)
         self._seed_state = self.seed
         self._tried_so_far = set()
@@ -107,23 +111,21 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             return {'status': trial_lib.TrialStatus.RUNNING,
                     'values': values}
 
-        def _upper_confidence_bound(x):
-            x = x.reshape(1, -1)
-            mu, sigma = self.gpr.predict(x, return_std=True)
-            return mu - self.beta * sigma
-
         optimal_val = float('inf')
         optimal_x = None
+        
         num_restarts = 50
+        y_max = self.get_best_trials()[0].score
         bounds = self._get_hp_bounds()
         x_seeds = self._random_state.uniform(bounds[:, 0], bounds[:, 1],
                                              size=(num_restarts, bounds.shape[0]))
+        ac = utils.UtilityFunction(kind=self.acq, beta=self.beta).utility
         for x_try in x_seeds:
             # Sign of score is flipped when maximizing.
-            result = scipy_optimize.minimize(_upper_confidence_bound,
-                                             x0=x_try,
-                                             bounds=bounds,
-                                             method='L-BFGS-B')
+            result = scipy_optimize.minimize(lambda x: -ac(x.reshape(1, -1), gpr=self.gpr, y_max=y_max),
+                       x_try.reshape(1, -1),
+                       bounds=bounds,
+                       method="L-BFGS-B")
             if result.fun[0] < optimal_val:
                 optimal_val = result.fun[0]
                 optimal_x = result.x
@@ -328,3 +330,4 @@ class BayesianOptimization(multi_execution_tuner.MultiExecutionTuner):
         super(BayesianOptimization, self, ).__init__(oracle=oracle,
                                                      hypermodel=hypermodel,
                                                      **kwargs)
+

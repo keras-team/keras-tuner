@@ -20,6 +20,7 @@ from __future__ import print_function
 import math
 import numpy as np
 import six
+from scipy.stats import norm
 
 import tensorflow as tf
 from tensorflow import keras
@@ -116,3 +117,27 @@ def average_histories(histories):
     # Convert {str: [float]} to [{str: float}]
     averaged = [dict(zip(metrics, vals)) for vals in zip(*averaged.values())]
     return averaged
+
+class UtilityFunction(object):
+    """ Compute the acquisition functions for Bayesian Optimization Tuner   """
+
+    def __init__(self, kind, beta):
+        self.kind = kind
+        self.beta = beta
+    
+    def utility(self, x, gpr, y_max):
+        if self.kind == 'ucb':
+            return self._ucb(x, gpr, self.beta)
+        if self.kind == 'ei':
+            return self._ei(x, gpr, y_max, self.beta)
+        
+    @staticmethod
+    def _ucb(x, gpr, kappa):
+        mean, std = gpr.predict(x, return_std=True)
+        return mean + kappa * std
+    
+    @staticmethod
+    def _ei(x, gpr, y_max, xi):
+        mean, std = gpr.predict(x, return_std=True)
+        z = (mean - y_max - xi)/std
+        return (mean - y_max - xi) * norm.cdf(z) + std * norm.pdf(z)
