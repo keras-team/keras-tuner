@@ -122,8 +122,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         ac = utils.UtilityFunction(kind=self.acq, beta=self.beta).utility
         for x_try in x_seeds:
             # Sign of score is flipped when maximizing.
-            result = scipy_optimize.minimize(lambda x: ac(x.reshape(1, -1), gpr=self.gpr, 
-                                                           y_max=y_max),
+            result = scipy_optimize.minimize(lambda x: ac(x.reshape(1, -1), gpr=self.gpr, y_max=y_max),
                        x_try.reshape(1, -1),
                        bounds=bounds,
                        method="L-BFGS-B")

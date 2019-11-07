@@ -82,7 +82,7 @@ class TunerCallback(keras.callbacks.Callback):
 
     def on_batch_begin(self, batch, logs=None):
         self.tuner.on_batch_begin(self.trial, self.model, batch, logs)
-        
+
     def on_batch_end(self, batch, logs=None):
         self.tuner.on_batch_end(self.trial, self.model, batch, logs)
 
