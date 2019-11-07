@@ -82,7 +82,7 @@ class TunerCallback(keras.callbacks.Callback):
 
     def on_batch_begin(self, batch, logs=None):
         self.tuner.on_batch_begin(self.trial, self.model, batch, logs)
-
+        
     def on_batch_end(self, batch, logs=None):
         self.tuner.on_batch_end(self.trial, self.model, batch, logs)
 
@@ -118,24 +118,25 @@ def average_histories(histories):
     averaged = [dict(zip(metrics, vals)) for vals in zip(*averaged.values())]
     return averaged
 
+
 class UtilityFunction(object):
     """ Compute the acquisition functions for Bayesian Optimization Tuner   """
 
     def __init__(self, kind, beta):
         self.kind = kind
         self.beta = beta
-    
+
     def utility(self, x, gpr, y_max):
         if self.kind == 'ucb':
             return self._ucb(x, gpr, self.beta)
         if self.kind == 'ei':
             return self._ei(x, gpr, y_max, self.beta)
-        
+
     @staticmethod
     def _ucb(x, gpr, kappa):
         mean, std = gpr.predict(x, return_std=True)
         return mean + kappa * std
-    
+
     @staticmethod
     def _ei(x, gpr, y_max, xi):
         mean, std = gpr.predict(x, return_std=True)

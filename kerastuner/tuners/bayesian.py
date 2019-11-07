@@ -11,6 +11,7 @@ from ..engine import oracle as oracle_module
 from ..engine import trial as trial_lib
 from ..engine import tuner_utils as utils
 
+
 class BayesianOptimizationOracle(oracle_module.Oracle):
     """Bayesian optimization oracle.
 
@@ -113,7 +114,6 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
 
         optimal_val = float('inf')
         optimal_x = None
-        
         num_restarts = 50
         y_max = self.get_best_trials()[0].score
         bounds = self._get_hp_bounds()
@@ -122,7 +122,8 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         ac = utils.UtilityFunction(kind=self.acq, beta=self.beta).utility
         for x_try in x_seeds:
             # Sign of score is flipped when maximizing.
-            result = scipy_optimize.minimize(lambda x: -ac(x.reshape(1, -1), gpr=self.gpr, y_max=y_max),
+            result = scipy_optimize.minimize(lambda x: ac(x.reshape(1, -1), gpr=self.gpr, 
+                                                           y_max=y_max),
                        x_try.reshape(1, -1),
                        bounds=bounds,
                        method="L-BFGS-B")
@@ -330,4 +331,3 @@ class BayesianOptimization(multi_execution_tuner.MultiExecutionTuner):
         super(BayesianOptimization, self, ).__init__(oracle=oracle,
                                                      hypermodel=hypermodel,
                                                      **kwargs)
-
