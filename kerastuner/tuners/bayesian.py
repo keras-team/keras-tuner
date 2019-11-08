@@ -103,7 +103,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
 
         optimal_val = float('inf')
         optimal_x = None
-        num_restarts = 50
+        num_restarts = 150
         bounds = self._get_hp_bounds()
         for _ in range(num_restarts):
             x0 = np.random.uniform(bounds[:, 0], bounds[:, 1])

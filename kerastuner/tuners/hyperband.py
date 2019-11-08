@@ -126,13 +126,7 @@ class HyperbandOracle(oracle_module.Oracle):
 
             if len(rounds[0]) < self._get_size(bracket_num, round_num=0):
                 # Populate the initial random trials for this bracket.
-                # Allow collisions since a previous trial may have been stopped
-                # too early during an aggressive bracket.
-                result = self._random_populate_space(allow_collisions=True)
-                result['values'] = self._add_bracket_info(
-                    result['values'], bracket_num)
-                rounds[0].append({'past_id': None, 'id': trial_id})
-                return result
+                return self._random_trial(trial_id, bracket)
             else:
                 # Try to populate incomplete rounds for this bracket.
                 for round_num in range(1, len(rounds)):
@@ -202,6 +196,17 @@ class HyperbandOracle(oracle_module.Oracle):
                 return False
             return True
         self._brackets = list(filter(_bracket_is_incomplete, self._brackets))
+
+    def _random_trial(self, trial_id, bracket):
+        bracket_num = bracket['bracket_num']
+        rounds = bracket['rounds']
+        rounds[0].append({'past_id': None, 'id': trial_id})
+        # Allow collisions since a previous trial may have been stopped
+        # too early during an aggressive bracket.
+        result = self._random_populate_space(allow_collisions=True)
+        result['values'] = self._add_bracket_info(
+            result['values'], bracket_num)
+        return result
 
     def _add_bracket_info(self, values, bracket_num):
         values = values or {}

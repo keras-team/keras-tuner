@@ -351,7 +351,8 @@ class Oracle(stateful.Stateful):
 
     def _compute_values_hash(self, hps):
         # Don't include conditional params that are not currently active.
-        values = {name: val for name, val in hps.values.items() if hps.is_active(name)}
+        values = {name: val for name, val in hps.values.items()
+                  if hps.is_active(name)}
         keys = sorted(values.keys())
         s = ''.join(str(k) + '=' + str(values[k]) for k in keys)
         return hashlib.sha256(s.encode('utf-8')).hexdigest()[:32]

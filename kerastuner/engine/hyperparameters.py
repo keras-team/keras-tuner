@@ -556,7 +556,7 @@ class HyperParameters(object):
 
     def get(self, name):
         """Returns the current value of this HyperParameter."""
-        self._get(name, error_on_inactive=True)
+        return self._get(name, error_on_inactive=True)
 
     def _get(self, name, error_on_inactive=True):
         # Fast path: check for a non-conditional param or for a conditional param
