@@ -483,6 +483,21 @@ class HyperParameters(object):
         finally:
             self._scopes.pop()
 
+    def is_active(self, name):
+        """Checks whether a conditional hyperparameter is active.
+
+        A hyperparameter is only considered active for the current trial if
+        its parent's conditions are met. For more information, see
+        `HyperParameters.conditional_scope`.
+
+        # Arguments:
+          name: The name of the hyperparameter.
+
+        # Returns:
+          Whether the hyperparameter is active for the current trial.
+        """
+        return self._get(name, error_on_inactive=False) is not None
+
     def _conditions_are_active(self, scopes=None):
         if scopes is None:
             scopes = self._scopes
@@ -540,18 +555,22 @@ class HyperParameters(object):
         return value
 
     def get(self, name):
-        """Return the current value of this HyperParameter."""
+        """Returns the current value of this HyperParameter."""
+        self._get(name, error_on_inactive=True)
 
+    def _get(self, name, error_on_inactive=True):
         # Fast path: check for a non-conditional param or for a conditional param
         # that was defined in the current scope.
         full_cond_name = self._get_name(name)
         if full_cond_name in self.values:
             if self._conditions_are_active():
                 return self.values[full_cond_name]
-            else:
+            elif error_on_inactive:
                 raise ValueError(
                     'Conditional parameter {} is not currently active'.format(
                         full_cond_name))
+            else:
+                return None
 
         # Check for any active conditional param.
         found_inactive = False
@@ -571,9 +590,12 @@ class HyperParameters(object):
                     found_inactive = True
 
         if found_inactive:
-            raise ValueError(
-                'Conditional parameter {} is not currently active'.format(
-                    full_cond_name))
+            if error_on_inactive:
+                raise ValueError(
+                    'Conditional parameter {} is not currently active'.format(
+                        full_cond_name))
+            else:
+                return None
         else:
             raise ValueError(
                 'Unknown parameter: {}'.format(full_name))

@@ -1,5 +1,3 @@
-import random
-
 import numpy as np
 from scipy import optimize as scipy_optimize
 from sklearn import exceptions
@@ -67,14 +65,11 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             max_trials=max_trials,
             hyperparameters=hyperparameters,
             tune_new_entries=tune_new_entries,
-            allow_new_entries=allow_new_entries)
+            allow_new_entries=allow_new_entries,
+            seed=seed)
         self.num_initial_points = num_initial_points
         self.alpha = alpha
         self.beta = beta
-        self.seed = seed or random.randint(1, 1e4)
-        self._seed_state = self.seed
-        self._tried_so_far = set()
-        self._max_collisions = 20
         self.gpr = gaussian_process.GaussianProcessRegressor(
             kernel=gaussian_process.kernels.Matern(),
             n_restarts_optimizer=20,
@@ -91,9 +86,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         dimensions = len(self.hyperparameters.space)
         num_initial_points = self.num_initial_points or 3 * dimensions
         if len(completed_trials) < num_initial_points:
-            values = self._random_trial()
-            return {'status': trial_lib.TrialStatus.RUNNING,
-                    'values': values}
+            return self._random_populate_space()
 
         # Fit a GPR to the completed trials and return the predicted optimum values.
         x, y = self._vectorize_trials()
@@ -101,9 +94,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             self.gpr.fit(x, y)
         except exceptions.ConvergenceWarning:
             # If convergence of the GPR fails, create a random trial.
-            values = self._random_trial()
-            return {'status': trial_lib.TrialStatus.RUNNING,
-                    'values': values}
+            return self._random_populate_space()
 
         def _upper_confidence_bound(x):
             x = x.reshape(1, -1)
@@ -135,10 +126,6 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             'num_initial_points': self.num_initial_points,
             'alpha': self.alpha,
             'beta': self.beta,
-            'seed': self.seed,
-            'seed_state': self._seed_state,
-            'tried_so_far': list(self._tried_so_far),
-            'max_collisions': self._max_collisions,
         })
         return state
 
@@ -147,41 +134,6 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         self.num_initial_points = state['num_initial_points']
         self.alpha = state['alpha']
         self.beta = state['beta']
-        self.seed = state['seed']
-        self._seed_state = state['seed_state']
-        self._tried_so_far = set(state['tried_so_far'])
-        self._max_collisions = state['max_collisions']
-        self.gpr = gaussian_process.GaussianProcessRegressor(
-            kernel=gaussian_process.kernels.ConstantKernel(1.0),
-            alpha=self.alpha)
-
-    def _random_trial(self):
-        """Fill a given hyperparameter space with values.
-
-        Returns:
-            A dictionary mapping parameter names to suggested values.
-            Note that if the Oracle is keeping tracking of a large
-            space, it may return values for more parameters
-            than what was listed in `space`.
-        """
-        collisions = 0
-        while 1:
-            # Generate a set of random values.
-            values = {}
-            for p in self.hyperparameters.space:
-                values[p.name] = p.random_sample(self._seed_state)
-                self._seed_state += 1
-            # Keep trying until the set of values is unique,
-            # or until we exit due to too many collisions.
-            values_hash = self._compute_values_hash(values)
-            if values_hash in self._tried_so_far:
-                collisions += 1
-                if collisions > self._max_collisions:
-                    return None
-                continue
-            self._tried_so_far.add(values_hash)
-            break
-        return values
 
     def _vectorize_trials(self):
         x = []

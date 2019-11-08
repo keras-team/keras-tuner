@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import math
-import random
 
 from ..engine import multi_execution_tuner
 from ..engine import oracle as oracle_module
@@ -99,7 +98,8 @@ class HyperbandOracle(oracle_module.Oracle):
             objective=objective,
             hyperparameters=hyperparameters,
             allow_new_entries=allow_new_entries,
-            tune_new_entries=tune_new_entries)
+            tune_new_entries=tune_new_entries,
+            seed=seed)
         if factor < 2:
             raise ValueError('factor needs to be a int larger than 1.')
 
@@ -109,11 +109,6 @@ class HyperbandOracle(oracle_module.Oracle):
         # degress of aggressiveness.
         self.min_epochs = 1
         self.factor = factor
-
-        self.seed = seed or random.randint(1, 1e4)
-        self._max_collisions = 20
-        self._seed_state = self.seed
-        self._tried_so_far = set()
 
         self._current_iteration = 0
         # Start with most aggressively halving bracket.
@@ -131,7 +126,13 @@ class HyperbandOracle(oracle_module.Oracle):
 
             if len(rounds[0]) < self._get_size(bracket_num, round_num=0):
                 # Populate the initial random trials for this bracket.
-                return self._random_trial(trial_id, bracket)
+                # Allow collisions since a previous trial may have been stopped
+                # too early during an aggressive bracket.
+                result = self._random_populate_space(allow_collisions=True)
+                result['values'] = self._add_bracket_info(
+                    result['values'], bracket_num)
+                rounds[0].append({'past_id': None, 'id': trial_id})
+                return result
             else:
                 # Try to populate incomplete rounds for this bracket.
                 for round_num in range(1, len(rounds)):
@@ -155,14 +156,7 @@ class HyperbandOracle(oracle_module.Oracle):
                         best_trial = sorted_candidates[0]
 
                         values = best_trial.hyperparameters.values.copy()
-                        values['tuner/trial_id'] = best_trial.trial_id
-                        values['tuner/epochs'] = self._get_epochs(
-                            bracket_num, round_num)
-                        values['tuner/initial_epoch'] = self._get_epochs(
-                            bracket_num, round_num - 1)
-                        values['tuner/bracket'] = self._current_bracket
-                        values['tuner/round'] = round_num
-
+                        values = self._add_bracket_info(values, bracket_num)
                         round_info.append({'past_id': best_trial.trial_id,
                                            'id': trial_id})
                         return {'status': 'RUNNING', 'values': values}
@@ -209,24 +203,13 @@ class HyperbandOracle(oracle_module.Oracle):
             return True
         self._brackets = list(filter(_bracket_is_incomplete, self._brackets))
 
-    def _random_trial(self, trial_id, bracket):
-        bracket_num = bracket['bracket_num']
-        rounds = bracket['rounds']
-        values = self._random_values()
-        if values:
-            values['tuner/epochs'] = self._get_epochs(bracket_num, 0)
-            values['tuner/initial_epoch'] = 0
-            values['tuner/bracket'] = self._current_bracket
-            values['tuner/round'] = 0
-            rounds[0].append({'past_id': None, 'id': trial_id})
-            return {'status': 'RUNNING', 'values': values}
-        elif self.ongoing_trials:
-            # Can't create new random values, but successive halvings may still
-            # be needed.
-            return {'status': 'IDLE'}
-        else:
-            # Collision and no ongoing trials should trigger an exit.
-            return {'status': 'STOPPED'}
+    def _add_bracket_info(self, values, bracket_num):
+        values = values or {}
+        values['tuner/epochs'] = self._get_epochs(bracket_num, 0)
+        values['tuner/initial_epoch'] = 0
+        values['tuner/bracket'] = bracket_num
+        values['tuner/round'] = 0
+        return values
 
     def _get_size(self, bracket_num, round_num):
         # Set up so that each bracket takes approx. the same amount of resources.
@@ -284,10 +267,6 @@ class HyperbandOracle(oracle_module.Oracle):
             'max_epochs': self.max_epochs,
             'min_epochs': self.min_epochs,
             'factor': self.factor,
-            'seed': self.seed,
-            'max_collisions': self._max_collisions,
-            'seed_state': self._seed_state,
-            'tried_so_far': list(self._tried_so_far),
             'brackets': self._brackets,
             'current_bracket': self._current_bracket,
             'current_iteration': self._current_iteration
@@ -300,10 +279,6 @@ class HyperbandOracle(oracle_module.Oracle):
         self.max_epochs = state['max_epochs']
         self.min_epochs = state['min_epochs']
         self.factor = state['factor']
-        self.seed = state['seed']
-        self._max_collisions = state['max_collisions']
-        self._seed_state = state['seed_state']
-        self._tried_so_far = set(state['tried_so_far'])
         self._brackets = state['brackets']
         self._current_bracket = state['current_bracket']
         self._current_iteration = state['current_iteration']

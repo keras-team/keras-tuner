@@ -21,6 +21,7 @@ import collections
 import json
 import hashlib
 import os
+import random
 import tensorflow as tf
 
 from .. import utils
@@ -60,7 +61,8 @@ class Oracle(stateful.Stateful):
                  max_trials=None,
                  hyperparameters=None,
                  allow_new_entries=True,
-                 tune_new_entries=True):
+                 tune_new_entries=True,
+                 seed=None):
         self.objective = _format_objective(objective)
         self.max_trials = max_trials
         if not hyperparameters:
@@ -88,6 +90,13 @@ class Oracle(stateful.Stateful):
         # Set in `BaseTuner` via `set_project_dir`.
         self.directory = None
         self.project_name = None
+
+        # Random trial generation attributes.
+        self.seed = seed or random.randint(1, 1e4)
+        self._seed_state = self.seed
+        # Mapping from hash value to trial id.
+        self._tried_so_far = {}
+        self._max_collisions = 20
 
     def _populate_space(self, trial_id):
         """Fill the hyperparameter space with values for a trial.
@@ -161,6 +170,7 @@ class Oracle(stateful.Stateful):
             self.ongoing_trials[tuner_id] = trial
             self.trials[trial_id] = trial
             self._save_trial(trial)
+            self._tried_so_far = self._compute_values_hash(trial.hyperparameters)
             self.save()
 
         return trial
@@ -278,6 +288,9 @@ class Oracle(stateful.Stateful):
         # Hyperparameters are part of the state because they can be added to
         # during the course of the search.
         state['hyperparameters'] = self.hyperparameters.get_config()
+        state['seed'] = self.seed
+        state['seed_state'] = self._seed_state
+        state['tried_so_far'] = self._tried_so_far
         return state
 
     def set_state(self, state):
@@ -287,6 +300,9 @@ class Oracle(stateful.Stateful):
             for tuner_id, trial_id in state['ongoing_trials'].items()}
         self.hyperparameters = hp_module.HyperParameters.from_config(
             state['hyperparameters'])
+        self.seed = state['seed']
+        self._seed_state = state['seed_state']
+        self._tried_so_far = state['tried_so_far']
 
     def _set_project_dir(self, directory, project_name, overwrite=False):
         """Sets the project directory and reloads the Oracle."""
@@ -333,10 +349,35 @@ class Oracle(stateful.Stateful):
             self._project_dir,
             'oracle.json')
 
-    def _compute_values_hash(self, values):
+    def _compute_values_hash(self, hps):
+        # Don't include conditional params that are not currently active.
+        values = {name: val for name, val in hps.values.items() if hps.is_active(name)}
         keys = sorted(values.keys())
         s = ''.join(str(k) + '=' + str(values[k]) for k in keys)
         return hashlib.sha256(s.encode('utf-8')).hexdigest()[:32]
+
+    def _random_populate_space(self, allow_collisions=False):
+        for _ in range(self._max_collisions):
+            values = {}
+            for p in self.hyperparameters.space:
+                values[p.name] = p.random_sample(self._seed_state)
+                self._seed_state += 1
+
+            trial_hps = self.hyperparameters.copy()
+            trial_hps.values = values
+            if self._compute_values_hash(trial_hps) in self._tried_so_far:
+                # Attempt to avoid collisions.
+                continue
+            return {'status': trial_lib.TrialStatus.RUNNING,
+                    'values': trial_hps.values}
+
+        # Max collisions occurred.
+        if allow_collisions:
+            return {'status': trial_lib.TrialStatus.RUNNING,
+                    'values': trial_hps.values}
+        # Search space is presumed exhausted.
+        return {'status': trial_lib.TrialStatus.STOPPED,
+                'values': None}
 
     def _check_objective_found(self, metrics):
         if isinstance(self.objective, Objective):
