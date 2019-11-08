@@ -70,11 +70,13 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         self.num_initial_points = num_initial_points
         self.alpha = alpha
         self.beta = beta
+        self._random_state = np.random.RandomState(self.seed)
         self.gpr = gaussian_process.GaussianProcessRegressor(
-            kernel=gaussian_process.kernels.Matern(),
+            kernel=gaussian_process.kernels.Matern(nu=2.5),
             n_restarts_optimizer=20,
             normalize_y=True,
-            alpha=self.alpha)
+            alpha=self.alpha,
+            random_state=self.seed)
 
     def _populate_space(self, trial_id):
         # Generate enough samples before training Gaussian process.
@@ -105,11 +107,12 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         optimal_x = None
         num_restarts = 150
         bounds = self._get_hp_bounds()
-        for _ in range(num_restarts):
-            x0 = np.random.uniform(bounds[:, 0], bounds[:, 1])
+        x_seeds = self._random_state.uniform(bounds[:, 0], bounds[:, 1],
+                                             size=(num_restarts, bounds.shape[0]))
+        for x_try in x_seeds:
             # Sign of score is flipped when maximizing.
             result = scipy_optimize.minimize(_upper_confidence_bound,
-                                             x0=x0,
+                                             x0=x_try,
                                              bounds=bounds,
                                              method='L-BFGS-B')
             if result.fun[0] < optimal_val:
