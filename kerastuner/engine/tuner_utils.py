@@ -135,7 +135,7 @@ class UtilityFunction(object):
     @staticmethod
     def _ucb(x, gpr, kappa):
         mean, std = gpr.predict(x, return_std=True)
-        return mean + kappa * std
+        return mean - kappa * std
 
     @staticmethod
     def _ei(x, gpr, y_max, xi):
