@@ -488,3 +488,19 @@ def test_prob_one_choice():
 
     value = hp_module.cumulative_prob_to_value(0, hp)
     assert value == 0
+
+
+def test_is_active():
+    hp = hp_module.HyperParameters()
+    hp.Choice('a', [1, 2, 3], default=2)
+    assert hp.is_active('a')
+    with hp.conditional_scope('a', 2):
+        hp.Fixed('b', 4)
+        assert hp.is_active('b')
+    with hp.conditional_scope('a', 3):
+        hp.Fixed('b', 5)
+        assert not hp.is_active('b')
+
+    assert hp.is_active('b')
+    assert hp.is_active('a=2/b')
+    assert not hp.is_active('a=3/b')

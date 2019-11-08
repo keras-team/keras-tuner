@@ -563,7 +563,8 @@ class HyperParameters(object):
         # that was defined in the current scope.
         full_cond_name = self._get_name(name)
         if full_cond_name in self.values:
-            if self._conditions_are_active():
+            scopes = self._get_name_parts(full_cond_name)[:-1]
+            if self._conditions_are_active(scopes):
                 return self.values[full_cond_name]
             elif error_on_inactive:
                 raise ValueError(
