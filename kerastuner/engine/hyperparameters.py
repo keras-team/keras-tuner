@@ -21,6 +21,7 @@ import contextlib
 import math
 import numpy as np
 import random
+from typing import List, Union, Optional, Any
 
 from tensorflow import keras
 
@@ -589,12 +590,12 @@ class HyperParameters(object):
             return False
 
     def Choice(self,
-               name,
-               values,
-               ordered=None,
-               default=None,
-               parent_name=None,
-               parent_values=None):
+               name: str,
+               values: List[Union[int, float, str, bool]],
+               ordered: Optional[bool] = None,
+               default: Union[int, float, str, bool, None] = None,
+               parent_name: Optional[str] = None,
+               parent_values: List[Any] = None) -> Union[int, float, str, bool]:
         return self._retrieve(name, 'Choice',
                               config={'values': values,
                                       'ordered': ordered,
@@ -603,14 +604,14 @@ class HyperParameters(object):
                               parent_values=parent_values)
 
     def Int(self,
-            name,
-            min_value,
-            max_value,
-            step=1,
-            sampling=None,
-            default=None,
-            parent_name=None,
-            parent_values=None):
+            name: str,
+            min_value: int,
+            max_value: int,
+            step: int = 1,
+            sampling: Optional[str] = None,
+            default: int = None,
+            parent_name: Optional[str] = None,
+            parent_values: List[Any] = None) -> int:
         return self._retrieve(name, 'Int',
                               config={'min_value': min_value,
                                       'max_value': max_value,
@@ -621,14 +622,14 @@ class HyperParameters(object):
                               parent_values=parent_values)
 
     def Float(self,
-              name,
-              min_value,
-              max_value,
-              step=None,
-              sampling=None,
-              default=None,
-              parent_name=None,
-              parent_values=None):
+              name: str,
+              min_value: float,
+              max_value: float,
+              step: Optional[float] = None,
+              sampling: Optional[str] = None,
+              default: float = None,
+              parent_name: str = None,
+              parent_values: List[Any] = None) -> float:
         return self._retrieve(name, 'Float',
                               config={'min_value': min_value,
                                       'max_value': max_value,
@@ -639,20 +640,20 @@ class HyperParameters(object):
                               parent_values=parent_values)
 
     def Boolean(self,
-                name,
-                default=False,
-                parent_name=None,
-                parent_values=None):
+                name: str,
+                default: bool = False,
+                parent_name: str = None,
+                parent_values: List[Any] = None) -> bool:
         return self._retrieve(name, 'Boolean',
                               config={'default': default},
                               parent_name=parent_name,
                               parent_values=parent_values)
 
     def Fixed(self,
-              name,
-              value,
-              parent_name=None,
-              parent_values=None):
+              name: str,
+              value: Any,
+              parent_name: str = None,
+              parent_values: List[Any] = None) -> Any:
         return self._retrieve(name, 'Fixed',
                               config={'value': value},
                               parent_name=parent_name,
