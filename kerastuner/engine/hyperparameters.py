@@ -933,6 +933,7 @@ hp_method_docstring_addon = """
     # Returns:
         The current value of this hyperparameter.
 """
+hp_method_docstring_addon = hp_method_docstring_addon[1:]  # removing the first \n
 
 
 HyperParameters.Boolean.__doc__ = Boolean.__doc__ + hp_method_docstring_addon
