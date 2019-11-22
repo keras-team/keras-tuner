@@ -203,7 +203,7 @@ hypermodel = HyperResNet(input_shape=(128, 128, 3), num_classes=10)
 tuner = Hyperband(
     hypermodel,
     objective='val_accuracy',
-    max_trials=40,
+    max_epochs=40,
     directory='my_dir',
     project_name='helloworld')
 
@@ -236,7 +236,7 @@ tuner = Hyperband(
     # `tune_new_entries=False` prevents unlisted parameters from being tuned
     tune_new_entries=False,
     objective='val_accuracy',
-    max_trials=40,
+    max_epochs=40,
     directory='my_dir',
     project_name='helloworld')
 
@@ -282,7 +282,7 @@ tuner = Hyperband(
     hyperparameters=hp,
     tune_new_entries=True,
     objective='val_accuracy',
-    max_trials=40,
+    max_epochs=40,
     directory='my_dir',
     project_name='helloworld')
 
@@ -306,7 +306,7 @@ tuner = Hyperband(
     metrics=[keras.metrics.Precision(name='precision'),
              keras.metrics.Recall(name='recall')],
     objective='val_precision',
-    max_trials=40,
+    max_epochs=40,
     directory='my_dir',
     project_name='helloworld')
 
