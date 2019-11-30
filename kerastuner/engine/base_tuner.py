@@ -106,7 +106,6 @@ class BaseTuner(stateful.Stateful):
         self.hypermodel.build(hp)
         self.oracle.update_space(hp)
 
-
     def search(self, *fit_args, **fit_kwargs):
         """Performs a search for best hyperparameter configuations.
 
