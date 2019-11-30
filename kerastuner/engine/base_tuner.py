@@ -88,15 +88,24 @@ class BaseTuner(stateful.Stateful):
         self.logger = logger
         self._display = tuner_utils.Display()
 
-        # Populate initial search space.
-        hp = self.oracle.get_space()
-        self.hypermodel.build(hp)
-        self.oracle.update_space(hp)
+        self._populate_initial_space()
 
         if not overwrite and tf.io.gfile.exists(self._get_tuner_fname()):
             tf.get_logger().info('Reloading Tuner from {}'.format(
                 self._get_tuner_fname()))
             self.reload()
+
+    def _populate_initial_space(self):
+        """Populate initial search space for oracle.
+
+        Keep this function as a subroutine for AutoKeras to override. The space may
+        not be ready at the initialization of the tuner, but after seeing the
+        training data.
+        """
+        hp = self.oracle.get_space()
+        self.hypermodel.build(hp)
+        self.oracle.update_space(hp)
+
 
     def search(self, *fit_args, **fit_kwargs):
         """Performs a search for best hyperparameter configuations.
