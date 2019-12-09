@@ -1,14 +1,20 @@
 dist: trusty
 language: python
+python:
+  - "2.7"
+  - "3.6"
+  - "3.8"
 env:
   TRAVIS=True
 matrix:
     include:
-        - python: 3.7
+        - python: 3.8
           env: TEST_MODE=INTEGRATION_TESTS
-        - python: 3.7
+        - python: 3.8
           env: TEST_MODE=FLAKE8
-        - python: 3.7
+        - python: 3.8
+          env: TEST_MODE=TF2
+        - python 3.6
           env: TEST_MODE=TF2
         - python: 2.7
           env: TEST_MODE=TF2
@@ -38,7 +44,8 @@ install:
   - travis_retry conda install portpicker
 
   # install tools for building the docs
-  - pip install mkdocs keras-autodoc==0.4.0
+  - if [[ "$TEST_MODE" == "FLAKE8" ]]; then
+      pip install mkdocs keras-autodoc==0.4.0
 
   - pip install -e .[tests] --progress-bar off
 
