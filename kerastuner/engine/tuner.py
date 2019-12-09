@@ -146,14 +146,15 @@ class Tuner(base_tuner.BaseTuner):
                 trial_id, epoch - self._save_n_checkpoints)
 
     def load_model(self, trial):
-        model = self.hypermodel.build(trial.hyperparameters)
-        # Reload best checkpoint. The Oracle scores the Trial and also
-        # indicates at what epoch the best value of the objective was
-        # obtained.
-        best_epoch = trial.best_step
-        model.load_weights(self._get_checkpoint_fname(
-            trial.trial_id, best_epoch))
-        return model
+        with hm_module.maybe_distribute(self.distribution_strategy):
+            model = self.hypermodel.build(trial.hyperparameters)
+            # Reload best checkpoint. The Oracle scores the Trial and also
+            # indicates at what epoch the best value of the objective was
+            # obtained.
+            best_epoch = trial.best_step
+            model.load_weights(self._get_checkpoint_fname(
+                trial.trial_id, best_epoch))
+            return model
 
     def on_epoch_begin(self, trial, model, epoch, logs=None):
         """A hook called at the start of every epoch.
