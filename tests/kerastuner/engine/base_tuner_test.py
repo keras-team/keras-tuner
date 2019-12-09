@@ -101,9 +101,8 @@ def test_simple_sklearn_tuner(tmp_dir):
                 return pickle.load(f)
 
     def sklearn_build_fn(hp):
-        penalty = hp.Choice('penalty', ['l1', 'l2'])
         c = hp.Float('c', 1e-4, 10)
-        return linear_model.LogisticRegression(penalty=penalty, C=c)
+        return linear_model.LogisticRegression(C=c)
 
     tuner = SimpleSklearnTuner(
         oracle=kerastuner.tuners.randomsearch.RandomSearchOracle(
