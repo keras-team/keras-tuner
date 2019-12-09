@@ -250,3 +250,25 @@ def test_error_on_unknown_objective_direction(tmp_dir):
             objective='custom_metric',
             max_trials=2,
             directory=tmp_dir)
+
+
+def test_callbacks_run_each_execution(tmp_dir):
+    callback_instances = set()
+
+    class LoggingCallback(keras.callbacks.Callback):
+
+        def on_train_begin(self, logs):
+            callback_instances.add(id(self))
+
+    logging_callback = LoggingCallback()
+    tuner = kerastuner.tuners.RandomSearch(
+        hypermodel=build_model,
+        objective='val_accuracy',
+        max_trials=2,
+        executions_per_trial=3,
+        directory=tmp_dir)
+    tuner.search(TRAIN_INPUTS, TRAIN_TARGETS,
+                 validation_data=(VAL_INPUTS, VAL_TARGETS),
+                 callbacks=[logging_callback])
+
+    assert len(callback_instances) == 6
