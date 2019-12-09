@@ -4,9 +4,9 @@ python:
   - "2.7"
   - "3.6"
 env:
-  TRAVIS=True TEST_MODE=INTEGRATION_TESTS
-  TRAVIS=True TEST_MODE=FLAKE8
-  TRAVIS=True TEST_MODE=TF2
+  - TRAVIS=True TEST_MODE=INTEGRATION_TESTS
+  - TRAVIS=True TEST_MODE=FLAKE8
+  - TRAVIS=True TEST_MODE=TF2
 install:
   # code below is taken from https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/use-conda-with-travis-ci.html
   # We do this conditionally because it saves us some downloading if the
