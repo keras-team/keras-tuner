@@ -44,11 +44,6 @@ install:
     # install portpicker for mock distribution framework.
   - travis_retry conda install portpicker
 
-  # install tools for building the docs
-  - if [[ "$TEST_MODE" == "FLAKE8" ]]; then
-      pip install mkdocs keras-autodoc==0.4.0
-    fi
-
   - pip install -e .[tests] --progress-bar off
 
 # command to run tests
