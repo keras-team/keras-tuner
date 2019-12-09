@@ -4,16 +4,12 @@ env:
   TRAVIS=True
 matrix:
     include:
-        - python: 3.8
+        - python: 3.7
           env: TEST_MODE=INTEGRATION_TESTS
-        - python: 3.8
+        - python: 3.7
           env: TEST_MODE=FLAKE8
-        - python: 3.8
+        - python: 3.7
           env: TEST_MODE=TF2
-        - python: 2.7
-          env: TEST_MODE=INTEGRATION_TESTS
-        - python: 2.7
-          env: TEST_MODE=FLAKE8
         - python: 2.7
           env: TEST_MODE=TF2
 install:
