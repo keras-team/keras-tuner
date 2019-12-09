@@ -939,4 +939,4 @@ HyperParameters.Boolean.__doc__ = str(Boolean.__doc__) + hp_method_docstring_add
 HyperParameters.Choice.__doc__ = str(Choice.__doc__) + hp_method_docstring_addon
 HyperParameters.Int.__doc__ = str(Int.__doc__) + hp_method_docstring_addon
 HyperParameters.Float.__doc__ = str(Float.__doc__) + hp_method_docstring_addon
-HyperParameters.Fixed..__doc__ = str(Fixed.__doc__) + hp_method_docstring_addon
+HyperParameters.Fixed.__doc__ = str(Fixed.__doc__) + hp_method_docstring_addon
