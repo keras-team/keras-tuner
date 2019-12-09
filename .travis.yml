@@ -14,7 +14,7 @@ matrix:
           env: TEST_MODE=FLAKE8
         - python: 3.8
           env: TEST_MODE=TF2
-        - python 3.6
+        - python: 3.6
           env: TEST_MODE=TF2
         - python: 2.7
           env: TEST_MODE=TF2
