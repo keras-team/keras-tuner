@@ -121,7 +121,7 @@ class Tuner(base_tuner.BaseTuner):
             *fit_kwargs: Keyword arguments passed by `search`.
         """
         # Handle any callbacks passed to `fit`.
-        fit_kwargs = copy.copy(fit_kwargs)
+        copied_fit_kwargs = copy.copy(fit_kwargs)
         callbacks = fit_kwargs.pop('callbacks', [])
         callbacks = self._deepcopy_callbacks(callbacks)
         self._configure_tensorboard_dir(callbacks, trial.trial_id)
@@ -134,9 +134,10 @@ class Tuner(base_tuner.BaseTuner):
         # you are subclassing `Tuner` to write a custom training loop, you should
         # make calls to these methods within `run_trial`.
         callbacks.append(tuner_utils.TunerCallback(self, trial))
+        copied_fit_kwargs['callbacks'] = callbacks
 
         model = self.hypermodel.build(trial.hyperparameters)
-        model.fit(*fit_args, **fit_kwargs, callbacks=callbacks)
+        model.fit(*fit_args, **copied_fit_kwargs)
 
     def save_model(self, trial_id, model, step=0):
         epoch = step

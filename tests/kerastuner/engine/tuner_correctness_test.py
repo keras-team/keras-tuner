@@ -59,7 +59,7 @@ class MockModel(keras.Model):
     def call_callbacks(self, callbacks, method_name, *args, **kwargs):
         for callback in callbacks:
             method = getattr(callback, method_name)
-            method(*args, *kwargs)
+            method(*args, **kwargs)
 
     def on_epoch_begin(self, epoch):
         for callback in self.callbacks:

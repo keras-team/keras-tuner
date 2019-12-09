@@ -54,7 +54,7 @@ def build_model(hp):
 
 @pytest.mark.parametrize(
     'distribution_strategy',
-    [None, tf.distribute.OneDeviceStrategy('/cpu:0')])
+    [tf.distribute.OneDeviceStrategy('/cpu:0'), None])
 def test_end_to_end_workflow(tmp_dir, distribution_strategy):
     (x, y), (val_x, val_y) = get_data()
     x = x.astype('float32') / 255.
