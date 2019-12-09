@@ -18,19 +18,13 @@ from __future__ import absolute_import
 
 from setuptools import find_packages
 from setuptools import setup
-from pathlib import Path
 
-this_file = Path(__file__).resolve()
-readme = this_file.parent / 'README.md'
 version = '1.0.0'
 
 setup(
     name='keras-tuner',
     version=version,
     description='Hypertuner for Keras',
-    package_data={'': ['README.md']},
-    long_description=readme.read_text(encoding='utf-8'),
-    long_description_content_type='text/markdown',
     url='https://github.com/keras-team/keras-tuner',
     author='The Keras Tuner authors',
     author_email='kerastuner@google.com',
