@@ -407,6 +407,11 @@ class Fixed(HyperParameter):
     def __init__(self, name, value):
         self.name = name
         self.value = value
+        self._type = type(value)
+        if self._type not in {int, float, str, bool}:
+            raise ValueError(
+                '`Fixed` value must be an `int`, `float`, `str`, '
+                'or `bool`, found {}'.format(self.value))
 
     def __repr__(self):
         return 'Fixed(name: {}, value: {})'.format(
@@ -421,6 +426,26 @@ class Fixed(HyperParameter):
 
     def get_config(self):
         return {'name': self.name, 'value': self.value}
+
+    @classmethod
+    def from_proto(cls, proto):
+        value = getattr(proto.value, proto.value.WhichOneof('kind'))
+        return cls(name=proto.name,
+                   value=value)
+
+    def to_proto(self):
+        if isinstance(self.value, int):
+            value = kerastuner_pb2.Value(int_value=self.value)
+        elif isinstance(self.value, float):
+            value = kerastuner_pb2.Value(float_value=self.value)
+        elif isinstance(self.value, str):
+            value = kerastuner_pb2.Value(string_value=self.value)
+        else:
+            value = kerastuner_pb2.Value(boolean_value=self.value)
+
+        return kerastuner_pb2.Fixed(
+            name=self.name,
+            value=value)
 
 
 class HyperParameters(object):
@@ -705,32 +730,48 @@ class HyperParameters(object):
         hps = cls()
 
         space = []
-        for float_proto in proto.space.float_space:
-            space.append(Float.from_proto(float_proto))
-        for int_proto in proto.space.int_space:
-            space.append(Int.from_proto(int_proto))
-        for choice_proto in proto.space.choice_space:
-            space.append(Choice.from_proto(choice_proto))
-        for boolean_proto in proto.space.boolean_space:
-            space.append(Boolean.from_proto(boolean_proto))
+        if isinstance(proto, kerastuner_pb2.HyperParameters.Values):
+            # Allows passing in only values, space becomes `Fixed`.
+            for name, value in proto.values.items():
+                space.append(Fixed(
+                    name,
+                    getattr(value, value.WhichOneof('kind'))))
+        else:
+            for fixed_proto in proto.space.fixed_space:
+                space.append(Fixed.from_proto(fixed_proto))
+            for float_proto in proto.space.float_space:
+                space.append(Float.from_proto(float_proto))
+            for int_proto in proto.space.int_space:
+                space.append(Int.from_proto(int_proto))
+            for choice_proto in proto.space.choice_space:
+                space.append(Choice.from_proto(choice_proto))
+            for boolean_proto in proto.space.boolean_space:
+                space.append(Boolean.from_proto(boolean_proto))
 
         for hp in space:
             hps.register(hp.name,
                          hp.__class__.__name__,
                          hp.get_config())
 
-        for name, val in proto.values.items():
+        if isinstance(proto, kerastuner_pb2.HyperParameters.Values):
+            values = proto.values
+        else:
+            values = proto.values.values
+        for name, val in values.items():
             hps.values[name] = getattr(val, val.WhichOneof('kind'))
 
         return hps
 
     def to_proto(self):
+        fixed_space = []
         float_space = []
         int_space = []
         choice_space = []
         boolean_space = []
         for hp in self.space:
-            if isinstance(hp, Float):
+            if isinstance(hp, Fixed):
+                fixed_space.append(hp.to_proto())
+            elif isinstance(hp, Float):
                 float_space.append(hp.to_proto())
             elif isinstance(hp, Int):
                 int_space.append(hp.to_proto())
@@ -758,11 +799,13 @@ class HyperParameters(object):
 
         return kerastuner_pb2.HyperParameters(
             space=kerastuner_pb2.HyperParameters.Space(
+                fixed_space=fixed_space,
                 float_space=float_space,
                 int_space=int_space,
                 choice_space=choice_space,
                 boolean_space=boolean_space),
-            values=values)
+            values=kerastuner_pb2.HyperParameters.Values(
+                values=values))
 
     def _get_name(self, name, scopes=None, include_cond=True):
         """Returns a name qualified by `name_scopes`."""
