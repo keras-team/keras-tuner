@@ -79,13 +79,13 @@ class MultiExecutionTuner(tuner_module.Tuner):
             mode=self.oracle.objective.direction,
             save_best_only=True,
             save_weights_only=True)
+        original_callbacks = fit_kwargs.pop('callbacks', [])
 
         # Run the training process multiple times.
         metrics = collections.defaultdict(list)
         for execution in range(self.executions_per_trial):
             fit_kwargs = copy.copy(fit_kwargs)
-            callbacks = fit_kwargs.pop('callbacks', [])
-            callbacks = self._deepcopy_callbacks(callbacks)
+            callbacks = self._deepcopy_callbacks(original_callbacks)
             self._configure_tensorboard_dir(callbacks, trial.trial_id, execution)
             callbacks.append(tuner_utils.TunerCallback(self, trial))
             # Only checkpoint the best epoch across all executions.
