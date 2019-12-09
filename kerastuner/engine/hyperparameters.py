@@ -935,8 +935,8 @@ hp_method_docstring_addon = """
 """
 
 
-HyperParameters.Boolean.__func____doc__ = Boolean.__doc__ + hp_method_docstring_addon
-HyperParameters.Choice.__func__.__doc__ = Choice.__doc__ + hp_method_docstring_addon
-HyperParameters.Int.__func__.__doc__ = Int.__doc__ + hp_method_docstring_addon
-HyperParameters.Float.__func__.__doc__ = Float.__doc__ + hp_method_docstring_addon
-HyperParameters.Fixed.__func__.__doc__ = Fixed.__doc__ + hp_method_docstring_addon
+HyperParameters.Boolean.__doc__ = str(Boolean.__doc__) + hp_method_docstring_addon
+HyperParameters.Choice.__doc__ = str(Choice.__doc__) + hp_method_docstring_addon
+HyperParameters.Int.__doc__ = str(Int.__doc__) + hp_method_docstring_addon
+HyperParameters.Float.__doc__ = str(Float.__doc__) + hp_method_docstring_addon
+HyperParameters.Fixed..__doc__ = str(Fixed.__doc__) + hp_method_docstring_addon
