@@ -595,6 +595,27 @@ class HyperParameters(object):
                default=None,
                parent_name=None,
                parent_values=None):
+        """Choice of one value among a predefined set of possible values.
+
+        # Arguments:
+            name: Str. Name of parameter. Must be unique.
+            values: List of possible values. Values must be int, float,
+                str, or bool. All values must be of the same type.
+            ordered: Whether the values passed should be considered to
+                have an ordering. This defaults to `True` for float/int
+                values. Must be `False` for any other values.
+            default: Default value to return for the parameter.
+                If unspecified, the default value will be:
+                - None if None is one of the choices in `values`
+                - The first entry in `values` otherwise.
+            parent_name: (Optional) String. Specifies that this hyperparameter is
+              conditional. The name of the this hyperparameter's parent.
+            parent_values: (Optional) List. The values of the parent hyperparameter
+              for which this hyperparameter should be considered active.
+
+        # Returns:
+            The current value of this hyperparameter.
+        """
         return self._retrieve(name, 'Choice',
                               config={'values': values,
                                       'ordered': ordered,
@@ -611,6 +632,32 @@ class HyperParameters(object):
             default=None,
             parent_name=None,
             parent_values=None):
+        """Integer range.
+
+        Note that unlinke Python's `range` function, `max_value` is *included* in
+        the possible values this parameter can take on.
+
+        # Arguments:
+            name: Str. Name of parameter. Must be unique.
+            min_value: Int. Lower limit of range (included).
+            max_value: Int. Upper limit of range (included).
+            step: Int. Step of range.
+            sampling: Optional. One of "linear", "log",
+                "reverse_log". Acts as a hint for an initial prior
+                probability distribution for how this value should
+                be sampled, e.g. "log" will assign equal
+                probabilities to each order of magnitude range.
+            default: Default value to return for the parameter.
+                If unspecified, the default value will be
+                `min_value`.
+            parent_name: (Optional) String. Specifies that this hyperparameter is
+              conditional. The name of the this hyperparameter's parent.
+            parent_values: (Optional) List. The values of the parent hyperparameter
+              for which this hyperparameter should be considered active.
+
+        # Returns:
+            The current value of this hyperparameter.
+        """
         return self._retrieve(name, 'Int',
                               config={'min_value': min_value,
                                       'max_value': max_value,
@@ -629,6 +676,32 @@ class HyperParameters(object):
               default=None,
               parent_name=None,
               parent_values=None):
+        """Floating point range, can be evenly divided.
+
+        # Arguments:
+            name: Str. Name of parameter. Must be unique.
+            min_value: Float. Lower bound of the range.
+            max_value: Float. Upper bound of the range.
+            step: Optional. Float, e.g. 0.1.
+                smallest meaningful distance between two values.
+                Whether step should be specified is Oracle dependent,
+                since some Oracles can infer an optimal step automatically.
+            sampling: Optional. One of "linear", "log",
+                "reverse_log". Acts as a hint for an initial prior
+                probability distribution for how this value should
+                be sampled, e.g. "log" will assign equal
+                probabilities to each order of magnitude range.
+            default: Default value to return for the parameter.
+                If unspecified, the default value will be
+                `min_value`.
+            parent_name: (Optional) String. Specifies that this hyperparameter is
+              conditional. The name of the this hyperparameter's parent.
+            parent_values: (Optional) List. The values of the parent hyperparameter
+              for which this hyperparameter should be considered active.
+
+        # Returns:
+            The current value of this hyperparameter.
+        """
         return self._retrieve(name, 'Float',
                               config={'min_value': min_value,
                                       'max_value': max_value,
@@ -643,6 +716,20 @@ class HyperParameters(object):
                 default=False,
                 parent_name=None,
                 parent_values=None):
+        """Choice between True and False.
+
+        # Arguments
+            name: Str. Name of parameter. Must be unique.
+            default: Default value to return for the parameter.
+                If unspecified, the default value will be False.
+            parent_name: (Optional) String. Specifies that this hyperparameter is
+              conditional. The name of the this hyperparameter's parent.
+            parent_values: (Optional) List. The values of the parent hyperparameter
+              for which this hyperparameter should be considered active.
+
+        # Returns:
+            The current value of this hyperparameter.
+        """
         return self._retrieve(name, 'Boolean',
                               config={'default': default},
                               parent_name=parent_name,
@@ -653,6 +740,20 @@ class HyperParameters(object):
               value,
               parent_name=None,
               parent_values=None):
+        """Fixed, untunable value.
+
+        # Arguments
+            name: Str. Name of parameter. Must be unique.
+            value: Value to use (can be any JSON-serializable
+                Python type).
+            parent_name: (Optional) String. Specifies that this hyperparameter is
+              conditional. The name of the this hyperparameter's parent.
+            parent_values: (Optional) List. The values of the parent hyperparameter
+              for which this hyperparameter should be considered active.
+
+        # Returns:
+            The current value of this hyperparameter.
+        """
         return self._retrieve(name, 'Fixed',
                               config={'value': value},
                               parent_name=parent_name,
@@ -922,21 +1023,3 @@ def _sampling_to_proto(sampling):
     if sampling == 'reverse_log':
         return kerastuner_pb2.Sampling.REVERSE_LOG
     raise ValueError('Unrecognized sampling: {}'.format(sampling))
-
-
-hp_method_docstring_addon = """
-        parent_name: (Optional) String. Specifies that this hyperparameter is
-          conditional. The name of the this hyperparameter's parent.
-        parent_values: (Optional) List. The values of the parent hyperparameter
-          for which this hyperparameter should be considered active.
-
-    # Returns:
-        The current value of this hyperparameter.
-"""
-
-
-HyperParameters.Boolean.__doc__ = str(Boolean.__doc__) + hp_method_docstring_addon
-HyperParameters.Choice.__doc__ = str(Choice.__doc__) + hp_method_docstring_addon
-HyperParameters.Int.__doc__ = str(Int.__doc__) + hp_method_docstring_addon
-HyperParameters.Float.__doc__ = str(Float.__doc__) + hp_method_docstring_addon
-HyperParameters.Fixed.__doc__ = str(Fixed.__doc__) + hp_method_docstring_addon
