@@ -13,12 +13,12 @@
 # limitations under the License.
 """Mock running KerasTuner in a distributed tuning setting."""
 
+import mock
 import os
 import portpicker
 import six
 import sys
 import threading
-from unittest import mock
 
 
 class ExceptionStoringThread(threading.Thread):

@@ -17,11 +17,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import builtins
 import contextlib
 import math
 import numpy as np
 import random
+import six
 
 from tensorflow import keras
 
@@ -111,35 +111,45 @@ class Choice(HyperParameter):
         super(Choice, self).__init__(name=name, default=default)
         if not values:
             raise ValueError('`values` must be provided.')
-        self.values = values
 
         # Type checking.
-        if not isinstance(values[0], (builtins.int, builtins.str, str, float, bool)):
-            raise TypeError(
-                'A `Choice` can contain only `int`, `float`, `str`, or '
-                '`bool`, found values: ' + str(values) + 'with '
-                'types: ' + str(type(values[0])))
-
         types = set(type(v) for v in values)
         if len(types) > 1:
             raise TypeError(
                 'A `Choice` can contain only one type of value, found '
                 'values: ' + str(values) + ' with types ' + str(types))
-        self._type = types.pop()
 
-        # Get or infer ordered.
-        self.ordered = ordered
-        orderable_types = {int, float}
-        if self.ordered and self._type not in orderable_types:
-            raise ValueError('`ordered` must be `False` for non-numeric '
-                             'types.')
-        if self.ordered is None:
-            self.ordered = self._type in orderable_types
+        # Standardize on str, int, float, bool.
+        if isinstance(values[0], six.string_types):
+            values = [str(v) for v in values]
+            if default is not None:
+                default = str(default)
+        elif isinstance(values[0], six.integer_types):
+            values = [int(v) for v in values]
+            if default is not None:
+                default = int(default)
+        elif not isinstance(values[0], (bool, float)):
+            raise TypeError(
+                'A `Choice` can contain only `int`, `float`, `str`, or '
+                '`bool`, found values: ' + str(values) + 'with '
+                'types: ' + str(type(values[0])))
+        self.values = values
 
         if default is not None and default not in values:
             raise ValueError(
                 'The default value should be one of the choices. '
                 'You passed: values=%s, default=%s' % (values, default))
+        self._default = default
+
+        # Get or infer ordered.
+        self.ordered = ordered
+        is_numeric = isinstance(values[0], (six.integer_types, float))
+        if self.ordered and not is_numeric:
+            raise ValueError('`ordered` must be `False` for non-numeric '
+                             'types.')
+        if self.ordered is None:
+            self.ordered = is_numeric
+
 
     def __repr__(self):
         return 'Choice(name: "{}", values: {}, ordered: {}, default: {})'.format(
@@ -174,10 +184,10 @@ class Choice(HyperParameter):
             default=default)
 
     def to_proto(self):
-        if self._type == str:
+        if isinstance(self.values[0], six.string_types):
             values = [kerastuner_pb2.Value(string_value=v) for v in self.values]
             default = kerastuner_pb2.Value(string_value=self.default)
-        elif self._type == int:
+        elif isinstance(self.values[0], six.integer_types):
             values = [kerastuner_pb2.Value(int_value=v) for v in self.values]
             default = kerastuner_pb2.Value(int_value=self.default)
         else:
@@ -846,9 +856,9 @@ class HyperParameters(object):
         for name, value in self.values.items():
             if isinstance(value, float):
                 val = kerastuner_pb2.Value(float_value=value)
-            elif isinstance(value, int):
+            elif isinstance(value, six.integer_types):
                 val = kerastuner_pb2.Value(int_value=value)
-            elif isinstance(value, str):
+            elif isinstance(value, six.string_types):
                 val = kerastuner_pb2.Value(string_value=value)
             elif isinstance(value, bool):
                 val = kerastuner_pb2.Value(boolean_value=value)
@@ -917,7 +927,7 @@ class HyperParameters(object):
                 break
 
     def _is_name_scope(self, scope):
-        return isinstance(scope, str)
+        return isinstance(scope, six.string_types)
 
     def _is_conditional_scope(self, scope):
         return (isinstance(scope, dict) and

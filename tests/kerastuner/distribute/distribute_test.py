@@ -24,6 +24,7 @@ from tensorflow import keras
 
 import kerastuner as kt
 from kerastuner.distribute import utils as dist_utils
+import sys
 from .. import mock_distribute
 
 
@@ -52,6 +53,7 @@ class SimpleTuner(kt.engine.base_tuner.BaseTuner):
         return score
 
 
+@pytest.mark.skipif(sys.version_info < (3, 0), reason="no Barrier in 2.7")
 def test_base_tuner_distribution(tmp_dir):
     num_workers = 3
     barrier = threading.Barrier(num_workers)
