@@ -15,6 +15,7 @@
 import logging
 import numpy as np
 import pytest
+import sys
 import tensorflow as tf
 
 import kerastuner as kt
@@ -61,6 +62,7 @@ def test_hyperband_oracle_bracket_configs(tmp_dir):
     assert oracle._get_epochs(bracket_num=0, round_num=0) == 8
 
 
+@pytest.mark.skipif(sys.version_info < (3, 0), reason='TODO: Enable test for Py2')
 def test_hyperband_oracle_one_sweep_single_thread(tmp_dir):
     hp = kt.HyperParameters()
     hp.Float('a', -100, 100)
@@ -167,6 +169,7 @@ def test_hyperband_oracle_one_sweep_parallel(tmp_dir):
     assert t.status == 'STOPPED', oracle._current_sweep
 
 
+@pytest.mark.skipif(sys.version_info < (3, 0), reason='TODO: Enable test for Py2')
 def test_hyperband_integration(tmp_dir):
     tuner = hyperband_module.Hyperband(
         objective='val_loss',
@@ -191,6 +194,7 @@ def test_hyperband_integration(tmp_dir):
     assert best_model.evaluate(x, y) == best_score
 
 
+@pytest.mark.skipif(sys.version_info < (3, 0), reason='TODO: Enable test for Py2')
 def test_hyperband_save_and_restore(tmp_dir):
     tuner = hyperband_module.Hyperband(
         objective='val_loss',

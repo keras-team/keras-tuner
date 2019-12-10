@@ -15,6 +15,7 @@
 
 import os
 import pytest
+import sys
 import tensorflow as tf
 import time
 from . import mock_distribute
@@ -25,6 +26,7 @@ def tmp_dir(tmpdir_factory):
     return tmpdir_factory.mktemp('integration_test')
 
 
+@pytest.mark.skipif(sys.version_info < (3, 0), reason='TODO: Enable test for Py2')
 def test_mock_distribute(tmp_dir):
     def process_fn():
         assert 'KERASTUNER_ORACLE_IP' in os.environ
