@@ -4,7 +4,7 @@ import numpy as np
 
 from tensorflow import keras
 import kerastuner
-from unittest.mock import patch
+from mock import patch
 
 
 class OkResponse(object):

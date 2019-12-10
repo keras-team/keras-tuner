@@ -300,7 +300,7 @@ class Oracle(stateful.Stateful):
     @property
     def _project_dir(self):
         dirname = os.path.join(
-            self._directory,
+            str(self._directory),
             self._project_name)
         utils.create_directory(dirname)
         return dirname

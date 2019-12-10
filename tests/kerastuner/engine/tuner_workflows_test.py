@@ -126,7 +126,7 @@ def test_basic_tuner_attributes(tmp_dir):
     tuner.results_summary()
 
     assert len(tuner.oracle.trials) == 2
-    assert os.path.exists(os.path.join(tmp_dir, 'untitled_project'))
+    assert os.path.exists(os.path.join(str(tmp_dir), 'untitled_project'))
 
 
 def test_callbacks_in_fit_kwargs(tmp_dir):

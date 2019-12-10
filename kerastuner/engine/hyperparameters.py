@@ -17,6 +17,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import builtins
 import contextlib
 import math
 import numpy as np
@@ -113,14 +114,13 @@ class Choice(HyperParameter):
         self.values = values
 
         # Type checking.
-        types = set(type(v) for v in values)
-        unsupported_types = types - {int, float, str, bool}
-        if unsupported_types:
+        if not isinstance(values[0], (builtins.int, builtins.str, str, float, bool)):
             raise TypeError(
                 'A `Choice` can contain only `int`, `float`, `str`, or '
                 '`bool`, found values: ' + str(values) + 'with '
-                'types: ' + str(unsupported_types))
+                'types: ' + str(type(values[0])))
 
+        types = set(type(v) for v in values)
         if len(types) > 1:
             raise TypeError(
                 'A `Choice` can contain only one type of value, found '
@@ -941,7 +941,7 @@ def cumulative_prob_to_value(prob, hp):
         return bool(prob >= 0.5)
     elif isinstance(hp, Choice):
         ele_prob = 1 / len(hp.values)
-        index = math.floor(prob / ele_prob)
+        index = int(math.floor(prob / ele_prob))
         # Can happen when `prob` is very close to 1.
         if index == len(hp.values):
             index = index - 1
