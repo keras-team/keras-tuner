@@ -415,12 +415,16 @@ class Fixed(HyperParameter):
 
     def __init__(self, name, value):
         self.name = name
-        self.value = value
-        self._type = type(value)
-        if self._type not in {int, float, str, bool}:
+
+        if isinstance(value, six.integer_types):
+            value = int(value)
+        elif isinstance(value, six.string_types):
+            value = str(value)
+        elif not isinstance(value, (float, str)):
             raise ValueError(
                 '`Fixed` value must be an `int`, `float`, `str`, '
-                'or `bool`, found {}'.format(self.value))
+                'or `bool`, found {}'.format(value))
+        self.value = value
 
     def __repr__(self):
         return 'Fixed(name: {}, value: {})'.format(
@@ -443,11 +447,11 @@ class Fixed(HyperParameter):
                    value=value)
 
     def to_proto(self):
-        if isinstance(self.value, int):
+        if isinstance(self.value, six.integer_types):
             value = kerastuner_pb2.Value(int_value=self.value)
         elif isinstance(self.value, float):
             value = kerastuner_pb2.Value(float_value=self.value)
-        elif isinstance(self.value, str):
+        elif isinstance(self.value, six.string_types):
             value = kerastuner_pb2.Value(string_value=self.value)
         else:
             value = kerastuner_pb2.Value(boolean_value=self.value)
