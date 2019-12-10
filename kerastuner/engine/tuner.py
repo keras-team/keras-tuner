@@ -247,7 +247,7 @@ class Tuner(base_tuner.BaseTuner):
             # Patching tensorboard log dir
             if callback.__class__.__name__ == 'TensorBoard':
                 callback.log_dir = os.path.join(
-                    callback.log_dir,
+                    str(callback.log_dir),
                     str(trial_id))
 
     def _get_checkpoint_dir(self, trial_id, epoch):

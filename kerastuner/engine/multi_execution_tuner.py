@@ -113,7 +113,7 @@ class MultiExecutionTuner(tuner_module.Tuner):
             # Patching tensorboard log dir
             if callback.__class__.__name__ == 'TensorBoard':
                 callback.log_dir = os.path.join(
-                    callback.log_dir,
+                    str(callback.log_dir),
                     trial_id,
                     'execution{}'.format(execution))
         return callbacks
