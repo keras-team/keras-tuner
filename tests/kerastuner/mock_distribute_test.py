@@ -37,14 +37,14 @@ def test_mock_distribute(tmp_dir):
             # as we do not join on the chief since it will run
             # a server.
             time.sleep(2)
-        fname = os.path.join(tmp_dir, tuner_id)
+        fname = os.path.join(str(tmp_dir), tuner_id)
         with tf.io.gfile.GFile(fname, 'w') as f:
             f.write(tuner_id)
 
     mock_distribute.mock_distribute(process_fn, num_workers=3)
 
     for tuner_id in {'chief', 'worker0', 'worker1', 'worker2'}:
-        fname = os.path.join(tmp_dir, tuner_id)
+        fname = os.path.join(str(tmp_dir), tuner_id)
         with tf.io.gfile.GFile(fname, 'r') as f:
             assert f.read() == tuner_id
 
