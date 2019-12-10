@@ -31,19 +31,21 @@ setup(
     license='Apache License 2.0',
     install_requires=[
         'tensorflow>=2.0.0-beta1',
+        'future',
         'numpy',
         'tabulate',
         'terminaltables',
         'colorama',
         'tqdm',
         'requests',
-        'psutil',
         'scipy',
         'scikit-learn'
     ],
     extras_require={
         'tests': ['pytest',
                   'flake8',
+                  'mock',
+                  'portpicker',
                   'pytest-xdist',
                   'pytest-cov'],
     },
