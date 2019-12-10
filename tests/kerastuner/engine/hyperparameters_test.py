@@ -444,6 +444,7 @@ def test_hyperparameters_proto():
     hps.Int('a', 1, 10, sampling='reverse_log', default=3)
     hps.Float('b', 2, 8, sampling='linear', default=4)
     hps.Choice('c', [1, 5, 10], ordered=False, default=5)
+    hps.Fixed('d', '3')
     with hps.name_scope('d'):
         hps.Choice('e', [2., 4.5, 8.5], default=2.)
         hps.Choice('f', ['1', '2'], default='1')
@@ -453,6 +454,17 @@ def test_hyperparameters_proto():
     new_hps = hp_module.HyperParameters.from_proto(hps.to_proto())
     assert _sort_space(hps) == _sort_space(new_hps)
     assert hps.values == new_hps.values
+
+
+def test_hyperparameters_values_proto():
+    values = kerastuner_pb2.HyperParameters.Values(values={
+        'a': kerastuner_pb2.Value(int_value=1),
+        'b': kerastuner_pb2.Value(float_value=2.0),
+        'c': kerastuner_pb2.Value(string_value='3')})
+
+    # When only values are provided, each param is created as `Fixed`.
+    hps = hp_module.HyperParameters.from_proto(values)
+    assert hps.values == {'a': 1, 'b': 2.0, 'c': '3'}
 
 
 def test_dict_methods():
