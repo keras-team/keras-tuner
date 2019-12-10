@@ -64,16 +64,25 @@ message Boolean {
     bool default = 2;
 }
 
+message Fixed {
+    string name = 1;
+    Value value = 3;
+}
+
 message HyperParameters {
     message Space {
         repeated Float float_space = 1;
         repeated Int int_space = 2;
         repeated Choice choice_space = 3;
         repeated Boolean boolean_space = 4;
+        repeated Fixed fixed_space = 5;
     }
     Space space = 1;
 
-    map<string, Value> values = 2;
+    message Values {
+        map <string, Value> values = 1;
+    }
+    Values values = 2;
 }
 
 message MetricObservation {
