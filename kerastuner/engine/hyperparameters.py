@@ -150,7 +150,6 @@ class Choice(HyperParameter):
         if self.ordered is None:
             self.ordered = is_numeric
 
-
     def __repr__(self):
         return 'Choice(name: "{}", values: {}, ordered: {}, default: {})'.format(
             self.name, self.values, self.ordered, self.default)
