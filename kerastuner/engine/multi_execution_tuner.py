@@ -84,15 +84,16 @@ class MultiExecutionTuner(tuner_module.Tuner):
         # Run the training process multiple times.
         metrics = collections.defaultdict(list)
         for execution in range(self.executions_per_trial):
-            fit_kwargs = copy.copy(fit_kwargs)
+            copied_fit_kwargs = copy.copy(fit_kwargs)
             callbacks = self._deepcopy_callbacks(original_callbacks)
             self._configure_tensorboard_dir(callbacks, trial.trial_id, execution)
             callbacks.append(tuner_utils.TunerCallback(self, trial))
             # Only checkpoint the best epoch across all executions.
             callbacks.append(model_checkpoint)
+            copied_fit_kwargs['callbacks'] = callbacks
 
             model = self.hypermodel.build(trial.hyperparameters)
-            history = model.fit(*fit_args, **fit_kwargs, callbacks=callbacks)
+            history = model.fit(*fit_args, **copied_fit_kwargs)
             for metric, epoch_values in history.history.items():
                 if self.oracle.objective.direction == 'min':
                     best_value = np.min(epoch_values)
@@ -112,7 +113,7 @@ class MultiExecutionTuner(tuner_module.Tuner):
             # Patching tensorboard log dir
             if callback.__class__.__name__ == 'TensorBoard':
                 callback.log_dir = os.path.join(
-                    callback.log_dir,
+                    str(callback.log_dir),
                     trial_id,
                     'execution{}'.format(execution))
         return callbacks

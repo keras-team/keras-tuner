@@ -15,6 +15,7 @@
 
 import os
 import pytest
+import sys
 import tensorflow as tf
 import time
 from . import mock_distribute
@@ -25,6 +26,7 @@ def tmp_dir(tmpdir_factory):
     return tmpdir_factory.mktemp('integration_test')
 
 
+@pytest.mark.skipif(sys.version_info < (3, 0), reason='TODO: Enable test for Py2')
 def test_mock_distribute(tmp_dir):
     def process_fn():
         assert 'KERASTUNER_ORACLE_IP' in os.environ
@@ -37,14 +39,14 @@ def test_mock_distribute(tmp_dir):
             # as we do not join on the chief since it will run
             # a server.
             time.sleep(2)
-        fname = os.path.join(tmp_dir, tuner_id)
+        fname = os.path.join(str(tmp_dir), tuner_id)
         with tf.io.gfile.GFile(fname, 'w') as f:
             f.write(tuner_id)
 
     mock_distribute.mock_distribute(process_fn, num_workers=3)
 
     for tuner_id in {'chief', 'worker0', 'worker1', 'worker2'}:
-        fname = os.path.join(tmp_dir, tuner_id)
+        fname = os.path.join(str(tmp_dir), tuner_id)
         with tf.io.gfile.GFile(fname, 'r') as f:
             assert f.read() == tuner_id
 

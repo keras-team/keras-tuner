@@ -15,6 +15,7 @@
 
 import os
 import pytest
+import sys
 
 import kerastuner as kt
 from kerastuner.distribute import oracle_chief
@@ -103,6 +104,7 @@ def test_create_trial(tmp_dir):
     mock_distribute.mock_distribute(_test_create_trial)
 
 
+@pytest.mark.skipif(sys.version_info < (3, 0), reason='TODO: Enable test for Py2')
 def test_update_trial(tmp_dir):
 
     def _test_update_trial():
@@ -129,6 +131,7 @@ def test_update_trial(tmp_dir):
     mock_distribute.mock_distribute(_test_update_trial)
 
 
+@pytest.mark.skipif(sys.version_info < (3, 0), reason='TODO: Enable test for Py2')
 def test_end_trial(tmp_dir):
 
     def _test_end_trial():

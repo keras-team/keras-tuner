@@ -17,6 +17,7 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
+import six
 from tensorflow import keras
 
 from ..protos import kerastuner_pb2
@@ -274,7 +275,7 @@ _MAX_METRIC_FNS = {
 
 def infer_metric_direction(metric):
     # Handle str input and get canonical object.
-    if isinstance(metric, str):
+    if isinstance(metric, six.string_types):
         metric_name = metric
 
         if metric_name.startswith('val_'):

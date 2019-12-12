@@ -21,7 +21,7 @@ from sklearn import metrics
 from sklearn import model_selection
 
 import kerastuner as kt
-from kerastuner.tuners import sklearn as sklearn_tuner
+from kerastuner.tuners import sklearn_tuner
 
 
 def build_model(hp):

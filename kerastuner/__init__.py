@@ -16,20 +16,20 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from kerastuner import applications
-from kerastuner import oracles
-from kerastuner import tuners
+from . import applications
+from . import oracles
+from . import tuners
 
-from kerastuner.engine.hyperparameters import HyperParameters
-from kerastuner.engine.hyperparameters import HyperParameter
-from kerastuner.engine.hypermodel import HyperModel
-from kerastuner.engine.tuner import Tuner
-from kerastuner.engine.oracle import Objective
-from kerastuner.engine.oracle import Oracle
-from kerastuner.engine.logger import Logger
-from kerastuner.engine.logger import CloudLogger
-from kerastuner.tuners import BayesianOptimization
-from kerastuner.tuners import Hyperband
-from kerastuner.tuners import RandomSearch
+from .engine.hyperparameters import HyperParameters
+from .engine.hyperparameters import HyperParameter
+from .engine.hypermodel import HyperModel
+from .engine.tuner import Tuner
+from .engine.oracle import Objective
+from .engine.oracle import Oracle
+from .engine.logger import Logger
+from .engine.logger import CloudLogger
+from .tuners import BayesianOptimization
+from .tuners import Hyperband
+from .tuners import RandomSearch
 
 __version__ = '1.0.0'

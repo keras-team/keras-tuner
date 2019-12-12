@@ -21,6 +21,7 @@ import contextlib
 import math
 import numpy as np
 import random
+import six
 
 from tensorflow import keras
 
@@ -110,36 +111,44 @@ class Choice(HyperParameter):
         super(Choice, self).__init__(name=name, default=default)
         if not values:
             raise ValueError('`values` must be provided.')
-        self.values = values
 
         # Type checking.
         types = set(type(v) for v in values)
-        unsupported_types = types - {int, float, str, bool}
-        if unsupported_types:
-            raise TypeError(
-                'A `Choice` can contain only `int`, `float`, `str`, or '
-                '`bool`, found values: ' + str(values) + 'with '
-                'types: ' + str(unsupported_types))
-
         if len(types) > 1:
             raise TypeError(
                 'A `Choice` can contain only one type of value, found '
                 'values: ' + str(values) + ' with types ' + str(types))
-        self._type = types.pop()
 
-        # Get or infer ordered.
-        self.ordered = ordered
-        orderable_types = {int, float}
-        if self.ordered and self._type not in orderable_types:
-            raise ValueError('`ordered` must be `False` for non-numeric '
-                             'types.')
-        if self.ordered is None:
-            self.ordered = self._type in orderable_types
+        # Standardize on str, int, float, bool.
+        if isinstance(values[0], six.string_types):
+            values = [str(v) for v in values]
+            if default is not None:
+                default = str(default)
+        elif isinstance(values[0], six.integer_types):
+            values = [int(v) for v in values]
+            if default is not None:
+                default = int(default)
+        elif not isinstance(values[0], (bool, float)):
+            raise TypeError(
+                'A `Choice` can contain only `int`, `float`, `str`, or '
+                '`bool`, found values: ' + str(values) + 'with '
+                'types: ' + str(type(values[0])))
+        self.values = values
 
         if default is not None and default not in values:
             raise ValueError(
                 'The default value should be one of the choices. '
                 'You passed: values=%s, default=%s' % (values, default))
+        self._default = default
+
+        # Get or infer ordered.
+        self.ordered = ordered
+        is_numeric = isinstance(values[0], (six.integer_types, float))
+        if self.ordered and not is_numeric:
+            raise ValueError('`ordered` must be `False` for non-numeric '
+                             'types.')
+        if self.ordered is None:
+            self.ordered = is_numeric
 
     def __repr__(self):
         return 'Choice(name: "{}", values: {}, ordered: {}, default: {})'.format(
@@ -174,10 +183,10 @@ class Choice(HyperParameter):
             default=default)
 
     def to_proto(self):
-        if self._type == str:
+        if isinstance(self.values[0], six.string_types):
             values = [kerastuner_pb2.Value(string_value=v) for v in self.values]
             default = kerastuner_pb2.Value(string_value=self.default)
-        elif self._type == int:
+        elif isinstance(self.values[0], six.integer_types):
             values = [kerastuner_pb2.Value(int_value=v) for v in self.values]
             default = kerastuner_pb2.Value(int_value=self.default)
         else:
@@ -406,12 +415,16 @@ class Fixed(HyperParameter):
 
     def __init__(self, name, value):
         self.name = name
-        self.value = value
-        self._type = type(value)
-        if self._type not in {int, float, str, bool}:
+
+        if isinstance(value, six.integer_types):
+            value = int(value)
+        elif isinstance(value, six.string_types):
+            value = str(value)
+        elif not isinstance(value, (float, str)):
             raise ValueError(
                 '`Fixed` value must be an `int`, `float`, `str`, '
-                'or `bool`, found {}'.format(self.value))
+                'or `bool`, found {}'.format(value))
+        self.value = value
 
     def __repr__(self):
         return 'Fixed(name: {}, value: {})'.format(
@@ -434,11 +447,11 @@ class Fixed(HyperParameter):
                    value=value)
 
     def to_proto(self):
-        if isinstance(self.value, int):
+        if isinstance(self.value, six.integer_types):
             value = kerastuner_pb2.Value(int_value=self.value)
         elif isinstance(self.value, float):
             value = kerastuner_pb2.Value(float_value=self.value)
-        elif isinstance(self.value, str):
+        elif isinstance(self.value, six.string_types):
             value = kerastuner_pb2.Value(string_value=self.value)
         else:
             value = kerastuner_pb2.Value(boolean_value=self.value)
@@ -620,6 +633,27 @@ class HyperParameters(object):
                default=None,
                parent_name=None,
                parent_values=None):
+        """Choice of one value among a predefined set of possible values.
+
+        # Arguments:
+            name: Str. Name of parameter. Must be unique.
+            values: List of possible values. Values must be int, float,
+                str, or bool. All values must be of the same type.
+            ordered: Whether the values passed should be considered to
+                have an ordering. This defaults to `True` for float/int
+                values. Must be `False` for any other values.
+            default: Default value to return for the parameter.
+                If unspecified, the default value will be:
+                - None if None is one of the choices in `values`
+                - The first entry in `values` otherwise.
+            parent_name: (Optional) String. Specifies that this hyperparameter is
+              conditional. The name of the this hyperparameter's parent.
+            parent_values: (Optional) List. The values of the parent hyperparameter
+              for which this hyperparameter should be considered active.
+
+        # Returns:
+            The current value of this hyperparameter.
+        """
         return self._retrieve(name, 'Choice',
                               config={'values': values,
                                       'ordered': ordered,
@@ -636,6 +670,32 @@ class HyperParameters(object):
             default=None,
             parent_name=None,
             parent_values=None):
+        """Integer range.
+
+        Note that unlinke Python's `range` function, `max_value` is *included* in
+        the possible values this parameter can take on.
+
+        # Arguments:
+            name: Str. Name of parameter. Must be unique.
+            min_value: Int. Lower limit of range (included).
+            max_value: Int. Upper limit of range (included).
+            step: Int. Step of range.
+            sampling: Optional. One of "linear", "log",
+                "reverse_log". Acts as a hint for an initial prior
+                probability distribution for how this value should
+                be sampled, e.g. "log" will assign equal
+                probabilities to each order of magnitude range.
+            default: Default value to return for the parameter.
+                If unspecified, the default value will be
+                `min_value`.
+            parent_name: (Optional) String. Specifies that this hyperparameter is
+              conditional. The name of the this hyperparameter's parent.
+            parent_values: (Optional) List. The values of the parent hyperparameter
+              for which this hyperparameter should be considered active.
+
+        # Returns:
+            The current value of this hyperparameter.
+        """
         return self._retrieve(name, 'Int',
                               config={'min_value': min_value,
                                       'max_value': max_value,
@@ -654,6 +714,32 @@ class HyperParameters(object):
               default=None,
               parent_name=None,
               parent_values=None):
+        """Floating point range, can be evenly divided.
+
+        # Arguments:
+            name: Str. Name of parameter. Must be unique.
+            min_value: Float. Lower bound of the range.
+            max_value: Float. Upper bound of the range.
+            step: Optional. Float, e.g. 0.1.
+                smallest meaningful distance between two values.
+                Whether step should be specified is Oracle dependent,
+                since some Oracles can infer an optimal step automatically.
+            sampling: Optional. One of "linear", "log",
+                "reverse_log". Acts as a hint for an initial prior
+                probability distribution for how this value should
+                be sampled, e.g. "log" will assign equal
+                probabilities to each order of magnitude range.
+            default: Default value to return for the parameter.
+                If unspecified, the default value will be
+                `min_value`.
+            parent_name: (Optional) String. Specifies that this hyperparameter is
+              conditional. The name of the this hyperparameter's parent.
+            parent_values: (Optional) List. The values of the parent hyperparameter
+              for which this hyperparameter should be considered active.
+
+        # Returns:
+            The current value of this hyperparameter.
+        """
         return self._retrieve(name, 'Float',
                               config={'min_value': min_value,
                                       'max_value': max_value,
@@ -668,6 +754,20 @@ class HyperParameters(object):
                 default=False,
                 parent_name=None,
                 parent_values=None):
+        """Choice between True and False.
+
+        # Arguments
+            name: Str. Name of parameter. Must be unique.
+            default: Default value to return for the parameter.
+                If unspecified, the default value will be False.
+            parent_name: (Optional) String. Specifies that this hyperparameter is
+              conditional. The name of the this hyperparameter's parent.
+            parent_values: (Optional) List. The values of the parent hyperparameter
+              for which this hyperparameter should be considered active.
+
+        # Returns:
+            The current value of this hyperparameter.
+        """
         return self._retrieve(name, 'Boolean',
                               config={'default': default},
                               parent_name=parent_name,
@@ -678,6 +778,20 @@ class HyperParameters(object):
               value,
               parent_name=None,
               parent_values=None):
+        """Fixed, untunable value.
+
+        # Arguments
+            name: Str. Name of parameter. Must be unique.
+            value: Value to use (can be any JSON-serializable
+                Python type).
+            parent_name: (Optional) String. Specifies that this hyperparameter is
+              conditional. The name of the this hyperparameter's parent.
+            parent_values: (Optional) List. The values of the parent hyperparameter
+              for which this hyperparameter should be considered active.
+
+        # Returns:
+            The current value of this hyperparameter.
+        """
         return self._retrieve(name, 'Fixed',
                               config={'value': value},
                               parent_name=parent_name,
@@ -786,9 +900,9 @@ class HyperParameters(object):
         for name, value in self.values.items():
             if isinstance(value, float):
                 val = kerastuner_pb2.Value(float_value=value)
-            elif isinstance(value, int):
+            elif isinstance(value, six.integer_types):
                 val = kerastuner_pb2.Value(int_value=value)
-            elif isinstance(value, str):
+            elif isinstance(value, six.string_types):
                 val = kerastuner_pb2.Value(string_value=value)
             elif isinstance(value, bool):
                 val = kerastuner_pb2.Value(boolean_value=value)
@@ -859,7 +973,7 @@ class HyperParameters(object):
                 break
 
     def _is_name_scope(self, scope):
-        return isinstance(scope, str)
+        return isinstance(scope, six.string_types)
 
     def _is_conditional_scope(self, scope):
         return (isinstance(scope, dict) and
@@ -883,7 +997,7 @@ def cumulative_prob_to_value(prob, hp):
         return bool(prob >= 0.5)
     elif isinstance(hp, Choice):
         ele_prob = 1 / len(hp.values)
-        index = math.floor(prob / ele_prob)
+        index = int(math.floor(prob / ele_prob))
         # Can happen when `prob` is very close to 1.
         if index == len(hp.values):
             index = index - 1
@@ -965,21 +1079,3 @@ def _sampling_to_proto(sampling):
     if sampling == 'reverse_log':
         return kerastuner_pb2.Sampling.REVERSE_LOG
     raise ValueError('Unrecognized sampling: {}'.format(sampling))
-
-
-hp_method_docstring_addon = """
-        parent_name: (Optional) String. Specifies that this hyperparameter is
-          conditional. The name of the this hyperparameter's parent.
-        parent_values: (Optional) List. The values of the parent hyperparameter
-          for which this hyperparameter should be considered active.
-
-    # Returns:
-        The current value of this hyperparameter.
-"""
-
-
-HyperParameters.Boolean.__doc__ = Boolean.__doc__ + hp_method_docstring_addon
-HyperParameters.Choice.__doc__ = Choice.__doc__ + hp_method_docstring_addon
-HyperParameters.Int.__doc__ = Int.__doc__ + hp_method_docstring_addon
-HyperParameters.Float.__doc__ = Float.__doc__ + hp_method_docstring_addon
-HyperParameters.Fixed.__doc__ = Fixed.__doc__ + hp_method_docstring_addon

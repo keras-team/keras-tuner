@@ -121,7 +121,7 @@ class Tuner(base_tuner.BaseTuner):
             *fit_kwargs: Keyword arguments passed by `search`.
         """
         # Handle any callbacks passed to `fit`.
-        fit_kwargs = copy.copy(fit_kwargs)
+        copied_fit_kwargs = copy.copy(fit_kwargs)
         callbacks = fit_kwargs.pop('callbacks', [])
         callbacks = self._deepcopy_callbacks(callbacks)
         self._configure_tensorboard_dir(callbacks, trial.trial_id)
@@ -134,9 +134,10 @@ class Tuner(base_tuner.BaseTuner):
         # you are subclassing `Tuner` to write a custom training loop, you should
         # make calls to these methods within `run_trial`.
         callbacks.append(tuner_utils.TunerCallback(self, trial))
+        copied_fit_kwargs['callbacks'] = callbacks
 
         model = self.hypermodel.build(trial.hyperparameters)
-        model.fit(*fit_args, **fit_kwargs, callbacks=callbacks)
+        model.fit(*fit_args, **copied_fit_kwargs)
 
     def save_model(self, trial_id, model, step=0):
         epoch = step
@@ -146,15 +147,15 @@ class Tuner(base_tuner.BaseTuner):
                 trial_id, epoch - self._save_n_checkpoints)
 
     def load_model(self, trial):
+        model = self.hypermodel.build(trial.hyperparameters)
+        # Reload best checkpoint. The Oracle scores the Trial and also
+        # indicates at what epoch the best value of the objective was
+        # obtained.
+        best_epoch = trial.best_step
         with hm_module.maybe_distribute(self.distribution_strategy):
-            model = self.hypermodel.build(trial.hyperparameters)
-            # Reload best checkpoint. The Oracle scores the Trial and also
-            # indicates at what epoch the best value of the objective was
-            # obtained.
-            best_epoch = trial.best_step
             model.load_weights(self._get_checkpoint_fname(
                 trial.trial_id, best_epoch))
-            return model
+        return model
 
     def on_epoch_begin(self, trial, model, epoch, logs=None):
         """A hook called at the start of every epoch.
@@ -246,7 +247,7 @@ class Tuner(base_tuner.BaseTuner):
             # Patching tensorboard log dir
             if callback.__class__.__name__ == 'TensorBoard':
                 callback.log_dir = os.path.join(
-                    callback.log_dir,
+                    str(callback.log_dir),
                     str(trial_id))
 
     def _get_checkpoint_dir(self, trial_id, epoch):

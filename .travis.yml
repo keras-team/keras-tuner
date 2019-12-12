@@ -1,20 +1,21 @@
 dist: trusty
 language: python
+python:
+  - "2.7"
+  - "3.6"
 env:
-  TRAVIS=True
-matrix:
-    include:
-        - python: 3.6
-          env: TEST_MODE=INTEGRATION_TESTS
-        - python: 3.6
-          env: TEST_MODE=FLAKE8
-        - python: 3.6
-          env: TEST_MODE=TF2
+  - TRAVIS=True TEST_MODE=INTEGRATION_TESTS
+  - TRAVIS=True TEST_MODE=FLAKE8
+  - TRAVIS=True TEST_MODE=TF2
 install:
-  # code below is taken from http://conda.pydata.org/docs/travis.html
+  # code below is taken from https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/use-conda-with-travis-ci.html
   # We do this conditionally because it saves us some downloading if the
   # version is the same.
-  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+      wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
+    else
+      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+    fi
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
@@ -35,9 +36,6 @@ install:
     # install portpicker for mock distribution framework.
   - travis_retry conda install portpicker
 
-  # install tools for building the docs
-  - pip install mkdocs keras-autodoc==0.4.0
-
   - pip install -e .[tests] --progress-bar off
 
 # command to run tests
@@ -45,7 +43,7 @@ script:
   - if [[ "$TEST_MODE" == "INTEGRATION_TESTS" ]]; then
       PYTHONPATH=$PWD:$PYTHONPATH py.test tests/integration_tests;
     elif [[ "$TEST_MODE" == "FLAKE8" ]]; then
-      flake8 && cd docs && python autogen.py && mkdocs build;
+      flake8;
     else
       PYTHONPATH=$PWD:$PYTHONPATH py.test tests/kerastuner --cov-config .coveragerc --cov=kerastuner;
     fi

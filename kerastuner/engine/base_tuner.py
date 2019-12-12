@@ -325,19 +325,19 @@ class BaseTuner(stateful.Stateful):
     @property
     def project_dir(self):
         dirname = os.path.join(
-            self.directory,
+            str(self.directory),
             self.project_name)
         utils.create_directory(dirname)
         return dirname
 
     def get_trial_dir(self, trial_id):
         dirname = os.path.join(
-            self.project_dir,
+            str(self.project_dir),
             'trial_' + str(trial_id))
         utils.create_directory(dirname)
         return dirname
 
     def _get_tuner_fname(self):
         return os.path.join(
-            self.project_dir,
+            str(self.project_dir),
             str(self.tuner_id) + '.json')
