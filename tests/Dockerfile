@@ -1,8 +1,7 @@
 ARG PY_VERSION=3.6
 FROM python:${PY_VERSION}
-
 ARG PY_VERSION=3.6
-RUN echo ${PY_VERSION}
+
 RUN if [ "${PY_VERSION}" = "3.6" ]; then pip install mkdocs ; fi
 
 RUN pip install tensorflow>=2.0.0-beta1 \
