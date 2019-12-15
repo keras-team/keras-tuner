@@ -13,7 +13,7 @@ install:
   # code below is taken from https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/use-conda-with-travis-ci.html
   # We do this conditionally because it saves us some downloading if the
   # version is the same.
-  - docker build -f tests/Dockerfile -t test_image --build-arg PY_VERSION=3.6 .
+  - docker build -f tests/Dockerfile -t test_image --build-arg PY_VERSION=$TRAVIS_PYTHON_VERSION .
 
 # command to run tests
 script:
