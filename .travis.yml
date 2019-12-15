@@ -18,9 +18,9 @@ install:
 # command to run tests
 script:
   - if [[ "$TEST_MODE" == "INTEGRATION_TESTS" ]]; then
-      docker run test_image py.test tests/integration_tests;
+      docker run -t test_image py.test tests/integration_tests;
     elif [[ "$TEST_MODE" == "FLAKE8" ]]; then
-      docker run test_image flake8;
+      docker run -t test_image flake8;
     else
-      docker run test_image py.test tests/kerastuner --cov-config .coveragerc --cov=kerastuner;
+      docker run -t test_image py.test tests/kerastuner --cov-config .coveragerc --cov=kerastuner;
     fi

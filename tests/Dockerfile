@@ -4,7 +4,7 @@ ARG PY_VERSION=3.6
 
 RUN if [ "${PY_VERSION}" = "3.6" ]; then pip install mkdocs ; fi
 
-RUN pip install tensorflow>=2.0.0-beta1 \
+RUN pip install tensorflow \
                 future \
                 numpy \
                 tabulate \
