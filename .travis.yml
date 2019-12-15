@@ -1,5 +1,7 @@
 dist: trusty
 language: python
+services:
+  - docker
 python:
   - "2.7"
   - "3.6"
@@ -11,39 +13,14 @@ install:
   # code below is taken from https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/use-conda-with-travis-ci.html
   # We do this conditionally because it saves us some downloading if the
   # version is the same.
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-      wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
-    else
-      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-    fi
-  - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$PATH"
-  - hash -r
-  - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda
-  # Useful for debugging any issues with conda
-  - conda info -a
-
-  - travis_retry conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION
-  - source activate test-environment
-
-  # set library path
-  - export LD_LIBRARY_PATH=$HOME/miniconda/envs/test-environment/lib/:$LD_LIBRARY_PATH
-
-    # install pydot for visualization tests
-  - travis_retry conda install -q $MKL pydot graphviz $PIL
-
-    # install portpicker for mock distribution framework.
-  - travis_retry conda install portpicker
-
-  - pip install -e .[tests] --progress-bar off
+  - docker build -f tests/Dockerfile -t test_image --build-arg PY_VERSION=3.6 .
 
 # command to run tests
 script:
   - if [[ "$TEST_MODE" == "INTEGRATION_TESTS" ]]; then
-      PYTHONPATH=$PWD:$PYTHONPATH py.test tests/integration_tests;
+      docker run test_image py.test tests/integration_tests;
     elif [[ "$TEST_MODE" == "FLAKE8" ]]; then
-      flake8;
+      docker run test_image flake8;
     else
-      PYTHONPATH=$PWD:$PYTHONPATH py.test tests/kerastuner --cov-config .coveragerc --cov=kerastuner;
+      docker run test_image py.test tests/kerastuner --cov-config .coveragerc --cov=kerastuner;
     fi
