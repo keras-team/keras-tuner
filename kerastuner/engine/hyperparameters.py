@@ -22,6 +22,8 @@ import math
 import numpy as np
 import random
 import six
+from typing import List, Optional, Any
+from pytypes import typechecked
 
 from tensorflow import keras
 
@@ -661,15 +663,19 @@ class HyperParameters(object):
                               parent_name=parent_name,
                               parent_values=parent_values)
 
-    def Int(self,
-            name,
-            min_value,
-            max_value,
-            step=1,
-            sampling=None,
-            default=None,
-            parent_name=None,
-            parent_values=None):
+    @typechecked
+    def Int(
+        self,
+        name,               # type: str
+        min_value,          # type: int
+        max_value,          # type: int
+        step=1,             # type: int
+        sampling=None,      # type: Optional[str]
+        default=None,       # type: Optional[int]
+        parent_name=None,   # type: Optional[str]
+        parent_values=None  # type: List[Any]
+    ):
+        # type: (...) -> int
         """Integer range.
 
         Note that unlinke Python's `range` function, `max_value` is *included* in
