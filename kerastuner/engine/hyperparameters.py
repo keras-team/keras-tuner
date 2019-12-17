@@ -23,7 +23,6 @@ import numpy as np
 import random
 import six
 from typing import List, Optional, Any
-from pytypes import typechecked
 
 from tensorflow import keras
 
@@ -663,7 +662,6 @@ class HyperParameters(object):
                               parent_name=parent_name,
                               parent_values=parent_values)
 
-    @typechecked
     def Int(
         self,
         name,               # type: str
