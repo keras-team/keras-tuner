@@ -36,7 +36,7 @@ class HyperResNet(hypermodel.HyperModel):
             `layers.Input()`) to use as image input for the model.
               One of `input_shape` or `input_tensor` must be
               specified.
-        classes: optional number of classes to classify images
+        num_classes: optional number of classes to classify images
             into, only to be specified if `include_top` is True,
             and if no `weights` argument is specified.
         **kwargs: Additional keyword arguments that apply to all
@@ -47,12 +47,12 @@ class HyperResNet(hypermodel.HyperModel):
                  include_top=True,
                  input_shape=None,
                  input_tensor=None,
-                 classes=None,
+                 num_classes=None,
                  **kwargs):
 
         super(HyperResNet, self).__init__(**kwargs)
-        if include_top and classes is None:
-            raise ValueError('You must specify `classes` when '
+        if include_top and num_classes is None:
+            raise ValueError('You must specify `num_classes` when '
                              '`include_top=True`')
 
         if input_shape is None and input_tensor is None:
@@ -62,7 +62,7 @@ class HyperResNet(hypermodel.HyperModel):
         self.include_top = include_top
         self.input_shape = input_shape
         self.input_tensor = input_tensor
-        self.classes = classes
+        self.num_classes = num_classes
 
     def build(self, hp):
         version = hp.Choice('version', ['v1', 'v2', 'next'], default='v2')
@@ -125,7 +125,7 @@ class HyperResNet(hypermodel.HyperModel):
 
         if self.include_top:
             x = layers.Dense(
-                self.classes, activation='softmax', name='probs')(x)
+                self.num_classes, activation='softmax', name='probs')(x)
             model = keras.Model(inputs, x, name='ResNet')
             optimizer_name = hp.Choice(
                 'optimizer', ['adam', 'rmsprop', 'sgd'], default='adam')
