@@ -18,13 +18,11 @@ again.
 ## Pull Request Guide
 Before you submit a pull request, check that it meets these guidelines:
 
-1. Fork the repository. Create a new branch from the master branch.
+1. Is this the first pull request that you're making with GitHub? If so, read the guide [Making a pull request to an open-source project](https://github.com/gabrieldemarmiesse/getting_started_open_source).
 
-2. Make a pull request from your new branch to the master branch of the original autokeras repo. Give your pull request a **meaningful** name.
+2. Include "resolves #issue_number" in the description of the pull request if applicable and briefly describe your contribution.
 
-3. Include "resolves #issue_number" in the description of the pull request if applicable and briefly describe your contribution.
-
-4. For the case of bug fixes, add new test cases which would fail before your bug fix.
+3. For the case of bug fixes, add new test cases which would fail before your bug fix.
 
 ## Code Style Guide
 This project tries to closely follow the official Python Style Guide detailed in [PEP8](https://www.python.org/dev/peps/pep-0008/). We use [Flake8](http://flake8.pycqa.org/en/latest/) to enforce it.
