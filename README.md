@@ -73,7 +73,7 @@ results faster, you could set `executions_per_trial=1` (single round of training
 ```python
 tuner = RandomSearch(
     build_model,
-    objective='val_accuracy',
+    objective='val_acc',
     max_trials=5,
     executions_per_trial=3,
     directory='my_dir',
@@ -178,7 +178,7 @@ hypermodel = MyHyperModel(num_classes=10)
 
 tuner = RandomSearch(
     hypermodel,
-    objective='val_accuracy',
+    objective='val_acc',
     max_trials=10,
     directory='my_dir',
     project_name='helloworld')
@@ -202,7 +202,7 @@ hypermodel = HyperResNet(input_shape=(128, 128, 3), num_classes=10)
 
 tuner = Hyperband(
     hypermodel,
-    objective='val_accuracy',
+    objective='val_acc',
     max_epochs=40,
     directory='my_dir',
     project_name='helloworld')
@@ -281,7 +281,7 @@ tuner = Hyperband(
     hypermodel,
     hyperparameters=hp,
     tune_new_entries=True,
-    objective='val_accuracy',
+    objective='val_acc',
     max_epochs=40,
     directory='my_dir',
     project_name='helloworld')
