@@ -43,7 +43,7 @@ def build_model(hp):
 
 tuner = RandomSearch(
     build_model,
-    objective='val_accuracy',
+    objective='val_acc',
     max_trials=5,
     executions_per_trial=3,
     directory='test_dir')
@@ -64,7 +64,7 @@ tuner.results_summary()
 
 tuner = RandomSearch(
     build_model,
-    objective='val_accuracy',
+    objective='val_acc',
     loss=keras.losses.SparseCategoricalCrossentropy(name='my_loss'),
     metrics=['accuracy', 'mse'],
     max_trials=5,
@@ -103,7 +103,7 @@ class MyHyperModel(HyperModel):
 
 tuner = RandomSearch(
     MyHyperModel(img_size=(28, 28), num_classes=10),
-    objective='val_accuracy',
+    objective='val_acc',
     max_trials=5,
     directory='test_dir')
 
@@ -144,7 +144,7 @@ tuner = RandomSearch(
     max_trials=5,
     hyperparameters=hp,
     tune_new_entries=True,
-    objective='val_accuracy')
+    objective='val_acc')
 
 tuner.search(x=x,
              y=y,
@@ -165,7 +165,7 @@ tuner = RandomSearch(
     max_trials=5,
     hyperparameters=hp,
     tune_new_entries=True,
-    objective='val_accuracy')
+    objective='val_acc')
 
 tuner.search(x=x,
              y=y,
@@ -202,7 +202,7 @@ tuner = RandomSearch(
     max_trials=5,
     hyperparameters=hp,
     allow_new_entries=False,
-    objective='val_accuracy')
+    objective='val_acc')
 
 tuner.search(x=x,
              y=y,
