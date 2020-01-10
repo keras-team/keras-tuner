@@ -4,70 +4,63 @@ import shutil
 
 import keras_autodoc
 
-import kerastuner
-from kerastuner.engine.base_tuner import BaseTuner
-from kerastuner.engine.oracle import Oracle
-from kerastuner.engine.tuner import Tuner
-from kerastuner import applications
-
 PAGES = {
     'documentation/tuners.md': [
-        kerastuner.BayesianOptimization,
-        kerastuner.Hyperband,
-        kerastuner.RandomSearch,
-        kerastuner.tuners.Sklearn,
-        Tuner,
-        Tuner.get_best_models,
-        Tuner.get_state,
-        Tuner.load_model,
-        Tuner.on_epoch_begin,
-        Tuner.on_batch_begin,
-        Tuner.on_batch_end,
-        Tuner.on_epoch_end,
-        Tuner.run_trial,
-        Tuner.save_model,
-        Tuner.search,
-        Tuner.set_state,
-        BaseTuner,
-        BaseTuner.get_best_hyperparameters,
-        BaseTuner.get_best_models,
-        BaseTuner.get_state,
-        BaseTuner.load_model,
-        BaseTuner.run_trial,
-        BaseTuner.save_model,
-        BaseTuner.search,
-        BaseTuner.set_state
+        'kerastuner.BayesianOptimization',
+        'kerastuner.Hyperband',
+        'kerastuner.RandomSearch',
+        'kerastuner.tuners.Sklearn',
+        'kerastuner.Tuner',
+        'kerastuner.Tuner.get_best_models',
+        'kerastuner.Tuner.get_state',
+        'kerastuner.Tuner.load_model',
+        'kerastuner.Tuner.on_epoch_begin',
+        'kerastuner.Tuner.on_batch_begin',
+        'kerastuner.Tuner.on_batch_end',
+        'kerastuner.Tuner.on_epoch_end',
+        'kerastuner.Tuner.run_trial',
+        'kerastuner.Tuner.save_model',
+        'kerastuner.Tuner.search',
+        'kerastuner.Tuner.set_state',
+        'kerastuner.Tuner.get_best_hyperparameters',
+        'kerastuner.Tuner.get_best_models',
+        'kerastuner.Tuner.get_state',
+        'kerastuner.Tuner.load_model',
+        'kerastuner.Tuner.run_trial',
+        'kerastuner.Tuner.save_model',
+        'kerastuner.Tuner.search',
+        'kerastuner.Tuner.set_state'
     ],
     'documentation/hypermodels.md': [
-        kerastuner.HyperModel,
-        kerastuner.HyperModel.build,
-        applications.HyperXception,
-        applications.HyperResNet
+        'kerastuner.HyperModel',
+        'kerastuner.HyperModel.build',
+        'kerastuner.applications.HyperXception',
+        'kerastuner.applications.HyperResNet'
     ],
 
     'documentation/hyperparameters.md': [
-        kerastuner.HyperParameters,
-        kerastuner.HyperParameters.Boolean,
-        kerastuner.HyperParameters.Choice,
-        kerastuner.HyperParameters.Fixed,
-        kerastuner.HyperParameters.Float,
-        kerastuner.HyperParameters.Int,
-        kerastuner.HyperParameters.conditional_scope,
-        kerastuner.HyperParameters.get
+        'kerastuner.HyperParameters',
+        'kerastuner.HyperParameters.Boolean',
+        'kerastuner.HyperParameters.Choice',
+        'kerastuner.HyperParameters.Fixed',
+        'kerastuner.HyperParameters.Float',
+        'kerastuner.HyperParameters.Int',
+        'kerastuner.HyperParameters.conditional_scope',
+        'kerastuner.HyperParameters.get'
     ],
     'documentation/oracles.md': [
         'kerastuner.oracles.BayesianOptimization',
         'kerastuner.oracles.Hyperband',
         'kerastuner.oracles.RandomSearch',
-        Oracle,
-        Oracle._populate_space,
-        Oracle._score_trial,
-        Oracle.create_trial,
-        Oracle.end_trial,
-        Oracle.get_best_trials,
-        Oracle.get_state,
-        Oracle.set_state,
-        Oracle.update_trial
+        'kerastuner.Oracle',
+        'kerastuner.Oracle._populate_space',
+        'kerastuner.Oracle._score_trial',
+        'kerastuner.Oracle.create_trial',
+        'kerastuner.Oracle.end_trial',
+        'kerastuner.Oracle.get_best_trials',
+        'kerastuner.Oracle.get_state',
+        'kerastuner.Oracle.set_state',
+        'kerastuner.Oracle.update_trial'
     ]
 }
 
