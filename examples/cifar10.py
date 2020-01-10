@@ -2,6 +2,7 @@
 
 import kerastuner as kt
 import tensorflow as tf
+from tensorflow.keras import layers
 import tensorflow_datasets as tfds
 
 
@@ -11,23 +12,19 @@ def build_model(hp):
     for i in range(hp.Int("conv_blocks", 3, 5, default=3)):
         filters = hp.Int("filters_" + str(i), 32, 256, step=32)
         for _ in range(2):
-            x = tf.keras.layers.Convolution2D(
-                filters, kernel_size=(3, 3), padding="same"
-            )(x)
-            x = tf.keras.layers.BatchNormalization()(x)
-            x = tf.keras.layers.ReLU()(x)
+            x = layers.Convolution2D(filters, kernel_size=(3, 3), padding="same")(x)
+            x = layers.BatchNormalization()(x)
+            x = layers.ReLU()(x)
         if hp.Choice("pooling_" + str(i), ["avg", "max"]) == "max":
-            x = tf.keras.layers.MaxPool2D()(x)
+            x = layers.MaxPool2D()(x)
         else:
-            x = tf.keras.layers.AvgPool2D()(x)
-    x = tf.keras.layers.GlobalAvgPool2D()(x)
-    x = tf.keras.layers.Dense(
+            x = layers.AvgPool2D()(x)
+    x = layers.GlobalAvgPool2D()(x)
+    x = layers.Dense(
         hp.Int("hidden_size", 30, 100, step=10, default=50), activation="relu"
     )(x)
-    x = tf.keras.layers.Dropout(hp.Float("dropout", 0, 0.5, step=0.1, default=0.5))(
-        x
-    )
-    outputs = tf.keras.layers.Dense(10, activation="softmax")(x)
+    x = layers.Dropout(hp.Float("dropout", 0, 0.5, step=0.1, default=0.5))(x)
+    outputs = layers.Dense(10, activation="softmax")(x)
 
     model = tf.keras.Model(inputs, outputs)
     model.compile(
