@@ -13,7 +13,7 @@
 # limitations under the License.
 """Keras Tuner utilities."""
 
-
+from packaging.version import parse
 import tensorflow as tf
 
 
@@ -27,3 +27,16 @@ def create_directory(path, remove_existing=False):
     elif remove_existing:
         tf.io.gfile.rmtree(path)
         tf.io.gfile.makedirs(path)
+
+
+def check_tf_version():
+    if parse(tf.__version__) < parse('2.0.0'):
+        raise ImportError(
+            f'The Tensorflow package version needs to be at least v2.0.0 \n'
+            f'for Keras Tuner to run. Currently, your TensorFlow version is \n'
+            f'v{tf.__version__}. Please upgrade with \n'
+            f'`$ pip install --upgrade tensorflow` -> GPU version \n'
+            f'or \n'
+            f'`$ pip install --upgrade tensorflow-cpu` -> CPU version. \n'
+            f'You can use `pip freeze` to check afterwards that everything is ok.'
+        )
