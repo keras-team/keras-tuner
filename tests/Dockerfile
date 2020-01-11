@@ -16,7 +16,8 @@ RUN pip install tensorflow \
                 mock \
                 portpicker \
                 pytest-xdist \
-                pytest-cov
+                pytest-cov \
+                keras-autodoc==0.4.0
 
 COPY ./ /keras-tuner
 WORKDIR /keras-tuner
