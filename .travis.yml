@@ -19,5 +19,5 @@ script:
     elif [[ "$TEST_MODE" == "FLAKE8" ]]; then
       docker run -t test_image flake8;
     else
-      docker run -t test_image py.test tests/kerastuner --cov-config .coveragerc --cov=kerastuner;
+      docker run -t test_image py.test --ignore tests/integration_tests --cov-config .coveragerc --cov=kerastuner;
     fi
