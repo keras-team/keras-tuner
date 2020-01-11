@@ -18,6 +18,8 @@ RUN pip install tensorflow \
                 pytest-xdist \
                 pytest-cov
 
+RUN python -c "import tensorflow as tf; tf.keras.datasets.mnist.load_data()"
+
 COPY ./ /keras-tuner
 WORKDIR /keras-tuner
 RUN pip install -e .[tests] --progress-bar off
