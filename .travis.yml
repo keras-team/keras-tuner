@@ -10,7 +10,7 @@ env:
   - TRAVIS=True TEST_MODE=FLAKE8
   - TRAVIS=True TEST_MODE=TF2
 install:
-  - docker build -f tests/Dockerfile -t test_image --build-arg PY_VERSION=$TRAVIS_PYTHON_VERSION .
+  - travis_retry docker build -f tests/Dockerfile -t test_image --build-arg PY_VERSION=$TRAVIS_PYTHON_VERSION .
 
 # command to run tests
 script:
