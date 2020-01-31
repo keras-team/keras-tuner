@@ -106,29 +106,42 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             values = self._random_trial()
             return {'status': trial_lib.TrialStatus.RUNNING,
                     'values': values}
-
+        
+        
         def _upper_confidence_bound(x):
             x = x.reshape(1, -1)
             mu, sigma = self.gpr.predict(x, return_std=True)
             return mu - self.beta * sigma
+        
+        collisions = 0
+        while 1:
+            optimal_val = float('inf')
+            optimal_x = None
+            num_restarts = 50
+            bounds = self._get_hp_bounds()
+            x_seeds = self._random_state.uniform(bounds[:, 0], bounds[:, 1],
+                                                 size=(num_restarts, bounds.shape[0]))
+            for x_try in x_seeds:
+                # Sign of score is flipped when maximizing.
+                result = scipy_optimize.minimize(_upper_confidence_bound,
+                                                 x0=x_try,
+                                                 bounds=bounds,
+                                                 method='L-BFGS-B')
+                if result.fun[0] < optimal_val:
+                    optimal_val = result.fun[0]
+                    optimal_x = result.x
 
-        optimal_val = float('inf')
-        optimal_x = None
-        num_restarts = 50
-        bounds = self._get_hp_bounds()
-        x_seeds = self._random_state.uniform(bounds[:, 0], bounds[:, 1],
-                                             size=(num_restarts, bounds.shape[0]))
-        for x_try in x_seeds:
-            # Sign of score is flipped when maximizing.
-            result = scipy_optimize.minimize(_upper_confidence_bound,
-                                             x0=x_try,
-                                             bounds=bounds,
-                                             method='L-BFGS-B')
-            if result.fun[0] < optimal_val:
-                optimal_val = result.fun[0]
-                optimal_x = result.x
-
-        values = self._vector_to_values(optimal_x)
+            values = self._vector_to_values(optimal_x)
+            # Keep trying until the set of values is unique,
+            # or until we exit due to too many collisions.
+            values_hash = self._compute_values_hash(values)
+            if values_hash in self._tried_so_far:
+                collisions += 1
+                if collisions > self._max_collisions:
+                    return None
+                continue
+            self._tried_so_far.add(values_hash)
+            break
         return {'status': trial_lib.TrialStatus.RUNNING,
                 'values': values}
 
