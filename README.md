@@ -315,5 +315,50 @@ tuner.search(x, y,
              validation_data=(val_x, val_y))
 ```
 
+## Multiple executions per trial with custom metrics and tuning of training parameters
+
+If you have a hypermodel where you want the score for a trial to be an average/best/worst/median/etc. of multiple execution. Also if you want to optimizer on parameters defined at train time. Also includes a function to smooth loss so we're not taking the very last loss value.
+
+```python
+class MyTuner(kt.Tuner):
+    def trailing_avg(arr, window):
+        return np.mean(arr[-window:])
+    
+    def run_trial(self, trial, samples, num_executions_per_trial, loss_smoothing_window):
+        hp = trial.hyperparameters
+        
+        # Just an example of a training parameter to tune
+        batch_size = pow(2, hp.Int('batch_size', 6, 12, step=1, default=10))
+
+        execution_losses = []
+        for x in range(num_executions):
+            # Get a fresh model for each execution
+            model = self.hypermodel.build(hp)
+            
+            # Run a fit using the samples provided at the search() entry point
+            history = fit(samples, batch_size=batch_size, ...)
+            
+            # Smooth the loss at the end of the loss history to reduce variance
+            val_loss_smoothed = trailing_avg(history.history['val_loss'], loss_smoothing_window)
+            execution_losses.append(val_loss_smoothed)
+        
+        # Here we decide to take the worst case scenario loss
+        worst_case_loss = max(scores)
+        
+        # This is where we update the tuner with the value we've calculated
+        self.oracle.update_trial(trial.trial_id, {'val_loss': worst_case_loss})
+
+# Make sure objective matches the metric provided in update_trial()
+tuner = MyTuner(oracle=kt.oracles.BayesianOptimization(objective='val_loss'),
+                    hypermodel=build_model,
+                    directory='my_dir',
+                    project_name='helloworld')
+
+# Search using the extra params provided to run_trial()
+num_execution_per_trial = 3
+loss_smoothing_window = 5
+tuner.search(samples, num_execution_per_trial, loss_smoothing_window)
+```
+
 
 
