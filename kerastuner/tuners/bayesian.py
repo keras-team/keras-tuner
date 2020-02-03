@@ -155,7 +155,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         self._tried_so_far = set(state['tried_so_far'])
         self._max_collisions = state['max_collisions']
         self.gpr = gaussian_process.GaussianProcessRegressor(
-            kernel=gaussian_process.kernels.ConstantKernel(1.0),
+            kernel=gaussian_process.kernels.Matern(nu=2.5),
             alpha=self.alpha)
 
     def _random_trial(self):
