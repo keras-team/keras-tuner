@@ -317,7 +317,7 @@ tuner.search(x, y,
 
 ## Multiple executions per trial with custom metrics and tuning of training parameters
 
-If you have a hypermodel where you want the score for a trial to be an average/best/worst/median/etc. of multiple execution. Also if you want to optimizer on parameters defined at train time. Also includes a function to smooth loss so we're not taking the very last loss value.
+If you have a hypermodel where you want the score for a trial to be an average/best/worst/median/etc. of multiple execution. Also if you want to optimizer on parameters defined at train time. Includes a function to smooth loss so we're not taking the very last loss value.
 
 ```python
 class MyTuner(kt.Tuner):
