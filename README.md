@@ -355,7 +355,7 @@ tuner = MyTuner(oracle=kt.oracles.BayesianOptimization(objective='val_loss'),
                     project_name='helloworld')
 
 # Search using the extra params provided to run_trial()
-num_execution_per_trial = 3
+num_executions_per_trial = 3
 loss_smoothing_window = 5
 tuner.search(samples, num_execution_per_trial, loss_smoothing_window)
 ```
