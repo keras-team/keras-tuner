@@ -74,7 +74,7 @@ class BaseTuner(stateful.Stateful):
         # Run in distributed mode.
         if dist_utils.is_chief_oracle():
             # Blocks forever.
-            oracle_chief.start_server(self.oracle)
+            oracle_chief.start_server(self.oracle, logger)
         elif dist_utils.has_chief_oracle():
             # Proxies requests to the chief oracle.
             self.oracle = oracle_client.OracleClient(self.oracle)

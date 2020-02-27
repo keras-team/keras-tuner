@@ -20,7 +20,9 @@ package kerastuner;
 
 import "kerastuner/protos/kerastuner.proto";
 
-message GetSpaceRequest {}
+message GetSpaceRequest {
+    string tuner_id = 1;
+}
 
 message GetSpaceResponse {
     kerastuner.HyperParameters hyperparameters = 1;

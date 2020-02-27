@@ -36,6 +36,60 @@ class Logger(object):
         raise NotImplementedError
 
 
+class ChiefLogger(object):
+
+    def __init__(self):
+        self.printed_result = 0
+
+    def register_tuner(self, tuner_id):
+        """Informs the logger that a new search is starting."""
+        data = {"operation": "register_tuner",
+                "tuner_id": tuner_id}
+        print(data)
+
+    def register_trial(self, trial_id, trial_state):
+        """Informs the logger that a new Trial is starting."""
+        pass
+
+    def create_trial(self, trial_parameters, trial_state, trial_id):
+        """Informs the logger that a new Trial is starting."""
+        # trial_parameters is empty when the last trials are running on some nodes
+        if trial_parameters:
+            data = {"operation": "create_trial",
+                    "parameters": trial_parameters,
+                    "trial_id":   trial_id,
+                    "executor": trial_state,
+                    }
+            print(data)
+
+    def report_trial_state(self, trial_id, trial_state):
+        """Gives the logger information about trial status."""
+        pass
+
+    def update_trial(self, trial_id, trial_metrics):
+        """Gives the logger information about trial status."""
+        data = {
+            "operation": "update_trial",
+            "trial_id": trial_id,
+            "metrics": trial_metrics,
+        }
+        print(data)
+
+    def final_state(self, trials):
+        if self.printed_result == 0:
+            trial = trials[0]
+            data = {
+                "operation":    "final_results",
+                "parameters":   trial.hyperparameters.values,
+                "trial_id":     trial.trial_id
+            }
+            print(data)
+            self.printed_result = 1
+
+    def exit(self):
+        pass
+
+
 def url_join(*parts):
     return '/'.join(map(lambda fragment: fragment.rstrip('/'), parts))
 
