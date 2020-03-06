@@ -79,7 +79,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         self.gpr = self.make_gpr()
         
     def make_gpr(self):
-        self.gpr = gaussian_process.GaussianProcessRegressor(
+        return gaussian_process.GaussianProcessRegressor(
             kernel=gaussian_process.kernels.Matern(nu=2.5),
             n_restarts_optimizer=20,
             normalize_y=True,
