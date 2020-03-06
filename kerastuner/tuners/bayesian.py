@@ -76,9 +76,9 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         self._tried_so_far = set()
         self._max_collisions = 20
         self._random_state = np.random.RandomState(self.seed)
-        self.gpr = self.make_gpr()
+        self.gpr = self._make_gpr()
         
-    def make_gpr(self):
+    def _make_gpr(self):
         return gaussian_process.GaussianProcessRegressor(
             kernel=gaussian_process.kernels.Matern(nu=2.5),
             n_restarts_optimizer=20,
@@ -157,7 +157,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         self._seed_state = state['seed_state']
         self._tried_so_far = set(state['tried_so_far'])
         self._max_collisions = state['max_collisions']
-        self.gpr = self.make_gpr()
+        self.gpr = self._make_gpr()
 
     def _random_trial(self):
         """Fill a given hyperparameter space with values.
