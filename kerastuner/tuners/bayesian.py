@@ -77,7 +77,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         self._max_collisions = 20
         self._random_state = np.random.RandomState(self.seed)
         self.gpr = self._make_gpr()
-        
+
     def _make_gpr(self):
         return gaussian_process.GaussianProcessRegressor(
             kernel=gaussian_process.kernels.Matern(nu=2.5),
