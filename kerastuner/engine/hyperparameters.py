@@ -26,6 +26,7 @@ import six
 
 from tensorflow import keras
 
+from . import conditions
 from ..protos import kerastuner_pb2
 
 
@@ -62,47 +63,6 @@ def _check_int(val, arg):
         raise ValueError(
             arg + ' must be an int, found: ' + str(val))
     return int_val
-
-
-class Condition(object):
-    """Condition for a conditional hyperparameter.
-
-    This object can be passed to a `HyperParameter` to specify that
-    this condition must be met in order for that hyperparameter to 
-    be considered active for the `Trial`.
-
-    Example:
-
-    ```
-    a = Choice('model', ['linear', 'dnn'])
-    b = Int('num_layers', 5, 10, conditions=[Condition('a', 'dnn')])
-    ```
-    
-    # Arguments:
-        name: The name of a `HyperParameter`.
-        values: Values for which the `HyperParameter` this object is
-            passed to should be considered active.
-    """
-    
-    def __init__(self, name, values):
-        self.name = name
-        self.values = _to_list(values)
-
-    def get_config(self):
-        return {'name': self.name,
-                'values': self.values}
-
-    def is_active(self, value):
-        return value in self.values
-
-    def __eq__(self, other):
-        return (isinstance(other, Condition) and
-                other.name == self.name and
-                other.values == self.values)
-
-    @classmethod
-    def from_config(cls, config):
-        return cls(**config)
 
 
 class HyperParameter(object):
@@ -591,22 +551,31 @@ class HyperParameters(object):
                 '`HyperParameter` named: ' + parent_name + ' '
                 'not defined.')
 
-        self._conditions.append(Condition(parent_name, parent_values))
+        self._conditions.append(conditions.OneOf(parent_name, parent_values))
         try:
             yield
         finally:
             self._conditions.pop()
+
+    def is_active(self, hyperparameter):
+        """Checks if a hyperparameter is currently active for a `Trial`.
+
+        # Arguments:
+          hyperparameter: Str or `HyperParameter`. If str, checks if any
+              `HyperParameter` with that name is active. If `HyperParameter`,
+              checks that this object is active.
+        """
+        if isinstance(hp, six.string_types):
+            hp = str(hp)
+            return hp in self.values
+        return self._conditions_are_active(hp.conditions)
 
     def _conditions_are_active(self, conditions=None):
         if conditions is None:
             conditions = self._conditions
 
         for condition in conditions:
-            name = condition.name
-            if name not in self.values:
-                return False  # No active value with this name.
-            active_value = self.values[name]
-            if not condition.is_active(active_value):
+            if not condition.is_active(self.values):
                 return False
         return True
 
@@ -854,6 +823,8 @@ class HyperParameters(object):
         space = []
         for hps in self._hps.values():
             space.extend(hps)
+        # Always return child parameters after parent parameters.
+        space = sorted(space, key=lambda hp: len(hp.conditions))
         return space
 
     def get_config(self):
@@ -1003,7 +974,7 @@ def deserialize(config):
     # Autograph messes with globals(), so in order to support HPs inside `call` we
     # have to enumerate them manually here.
     objects = [HyperParameter, Fixed, Float, Int, Choice,
-               Boolean, HyperParameters, Condition]
+               Boolean, HyperParameters, conditions.Condition]
     for obj in objects:
         if isinstance(config, obj):
             return config  # Already deserialized.

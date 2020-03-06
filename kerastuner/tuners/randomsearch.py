@@ -18,6 +18,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from ..engine import hyperparameters as hp_lib
 from ..engine import multi_execution_tuner
 from ..engine import oracle as oracle_module
 from ..engine import trial as trial_lib
@@ -87,11 +88,14 @@ class RandomSearchOracle(oracle_module.Oracle):
         """
         collisions = 0
         while 1:
+            hps = hp_lib.HyperParameters()
             # Generate a set of random values.
-            values = {}
             for p in self.hyperparameters.space:
-                values[p.name] = p.random_sample(self._seed_state)
-                self._seed_state += 1
+                hps.merge([p])
+                if hps.is_active(p):
+                    hps.values[p.name] = p.random_sample(self._seed_state)
+                    self._seed_state += 1
+            values = hp.values
             # Keep trying until the set of values is unique,
             # or until we exit due to too many collisions.
             values_hash = self._compute_values_hash(values)

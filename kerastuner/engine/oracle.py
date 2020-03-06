@@ -229,21 +229,19 @@ class Oracle(stateful.Stateful):
         Args:
             hyperparameters: An updated HyperParameters object.
         """
-        ref_names = {hp.name for hp in self.hyperparameters.space}
-        new_hps = [hp for hp in hyperparameters.space
-                   if hp.name not in ref_names]
+        hps = hyperparameters.space
+        new_hps = []
+        for hp in hps:
+            if not self.hyperparameters._hp_exists(hp.name, hp.conditions):
+                new_hps.append(hp)
 
         if new_hps and not self.allow_new_entries:
             raise RuntimeError('`allow_new_entries` is `False`, but found '
                                'new entries {}'.format(new_hps))
-
         if not self.tune_new_entries:
             # New entries should always use the default value.
             return
-
-        for hp in new_hps:
-            self.hyperparameters.register(
-                hp.name, hp.__class__.__name__, hp.get_config())
+        self.hyperparameters.merge(new_hps)
 
     def get_trial(self, trial_id):
         """Returns the `Trial` specified by `trial_id`."""
