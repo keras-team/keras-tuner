@@ -55,7 +55,8 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
     def __init__(self,
                  objective,
                  max_trials,
-                 num_initial_points=None,
+                 init_points=None,
+                 init_points_dim_factor=3,
                  alpha=1e-4,
                  beta=2.6,
                  seed=None,
@@ -68,7 +69,8 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             hyperparameters=hyperparameters,
             tune_new_entries=tune_new_entries,
             allow_new_entries=allow_new_entries)
-        self.num_initial_points = num_initial_points
+        self.init_points = init_points
+        self.init_points_dim_factor = init_points_dim_factor
         self.alpha = alpha
         self.beta = beta
         self.seed = seed or random.randint(1, 1e4)
@@ -85,17 +87,19 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             normalize_y=True,
             alpha=self.alpha,
             random_state=self.seed)
+    
+    @property
+    def num_initial_points(self):
+        if self.init_points is not None:
+            return self.init_points
+        return round(self.init_points_dim_factor * len(self.hyperparameters.space))
 
     def _populate_space(self, trial_id):
         # Generate enough samples before training Gaussian process.
         completed_trials = [t for t in self.trials.values()
                             if t.status == 'COMPLETED']
 
-        # Use 3 times the dimensionality of the space as the default number of
-        # random points.
-        dimensions = len(self.hyperparameters.space)
-        num_initial_points = self.num_initial_points or 3 * dimensions
-        if len(completed_trials) < num_initial_points:
+        if len(completed_trials) < self.num_initial_points:
             values = self._random_trial()
             return {'status': trial_lib.TrialStatus.RUNNING,
                     'values': values}
