@@ -77,7 +77,10 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         self._tried_so_far = set()
         self._max_collisions = 20
         self._random_state = np.random.RandomState(self.seed)
-        self.gpr = gaussian_process.GaussianProcessRegressor(
+        self.gpr = self._make_gpr()
+
+    def _make_gpr(self):
+        return gaussian_process.GaussianProcessRegressor(
             kernel=gaussian_process.kernels.Matern(nu=2.5),
             n_restarts_optimizer=20,
             normalize_y=True,
@@ -151,9 +154,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         self.num_initial_points = state['num_initial_points']
         self.alpha = state['alpha']
         self.beta = state['beta']
-        self.gpr = gaussian_process.GaussianProcessRegressor(
-            kernel=gaussian_process.kernels.ConstantKernel(1.0),
-            alpha=self.alpha)
+        self.gpr = self._make_gpr()
 
     def _vectorize_trials(self):
         x = []
