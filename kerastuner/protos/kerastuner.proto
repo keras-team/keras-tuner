@@ -41,6 +41,7 @@ message Float {
     double step = 4;
     Sampling sampling = 5;
     double default = 6;
+    repeated Condition conditions = 7;
 }
 
 message Int {
@@ -50,6 +51,7 @@ message Int {
     sint64 step = 4;
     Sampling sampling = 5;
     sint64 default = 6;
+    repeated Condition conditions = 7;
 }
 
 message Choice {
@@ -57,16 +59,19 @@ message Choice {
     repeated Value values = 2;
     Value default = 3;
     bool ordered = 4;
+    repeated Condition conditions = 5;
 }
 
 message Boolean {
     string name = 1;
     bool default = 2;
+    repeated Condition conditions = 3;
 }
 
 message Fixed {
     string name = 1;
-    Value value = 3;
+    Value value = 2;
+    repeated Condition conditions = 3;
 }
 
 message HyperParameters {
@@ -119,4 +124,17 @@ message Trial {
         int64 step = 2;
     }
     Score score = 5;
+}
+
+
+message Condition {
+
+    message IsIn {
+        string name = 1;
+        repeated Value values = 2;
+    }
+
+    oneof kind {
+        IsIn is_in = 1;
+    }
 }

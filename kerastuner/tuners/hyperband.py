@@ -99,7 +99,8 @@ class HyperbandOracle(oracle_module.Oracle):
             objective=objective,
             hyperparameters=hyperparameters,
             allow_new_entries=allow_new_entries,
-            tune_new_entries=tune_new_entries)
+            tune_new_entries=tune_new_entries,
+            seed=seed)
         if factor < 2:
             raise ValueError('factor needs to be a int larger than 1.')
 
@@ -249,34 +250,6 @@ class HyperbandOracle(oracle_module.Oracle):
             brackets += 1
         return brackets
 
-    def _random_values(self):
-        """Fill a given hyperparameter space with values.
-
-        Returns:
-            A dictionary mapping parameter names to suggested values.
-            Note that if the Oracle is keeping tracking of a large
-            space, it may return values for more parameters
-            than what was listed in `space`.
-        """
-        collisions = 0
-        while 1:
-            # Generate a set of random values.
-            values = {}
-            for p in self.hyperparameters.space:
-                values[p.name] = p.random_sample(self._seed_state)
-                self._seed_state += 1
-            # Keep trying until the set of values is unique,
-            # or until we exit due to too many collisions.
-            values_hash = self._compute_values_hash(values)
-            if values_hash in self._tried_so_far:
-                collisions += 1
-                if collisions > self._max_collisions:
-                    return None
-                continue
-            self._tried_so_far.add(values_hash)
-            break
-        return values
-
     def get_state(self):
         state = super(HyperbandOracle, self).get_state()
         state.update({
@@ -284,10 +257,6 @@ class HyperbandOracle(oracle_module.Oracle):
             'max_epochs': self.max_epochs,
             'min_epochs': self.min_epochs,
             'factor': self.factor,
-            'seed': self.seed,
-            'max_collisions': self._max_collisions,
-            'seed_state': self._seed_state,
-            'tried_so_far': list(self._tried_so_far),
             'brackets': self._brackets,
             'current_bracket': self._current_bracket,
             'current_iteration': self._current_iteration
@@ -300,10 +269,6 @@ class HyperbandOracle(oracle_module.Oracle):
         self.max_epochs = state['max_epochs']
         self.min_epochs = state['min_epochs']
         self.factor = state['factor']
-        self.seed = state['seed']
-        self._max_collisions = state['max_collisions']
-        self._seed_state = state['seed_state']
-        self._tried_so_far = set(state['tried_so_far'])
         self._brackets = state['brackets']
         self._current_bracket = state['current_bracket']
         self._current_iteration = state['current_iteration']

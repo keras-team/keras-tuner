@@ -68,8 +68,19 @@ class Condition(object):
     def from_config(cls, config):
         return cls(**config)
 
+    @classmethod
+    def from_proto(self, proto):
+        kind = proto.WhichOneof('kind')
+        if kind == 'is_in':
+            is_in = getattr(proto, kind)
+            name = is_in.name
+            values = is_in.values
+            values = [getattr(v, v.WhichOneof('kind')) for v in values]
+            return IsIn(name=name, values=values)
+        raise ValueError('Unrecognized condition of type: {}'.format(kind))
 
-class OneOf(Condition):
+
+class IsIn(Condition):
     """Condition that checks a value is equal to one of a list of values.
 
     This object can be passed to a `HyperParameter` to specify that this
@@ -90,19 +101,45 @@ class OneOf(Condition):
     """
     def __init__(self, name, values):
         self.name = name
-        self.values = _to_list(values)
+
+        # Standardize on str, int, float, bool.
+        values = _to_list(values)
+        first_val = values[0]
+        if isinstance(first_val, six.string_types):
+            values = [str(v) for v in values]
+        elif isinstance(first_val, six.integer_types):
+            values = [int(v) for v in values]
+        elif not isinstance(first_val, (bool, float)):
+            raise TypeError(
+                'Can contain only `int`, `float`, `str`, or '
+                '`bool`, found values: ' + str(values) + 'with '
+                'types: ' + str(type(first_val)))
+        self.values = values
 
     def is_active(self, values):
         return (self.name in values and values[self.name] in self.values)
 
     def __eq__(self, other):
-        return (isinstance(other, OneOf) and
+        return (isinstance(other, IsIn) and
                 other.name == self.name and
                 other.values == self.values)
 
     def get_config(self):
         return {'name': self.name,
                 'values': self.values}
+
+    def to_proto(self):
+        if isinstance(self.values[0], six.string_types):
+            values = [kerastuner_pb2.Value(string_value=v) for v in self.values]
+        elif isinstance(self.values[0], six.integer_types):
+            values = [kerastuner_pb2.Value(int_value=v) for v in self.values]
+        else:
+            values = [kerastuner_pb2.Value(float_value=v) for v in self.values]
+
+        return kerastuner_pb2.Condition(
+            is_in=kerastuner_pb2.Condition.IsIn(
+                name=self.name,
+                values=values))
 
 
 def _to_list(values):

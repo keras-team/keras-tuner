@@ -26,7 +26,7 @@ import six
 
 from tensorflow import keras
 
-from . import conditions
+from . import conditions as conditions_mod
 from ..protos import kerastuner_pb2
 
 
@@ -87,7 +87,7 @@ class HyperParameter(object):
         conditions = [serialize(c) for c in self.conditions]
         return {'name': self.name,
                 'default': self.default,
-                'conditions': self.conditions}
+                'conditions': conditions}
 
     @property
     def default(self):
@@ -115,8 +115,7 @@ class Choice(HyperParameter):
             If unspecified, the default value will be:
             - None if None is one of the choices in `values`
             - The first entry in `values` otherwise.
-        conditions: A list of `Condition`s for this object to be
-            considered active.
+        **kwargs: Additional keyword arguments.
     """
 
     def __init__(self,
@@ -124,10 +123,9 @@ class Choice(HyperParameter):
                  values,
                  ordered=None,
                  default=None,
-                 conditions=None):
-        super(Choice, self).__init__(name=name,
-                                     default=default,
-                                     conditions=conditions)
+                 **kwargs):
+        super(Choice, self).__init__(
+            name=name, default=default, **kwargs)
         if not values:
             raise ValueError('`values` must be provided.')
 
@@ -195,11 +193,14 @@ class Choice(HyperParameter):
     def from_proto(cls, proto):
         values = [getattr(val, val.WhichOneof('kind')) for val in proto.values]
         default = getattr(proto.default, proto.default.WhichOneof('kind'), None)
+        conditions = [conditions_mod.Condition.from_proto(c)
+                      for c in proto.conditions]
         return cls(
             name=proto.name,
             values=values,
             ordered=proto.ordered,
-            default=default)
+            default=default,
+            conditions=conditions)
 
     def to_proto(self):
         if isinstance(self.values[0], six.string_types):
@@ -215,7 +216,8 @@ class Choice(HyperParameter):
             name=self.name,
             ordered=self.ordered,
             values=values,
-            default=default)
+            default=default,
+            conditions=[c.to_proto() for c in self.conditions])
 
 
 class Int(HyperParameter):
@@ -237,8 +239,7 @@ class Int(HyperParameter):
         default: Default value to return for the parameter.
             If unspecified, the default value will be
             `min_value`.
-        conditions: A list of `Condition`s for this object to be
-            considered active.
+        **kwargs: Additional keyword arguments.
     """
 
     def __init__(self,
@@ -248,11 +249,9 @@ class Int(HyperParameter):
                  step=1,
                  sampling=None,
                  default=None,
-                 conditions=None):
+                 **kwargs):
         super(Int, self).__init__(
-            name=name,
-            default=default,
-            conditions=conditions)
+            name=name, default=default, **kwargs)
         self.max_value = _check_int(max_value, arg='max_value')
         self.min_value = _check_int(min_value, arg='min_value')
         self.step = _check_int(step, arg='step')
@@ -291,12 +290,15 @@ class Int(HyperParameter):
 
     @classmethod
     def from_proto(cls, proto):
+        conditions = [conditions_mod.Condition.from_proto(c)
+                      for c in proto.conditions]
         return cls(name=proto.name,
                    min_value=proto.min_value,
                    max_value=proto.max_value,
                    step=proto.step if proto.step else None,
                    sampling=_sampling_from_proto(proto.sampling),
-                   default=proto.default)
+                   default=proto.default,
+                   conditions=conditions)
 
     def to_proto(self):
         return kerastuner_pb2.Int(
@@ -305,7 +307,8 @@ class Int(HyperParameter):
             max_value=self.max_value,
             step=self.step if self.step is not None else 0,
             sampling=_sampling_to_proto(self.sampling),
-            default=self.default)
+            default=self.default,
+            conditions=[c.to_proto() for c in self.conditions])
 
 
 class Float(HyperParameter):
@@ -327,8 +330,7 @@ class Float(HyperParameter):
         default: Default value to return for the parameter.
             If unspecified, the default value will be
             `min_value`.
-        conditions: A list of `Condition`s for this object to be
-            considered active.
+        **kwargs: Additional keyword arguments.
     """
 
     def __init__(self,
@@ -338,9 +340,9 @@ class Float(HyperParameter):
                  step=None,
                  sampling=None,
                  default=None,
-                 conditions=None):
+                 **kwargs):
         super(Float, self).__init__(
-            name=name, default=default, conditions=conditions)
+            name=name, default=default, **kwargs)
         self.max_value = float(max_value)
         self.min_value = float(min_value)
         if step is not None:
@@ -381,12 +383,15 @@ class Float(HyperParameter):
 
     @classmethod
     def from_proto(cls, proto):
+        conditions = [conditions_mod.Condition.from_proto(c)
+                      for c in proto.conditions]
         return cls(name=proto.name,
                    min_value=proto.min_value,
                    max_value=proto.max_value,
                    step=proto.step if proto.step else None,
                    sampling=_sampling_from_proto(proto.sampling),
-                   default=proto.default)
+                   default=proto.default,
+                   conditions=conditions)
 
     def to_proto(self):
         return kerastuner_pb2.Float(
@@ -395,7 +400,8 @@ class Float(HyperParameter):
             max_value=self.max_value,
             step=self.step if self.step is not None else 0.0,
             sampling=_sampling_to_proto(self.sampling),
-            default=self.default)
+            default=self.default,
+            conditions=[c.to_proto() for c in self.conditions])
 
 
 class Boolean(HyperParameter):
@@ -405,13 +411,12 @@ class Boolean(HyperParameter):
         name: Str. Name of parameter. Must be unique.
         default: Default value to return for the parameter.
             If unspecified, the default value will be False.
-        conditions: A list of `Condition`s for this object to be
-            considered active.
+        **kwargs: Additional keyword arguments.
     """
 
-    def __init__(self, name, default=False, conditions=None):
+    def __init__(self, name, default=False, **kwargs):
         super(Boolean, self).__init__(
-            name=name, default=default, conditions=None)
+            name=name, default=default, **kwargs)
         if default not in {True, False}:
             raise ValueError(
                 '`default` must be a Python boolean. '
@@ -427,13 +432,17 @@ class Boolean(HyperParameter):
 
     @classmethod
     def from_proto(cls, proto):
+        conditions = [conditions_mod.Condition.from_proto(c)
+                      for c in proto.conditions]
         return cls(name=proto.name,
-                   default=proto.default)
+                   default=proto.default,
+                   conditions=conditions)
 
     def to_proto(self):
         return kerastuner_pb2.Boolean(
             name=self.name,
-            default=self.default)
+            default=self.default,
+            conditions=[c.to_proto() for c in self.conditions])
 
 
 class Fixed(HyperParameter):
@@ -443,13 +452,12 @@ class Fixed(HyperParameter):
         name: Str. Name of parameter. Must be unique.
         value: Value to use (can be any JSON-serializable
             Python type).
-        conditions: A list of `Condition`s for this object to be
-            considered active.
+        **kwargs: Additional keyword arguments.
     """
 
-    def __init__(self, name, value, conditions=None):
+    def __init__(self, name, value, **kwargs):
         super(Fixed, self).__init__(
-            name=name, default=value, conditions=conditions)
+            name=name, default=value, **kwargs)
         self.name = name
 
         if isinstance(value, six.integer_types):
@@ -479,8 +487,11 @@ class Fixed(HyperParameter):
     @classmethod
     def from_proto(cls, proto):
         value = getattr(proto.value, proto.value.WhichOneof('kind'))
+        conditions = [conditions_mod.Condition.from_proto(c)
+                      for c in proto.conditions]
         return cls(name=proto.name,
-                   value=value)
+                   value=value,
+                   conditions=conditions)
 
     def to_proto(self):
         if isinstance(self.value, six.integer_types):
@@ -494,7 +505,8 @@ class Fixed(HyperParameter):
 
         return kerastuner_pb2.Fixed(
             name=self.name,
-            value=value)
+            value=value,
+            conditions=[c.to_proto() for c in self.conditions])
 
 
 class HyperParameters(object):
@@ -551,7 +563,7 @@ class HyperParameters(object):
                 '`HyperParameter` named: ' + parent_name + ' '
                 'not defined.')
 
-        self._conditions.append(conditions.OneOf(parent_name, parent_values))
+        self._conditions.append(conditions_mod.IsIn(parent_name, parent_values))
         try:
             yield
         finally:
@@ -561,14 +573,15 @@ class HyperParameters(object):
         """Checks if a hyperparameter is currently active for a `Trial`.
 
         # Arguments:
-          hyperparameter: Str or `HyperParameter`. If str, checks if any
+          hp: Str or `HyperParameter`. If str, checks if any
               `HyperParameter` with that name is active. If `HyperParameter`,
               checks that this object is active.
         """
+        hp = hyperparameter
         if isinstance(hp, six.string_types):
             hp = str(hp)
             return hp in self.values
-        return self._conditions_are_active(hp.conditions)
+        return hp.name in self.values and self._conditions_are_active(hp.conditions)
 
     def _conditions_are_active(self, conditions=None):
         if conditions is None:
@@ -605,10 +618,10 @@ class HyperParameters(object):
         return self._retrieve_helper(name, type, config, overwrite)
 
     def _retrieve_helper(self, name, type, config, overwrite=False):
-        self._check_name_is_valid(name)
+        self._validate_name(name)
         name = self._get_name(name)  # Add name_scopes.
 
-        if not self._hp_exists(name):
+        if overwrite or not self._hp_exists(name):
             self.register(name, type, config)
 
         if self._conditions_are_active():
@@ -616,9 +629,9 @@ class HyperParameters(object):
         return None  # Ensures inactive values are not relied on by user.
 
     def register(self, name, type, config):
-        name = self._get_name(name)  # Add name_scopes.
         config['name'] = name
-        config['conditions'] = self._conditions
+        if 'conditions' not in config:
+            config['conditions'] = self._conditions
         config = {'class_name': type, 'config': config}
         hp = deserialize(config)
         self._hps[name].append(hp)
@@ -632,7 +645,7 @@ class HyperParameters(object):
         """Return the current value of this HyperParameter."""
         name = self._get_name(name)  # Add name_scopes.
         if name in self.values:
-            return name  # Only active values are added here.
+            return self.values[name]  # Only active values are added here.
         if name in self._hps:
             raise ValueError('{} is currently inactive.'.format(name))
         raise ValueError('{} does not exist.'.format(name))
@@ -831,18 +844,18 @@ class HyperParameters(object):
         return {
             'space': [{'class_name': p.__class__.__name__,
                        'config': p.get_config()}
-                      for p in self._space.values()],
+                      for p in self.space],
             'values': dict((k, v) for (k, v) in self.values.items()),
         }
 
     @classmethod
     def from_config(cls, config):
-        hp = cls()
+        hps = cls()
         for p in config['space']:
             p = deserialize(p)
-            hp._space[p.name] = p
-        hp.values = dict((k, v) for (k, v) in config['values'].items())
-        return hp
+            hps._hps[p.name].append(p)
+        hps.values = dict((k, v) for (k, v) in config['values'].items())
+        return hps
 
     def copy(self):
         return HyperParameters.from_config(self.get_config())
@@ -889,10 +902,7 @@ class HyperParameters(object):
             for boolean_proto in proto.space.boolean_space:
                 space.append(Boolean.from_proto(boolean_proto))
 
-        for hp in space:
-            hps.register(hp.name,
-                         hp.__class__.__name__,
-                         hp.get_config())
+        hps.merge(space)
 
         if isinstance(proto, kerastuner_pb2.HyperParameters.Values):
             values = proto.values
@@ -953,28 +963,25 @@ class HyperParameters(object):
         if name_scopes is None:
             name_scopes = self._name_scopes
 
-        return '/'.join(name_scopes) + str(name)
+        if name_scopes:
+            return '/'.join(name_scopes) + '/' + str(name)
+        return str(name)
 
-
-    def _check_name_is_valid(self, name):
-        if '/' in name or '=' in name or ',' in name:
-            raise ValueError(
-                '`HyperParameter` names cannot contain "/", "=" or "," '
-                'characters.')
-
+    def _validate_name(self, name):
         for condition in self._conditions:
             if condition.name == name:
                 raise ValueError(
                     'A conditional `HyperParameter` cannot have the same '
                     'name as its parent. Found: ' + str(name) + ' and '
-                    'parent_name: ' + str(scope['parent_name']))
+                    'parent_name: ' + str(condition.name))
 
 
 def deserialize(config):
     # Autograph messes with globals(), so in order to support HPs inside `call` we
     # have to enumerate them manually here.
     objects = [HyperParameter, Fixed, Float, Int, Choice,
-               Boolean, HyperParameters, conditions.Condition]
+               Boolean, HyperParameters, conditions_mod.Condition,
+               conditions_mod.IsIn]
     for obj in objects:
         if isinstance(config, obj):
             return config  # Already deserialized.
