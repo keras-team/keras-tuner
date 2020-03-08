@@ -525,6 +525,8 @@ class HyperParameters(object):
 
         # Dict of list of hyperparameters with same
         # name but different conditions, e.g. `{name: [hp1, hp2]}`.
+        # Hyperparameters are uniquely identified by their name and
+        # conditions.
         self._hps = collections.defaultdict(list)
 
         # List of hyperparameters, maintained in insertion order.
@@ -564,7 +566,7 @@ class HyperParameters(object):
               HyperParameters under this scope should be considered active.
         """
         parent_name = self._get_name(parent_name)  # Add name_scopes.
-        if not self._hp_exists(parent_name):
+        if not self._exists(parent_name):
             raise ValueError(
                 '`HyperParameter` named: ' + parent_name + ' '
                 'not defined.')
@@ -598,7 +600,7 @@ class HyperParameters(object):
                 return False
         return True
 
-    def _hp_exists(self, name, conditions=None):
+    def _exists(self, name, conditions=None):
         """Checks for a `HyperParameter` with the same name and conditions."""
         if conditions is None:
             conditions = self._conditions
@@ -610,44 +612,25 @@ class HyperParameters(object):
                     return True
         return False
 
-    def _retrieve(self,
-                  name,
-                  type,
-                  config,
-                  overwrite=False):
+    def _retrieve(self, hp):
         """Gets or creates a `HyperParameter`."""
-        self._validate_name(name)
-        name = self._get_name(name)  # Add name_scopes.
-        conditions = config['conditions']
-
-        if overwrite:
-            return self.register(name, type, config)
-
-        if self._hp_exists(name, conditions):
-            if self._conditions_are_active(conditions):
-                return self.values[name]
+        if self._exists(hp.name, hp.conditions):
+            if self._conditions_are_active(hp.conditions):
+                return self.values[hp.name]
             return None  # Ensures inactive values are not relied on by user.
+        return self.register(hp)
 
-        # `HyperParameter` doesn't exist, check to make sure there is no other
-        # active hyperparameter with the same name but different conditions.
-        if self._conditions_are_active(conditions) and name in self.values:
-            error_msg = (
-                'Found existing active `HyperParameter` with name "{}".'
-                'Only one conditional hyperparameter with the same '
-                'name can be active in a given trial.').format(name)
-            raise ValueError(error_msg)
-        return self.register(name, type, config)
-
-    def register(self, name, type, config):
-        config['name'] = name
-        config = {'class_name': type, 'config': config}
-        hp = deserialize(config)
-        self._hps[name].append(hp)
+    def _register(self, hyperparameter):
+        """Registers a `HyperParameter` into this container."""
+        hp = hyperparameter
+        # Copy to ensure this param can be serialized.
+        hp = hp.__class__.from_config(hp.get_config())
+        self._hps[hp.name].append(hp)
         self._space.append(hp)
         value = hp.default
         # Only add active values to `self.values`.
         if self._conditions_are_active():
-            self.values[name] = value
+            self.values[hp.name] = value
             return value
         return None  # Ensures inactive values are not relied on by user.
 
@@ -656,9 +639,10 @@ class HyperParameters(object):
         name = self._get_name(name)  # Add name_scopes.
         if name in self.values:
             return self.values[name]  # Only active values are added here.
-        if name in self._hps:
+        elif name in self._hps:
             raise ValueError('{} is currently inactive.'.format(name))
-        raise ValueError('{} does not exist.'.format(name))
+        else:
+            raise ValueError('{} does not exist.'.format(name))
 
     def __getitem__(self, name):
         return self.get(name)
@@ -699,11 +683,12 @@ class HyperParameters(object):
             The current value of this hyperparameter.
         """
         with self._maybe_conditional_scope(parent_name, parent_values):
-            return self._retrieve(name, 'Choice',
-                                  config={'values': values,
-                                          'ordered': ordered,
-                                          'default': default,
-                                          'conditions': self._conditions})
+            hp = Choice(name=self._get_name(name),  # Add name_scopes.
+                        values=values,
+                        ordered=ordered,
+                        default=default,
+                        conditions=self._conditions)
+            return self._retrieve(hp)
 
     def Int(self,
             name,
@@ -741,13 +726,14 @@ class HyperParameters(object):
             The current value of this hyperparameter.
         """
         with self._maybe_conditional_scope(parent_name, parent_values):
-            return self._retrieve(name, 'Int',
-                                  config={'min_value': min_value,
-                                          'max_value': max_value,
-                                          'step': step,
-                                          'sampling': sampling,
-                                          'default': default,
-                                          'conditions': self._conditions})
+            hp = Int(name=self._get_name(name),  # Add name_scopes.
+                     min_value=min_value,
+                     max_value=max_value,
+                     step=step,
+                     sampling=sampling,
+                     default=default,
+                     conditions=self._conditions)
+            return self._retrieve(hp)
 
     def Float(self,
               name,
@@ -785,13 +771,14 @@ class HyperParameters(object):
             The current value of this hyperparameter.
         """
         with self._maybe_conditional_scope(parent_name, parent_values):
-            return self._retrieve(name, 'Float',
-                                  config={'min_value': min_value,
-                                          'max_value': max_value,
-                                          'step': step,
-                                          'sampling': sampling,
-                                          'default': default,
-                                          'conditions': self._conditions})
+            hp = Float(name=self._get_name(name),  # Add name_scopes.
+                       min_value=min_value,
+                       max_value=max_value,
+                       step=step,
+                       sampling=sampling,
+                       default=default,
+                       conditions=self._conditions)
+            return self._retrieve(hp)
 
     def Boolean(self,
                 name,
@@ -813,9 +800,10 @@ class HyperParameters(object):
             The current value of this hyperparameter.
         """
         with self._maybe_conditional_scope(parent_name, parent_values):
-            return self._retrieve(name, 'Boolean',
-                                  config={'default': default,
-                                          'conditions': self._conditions})
+            hp = Boolean(name=self._get_name(name),  # Add name_scopes.
+                         default=default,
+                         conditions=self._conditions)
+            return self._retrieve(hp)
 
     def Fixed(self,
               name,
@@ -837,9 +825,10 @@ class HyperParameters(object):
             The current value of this hyperparameter.
         """
         with self._maybe_conditional_scope(parent_name, parent_values):
-            return self._retrieve(name, 'Fixed',
-                                  config={'value': value,
-                                          'conditions': self._conditions})
+            hp = Fixed(name=self._get_name(name),  # Add name_scopes.
+                       value=value,
+                       conditions=self._conditions)
+            return self._retrieve(hp)
 
     @property
     def space(self):
@@ -878,12 +867,13 @@ class HyperParameters(object):
         """
         if isinstance(hps, HyperParameters):
             hps = hps.space
+
+        if not overwrite:
+            hps = [hp for hp in hps
+                   if not self._exists(hp.name, hp.conditions)]
+
         for hp in hps:
-            self._retrieve(
-                hp.name,
-                hp.__class__.__name__,
-                hp.get_config(),
-                overwrite=overwrite)
+            self._register(hp)
 
     @classmethod
     def from_proto(cls, proto):
