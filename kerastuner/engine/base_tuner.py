@@ -68,7 +68,7 @@ class BaseTuner(stateful.Stateful):
             raise ValueError('Expected oracle to be '
                              'an instance of Oracle, got: %s' % (oracle,))
         self.oracle = oracle
-        self.oracle.set_project_dir(
+        self.oracle._set_project_dir(
             self.directory, self.project_name, overwrite=overwrite)
 
         # Run in distributed mode.

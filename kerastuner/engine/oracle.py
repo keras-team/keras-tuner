@@ -297,7 +297,7 @@ class Oracle(stateful.Stateful):
         self.hyperparameters = hp_module.HyperParameters.from_config(
             state['hyperparameters'])
 
-    def set_project_dir(self, directory, project_name, overwrite=False):
+    def _set_project_dir(self, directory, project_name, overwrite=False):
         """Sets the project directory and reloads the Oracle."""
         self._directory = directory
         self._project_name = project_name
