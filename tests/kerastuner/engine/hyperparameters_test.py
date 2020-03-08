@@ -499,3 +499,23 @@ def test_prob_one_choice():
 
     value = hp_module.cumulative_prob_to_value(0, hp)
     assert value == 0
+
+
+def test_length_hyperparameters():
+    hps = hp_module.HyperParameters()
+    hps.Int('a[0]', 0, 10, default=1)
+    hps.Int('a[1]', 0, 10, default=2)
+    assert hps.get('a') == [1, 2]
+
+    hps.Choice('b', ['one', 'two'])
+    with hps.conditional_scope('b', 'one'):
+        hps.Int('c[0]', 0, 10, default=3)
+        hps.Int('c[1]', 0, 10, default=4)
+        assert hps.get('c') == [3, 4]
+    assert hps.get('c') == [3, 4]
+
+    with hps.name_scope('d'):
+        hps.Choice('e[0]', ['5', '6'], default='5')
+        hps.Choice('e[1]', ['6', '7'], default='6')
+        assert hps.get('e') == ['5', '6']
+    assert hps.get('d/e') == ['5', '6']

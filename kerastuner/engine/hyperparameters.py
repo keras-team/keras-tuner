@@ -636,10 +636,33 @@ class HyperParameters(object):
 
     def get(self, name):
         """Return the current value of this HyperParameter."""
+        name = str(name)
         name = self._get_name(name)  # Add name_scopes.
         if name in self.values:
             return self.values[name]  # Only active values are added here.
         elif name in self._hps:
+            raise ValueError('{} is currently inactive.'.format(name))
+        elif self._is_length_param(name):
+            return self._get_length_param(name)
+        else:
+            raise ValueError('{} does not exist.'.format(name))
+
+    def _is_length_param(self, name):
+        return name + '[0]' in self._hps
+
+    def _get_length_param(self, name):
+        """Allow access to `['a[0]', 'a[1]']` as 'a'"""
+        start_name = name + '[0]'
+        if start_name in self.values:
+            index = 0
+            values = []
+            param_name = name + '[{index}]'.format(index=index)
+            while param_name in self.values:
+                values.append(self.values[param_name])
+                index += 1
+                param_name = name + '[{index}]'.format(index=index)
+            return values
+        elif start_name in self._hps:
             raise ValueError('{} is currently inactive.'.format(name))
         else:
             raise ValueError('{} does not exist.'.format(name))
