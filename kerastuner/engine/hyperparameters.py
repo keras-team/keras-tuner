@@ -523,8 +523,14 @@ class HyperParameters(object):
         # Current `Condition`s, managed by `conditional_scope`.
         self._conditions = []
 
-        # Dict of {name: [hp1, hp2]} with different `Condition`s.
+        # Dict of list of hyperparameters with same
+        # name but different conditions, e.g. `{name: [hp1, hp2]}`.
         self._hps = collections.defaultdict(list)
+
+        # List of hyperparameters, maintained in insertion order.
+        # This guarantees that conditional params are always later in
+        # the list than their parents.
+        self._space = []
 
         # Active values for this `Trial`.
         self.values = {}
@@ -608,38 +614,42 @@ class HyperParameters(object):
                   name,
                   type,
                   config,
-                  parent_name=None,
-                  parent_values=None,
                   overwrite=False):
         """Gets or creates a `HyperParameter`."""
-        if parent_name:
-            with self.conditional_scope(parent_name, parent_values):
-                return self._retrieve_helper(name, type, config, overwrite)
-        return self._retrieve_helper(name, type, config, overwrite)
-
-    def _retrieve_helper(self, name, type, config, overwrite=False):
         self._validate_name(name)
         name = self._get_name(name)  # Add name_scopes.
+        conditions = config['conditions']
 
-        if overwrite or not self._hp_exists(name):
-            self.register(name, type, config)
+        if overwrite:
+            return self.register(name, type, config)
 
-        if self._conditions_are_active():
-            return self.values[name]
-        return None  # Ensures inactive values are not relied on by user.
+        if self._hp_exists(name, conditions):
+            if self._conditions_are_active(conditions):
+                return self.values[name]
+            return None  # Ensures inactive values are not relied on by user.
+
+        # `HyperParameter` doesn't exist, check to make sure there is no other
+        # active hyperparameter with the same name but different conditions.
+        if self._conditions_are_active(conditions) and name in self.values:
+            error_msg = (
+                'Found existing active `HyperParameter` with name "{}".'
+                'Only one conditional hyperparameter with the same '
+                'name can be active in a given trial.').format(name)
+            raise ValueError(error_msg)
+        return self.register(name, type, config)
 
     def register(self, name, type, config):
         config['name'] = name
-        if 'conditions' not in config:
-            config['conditions'] = self._conditions
         config = {'class_name': type, 'config': config}
         hp = deserialize(config)
         self._hps[name].append(hp)
+        self._space.append(hp)
         value = hp.default
         # Only add active values to `self.values`.
         if self._conditions_are_active():
             self.values[name] = value
-        return value
+            return value
+        return None  # Ensures inactive values are not relied on by user.
 
     def get(self, name):
         """Return the current value of this HyperParameter."""
@@ -688,12 +698,12 @@ class HyperParameters(object):
         # Returns:
             The current value of this hyperparameter.
         """
-        return self._retrieve(name, 'Choice',
-                              config={'values': values,
-                                      'ordered': ordered,
-                                      'default': default},
-                              parent_name=parent_name,
-                              parent_values=parent_values)
+        with self._maybe_conditional_scope(parent_name, parent_values):
+            return self._retrieve(name, 'Choice',
+                                  config={'values': values,
+                                          'ordered': ordered,
+                                          'default': default,
+                                          'conditions': self._conditions})
 
     def Int(self,
             name,
@@ -730,14 +740,14 @@ class HyperParameters(object):
         # Returns:
             The current value of this hyperparameter.
         """
-        return self._retrieve(name, 'Int',
-                              config={'min_value': min_value,
-                                      'max_value': max_value,
-                                      'step': step,
-                                      'sampling': sampling,
-                                      'default': default},
-                              parent_name=parent_name,
-                              parent_values=parent_values)
+        with self._maybe_conditional_scope(parent_name, parent_values):
+            return self._retrieve(name, 'Int',
+                                  config={'min_value': min_value,
+                                          'max_value': max_value,
+                                          'step': step,
+                                          'sampling': sampling,
+                                          'default': default,
+                                          'conditions': self._conditions})
 
     def Float(self,
               name,
@@ -774,14 +784,14 @@ class HyperParameters(object):
         # Returns:
             The current value of this hyperparameter.
         """
-        return self._retrieve(name, 'Float',
-                              config={'min_value': min_value,
-                                      'max_value': max_value,
-                                      'step': step,
-                                      'sampling': sampling,
-                                      'default': default},
-                              parent_name=parent_name,
-                              parent_values=parent_values)
+        with self._maybe_conditional_scope(parent_name, parent_values):
+            return self._retrieve(name, 'Float',
+                                  config={'min_value': min_value,
+                                          'max_value': max_value,
+                                          'step': step,
+                                          'sampling': sampling,
+                                          'default': default,
+                                          'conditions': self._conditions})
 
     def Boolean(self,
                 name,
@@ -802,10 +812,10 @@ class HyperParameters(object):
         # Returns:
             The current value of this hyperparameter.
         """
-        return self._retrieve(name, 'Boolean',
-                              config={'default': default},
-                              parent_name=parent_name,
-                              parent_values=parent_values)
+        with self._maybe_conditional_scope(parent_name, parent_values):
+            return self._retrieve(name, 'Boolean',
+                                  config={'default': default,
+                                          'conditions': self._conditions})
 
     def Fixed(self,
               name,
@@ -826,19 +836,14 @@ class HyperParameters(object):
         # Returns:
             The current value of this hyperparameter.
         """
-        return self._retrieve(name, 'Fixed',
-                              config={'value': value},
-                              parent_name=parent_name,
-                              parent_values=parent_values)
+        with self._maybe_conditional_scope(parent_name, parent_values):
+            return self._retrieve(name, 'Fixed',
+                                  config={'value': value,
+                                          'conditions': self._conditions})
 
     @property
     def space(self):
-        space = []
-        for hps in self._hps.values():
-            space.extend(hps)
-        # Always return child parameters after parent parameters.
-        space = sorted(space, key=lambda hp: len(hp.conditions))
-        return space
+        return self._space
 
     def get_config(self):
         return {
@@ -854,6 +859,7 @@ class HyperParameters(object):
         for p in config['space']:
             p = deserialize(p)
             hps._hps[p.name].append(p)
+            hps._space.append(p)
         hps.values = dict((k, v) for (k, v) in config['values'].items())
         return hps
 
@@ -957,6 +963,14 @@ class HyperParameters(object):
                 boolean_space=boolean_space),
             values=kerastuner_pb2.HyperParameters.Values(
                 values=values))
+
+    @contextlib.contextmanager
+    def _maybe_conditional_scope(self, parent_name, parent_values):
+        if parent_name:
+            with self.conditional_scope(parent_name, parent_values):
+                yield
+        else:
+            yield
 
     def _get_name(self, name, name_scopes=None):
         """Returns a name qualified by `name_scopes`."""

@@ -297,7 +297,7 @@ class Oracle(stateful.Stateful):
         self.hyperparameters = hp_module.HyperParameters.from_config(
             state['hyperparameters'])
 
-    def _set_project_dir(self, directory, project_name, overwrite=False):
+    def set_project_dir(self, directory, project_name, overwrite=False):
         """Sets the project directory and reloads the Oracle."""
         self._directory = directory
         self._project_name = project_name
@@ -387,7 +387,7 @@ class Oracle(stateful.Stateful):
             # Generate a set of random values.
             for hp in self.hyperparameters.space:
                 hps.merge([hp])
-                if hps.is_active(hp):
+                if hps.is_active(hp):  # Only active params in `values`.
                     hps.values[hp.name] = hp.random_sample(self._seed_state)
                     self._seed_state += 1
             values = hps.values
