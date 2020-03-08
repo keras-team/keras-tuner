@@ -204,7 +204,7 @@ class Tuner(base_tuner.BaseTuner):
         """
         self.save_model(trial.trial_id, model, step=epoch)
         # Report intermediate metrics to the `Oracle`.
-        status = self.oracle.update_trial(
+        status = self._update_trial(
             trial.trial_id, metrics=logs, step=epoch)
         trial.status = status
         if trial.status == "STOPPED":
@@ -270,3 +270,21 @@ class Tuner(base_tuner.BaseTuner):
 
     def _delete_checkpoint(self, trial_id, epoch):
         tf.io.gfile.rmtree(self._get_checkpoint_dir(trial_id, epoch))
+
+    def _should_report_to_oracle(self):
+        if self.distribution_strategy is None:
+            return True
+        # In multi-worker strategies, only the chief should report.
+        return self.distribution_strategy.extended.should_checkpoint
+
+    def _update_space(self, hyperparameters):
+        if self._should_report_to_oracle():
+            return self.oracle.update_space(hyperparameters)
+
+    def _update_trial(self, trial_id, metrics, step=0):
+        if self._should_report_to_oracle():
+            return self.oracle.update_trial(trial_id, metrics, step=step)
+
+    def _end_trial(self, trial_id, status='COMPLETED'):
+        if self._should_report_to_oracle():
+            return self.oracle.end_trial(trial_id, status=status)

@@ -104,7 +104,7 @@ class BaseTuner(stateful.Stateful):
         """
         hp = self.oracle.get_space()
         self.hypermodel.build(hp)
-        self.oracle.update_space(hp)
+        self._update_space(hp)
 
     def search(self, *fit_args, **fit_kwargs):
         """Performs a search for best hyperparameter configuations.
@@ -208,9 +208,8 @@ class BaseTuner(stateful.Stateful):
         if self.logger:
             self.logger.report_trial_state(trial.trial_id, trial.get_state())
 
-        self.oracle.end_trial(
-            trial.trial_id, trial_module.TrialStatus.COMPLETED)
-        self.oracle.update_space(trial.hyperparameters)
+        self._end_trial(trial.trial_id, trial_module.TrialStatus.COMPLETED)
+        self._update_space(trial.hyperparameters)
         # Display needs the updated trial scored by the Oracle.
         self._display.on_trial_end(self.oracle.get_trial(trial.trial_id))
         self.save()
@@ -341,3 +340,12 @@ class BaseTuner(stateful.Stateful):
         return os.path.join(
             str(self.project_dir),
             str(self.tuner_id) + '.json')
+
+    def _update_space(self, hyperparameters):
+        return self.oracle.update_space(hyperparameters)
+
+    def _update_trial(self, trial_id, metrics, step=0):
+        return self.oracle.update_trial(trial_id, metrics, step=step)
+
+    def _end_trial(self, trial_id, status='COMPLETED'):
+        return self.oracle.end_trial(trial_id, status=status)

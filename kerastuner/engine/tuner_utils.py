@@ -72,6 +72,7 @@ def get_max_epochs_and_steps(fit_args, fit_kwargs):
 class TunerCallback(keras.callbacks.Callback):
 
     def __init__(self, tuner, trial):
+        super(TunerCallback, self).__init__()
         self.tuner = tuner
         self.trial = trial
 
