@@ -342,10 +342,10 @@ class BaseTuner(stateful.Stateful):
             str(self.tuner_id) + '.json')
 
     def _update_space(self, hyperparameters):
-        return self.oracle.update_space(hyperparameters)
+        self.oracle.update_space(hyperparameters)
 
     def _update_trial(self, trial_id, metrics, step=0):
         return self.oracle.update_trial(trial_id, metrics, step=step)
 
     def _end_trial(self, trial_id, status='COMPLETED'):
-        return self.oracle.end_trial(trial_id, status=status)
+        self.oracle.end_trial(trial_id, status=status)

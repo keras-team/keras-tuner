@@ -272,19 +272,34 @@ class Tuner(base_tuner.BaseTuner):
         tf.io.gfile.rmtree(self._get_checkpoint_dir(trial_id, epoch))
 
     def _should_report_to_oracle(self):
+        # In multi-worker strategies, only the chief should report.
         if self.distribution_strategy is None:
             return True
-        # In multi-worker strategies, only the chief should report.
         return self.distribution_strategy.extended.should_checkpoint
+
+    def _in_multi_worker_mode(self):
+        if self.distribution_strategy is None:
+            return False
+
+        # Fallback to single-worker if private attr is removed.
+        in_multi_worker_mode = getattr(
+            self.distribution_strategy.extended,
+            '_in_multi_worker_mode',
+            lambda: False)
+
+        return in_multi_worker_mode()
 
     def _update_space(self, hyperparameters):
         if self._should_report_to_oracle():
-            return self.oracle.update_space(hyperparameters)
+            self.oracle.update_space(hyperparameters)
 
     def _update_trial(self, trial_id, metrics, step=0):
         if self._should_report_to_oracle():
-            return self.oracle.update_trial(trial_id, metrics, step=step)
+            status = self.oracle.update_trial(trial_id, metrics, step=step)
+        if self._in_multi_worker_mode():
+            return 'RUNNING'  # TODO: support early stopping in multi-worker.
+        return status
 
     def _end_trial(self, trial_id, status='COMPLETED'):
         if self._should_report_to_oracle():
-            return self.oracle.end_trial(trial_id, status=status)
+            self.oracle.end_trial(trial_id, status=status)
