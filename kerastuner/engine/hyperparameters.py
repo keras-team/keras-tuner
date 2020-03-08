@@ -618,7 +618,7 @@ class HyperParameters(object):
             if self._conditions_are_active(hp.conditions):
                 return self.values[hp.name]
             return None  # Ensures inactive values are not relied on by user.
-        return self.register(hp)
+        return self._register(hp)
 
     def _register(self, hyperparameter):
         """Registers a `HyperParameter` into this container."""

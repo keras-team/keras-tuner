@@ -243,7 +243,7 @@ class Oracle(stateful.Stateful):
         hps = hyperparameters.space
         new_hps = []
         for hp in hps:
-            if not self.hyperparameters._hp_exists(hp.name, hp.conditions):
+            if not self.hyperparameters._exists(hp.name, hp.conditions):
                 new_hps.append(hp)
 
         if new_hps and not self.allow_new_entries:
