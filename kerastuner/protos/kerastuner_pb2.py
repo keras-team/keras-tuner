@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='kerastuner',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\"kerastuner/protos/kerastuner.proto\x12\nkerastuner\"l\n\x05Value\x12\x13\n\tint_value\x18\x01 \x01(\x12H\x00\x12\x15\n\x0b\x66loat_value\x18\x02 \x01(\x01H\x00\x12\x16\n\x0cstring_value\x18\x03 \x01(\tH\x00\x12\x17\n\rboolean_value\x18\x04 \x01(\x08H\x00\x42\x06\n\x04kind\"\xad\x01\n\x05\x46loat\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x11\n\tmin_value\x18\x02 \x01(\x01\x12\x11\n\tmax_value\x18\x03 \x01(\x01\x12\x0c\n\x04step\x18\x04 \x01(\x01\x12&\n\x08sampling\x18\x05 \x01(\x0e\x32\x14.kerastuner.Sampling\x12\x0f\n\x07\x64\x65\x66\x61ult\x18\x06 \x01(\x01\x12)\n\nconditions\x18\x07 \x03(\x0b\x32\x15.kerastuner.Condition\"\xab\x01\n\x03Int\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x11\n\tmin_value\x18\x02 \x01(\x12\x12\x11\n\tmax_value\x18\x03 \x01(\x12\x12\x0c\n\x04step\x18\x04 \x01(\x12\x12&\n\x08sampling\x18\x05 \x01(\x0e\x32\x14.kerastuner.Sampling\x12\x0f\n\x07\x64\x65\x66\x61ult\x18\x06 \x01(\x12\x12)\n\nconditions\x18\x07 \x03(\x0b\x32\x15.kerastuner.Condition\"\x99\x01\n\x06\x43hoice\x12\x0c\n\x04name\x18\x01 \x01(\t\x12!\n\x06values\x18\x02 \x03(\x0b\x32\x11.kerastuner.Value\x12\"\n\x07\x64\x65\x66\x61ult\x18\x03 \x01(\x0b\x32\x11.kerastuner.Value\x12\x0f\n\x07ordered\x18\x04 \x01(\x08\x12)\n\nconditions\x18\x05 \x03(\x0b\x32\x15.kerastuner.Condition\"S\n\x07\x42oolean\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0f\n\x07\x64\x65\x66\x61ult\x18\x02 \x01(\x08\x12)\n\nconditions\x18\x03 \x03(\x0b\x32\x15.kerastuner.Condition\"b\n\x05\x46ixed\x12\x0c\n\x04name\x18\x01 \x01(\t\x12 \n\x05value\x18\x02 \x01(\x0b\x32\x11.kerastuner.Value\x12)\n\nconditions\x18\x03 \x03(\x0b\x32\x15.kerastuner.Condition\"\xd8\x03\n\x0fHyperParameters\x12\x30\n\x05space\x18\x01 \x01(\x0b\x32!.kerastuner.HyperParameters.Space\x12\x32\n\x06values\x18\x02 \x01(\x0b\x32\".kerastuner.HyperParameters.Values\x1a\xd1\x01\n\x05Space\x12&\n\x0b\x66loat_space\x18\x01 \x03(\x0b\x32\x11.kerastuner.Float\x12\"\n\tint_space\x18\x02 \x03(\x0b\x32\x0f.kerastuner.Int\x12(\n\x0c\x63hoice_space\x18\x03 \x03(\x0b\x32\x12.kerastuner.Choice\x12*\n\rboolean_space\x18\x04 \x03(\x0b\x32\x13.kerastuner.Boolean\x12&\n\x0b\x66ixed_space\x18\x05 \x03(\x0b\x32\x11.kerastuner.Fixed\x1a\x8a\x01\n\x06Values\x12>\n\x06values\x18\x01 \x03(\x0b\x32..kerastuner.HyperParameters.Values.ValuesEntry\x1a@\n\x0bValuesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12 \n\x05value\x18\x02 \x01(\x0b\x32\x11.kerastuner.Value:\x02\x38\x01\"0\n\x11MetricObservation\x12\r\n\x05value\x18\x01 \x03(\x02\x12\x0c\n\x04step\x18\x02 \x01(\x03\"V\n\rMetricHistory\x12\x33\n\x0cobservations\x18\x01 \x03(\x0b\x32\x1d.kerastuner.MetricObservation\x12\x10\n\x08maximize\x18\x02 \x01(\x08\"\x95\x01\n\x0eMetricsTracker\x12\x38\n\x07metrics\x18\x01 \x03(\x0b\x32\'.kerastuner.MetricsTracker.MetricsEntry\x1aI\n\x0cMetricsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12(\n\x05value\x18\x02 \x01(\x0b\x32\x19.kerastuner.MetricHistory:\x02\x38\x01\"\xf3\x01\n\x05Trial\x12\x34\n\x0fhyperparameters\x18\x01 \x01(\x0b\x32\x1b.kerastuner.HyperParameters\x12\x10\n\x08trial_id\x18\x02 \x01(\t\x12\'\n\x06status\x18\x03 \x01(\x0e\x32\x17.kerastuner.TrialStatus\x12+\n\x07metrics\x18\x04 \x01(\x0b\x32\x1a.kerastuner.MetricsTracker\x12&\n\x05score\x18\x05 \x01(\x0b\x32\x17.kerastuner.Trial.Score\x1a$\n\x05Score\x12\r\n\x05value\x18\x01 \x01(\x02\x12\x0c\n\x04step\x18\x02 \x01(\x03\"y\n\tCondition\x12+\n\x05is_in\x18\x01 \x01(\x0b\x32\x1a.kerastuner.Condition.IsInH\x00\x1a\x37\n\x04IsIn\x12\x0c\n\x04name\x18\x01 \x01(\t\x12!\n\x06values\x18\x02 \x03(\x0b\x32\x11.kerastuner.ValueB\x06\n\x04kind*:\n\x08Sampling\x12\x08\n\x04NONE\x10\x00\x12\n\n\x06LINEAR\x10\x01\x12\x07\n\x03LOG\x10\x02\x12\x0f\n\x0bREVERSE_LOG\x10\x03*Z\n\x0bTrialStatus\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0b\n\x07RUNNING\x10\x01\x12\x08\n\x04IDLE\x10\x02\x12\x0b\n\x07INVALID\x10\x03\x12\x0b\n\x07STOPPED\x10\x04\x12\r\n\tCOMPLETED\x10\x05\x62\x06proto3')
+  serialized_pb=_b('\n\"kerastuner/protos/kerastuner.proto\x12\nkerastuner\"l\n\x05Value\x12\x13\n\tint_value\x18\x01 \x01(\x12H\x00\x12\x15\n\x0b\x66loat_value\x18\x02 \x01(\x01H\x00\x12\x16\n\x0cstring_value\x18\x03 \x01(\tH\x00\x12\x17\n\rboolean_value\x18\x04 \x01(\x08H\x00\x42\x06\n\x04kind\"\xad\x01\n\x05\x46loat\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x11\n\tmin_value\x18\x02 \x01(\x01\x12\x11\n\tmax_value\x18\x03 \x01(\x01\x12\x0c\n\x04step\x18\x04 \x01(\x01\x12&\n\x08sampling\x18\x05 \x01(\x0e\x32\x14.kerastuner.Sampling\x12\x0f\n\x07\x64\x65\x66\x61ult\x18\x06 \x01(\x01\x12)\n\nconditions\x18\x07 \x03(\x0b\x32\x15.kerastuner.Condition\"\xab\x01\n\x03Int\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x11\n\tmin_value\x18\x02 \x01(\x12\x12\x11\n\tmax_value\x18\x03 \x01(\x12\x12\x0c\n\x04step\x18\x04 \x01(\x12\x12&\n\x08sampling\x18\x05 \x01(\x0e\x32\x14.kerastuner.Sampling\x12\x0f\n\x07\x64\x65\x66\x61ult\x18\x06 \x01(\x12\x12)\n\nconditions\x18\x07 \x03(\x0b\x32\x15.kerastuner.Condition\"\x99\x01\n\x06\x43hoice\x12\x0c\n\x04name\x18\x01 \x01(\t\x12!\n\x06values\x18\x02 \x03(\x0b\x32\x11.kerastuner.Value\x12\"\n\x07\x64\x65\x66\x61ult\x18\x03 \x01(\x0b\x32\x11.kerastuner.Value\x12\x0f\n\x07ordered\x18\x04 \x01(\x08\x12)\n\nconditions\x18\x05 \x03(\x0b\x32\x15.kerastuner.Condition\"S\n\x07\x42oolean\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0f\n\x07\x64\x65\x66\x61ult\x18\x02 \x01(\x08\x12)\n\nconditions\x18\x03 \x03(\x0b\x32\x15.kerastuner.Condition\"b\n\x05\x46ixed\x12\x0c\n\x04name\x18\x01 \x01(\t\x12 \n\x05value\x18\x02 \x01(\x0b\x32\x11.kerastuner.Value\x12)\n\nconditions\x18\x03 \x03(\x0b\x32\x15.kerastuner.Condition\"\xd8\x03\n\x0fHyperParameters\x12\x30\n\x05space\x18\x01 \x01(\x0b\x32!.kerastuner.HyperParameters.Space\x12\x32\n\x06values\x18\x02 \x01(\x0b\x32\".kerastuner.HyperParameters.Values\x1a\xd1\x01\n\x05Space\x12&\n\x0b\x66loat_space\x18\x01 \x03(\x0b\x32\x11.kerastuner.Float\x12\"\n\tint_space\x18\x02 \x03(\x0b\x32\x0f.kerastuner.Int\x12(\n\x0c\x63hoice_space\x18\x03 \x03(\x0b\x32\x12.kerastuner.Choice\x12*\n\rboolean_space\x18\x04 \x03(\x0b\x32\x13.kerastuner.Boolean\x12&\n\x0b\x66ixed_space\x18\x05 \x03(\x0b\x32\x11.kerastuner.Fixed\x1a\x8a\x01\n\x06Values\x12>\n\x06values\x18\x01 \x03(\x0b\x32..kerastuner.HyperParameters.Values.ValuesEntry\x1a@\n\x0bValuesEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12 \n\x05value\x18\x02 \x01(\x0b\x32\x11.kerastuner.Value:\x02\x38\x01\"0\n\x11MetricObservation\x12\r\n\x05value\x18\x01 \x03(\x02\x12\x0c\n\x04step\x18\x02 \x01(\x03\"V\n\rMetricHistory\x12\x33\n\x0cobservations\x18\x01 \x03(\x0b\x32\x1d.kerastuner.MetricObservation\x12\x10\n\x08maximize\x18\x02 \x01(\x08\"\x95\x01\n\x0eMetricsTracker\x12\x38\n\x07metrics\x18\x01 \x03(\x0b\x32\'.kerastuner.MetricsTracker.MetricsEntry\x1aI\n\x0cMetricsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12(\n\x05value\x18\x02 \x01(\x0b\x32\x19.kerastuner.MetricHistory:\x02\x38\x01\"\xf3\x01\n\x05Trial\x12\x34\n\x0fhyperparameters\x18\x01 \x01(\x0b\x32\x1b.kerastuner.HyperParameters\x12\x10\n\x08trial_id\x18\x02 \x01(\t\x12\'\n\x06status\x18\x03 \x01(\x0e\x32\x17.kerastuner.TrialStatus\x12+\n\x07metrics\x18\x04 \x01(\x0b\x32\x1a.kerastuner.MetricsTracker\x12&\n\x05score\x18\x05 \x01(\x0b\x32\x17.kerastuner.Trial.Score\x1a$\n\x05Score\x12\r\n\x05value\x18\x01 \x01(\x02\x12\x0c\n\x04step\x18\x02 \x01(\x03\"~\n\tCondition\x12.\n\x06parent\x18\x01 \x01(\x0b\x32\x1c.kerastuner.Condition.ParentH\x00\x1a\x39\n\x06Parent\x12\x0c\n\x04name\x18\x01 \x01(\t\x12!\n\x06values\x18\x02 \x03(\x0b\x32\x11.kerastuner.ValueB\x06\n\x04kind*:\n\x08Sampling\x12\x08\n\x04NONE\x10\x00\x12\n\n\x06LINEAR\x10\x01\x12\x07\n\x03LOG\x10\x02\x12\x0f\n\x0bREVERSE_LOG\x10\x03*Z\n\x0bTrialStatus\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0b\n\x07RUNNING\x10\x01\x12\x08\n\x04IDLE\x10\x02\x12\x0b\n\x07INVALID\x10\x03\x12\x0b\n\x07STOPPED\x10\x04\x12\r\n\tCOMPLETED\x10\x05\x62\x06proto3')
 )
 
 _SAMPLING = _descriptor.EnumDescriptor(
@@ -49,8 +49,8 @@ _SAMPLING = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1985,
-  serialized_end=2043,
+  serialized_start=1990,
+  serialized_end=2048,
 )
 _sym_db.RegisterEnumDescriptor(_SAMPLING)
 
@@ -88,8 +88,8 @@ _TRIALSTATUS = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=2045,
-  serialized_end=2135,
+  serialized_start=2050,
+  serialized_end=2140,
 )
 _sym_db.RegisterEnumDescriptor(_TRIALSTATUS)
 
@@ -860,22 +860,22 @@ _TRIAL = _descriptor.Descriptor(
 )
 
 
-_CONDITION_ISIN = _descriptor.Descriptor(
-  name='IsIn',
-  full_name='kerastuner.Condition.IsIn',
+_CONDITION_PARENT = _descriptor.Descriptor(
+  name='Parent',
+  full_name='kerastuner.Condition.Parent',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='name', full_name='kerastuner.Condition.IsIn.name', index=0,
+      name='name', full_name='kerastuner.Condition.Parent.name', index=0,
       number=1, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='values', full_name='kerastuner.Condition.IsIn.values', index=1,
+      name='values', full_name='kerastuner.Condition.Parent.values', index=1,
       number=2, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -893,8 +893,8 @@ _CONDITION_ISIN = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1920,
-  serialized_end=1975,
+  serialized_start=1923,
+  serialized_end=1980,
 )
 
 _CONDITION = _descriptor.Descriptor(
@@ -905,7 +905,7 @@ _CONDITION = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='is_in', full_name='kerastuner.Condition.is_in', index=0,
+      name='parent', full_name='kerastuner.Condition.parent', index=0,
       number=1, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -914,7 +914,7 @@ _CONDITION = _descriptor.Descriptor(
   ],
   extensions=[
   ],
-  nested_types=[_CONDITION_ISIN, ],
+  nested_types=[_CONDITION_PARENT, ],
   enum_types=[
   ],
   serialized_options=None,
@@ -927,7 +927,7 @@ _CONDITION = _descriptor.Descriptor(
       index=0, containing_type=None, fields=[]),
   ],
   serialized_start=1862,
-  serialized_end=1983,
+  serialized_end=1988,
 )
 
 _VALUE.oneofs_by_name['kind'].fields.append(
@@ -973,12 +973,12 @@ _TRIAL.fields_by_name['hyperparameters'].message_type = _HYPERPARAMETERS
 _TRIAL.fields_by_name['status'].enum_type = _TRIALSTATUS
 _TRIAL.fields_by_name['metrics'].message_type = _METRICSTRACKER
 _TRIAL.fields_by_name['score'].message_type = _TRIAL_SCORE
-_CONDITION_ISIN.fields_by_name['values'].message_type = _VALUE
-_CONDITION_ISIN.containing_type = _CONDITION
-_CONDITION.fields_by_name['is_in'].message_type = _CONDITION_ISIN
+_CONDITION_PARENT.fields_by_name['values'].message_type = _VALUE
+_CONDITION_PARENT.containing_type = _CONDITION
+_CONDITION.fields_by_name['parent'].message_type = _CONDITION_PARENT
 _CONDITION.oneofs_by_name['kind'].fields.append(
-  _CONDITION.fields_by_name['is_in'])
-_CONDITION.fields_by_name['is_in'].containing_oneof = _CONDITION.oneofs_by_name['kind']
+  _CONDITION.fields_by_name['parent'])
+_CONDITION.fields_by_name['parent'].containing_oneof = _CONDITION.oneofs_by_name['kind']
 DESCRIPTOR.message_types_by_name['Value'] = _VALUE
 DESCRIPTOR.message_types_by_name['Float'] = _FLOAT
 DESCRIPTOR.message_types_by_name['Int'] = _INT
@@ -1114,10 +1114,10 @@ _sym_db.RegisterMessage(Trial.Score)
 
 Condition = _reflection.GeneratedProtocolMessageType('Condition', (_message.Message,), {
 
-  'IsIn' : _reflection.GeneratedProtocolMessageType('IsIn', (_message.Message,), {
-    'DESCRIPTOR' : _CONDITION_ISIN,
+  'Parent' : _reflection.GeneratedProtocolMessageType('Parent', (_message.Message,), {
+    'DESCRIPTOR' : _CONDITION_PARENT,
     '__module__' : 'kerastuner.protos.kerastuner_pb2'
-    # @@protoc_insertion_point(class_scope:kerastuner.Condition.IsIn)
+    # @@protoc_insertion_point(class_scope:kerastuner.Condition.Parent)
     })
   ,
   'DESCRIPTOR' : _CONDITION,
@@ -1125,7 +1125,7 @@ Condition = _reflection.GeneratedProtocolMessageType('Condition', (_message.Mess
   # @@protoc_insertion_point(class_scope:kerastuner.Condition)
   })
 _sym_db.RegisterMessage(Condition)
-_sym_db.RegisterMessage(Condition.IsIn)
+_sym_db.RegisterMessage(Condition.Parent)
 
 
 _HYPERPARAMETERS_VALUES_VALUESENTRY._options = None

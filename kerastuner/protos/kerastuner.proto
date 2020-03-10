@@ -129,12 +129,12 @@ message Trial {
 
 message Condition {
 
-    message IsIn {
+    message Parent {
         string name = 1;
         repeated Value values = 2;
     }
 
     oneof kind {
-        IsIn is_in = 1;
+        Parent parent = 1;
     }
 }
