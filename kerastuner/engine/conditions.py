@@ -34,9 +34,9 @@ class Condition(object):
     Example:
 
     ```
-    condition = kt.conditions.OneOf('a', 'dnn')
 
     a = Choice('model', ['linear', 'dnn'])
+    condition = kt.conditions.Parent(name='a', value=['dnn'])
     b = Int('num_layers', 5, 10, conditions=[condition])
     ```
     """
