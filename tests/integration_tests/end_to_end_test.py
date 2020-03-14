@@ -14,6 +14,7 @@
 
 import pytest
 
+import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 import kerastuner
@@ -24,14 +25,22 @@ def tmp_dir(tmpdir_factory):
     return tmpdir_factory.mktemp('integration_test', numbered=True)
 
 
-mnist_data = None
-
-
 def get_data():
-    global mnist_data
-    if not mnist_data:
-        mnist_data = keras.datasets.mnist.load_data()
-    return mnist_data
+    """Create random but repetitive dummy MNIST data."""
+    x = np.random.randint(0, 255, size=(1000, 28, 28))
+    y = np.random.randint(0, 9, size=(1000,))
+
+    train_x = np.repeat(x, repeats=10, axis=0)
+    train_y = np.repeat(y, repeats=10, axis=0)
+
+    val_x, val_y = x, y
+    
+    rng_state = np.random.get_state()
+    np.random.shuffle(train_x)
+    np.random.set_state(rng_state)
+    np.random.shuffle(train_y)
+
+    return (train_x, train_y), (val_x, val_y)
 
 
 def build_model(hp):
@@ -60,9 +69,6 @@ def test_end_to_end_workflow(tmp_dir, distribution_strategy):
     (x, y), (val_x, val_y) = get_data()
     x = x.astype('float32') / 255.
     val_x = val_x.astype('float32') / 255.
-
-    x = x[:10000]
-    y = y[:10000]
 
     tuner = kerastuner.tuners.RandomSearch(
         build_model,
