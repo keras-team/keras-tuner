@@ -571,7 +571,7 @@ class HyperParameters(object):
                 '`HyperParameter` named: ' + parent_name + ' '
                 'not defined.')
 
-        self._conditions.append(conditions_mod.IsIn(parent_name, parent_values))
+        self._conditions.append(conditions_mod.Parent(parent_name, parent_values))
         try:
             yield
         finally:
@@ -1008,7 +1008,7 @@ def deserialize(config):
     # have to enumerate them manually here.
     objects = [HyperParameter, Fixed, Float, Int, Choice,
                Boolean, HyperParameters, conditions_mod.Condition,
-               conditions_mod.IsIn]
+               conditions_mod.Parent]
     for obj in objects:
         if isinstance(config, obj):
             return config  # Already deserialized.

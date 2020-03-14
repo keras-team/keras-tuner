@@ -34,9 +34,9 @@ class Condition(object):
     Example:
 
     ```
-    condition = kt.conditions.OneOf('a', 'dnn')
 
     a = Choice('model', ['linear', 'dnn'])
+    condition = kt.conditions.Parent(name='a', value=['dnn'])
     b = Int('num_layers', 5, 10, conditions=[condition])
     ```
     """
@@ -71,16 +71,16 @@ class Condition(object):
     @classmethod
     def from_proto(self, proto):
         kind = proto.WhichOneof('kind')
-        if kind == 'is_in':
-            is_in = getattr(proto, kind)
-            name = is_in.name
-            values = is_in.values
+        if kind == 'parent':
+            parent = getattr(proto, kind)
+            name = parent.name
+            values = parent.values
             values = [getattr(v, v.WhichOneof('kind')) for v in values]
-            return IsIn(name=name, values=values)
+            return Parent(name=name, values=values)
         raise ValueError('Unrecognized condition of type: {}'.format(kind))
 
 
-class IsIn(Condition):
+class Parent(Condition):
     """Condition that checks a value is equal to one of a list of values.
 
     This object can be passed to a `HyperParameter` to specify that this
@@ -91,7 +91,7 @@ class IsIn(Condition):
 
     ```
     a = Choice('model', ['linear', 'dnn'])
-    b = Int('num_layers', 5, 10, conditions=[kt.conditions.OneOf('a', ['dnn'])])
+    b = Int('num_layers', 5, 10, conditions=[kt.conditions.Parent('a', ['dnn'])])
     ```
 
     # Arguments:
@@ -120,7 +120,7 @@ class IsIn(Condition):
         return (self.name in values and values[self.name] in self.values)
 
     def __eq__(self, other):
-        return (isinstance(other, IsIn) and
+        return (isinstance(other, Parent) and
                 other.name == self.name and
                 other.values == self.values)
 
@@ -137,7 +137,7 @@ class IsIn(Condition):
             values = [kerastuner_pb2.Value(float_value=v) for v in self.values]
 
         return kerastuner_pb2.Condition(
-            is_in=kerastuner_pb2.Condition.IsIn(
+            parent=kerastuner_pb2.Condition.Parent(
                 name=self.name,
                 values=values))
 
