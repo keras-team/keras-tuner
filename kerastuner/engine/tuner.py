@@ -25,6 +25,7 @@ import tensorflow as tf
 from . import base_tuner
 from . import hypermodel as hm_module
 from . import tuner_utils
+from . import trial as trial_module
 
 
 class Tuner(base_tuner.BaseTuner):
@@ -297,7 +298,8 @@ class Tuner(base_tuner.BaseTuner):
         if self._should_report_to_oracle():
             status = self.oracle.update_trial(trial_id, metrics, step=step)
         if self._in_multi_worker_mode():
-            return 'RUNNING'  # TODO: support early stopping in multi-worker.
+            # TODO: support early-stopping in multi-worker mode.
+            return trial_module.TrialStatus.RUNNING
         return status
 
     def _end_trial(self, trial_id, status='COMPLETED'):
