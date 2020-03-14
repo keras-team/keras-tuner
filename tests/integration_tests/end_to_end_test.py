@@ -34,7 +34,7 @@ def get_data():
     train_y = np.repeat(y, repeats=10, axis=0)
 
     val_x, val_y = x, y
-    
+
     rng_state = np.random.get_state()
     np.random.shuffle(train_x)
     np.random.set_state(rng_state)
