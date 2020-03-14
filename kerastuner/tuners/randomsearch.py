@@ -22,8 +22,6 @@ from ..engine import multi_execution_tuner
 from ..engine import oracle as oracle_module
 from ..engine import trial as trial_lib
 
-import random
-
 
 class RandomSearchOracle(oracle_module.Oracle):
     """Random search oracle.
@@ -63,15 +61,8 @@ class RandomSearchOracle(oracle_module.Oracle):
             max_trials=max_trials,
             hyperparameters=hyperparameters,
             tune_new_entries=tune_new_entries,
-            allow_new_entries=allow_new_entries)
-        self.seed = seed or random.randint(1, 1e4)
-        # Incremented at every call to `populate_space`.
-        self._seed_state = self.seed
-        # Hashes of values tried so far.
-        self._tried_so_far = set()
-        # Maximum number of identical values that can be generated
-        # before we consider the space to be exhausted.
-        self._max_collisions = 5
+            allow_new_entries=allow_new_entries,
+            seed=seed)
 
     def _populate_space(self, _):
         """Fill the hyperparameter space with values.
@@ -85,41 +76,12 @@ class RandomSearchOracle(oracle_module.Oracle):
             is the TrialStatus that should be returned for this trial (one
             of "RUNNING", "IDLE", or "STOPPED").
         """
-        collisions = 0
-        while 1:
-            # Generate a set of random values.
-            values = {}
-            for p in self.hyperparameters.space:
-                values[p.name] = p.random_sample(self._seed_state)
-                self._seed_state += 1
-            # Keep trying until the set of values is unique,
-            # or until we exit due to too many collisions.
-            values_hash = self._compute_values_hash(values)
-            if values_hash in self._tried_so_far:
-                collisions += 1
-                if collisions > self._max_collisions:
-                    return {'status': trial_lib.TrialStatus.STOPPED,
-                            'values': None}
-                continue
-            self._tried_so_far.add(values_hash)
-            break
+        values = self._random_values()
+        if values is None:
+            return {'status': trial_lib.TrialStatus.STOPPED,
+                    'values': None}
         return {'status': trial_lib.TrialStatus.RUNNING,
                 'values': values}
-
-    def get_state(self):
-        state = super(RandomSearchOracle, self).get_state()
-        state.update({
-            'seed': self.seed,
-            'seed_state': self._seed_state,
-            'tried_so_far': list(self._tried_so_far),
-        })
-        return state
-
-    def set_state(self, state):
-        super(RandomSearchOracle, self).set_state(state)
-        self.seed = state['seed']
-        self._seed_state = state['seed_state']
-        self._tried_so_far = set(state['tried_so_far'])
 
 
 class RandomSearch(multi_execution_tuner.MultiExecutionTuner):

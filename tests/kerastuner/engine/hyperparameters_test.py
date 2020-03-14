@@ -24,7 +24,8 @@ def test_base_hyperparameter():
     base_param = hp_module.HyperParameter(name='base', default=0)
     assert base_param.name == 'base'
     assert base_param.default == 0
-    assert base_param.get_config() == {'name': 'base', 'default': 0}
+    assert base_param.get_config() == {
+        'name': 'base', 'default': 0, 'conditions': []}
     base_param = hp_module.HyperParameter.from_config(
         base_param.get_config())
     assert base_param.name == 'base'
@@ -45,7 +46,7 @@ def test_hyperparameters():
     assert hp.values == {'choice': 3}
     assert len(hp.space) == 1
     assert hp.space[0].name == 'choice'
-    with pytest.raises(ValueError, match='Unknown parameter'):
+    with pytest.raises(ValueError, match='does not exist'):
         hp.get('wrong')
 
 
@@ -80,10 +81,10 @@ def test_parent_name():
         'b', 0, 100, parent_name='a', parent_values=2, default=4)
     assert b1 is None
     assert b2 == 4
+    # Only active values appear in `values`.
     assert hp.values == {
         'a': 2,
-        'a=1/b': 5,
-        'a=2/b': 4
+        'b': 4
     }
 
 
@@ -94,10 +95,10 @@ def test_conditional_scope():
         child1 = hp.Choice('child_choice', [4, 5, 6])
     with hp.conditional_scope('choice', 2):
         child2 = hp.Choice('child_choice', [7, 8, 9])
+    # Only active values appear in `values`.
     assert hp.values == {
         'choice': 2,
-        'choice=1,3/child_choice': 4,
-        'choice=2/child_choice': 7
+        'child_choice': 7
     }
     # Assignment to a non-active conditional hyperparameter returns `None`.
     assert child1 is None
@@ -130,39 +131,39 @@ def test_build_with_conditional_scope():
     build_model(hp)
     assert hp.values == {
         'model': 'v1',
-        'model=v1/layers': 1,
-        'model=v1/units': 16,
-        'model=v2/layers': 2,
-        'model=v2/units': 32
+        'layers': 1,
+        'units': 16,
     }
 
 
 def test_nested_conditional_scopes_and_name_scopes():
     hp = hp_module.HyperParameters()
-    a = hp.Choice('a', [1, 2, 3], default=2)
+    a = hp.Choice('a', [1, 2, 3], default=3)
     with hp.conditional_scope('a', [1, 3]):
-        b = hp.Choice('b', [4, 5, 6])
+        b = hp.Choice('b', [4, 5, 6], default=6)
         with hp.conditional_scope('b', 6):
             c = hp.Choice('c', [7, 8, 9])
             with hp.name_scope('d'):
                 e = hp.Choice('e', [10, 11, 12])
     with hp.conditional_scope('a', 2):
         f = hp.Choice('f', [13, 14, 15])
+        with hp.name_scope('g'):
+            h = hp.Int('h', 0, 10)
 
     assert hp.values == {
-        'a': 2,
-        'a=1,3/b': 4,
-        'a=1,3/b=6/c': 7,
-        'a=1,3/b=6/d/e': 10,
-        'a=2/f': 13
+        'a': 3,
+        'b': 6,
+        'c': 7,
+        'd/e': 10,
     }
     # Assignment to an active conditional hyperparameter returns the value.
-    assert a == 2
-    assert f == 13
+    assert a == 3
+    assert b == 6
+    assert c == 7
+    assert e == 10
     # Assignment to a non-active conditional hyperparameter returns `None`.
-    assert b is None
-    assert c is None
-    assert e is None
+    assert f is None
+    assert h is None
 
 
 def test_get_with_conditional_scopes():
@@ -175,9 +176,7 @@ def test_get_with_conditional_scopes():
         assert hp.get('a') == 2
     with hp.conditional_scope('a', 3):
         hp.Fixed('b', 5)
-        # This b is not currently active.
-        with pytest.raises(ValueError, match='is not currently active'):
-            hp.get('b')
+        assert hp.get('b') == 4
 
     # Value corresponding to the currently active condition is returned.
     assert hp.get('b') == 4
@@ -474,7 +473,7 @@ def test_dict_methods():
     with hps.conditional_scope('b', 1):
         hps.Float('c', -10, 10, default=3)
         # Don't allow access of a non-active param within its scope.
-        with pytest.raises(ValueError, match='is not currently active'):
+        with pytest.raises(ValueError, match='is currently inactive'):
             hps['c']
     with hps.conditional_scope('b', 2):
         hps.Float('c', -30, -20, default=-25)
@@ -483,7 +482,7 @@ def test_dict_methods():
     assert hps['b'] == 2
     # Ok to access 'c' here since there is an active 'c'.
     assert hps['c'] == -25
-    with pytest.raises(ValueError, match='Unknown parameter'):
+    with pytest.raises(ValueError, match='does not exist'):
         hps['d']
 
     assert 'a' in hps

@@ -21,6 +21,7 @@ import collections
 import json
 import hashlib
 import os
+import random
 import tensorflow as tf
 
 from .. import utils
@@ -53,6 +54,7 @@ class Oracle(stateful.Stateful):
         allow_new_entries: Whether the hypermodel is allowed
             to request hyperparameter entries not listed in
             `hyperparameters`.
+        seed: Int. Random seed.
     """
 
     def __init__(self,
@@ -60,7 +62,8 @@ class Oracle(stateful.Stateful):
                  max_trials=None,
                  hyperparameters=None,
                  allow_new_entries=True,
-                 tune_new_entries=True):
+                 tune_new_entries=True,
+                 seed=None):
         self.objective = _format_objective(objective)
         self.max_trials = max_trials
         if not hyperparameters:
@@ -84,6 +87,14 @@ class Oracle(stateful.Stateful):
         self.trials = {}
         # tuner_id -> Trial
         self.ongoing_trials = {}
+
+        self.seed = seed or random.randint(1, 1e4)
+        self._seed_state = self.seed
+        # Hashes of values tried so far.
+        self._tried_so_far = set()
+        # Maximum number of identical values that can be generated
+        # before we consider the space to be exhausted.
+        self._max_collisions = 5
 
         # Set in `BaseTuner` via `set_project_dir`.
         self.directory = None
@@ -229,21 +240,19 @@ class Oracle(stateful.Stateful):
         Args:
             hyperparameters: An updated HyperParameters object.
         """
-        ref_names = {hp.name for hp in self.hyperparameters.space}
-        new_hps = [hp for hp in hyperparameters.space
-                   if hp.name not in ref_names]
+        hps = hyperparameters.space
+        new_hps = []
+        for hp in hps:
+            if not self.hyperparameters._exists(hp.name, hp.conditions):
+                new_hps.append(hp)
 
         if new_hps and not self.allow_new_entries:
             raise RuntimeError('`allow_new_entries` is `False`, but found '
                                'new entries {}'.format(new_hps))
-
         if not self.tune_new_entries:
             # New entries should always use the default value.
             return
-
-        for hp in new_hps:
-            self.hyperparameters.register(
-                hp.name, hp.__class__.__name__, hp.get_config())
+        self.hyperparameters.merge(new_hps)
 
     def get_trial(self, trial_id):
         """Returns the `Trial` specified by `trial_id`."""
@@ -365,6 +374,34 @@ class Oracle(stateful.Stateful):
         trial.save(os.path.join(
             self._get_trial_dir(trial_id),
             'trial.json'))
+
+    def _random_values(self):
+        """Fills the hyperparameter space with random values.
+
+        Returns:
+            A dictionary mapping parameter names to suggested values.
+        """
+        collisions = 0
+        while 1:
+            hps = hp_module.HyperParameters()
+            # Generate a set of random values.
+            for hp in self.hyperparameters.space:
+                hps.merge([hp])
+                if hps.is_active(hp):  # Only active params in `values`.
+                    hps.values[hp.name] = hp.random_sample(self._seed_state)
+                    self._seed_state += 1
+            values = hps.values
+            # Keep trying until the set of values is unique,
+            # or until we exit due to too many collisions.
+            values_hash = self._compute_values_hash(values)
+            if values_hash in self._tried_so_far:
+                collisions += 1
+                if collisions > self._max_collisions:
+                    return None
+                continue
+            self._tried_so_far.add(values_hash)
+            break
+        return values
 
 
 def _format_objective(objective):
