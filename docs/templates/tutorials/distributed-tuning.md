@@ -113,7 +113,6 @@ def main():
                  steps_per_epoch=600,
                  validation_data=mnist_test,
                  validation_steps=100,
-                 epochs=20,
                  callbacks=[tf.keras.callbacks.EarlyStopping('val_accuracy')])
 
 
