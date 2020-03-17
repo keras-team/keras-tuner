@@ -55,7 +55,6 @@ test_ds = test_ds.map(standardize_record).cache().batch(64)
 
 tuner.search(train_ds,
              validation_data=test_ds,
-             epochs=30,
              callbacks=[tf.keras.callbacks.EarlyStopping(patience=1)])
 
 best_model = tuner.get_best_models(1)[0]
