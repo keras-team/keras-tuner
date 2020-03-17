@@ -16,6 +16,7 @@ from concurrent import futures
 import grpc
 import os
 import time
+import signal
 
 from ..engine import hyperparameters as hp_module
 from ..engine import trial as trial_module
@@ -65,6 +66,16 @@ class OracleServicer(service_pb2_grpc.OracleServicer):
             trials=[trial.to_proto() for trial in trials])
 
 
+class GracefulKiller:
+  kill_now = False
+  def __init__(self):
+    signal.signal(signal.SIGINT, self.exit_gracefully)
+    signal.signal(signal.SIGTERM, self.exit_gracefully)
+
+  def exit_gracefully(self,signum, frame):
+    self.kill_now = True
+
+
 def start_server(oracle):
     """Starts the `OracleServicer` used to manage distributed requests."""
     ip_addr = os.environ['KERASTUNER_ORACLE_IP']
@@ -75,10 +86,11 @@ def start_server(oracle):
         OracleServicer(oracle), server)
     server.add_insecure_port('{}:{}'.format(ip_addr, port))
     server.start()
+    killer = GracefulKiller()
     # since server.start() will not block,
     # a sleep-loop is added to keep alive
-    try:
-        while True:
-            time.sleep(10)
-    except KeyboardInterrupt:
-        server.stop(0)
+    while not killer.kill_now:
+        time.sleep(10)
+
+    # stop server if interrupted or terminated
+    server.stop(0)
