@@ -29,8 +29,11 @@ setup(
     author='The Keras Tuner authors',
     author_email='kerastuner@google.com',
     license='Apache License 2.0',
+    # tensorflow isn't a dependency because it would force the
+    # download of the gpu version or the cpu version.
+    # users should install it manually.
     install_requires=[
-        'tensorflow>=2.0.0-beta1',
+        'packaging',
         'future',
         'numpy',
         'tabulate',
