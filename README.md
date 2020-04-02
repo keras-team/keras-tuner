@@ -208,7 +208,6 @@ tuner = Hyperband(
     project_name='helloworld')
 
 tuner.search(x, y,
-             epochs=20,
              validation_data=(val_x, val_y))
 ```
 
@@ -241,7 +240,6 @@ tuner = Hyperband(
     project_name='helloworld')
 
 tuner.search(x, y,
-             epochs=20,
              validation_data=(val_x, val_y))
 ```
 
@@ -287,7 +285,6 @@ tuner = Hyperband(
     project_name='helloworld')
 
 tuner.search(x, y,
-             epochs=20,
              validation_data=(val_x, val_y))
 ```
 
@@ -311,7 +308,6 @@ tuner = Hyperband(
     project_name='helloworld')
 
 tuner.search(x, y,
-             epochs=20,
              validation_data=(val_x, val_y))
 ```
 

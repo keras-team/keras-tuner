@@ -1,7 +1,7 @@
 ARG PY_VERSION=3.6
 FROM python:${PY_VERSION}
 
-RUN pip install tensorflow \
+RUN pip install tensorflow-cpu \
                 future \
                 numpy \
                 tabulate \
