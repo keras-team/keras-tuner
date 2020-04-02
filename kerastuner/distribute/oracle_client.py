@@ -35,6 +35,11 @@ class OracleClient(object):
         self.stub = service_pb2_grpc.OracleStub(channel)
         self.tuner_id = os.environ['KERASTUNER_TUNER_ID']
 
+        # In multi-worker mode, only the chief of each cluster should report
+        # results to the chief Oracle.
+        self.multi_worker = False
+        self.should_report = True
+
     def __getattr__(self, name):
         whitelisted_attrs = {
             'objective',
@@ -52,8 +57,10 @@ class OracleClient(object):
         return hp_module.HyperParameters.from_proto(response.hyperparameters)
 
     def update_space(self, hyperparameters):
-        self.stub.UpdateSpace(service_pb2.UpdateSpaceRequest(
-            hyperparameters=hyperparameters.to_proto()), wait_for_ready=True)
+        if self.should_report:
+            self.stub.UpdateSpace(service_pb2.UpdateSpaceRequest(
+                hyperparameters=hyperparameters.to_proto()),
+                wait_for_ready=True)
 
     def create_trial(self, tuner_id):
         response = self.stub.CreateTrial(service_pb2.CreateTrialRequest(
@@ -61,14 +68,21 @@ class OracleClient(object):
         return trial_module.Trial.from_proto(response.trial)
 
     def update_trial(self, trial_id, metrics, step=0):
-        response = self.stub.UpdateTrial(service_pb2.UpdateTrialRequest(
-            trial_id=trial_id, metrics=metrics, step=step), wait_for_ready=True)
-        return trial_module._convert_trial_status_to_str(response.status)
+        # TODO: support early stopping in multi-worker.
+        if self.should_report:
+            response = self.stub.UpdateTrial(service_pb2.UpdateTrialRequest(
+                trial_id=trial_id, metrics=metrics, step=step),
+                wait_for_ready=True)
+            if not self.multi_worker:
+                return trial_module._convert_trial_status_to_str(response.status)
+            return 'RUNNING'
+        return 'RUNNING'
 
     def end_trial(self, trial_id, status="COMPLETED"):
-        status = trial_module._convert_trial_status_to_proto(status)
-        self.stub.EndTrial(service_pb2.EndTrialRequest(
-            trial_id=trial_id, status=status), wait_for_ready=True)
+        if self.should_report:
+            status = trial_module._convert_trial_status_to_proto(status)
+            self.stub.EndTrial(service_pb2.EndTrialRequest(
+                trial_id=trial_id, status=status), wait_for_ready=True)
 
     def get_trial(self, trial_id):
         response = self.stub.GetTrial(service_pb2.GetTrialRequest(
