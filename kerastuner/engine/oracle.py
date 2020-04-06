@@ -100,6 +100,11 @@ class Oracle(stateful.Stateful):
         self.directory = None
         self.project_name = None
 
+        # In multi-worker mode, only the chief of each cluster should report
+        # results.
+        self.multi_worker = False
+        self.should_report = True
+
     def _populate_space(self, trial_id):
         """Fill the hyperparameter space with values for a trial.
 
