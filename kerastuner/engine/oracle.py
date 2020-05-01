@@ -262,6 +262,10 @@ class Oracle(stateful.Stateful):
     def get_trial(self, trial_id):
         """Returns the `Trial` specified by `trial_id`."""
         return self.trials[trial_id]
+    
+    @property
+    def score_history(self):
+        return [self.get_trial(trial_id).score for trial_id in self.trials.keys()]
 
     def get_best_trials(self, num_trials=1):
         """Returns the best `Trial`s."""
