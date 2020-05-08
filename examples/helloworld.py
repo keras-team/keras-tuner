@@ -202,7 +202,8 @@ tuner = RandomSearch(
     max_trials=5,
     hyperparameters=hp,
     allow_new_entries=False,
-    objective='val_accuracy')
+    objective='val_accuracy',
+    overwrite=True)
 
 tuner.search(x=x,
              y=y,
