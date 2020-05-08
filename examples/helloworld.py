@@ -46,7 +46,8 @@ tuner = RandomSearch(
     objective='val_accuracy',
     max_trials=5,
     executions_per_trial=3,
-    directory='test_dir')
+    directory='test_dir',
+    project_name='case1')
 
 tuner.search_space_summary()
 
@@ -68,7 +69,8 @@ tuner = RandomSearch(
     loss=keras.losses.SparseCategoricalCrossentropy(name='my_loss'),
     metrics=['accuracy', 'mse'],
     max_trials=5,
-    directory='test_dir')
+    directory='test_dir',
+    project_name='case2')
 
 tuner.search(x, y,
              epochs=5,
@@ -105,7 +107,8 @@ tuner = RandomSearch(
     MyHyperModel(img_size=(28, 28), num_classes=10),
     objective='val_accuracy',
     max_trials=5,
-    directory='test_dir')
+    directory='test_dir',
+    project_name='case3')
 
 tuner.search(x,
              y=y,
@@ -125,7 +128,10 @@ tuner = RandomSearch(
     max_trials=5,
     hyperparameters=hp,
     tune_new_entries=False,
-    objective='val_accuracy')
+    objective='val_accuracy',
+    directory='test_dir',
+    project_name='case4')
+
 
 tuner.search(x=x,
              y=y,
@@ -144,7 +150,9 @@ tuner = RandomSearch(
     max_trials=5,
     hyperparameters=hp,
     tune_new_entries=True,
-    objective='val_accuracy')
+    objective='val_accuracy',
+    directory='test_dir',
+    project_name='case5')
 
 tuner.search(x=x,
              y=y,
@@ -165,7 +173,9 @@ tuner = RandomSearch(
     max_trials=5,
     hyperparameters=hp,
     tune_new_entries=True,
-    objective='val_accuracy')
+    objective='val_accuracy',
+    directory='test_dir',
+    project_name='case6')
 
 tuner.search(x=x,
              y=y,
@@ -202,7 +212,9 @@ tuner = RandomSearch(
     max_trials=5,
     hyperparameters=hp,
     allow_new_entries=False,
-    objective='val_accuracy')
+    objective='val_accuracy',
+    directory='test_dir',
+    project_name='case7')
 
 tuner.search(x=x,
              y=y,
