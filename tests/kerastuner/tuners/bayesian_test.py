@@ -315,4 +315,4 @@ def test_distributed_optimization(tmp_dir):
 
     # For log-scale param, just check that the order of magnitude is correct.
     log_best_c = math.log(best_hps['c'], 10)
-    assert log_best_c > -4 and log_best_c < -2
+    assert log_best_c > -5 and log_best_c < -2
