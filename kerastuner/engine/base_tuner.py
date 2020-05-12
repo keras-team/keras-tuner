@@ -73,27 +73,27 @@ class BaseTuner(stateful.Stateful):
 
         # Run in distributed mode.
         if dist_utils.is_chief_oracle():
-            # Blocks forever.
             oracle_chief.start_server(self.oracle)
         elif dist_utils.has_chief_oracle():
             # Proxies requests to the chief oracle.
             self.oracle = oracle_client.OracleClient(self.oracle)
 
-        # To support tuning distribution.
-        self.tuner_id = os.environ.get('KERASTUNER_TUNER_ID', 'tuner0')
+        if not dist_utils.is_chief_oracle():
+            # To support tuning distribution.
+            self.tuner_id = os.environ.get('KERASTUNER_TUNER_ID', 'tuner0')
 
-        self.hypermodel = hm_module.get_hypermodel(hypermodel)
+            self.hypermodel = hm_module.get_hypermodel(hypermodel)
 
-        # Logs etc
-        self.logger = logger
-        self._display = tuner_utils.Display()
+            # Logs etc
+            self.logger = logger
+            self._display = tuner_utils.Display()
 
-        self._populate_initial_space()
+            self._populate_initial_space()
 
-        if not overwrite and tf.io.gfile.exists(self._get_tuner_fname()):
-            tf.get_logger().info('Reloading Tuner from {}'.format(
-                self._get_tuner_fname()))
-            self.reload()
+            if not overwrite and tf.io.gfile.exists(self._get_tuner_fname()):
+                tf.get_logger().info('Reloading Tuner from {}'.format(
+                    self._get_tuner_fname()))
+                self.reload()
 
     def _populate_initial_space(self):
         """Populate initial search space for oracle.

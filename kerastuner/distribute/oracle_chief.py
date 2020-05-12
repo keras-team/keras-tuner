@@ -75,6 +75,3 @@ def start_server(oracle):
         OracleServicer(oracle), server)
     server.add_insecure_port('{}:{}'.format(ip_addr, port))
     server.start()
-    while True:
-        # The server does not block otherwise.
-        time.sleep(10)
