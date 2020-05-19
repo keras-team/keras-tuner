@@ -272,3 +272,7 @@ def test_callbacks_run_each_execution(tmp_dir):
                  callbacks=[logging_callback])
 
     assert len(callback_instances) == 6
+
+
+def test_on_train_begin_existence(tmp_dir):
+    assert callable(tuner_module.Tuner._on_train_begin)
