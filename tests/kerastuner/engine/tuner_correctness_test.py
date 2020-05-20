@@ -274,5 +274,48 @@ def test_callbacks_run_each_execution(tmp_dir):
     assert len(callback_instances) == 6
 
 
-def test_on_train_begin_existence(tmp_dir):
-    assert callable(tuner_module.Tuner._on_train_begin)
+def test_on_train_begin_in_multi_execution_tuner(tmp_dir):
+
+    class MyTuner(kerastuner.tuners.RandomSearch):
+        def _on_train_begin(self, model, hp, *fit_args, **fit_kwargs):
+            self.was_called = True
+
+    tuner = MyTuner(
+        hypermodel=build_model,
+        objective='val_accuracy',
+        max_trials=2,
+        executions_per_trial=3,
+        directory=tmp_dir)
+
+    tuner.run_trial(
+        tuner.oracle.create_trial('tuner0'),
+        TRAIN_INPUTS,
+        TRAIN_TARGETS,
+        validation_data=(VAL_INPUTS, VAL_TARGETS))
+
+    assert tuner.was_called
+
+
+def test_on_train_begin_in_tuner(tmp_dir):
+
+    class MyTuner(tuner_module.Tuner):
+        def _on_train_begin(self, model, hp, *fit_args, **fit_kwargs):
+            self.was_called = True
+
+    class MyOracle(kerastuner.engine.oracle.Oracle):
+        def update_trial(self, trial_id, metrics, step=0):
+            pass
+
+    tuner = MyTuner(
+        oracle=MyOracle(objective='val_accuracy'),
+        hypermodel=build_model,
+        directory=tmp_dir)
+
+    tuner.run_trial(
+        kerastuner.engine.trial.Trial(
+            kerastuner.engine.hyperparameters.HyperParameters()),
+        TRAIN_INPUTS,
+        TRAIN_TARGETS,
+        validation_data=(VAL_INPUTS, VAL_TARGETS))
+
+    assert tuner.was_called

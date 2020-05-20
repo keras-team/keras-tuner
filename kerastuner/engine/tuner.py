@@ -145,7 +145,8 @@ class Tuner(base_tuner.BaseTuner):
         copied_fit_kwargs['callbacks'] = callbacks
 
         model = self.hypermodel.build(trial.hyperparameters)
-        self._on_train_begin(model, trial.hyperparameters, *fit_args, **copied_fit_kwargs)
+        self._on_train_begin(model, trial.hyperparameters,
+                             *fit_args, **copied_fit_kwargs)
         model.fit(*fit_args, **copied_fit_kwargs)
 
     def _on_train_begin(model, hp, *fit_args, **fit_kwargs):
