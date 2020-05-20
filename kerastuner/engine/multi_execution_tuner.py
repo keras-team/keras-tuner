@@ -93,6 +93,8 @@ class MultiExecutionTuner(tuner_module.Tuner):
             copied_fit_kwargs['callbacks'] = callbacks
 
             model = self.hypermodel.build(trial.hyperparameters)
+            self._on_train_begin(model, trial.hyperparameters,
+                                 *fit_args, **copied_fit_kwargs)
             history = model.fit(*fit_args, **copied_fit_kwargs)
             for metric, epoch_values in history.history.items():
                 if self.oracle.objective.direction == 'min':
