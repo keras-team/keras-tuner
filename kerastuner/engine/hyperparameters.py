@@ -460,7 +460,9 @@ class Fixed(HyperParameter):
             name=name, default=value, **kwargs)
         self.name = name
 
-        if isinstance(value, six.integer_types):
+        if isinstance(value, bool):
+            value = bool(value)
+        elif isinstance(value, six.integer_types):
             value = int(value)
         elif isinstance(value, six.string_types):
             value = str(value)
