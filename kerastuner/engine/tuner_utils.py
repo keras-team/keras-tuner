@@ -94,13 +94,14 @@ class TunerCallback(keras.callbacks.Callback):
 # TODO: Add more extensive display.
 class Display(object):
 
-    def on_trial_begin(self, trial):
-        display.section('New model')
-        trial.summary()
+    def on_trial_begin(self, trial, verbose=1):
+        if verbose >= 1:
+            display.section('Starting new trial')
 
-    def on_trial_end(self, trial):
-        display.section('Trial complete')
-        trial.summary()
+    def on_trial_end(self, trial, verbose=1):
+        if verbose >= 1:
+            display.section('Trial complete')
+            trial.summary()
 
 
 def average_histories(histories):
