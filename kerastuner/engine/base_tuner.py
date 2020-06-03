@@ -115,7 +115,8 @@ class BaseTuner(stateful.Stateful):
             *fit_kwargs: Keyword arguments that should be passed to
               `run_trial`, for example the training and validation data.
         """
-        verbose = fit_kwargs.get('verbose', 1)
+        if 'verbose' in fit_kwargs:
+            self._display.verbose = fit_kwargs.get('verbose')
         self.on_search_begin()
         while True:
             trial = self.oracle.create_trial(self.tuner_id)
@@ -127,9 +128,9 @@ class BaseTuner(stateful.Stateful):
                 # Oracle is calculating, resend request.
                 continue
 
-            self.on_trial_begin(trial, verbose)
+            self.on_trial_begin(trial)
             self.run_trial(trial, *fit_args, **fit_kwargs)
-            self.on_trial_end(trial, verbose)
+            self.on_trial_end(trial)
         self.on_search_end()
 
     def run_trial(self, trial, *fit_args, **fit_kwargs):
@@ -190,7 +191,7 @@ class BaseTuner(stateful.Stateful):
         if self.logger:
             self.logger.register_tuner(self.get_state())
 
-    def on_trial_begin(self, trial, verbose=1):
+    def on_trial_begin(self, trial):
         """A hook called before starting each trial.
 
         # Arguments:
@@ -198,9 +199,9 @@ class BaseTuner(stateful.Stateful):
         """
         if self.logger:
             self.logger.register_trial(trial.trial_id, trial.get_state())
-        self._display.on_trial_begin(self.oracle.get_trial(trial.trial_id), verbose)
+        self._display.on_trial_begin(self.oracle.get_trial(trial.trial_id))
 
-    def on_trial_end(self, trial, verbose=1):
+    def on_trial_end(self, trial):
         """A hook called after each trial is run.
 
         # Arguments:
@@ -214,7 +215,7 @@ class BaseTuner(stateful.Stateful):
             trial.trial_id, trial_module.TrialStatus.COMPLETED)
         self.oracle.update_space(trial.hyperparameters)
         # Display needs the updated trial scored by the Oracle.
-        self._display.on_trial_end(self.oracle.get_trial(trial.trial_id), verbose)
+        self._display.on_trial_end(self.oracle.get_trial(trial.trial_id))
         self.save()
 
     def on_search_end(self):
