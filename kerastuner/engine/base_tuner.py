@@ -115,6 +115,8 @@ class BaseTuner(stateful.Stateful):
             *fit_kwargs: Keyword arguments that should be passed to
               `run_trial`, for example the training and validation data.
         """
+        if 'verbose' in fit_kwargs:
+            self._display.verbose = fit_kwargs.get('verbose')
         self.on_search_begin()
         while True:
             trial = self.oracle.create_trial(self.tuner_id)
@@ -197,6 +199,7 @@ class BaseTuner(stateful.Stateful):
         """
         if self.logger:
             self.logger.register_trial(trial.trial_id, trial.get_state())
+        self._display.on_trial_begin(self.oracle.get_trial(trial.trial_id))
 
     def on_trial_end(self, trial):
         """A hook called after each trial is run.

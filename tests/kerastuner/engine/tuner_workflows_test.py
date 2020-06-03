@@ -15,6 +15,9 @@
 import pytest
 import os
 
+from io import StringIO
+from unittest.mock import patch
+
 import numpy as np
 
 import tensorflow as tf
@@ -641,3 +644,19 @@ def test_reloading_error_message(tmp_dir):
             max_trials=2,
             executions_per_trial=3,
             directory=shared_dir)
+
+def test_search_logging_verbosity(tmp_dir):
+    tuner = kerastuner.tuners.RandomSearch(
+        build_model,
+        objective='val_accuracy',
+        max_trials=2,
+        executions_per_trial=3,
+        directory=tmp_dir)
+
+    with patch('sys.stdout', new=StringIO()) as output:
+        tuner.search(x=TRAIN_INPUTS,
+                     y=TRAIN_TARGETS,
+                     epochs=2,
+                     validation_data=(VAL_INPUTS, VAL_TARGETS),
+                     verbose=0)
+        assert output.getvalue().strip() == ""
