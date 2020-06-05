@@ -499,3 +499,11 @@ def test_prob_one_choice():
 
     value = hp_module.cumulative_prob_to_value(0, hp)
     assert value == 0
+
+
+def test_nested_parent():
+    hp = hp_module.HyperParameters()
+    hp.Choice('a', [1, 2, 3], default=1)
+    hp.Choice('b', [1, 2, 3], default=2, parent_name='a', parent_values=1)
+    hp.Choice('c', [1, 2, 3], default=3, parent_name='b', parent_values=1)
+    assert hp.values == {'a': 1, 'b': 2}

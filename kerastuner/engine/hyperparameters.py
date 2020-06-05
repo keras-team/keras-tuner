@@ -566,7 +566,7 @@ class HyperParameters(object):
               HyperParameters under this scope should be considered active.
         """
         parent_name = self._get_name(parent_name)  # Add name_scopes.
-        if not self._exists(parent_name):
+        if not self._exists(parent_name, conditions='any'):
             raise ValueError(
                 '`HyperParameter` named: ' + parent_name + ' '
                 'not defined.')
@@ -602,6 +602,9 @@ class HyperParameters(object):
 
     def _exists(self, name, conditions=None):
         """Checks for a `HyperParameter` with the same name and conditions."""
+        if conditions == 'any':
+            return name in self._hps
+
         if conditions is None:
             conditions = self._conditions
 
