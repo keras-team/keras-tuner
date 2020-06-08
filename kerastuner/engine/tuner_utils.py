@@ -97,7 +97,15 @@ class Display(object):
     def __init__(self, verbose=1):
         self.verbose = verbose
 
+    def try_clear(self):
+        try:
+            from IPython import display
+            display.clear_output()
+        except:
+            pass
+
     def on_trial_begin(self, trial):
+        self.try_clear();
         if self.verbose >= 1:
             display.section('Starting new trial')
 
