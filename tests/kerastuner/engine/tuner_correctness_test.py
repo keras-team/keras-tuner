@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import collections
 
 import pytest
 import numpy as np
@@ -319,3 +320,37 @@ def test_on_train_begin_in_tuner(tmp_dir):
         validation_data=(VAL_INPUTS, VAL_TARGETS))
 
     assert tuner.was_called
+
+
+def save_model_setup_tuner():
+    class MyTuner(tuner_module.Tuner):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.was_called = False
+
+        def _delete_checkpoint(self, trial_id, epoch):
+            self.was_called = True
+
+        def _checkpoint_model(self, model, trial_id, epoch):
+            pass
+
+    class MyOracle(kerastuner.engine.oracle.Oracle):
+        def get_trial(self, trial_id):
+            return collections.namedtuple('Trial', ['best_step'])(5)
+
+    return MyTuner(
+        oracle=MyOracle(objective='val_accuracy'),
+        hypermodel=build_model,
+        directory=tmp_dir)
+
+
+def test_save_model_delete_not_called(tmp_dir):
+    tuner = save_model_setup_tuner()
+    tuner.save_model('a', None, step=15)
+    assert not tuner.was_called 
+
+
+def test_save_model_delete_called(tmp_dir):
+    tuner = save_model_setup_tuner()
+    tuner.save_model('a', None, step=16)
+    assert tuner.was_called 

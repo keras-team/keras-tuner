@@ -1,3 +1,4 @@
+*.swp
 .idea
 *.pyc
 .pytest_cache
