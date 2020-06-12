@@ -86,7 +86,7 @@ class BaseTuner(stateful.Stateful):
 
         # Logs etc
         self.logger = logger
-        self._display = tuner_utils.Display()
+        self._display = tuner_utils.Display(oracle=self.oracle)
 
         self._populate_initial_space()
 

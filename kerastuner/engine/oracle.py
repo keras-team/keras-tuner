@@ -85,6 +85,8 @@ class Oracle(stateful.Stateful):
 
         # trial_id -> Trial
         self.trials = {}
+        # trial_id -> Trial Number
+        self.trial_number = {}
         # tuner_id -> Trial
         self.ongoing_trials = {}
 
@@ -95,6 +97,9 @@ class Oracle(stateful.Stateful):
         # Maximum number of identical values that can be generated
         # before we consider the space to be exhausted.
         self._max_collisions = 5
+
+        # Best value of the objective so far
+        self.best_score = None
 
         # Set in `BaseTuner` via `set_project_dir`.
         self.directory = None
@@ -176,6 +181,8 @@ class Oracle(stateful.Stateful):
         if status == trial_lib.TrialStatus.RUNNING:
             self.ongoing_trials[tuner_id] = trial
             self.trials[trial_id] = trial
+            if trial_id not in self.trial_number:
+                self.trial_number[trial_id] = len(self.trial_number) + 1
             self._save_trial(trial)
             self.save()
 
@@ -230,6 +237,9 @@ class Oracle(stateful.Stateful):
         trial.status = status
         if status == trial_lib.TrialStatus.COMPLETED:
             self._score_trial(trial)
+            if trial.score:
+                if not self.best_score or trial.score > self.best_score:
+                    self.best_score = trial.score
         self._save_trial(trial)
         self.save()
 

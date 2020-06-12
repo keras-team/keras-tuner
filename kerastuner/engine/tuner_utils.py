@@ -94,8 +94,9 @@ class TunerCallback(keras.callbacks.Callback):
 # TODO: Add more extensive display.
 class Display(object):
 
-    def __init__(self, verbose=1):
+    def __init__(self, verbose=1, oracle=None):
         self.verbose = verbose
+        self.oracle = oracle
 
     def try_clear(self):
         try:
@@ -107,12 +108,21 @@ class Display(object):
     def on_trial_begin(self, trial):
         self.try_clear();
         if self.verbose >= 1:
-            display.section('Starting new trial')
+            trial_number = self.oracle.trial_number.get(trial.trial_id, '?')
+            total_trials = self.oracle.max_trials or '?'
+            display.section('Search: Running Trial {}/{}'.format(trial_number, total_trials))
+            display.section('Best Score So Far: {}'.format(self.oracle.best_score))
+
+            if trial.hyperparameters.values:
+                display.display_settings(trial.hyperparameters.values)
+            else:
+                display.display_setting('default configuration')
 
     def on_trial_end(self, trial):
         if self.verbose >= 1:
             display.section('Trial complete')
-            trial.summary()
+            if trial.score is not None:
+                display.display_setting('Score: {}'.format(trial.score))
 
 
 def average_histories(histories):
