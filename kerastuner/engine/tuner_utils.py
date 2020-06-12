@@ -20,6 +20,7 @@ from __future__ import print_function
 import math
 import numpy as np
 import six
+import time
 
 import tensorflow as tf
 from tensorflow import keras
@@ -107,12 +108,13 @@ class Display(object):
 
     def on_trial_begin(self, trial):
         if self.verbose >= 1:
-            trial_number = self.oracle.trial_number.get(trial.trial_id, '?')
-            total_trials = self.oracle.max_trials or '?'
             print('')
+
+            trial_number = self.oracle.get_trial_number(trial)
+            total_trials = self.oracle.max_trials or '?'
             print('=== Search: Running Trial {}/{} ==='.format(trial_number, total_trials))
 
-            template = "{0:20}|{1:20}|{2:20}"
+            template = "{0:20}|{1:10}|{2:20}"
             print()
             print(template.format('Hyperparameter', 'Value', 'Best Value So Far'))
             if trial.hyperparameters.values:
@@ -126,11 +128,19 @@ class Display(object):
         if self.verbose >= 1:
             print()
             self.try_clear();
-            trial_number = self.oracle.trial_number.get(trial.trial_id, '?')
-            print('Trial {} Complete'.format(trial_number))
+
+            trial_number = self.oracle.get_trial_number(trial)
+            total_trials = self.oracle.max_trials or '?'
+            print('Trial {}/{} Complete'.format(trial_number, total_trials))
+
             if trial.score is not None:
                 print('Score: {}'.format(trial.score))
             print('Best Score So Far: {}'.format(self.oracle.best_score))
+
+            time_remaining = self.oracle.get_time_remaining()
+            if time_remaining:
+                time_remaining_str = time.strftime("%H:%M:%S", time.gmtime(time_remaining))
+                print('Estimated Time Remaining: {}'.format(time_remaining_str))
 
 
 def average_histories(histories):

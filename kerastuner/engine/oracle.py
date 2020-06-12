@@ -23,6 +23,7 @@ import hashlib
 import os
 import random
 import tensorflow as tf
+import time
 
 from .. import utils
 from . import hyperparameters as hp_module
@@ -100,6 +101,8 @@ class Oracle(stateful.Stateful):
 
         # Best value of the objective so far
         self.best_score = None
+
+        self.start_time = time.time()
 
         # Set in `BaseTuner` via `set_project_dir`.
         self.directory = None
@@ -418,6 +421,15 @@ class Oracle(stateful.Stateful):
             break
         return values
 
+    def get_trial_number(self, trial):
+        return self.trial_number.get(trial.trial_id)
+
+    def get_time_remaining(self):
+        trials_done = len(self.trials) - len(self.ongoing_trials)
+        if self.max_trials:
+            elapsed_time = time.time() - self.start_time
+            return elapsed_time * (self.max_trials - trials_done) / trials_done
+        return None
 
 def _format_objective(objective):
     if isinstance(objective, list):
