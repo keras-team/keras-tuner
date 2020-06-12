@@ -106,23 +106,31 @@ class Display(object):
             pass
 
     def on_trial_begin(self, trial):
-        self.try_clear();
         if self.verbose >= 1:
             trial_number = self.oracle.trial_number.get(trial.trial_id, '?')
             total_trials = self.oracle.max_trials or '?'
-            display.section('Search: Running Trial {}/{}'.format(trial_number, total_trials))
-            display.section('Best Score So Far: {}'.format(self.oracle.best_score))
+            print('')
+            print('=== Search: Running Trial {}/{} ==='.format(trial_number, total_trials))
 
+            template = "{0:20}|{1:20}|{2:20}"
+            print()
+            print(template.format('Hyperparameter', 'Value', 'Best Value So Far'))
             if trial.hyperparameters.values:
-                display.display_settings(trial.hyperparameters.values)
+                for hp, value in trial.hyperparameters.values.items():
+                    print(template.format(hp, str(value), '?'))
             else:
-                display.display_setting('default configuration')
+                print('default configuration')
+            print()
 
     def on_trial_end(self, trial):
         if self.verbose >= 1:
-            display.section('Trial complete')
+            print()
+            self.try_clear();
+            trial_number = self.oracle.trial_number.get(trial.trial_id, '?')
+            print('Trial {} Complete'.format(trial_number))
             if trial.score is not None:
-                display.display_setting('Score: {}'.format(trial.score))
+                print('Score: {}'.format(trial.score))
+            print('Best Score So Far: {}'.format(self.oracle.best_score))
 
 
 def average_histories(histories):

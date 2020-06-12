@@ -25,7 +25,6 @@ import time
 from . import hyperparameters as hp_module
 from . import metrics_tracking
 from . import stateful
-from ..abstractions import display
 from ..protos import kerastuner_pb2
 
 
@@ -50,21 +49,6 @@ class Trial(stateful.Stateful):
         self.score = None
         self.best_step = None
         self.status = status
-
-    def summary(self):
-        """Displays a summary of this Trial."""
-        display.section('Trial summary')
-        display.display_setting('Trial ID: {}'.format(self.trial_id))
-
-        if self.score is not None:
-            display.display_setting('Score: {}'.format(self.score))
-            display.display_setting('Best step: {}'.format(self.best_step))
-
-        display.subsection('Hyperparameters:')
-        if self.hyperparameters.values:
-            display.display_settings(self.hyperparameters.values)
-        else:
-            display.display_setting('default configuration')
 
     def get_state(self):
         return {
