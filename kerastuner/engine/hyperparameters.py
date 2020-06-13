@@ -482,7 +482,11 @@ class Fixed(HyperParameter):
         return self.value
 
     def get_config(self):
-        return {'name': self.name, 'value': self.value}
+        config = super(Fixed, self).get_config()
+        config['name'] = self.name
+        config.pop('default')
+        config['value'] = self.value
+        return config
 
     @classmethod
     def from_proto(cls, proto):
