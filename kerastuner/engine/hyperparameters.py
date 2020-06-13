@@ -633,7 +633,7 @@ class HyperParameters(object):
         self._space.append(hp)
         value = hp.default
         # Only add active values to `self.values`.
-        if self._conditions_are_active():
+        if self._conditions_are_active(hp.conditions):
             self.values[hp.name] = value
             return value
         return None  # Ensures inactive values are not relied on by user.
