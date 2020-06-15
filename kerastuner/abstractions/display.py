@@ -28,15 +28,17 @@ init()  # colorama init
 
 
 # Check if we are in a ipython/colab environement
-try:
-    class_name = get_ipython().__class__.__name__
-    if "Terminal" in class_name:
-        IS_NOTEBOOK = False
-    else:
-        IS_NOTEBOOK = True
+def is_notebook():
+    try:
+        class_name = get_ipython().__class__.__name__
+        if "Terminal" in class_name:
+            return False
+        else:
+            return True
 
-except NameError:
-    IS_NOTEBOOK = False
+    except NameError:
+        return False
+IS_NOTEBOOK = is_notebook()
 
 
 if IS_NOTEBOOK:

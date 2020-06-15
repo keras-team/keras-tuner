@@ -27,16 +27,7 @@ from tensorflow import keras
 
 from ..abstractions import display
 
-# from ..abstractions/display.py
-try:
-    class_name = get_ipython().__class__.__name__
-    if "Terminal" in class_name:
-        IS_NOTEBOOK = False
-    else:
-        IS_NOTEBOOK = True
-except NameError:
-    IS_NOTEBOOK = False
-
+IS_NOTEBOOK = display.is_notebook()
 if IS_NOTEBOOK:
     from IPython import display
 
