@@ -27,6 +27,18 @@ from tensorflow import keras
 
 from ..abstractions import display
 
+# from ..abstractions/display.py
+try:
+    class_name = get_ipython().__class__.__name__
+    if "Terminal" in class_name:
+        IS_NOTEBOOK = False
+    else:
+        IS_NOTEBOOK = True
+except NameError:
+    IS_NOTEBOOK = False
+
+if IS_NOTEBOOK:
+    from IPython import display
 
 class TunerStats(object):
     """Track tuner statistics."""
@@ -99,17 +111,9 @@ class Display(object):
         self.verbose = verbose
         self.oracle = oracle
 
-    def try_clear(self):
-        try:
-            from IPython import display
-            display.clear_output()
-        except:
-            pass
-
     def on_trial_begin(self, trial):
         if self.verbose >= 1:
-            print('')
-
+            print()
             trial_number = self.oracle.get_trial_number(trial)
             total_trials = self.oracle.max_trials or '?'
             print('Search: Running Trial {}/{}'.format(trial_number, total_trials))
@@ -132,8 +136,10 @@ class Display(object):
 
     def on_trial_end(self, trial):
         if self.verbose >= 1:
-            print()
-            self.try_clear();
+            if IS_NOTEBOOK:
+                display.clear_output()
+            else:
+                print() # Separate with a newline
 
             trial_number = self.oracle.get_trial_number(trial)
             total_trials = self.oracle.max_trials or '?'
