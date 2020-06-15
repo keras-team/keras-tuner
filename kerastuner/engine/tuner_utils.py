@@ -119,6 +119,8 @@ class Display(object):
             print('Search: Running Trial {}/{}'.format(trial_number, total_trials))
             print()
 
+            self.trial_start = time.time()
+
             template = "{0:20}|{1:10}|{2:20}"
             best_trials = self.oracle.get_best_trials()
             if len(best_trials) > 0:
@@ -143,7 +145,9 @@ class Display(object):
 
             trial_number = self.oracle.get_trial_number(trial)
             total_trials = self.oracle.max_trials or '?'
-            print('=== Trial {}/{} Complete ==='.format(trial_number, total_trials))
+
+            time_taken_str = self.format_time(time.time() - self.trial_start)
+            print('Trial {}/{} Complete [{}]'.format(trial_number, total_trials, time_taken_str))
 
             if trial.score is not None:
                 print('Score: {}'.format(trial.score))
@@ -157,8 +161,11 @@ class Display(object):
 
             time_remaining = self.oracle.get_time_remaining()
             if time_remaining:
-                time_remaining_str = time.strftime("%H:%M:%S", time.gmtime(time_remaining))
+                time_remaining_str = self.format_time(time_remaining)
                 print('Estimated Time Remaining: {}'.format(time_remaining_str))
+
+    def format_time(self, t):
+        return time.strftime("%Hh %Mm %Ss", time.gmtime(t))
 
 
 def average_histories(histories):
