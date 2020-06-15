@@ -421,6 +421,8 @@ class Oracle(stateful.Stateful):
     def get_time_remaining(self):
         if self.max_trials:
             trials_done = len(self.trials) - len(self.ongoing_trials)
+            if trials_done <= 0:
+                return None
             elapsed_time = time.time() - self.start_time
             return elapsed_time * (self.max_trials - trials_done) / trials_done
         else:

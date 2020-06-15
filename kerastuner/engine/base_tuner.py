@@ -287,8 +287,6 @@ class BaseTuner(stateful.Stateful):
         Args:
             num_trials (int, optional): Number of trials to display.
                 Defaults to 10.
-            sort_metric (str, optional): Sorting metric, when not specified
-                sort models by objective value. Defaults to None.
         """
         display.section('Results summary')
         display.display_setting('Results in %s' % self.project_dir)
