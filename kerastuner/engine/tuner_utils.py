@@ -141,14 +141,14 @@ class Display(object):
             print('Trial {}/{} Complete [{}]'.format(trial_number, total_trials, time_taken_str))
 
             if trial.score is not None:
-                print('Score: {}'.format(trial.score))
+                print('{}: {}'.format(self.oracle.objective.name, trial.score))
 
             best_trials = self.oracle.get_best_trials()
             if len(best_trials) > 0:
                 best_score = best_trials[0].score
             else:
                 best_score = None
-            print('Best Score So Far: {}'.format(best_score))
+            print('Best {} So Far: {}'.format(self.oracle.objective.name, best_score))
 
             time_remaining = self.oracle.get_time_remaining()
             if time_remaining:
