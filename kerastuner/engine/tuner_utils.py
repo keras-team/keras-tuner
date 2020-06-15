@@ -112,14 +112,20 @@ class Display(object):
 
             trial_number = self.oracle.get_trial_number(trial)
             total_trials = self.oracle.max_trials or '?'
-            print('=== Search: Running Trial {}/{} ==='.format(trial_number, total_trials))
+            print('Search: Running Trial {}/{}'.format(trial_number, total_trials))
+            print()
 
             template = "{0:20}|{1:10}|{2:20}"
-            print()
+            best_trials = self.oracle.get_best_trials()
+            if len(best_trials) > 0:
+                best_trial = best_trials[0]
+            else:
+                best_trial = None
             print(template.format('Hyperparameter', 'Value', 'Best Value So Far'))
             if trial.hyperparameters.values:
                 for hp, value in trial.hyperparameters.values.items():
-                    print(template.format(hp, str(value), '?'))
+                    best_value = str(best_trial.hyperparameters.values.get(hp)) if best_trial else '?'
+                    print(template.format(hp, str(value), best_value))
             else:
                 print('default configuration')
             print()
@@ -131,11 +137,17 @@ class Display(object):
 
             trial_number = self.oracle.get_trial_number(trial)
             total_trials = self.oracle.max_trials or '?'
-            print('Trial {}/{} Complete'.format(trial_number, total_trials))
+            print('=== Trial {}/{} Complete ==='.format(trial_number, total_trials))
 
             if trial.score is not None:
                 print('Score: {}'.format(trial.score))
-            print('Best Score So Far: {}'.format(self.oracle.best_score))
+
+            best_trials = self.oracle.get_best_trials()
+            if len(best_trials) > 0:
+                best_score = best_trials[0].score
+            else:
+                best_score = None
+            print('Best Score So Far: {}'.format(best_score))
 
             time_remaining = self.oracle.get_time_remaining()
             if time_remaining:

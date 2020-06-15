@@ -99,9 +99,6 @@ class Oracle(stateful.Stateful):
         # before we consider the space to be exhausted.
         self._max_collisions = 5
 
-        # Best value of the objective so far
-        self.best_score = None
-
         self.start_time = time.time()
 
         # Set in `BaseTuner` via `set_project_dir`.
@@ -240,9 +237,6 @@ class Oracle(stateful.Stateful):
         trial.status = status
         if status == trial_lib.TrialStatus.COMPLETED:
             self._score_trial(trial)
-            if trial.score:
-                if not self.best_score or trial.score > self.best_score:
-                    self.best_score = trial.score
         self._save_trial(trial)
         self.save()
 
