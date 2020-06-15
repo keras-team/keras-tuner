@@ -98,7 +98,7 @@ class TunerCallback(keras.callbacks.Callback):
 # TODO: Add more extensive display.
 class Display(object):
 
-    def __init__(self, verbose=1, oracle=None):
+    def __init__(self, oracle, verbose=1):
         self.verbose = verbose
         self.oracle = oracle
 
