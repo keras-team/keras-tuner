@@ -67,6 +67,7 @@ class Tuner(base_tuner.BaseTuner):
             by this Tuner.
         logger: Optional. Instance of Logger class, used for streaming data
             to Cloud Service for monitoring.
+        tuner_id: Optional. If set, use this value as the id of this Tuner.
         overwrite: Bool, default `False`. If `False`, reloads an existing project
             of the same name if one is found. Otherwise, overwrites the project.
     """
@@ -114,6 +115,8 @@ class Tuner(base_tuner.BaseTuner):
 
         # Save only the last N checkpoints.
         self._save_n_checkpoints = 10
+
+        self.tuner_id = tuner_id or self.tuner_id
 
     def run_trial(self, trial, *fit_args, **fit_kwargs):
         """Evaluates a set of hyperparameter values.
