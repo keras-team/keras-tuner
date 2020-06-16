@@ -27,6 +27,7 @@ class OracleServicer(service_pb2_grpc.OracleServicer):
 
     def __init__(self, oracle):
         self.oracle = oracle
+        self.stop_triggered = False
 
     def GetSpace(self, request, context):
         hps = self.oracle.get_space()
@@ -41,6 +42,8 @@ class OracleServicer(service_pb2_grpc.OracleServicer):
 
     def CreateTrial(self, request, context):
         trial = self.oracle.create_trial(request.tuner_id)
+        if trial.status == trial_module.TrialStatus.STOPPED:
+            self.stop_triggered = True
         return service_pb2.CreateTrialResponse(trial=trial.to_proto())
 
     def UpdateTrial(self, request, context):
@@ -71,10 +74,20 @@ def start_server(oracle):
     port = os.environ['KERASTUNER_ORACLE_PORT']
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=1))
+    oracle_servicer = OracleServicer(oracle)
     service_pb2_grpc.add_OracleServicer_to_server(
-        OracleServicer(oracle), server)
+        oracle_servicer, server)
     server.add_insecure_port('{}:{}'.format(ip_addr, port))
     server.start()
     while True:
         # The server does not block otherwise.
-        time.sleep(10)
+        time.sleep(30)
+
+        if oracle_servicer.stop_triggered:
+            while oracle.ongoing_trials:
+                print(f'Stop is triggered. Remaining open trials: {oracle.ongoing_trials}.')
+                time.sleep(10)
+
+            print('Exiting in 10s.')
+            server.stop(10)
+            break
