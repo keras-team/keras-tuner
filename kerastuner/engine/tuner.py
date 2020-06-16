@@ -163,9 +163,12 @@ class Tuner(base_tuner.BaseTuner):
     def save_model(self, trial_id, model, step=0):
         epoch = step
         self._checkpoint_model(model, trial_id, epoch)
-        if epoch > self._save_n_checkpoints:
+        # TODO: save the top epoch checkpoints instead of last ones.
+        epoch_to_delete = epoch - self._save_n_checkpoints
+        best_epoch = self.oracle.get_trial(trial_id).best_step
+        if epoch > self._save_n_checkpoints and epoch_to_delete != best_epoch:
             self._delete_checkpoint(
-                trial_id, epoch - self._save_n_checkpoints)
+                trial_id, epoch_to_delete)
 
     def load_model(self, trial):
         model = self.hypermodel.build(trial.hyperparameters)
