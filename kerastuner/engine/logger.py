@@ -8,8 +8,6 @@ import concurrent.futures
 import requests
 import json
 
-from ..abstractions.display import warning
-
 
 OK = 0
 ERROR = 1
@@ -50,15 +48,14 @@ def send_to_backend(url, data, key):
         try:
             response_json = response.json()
         except json.decoder.JSONDecodeError:
-            warning('Cloud service down -- data not uploaded: %s' %
-                    response.text)
+            print('Cloud service down -- data not uploaded: %s' % response.text)
             return CONNECT_ERROR
 
         if response_json['status'] == 'Unauthorized':
-            warning('Invalid backend API key.')
+            print('Invalid backend API key.')
             return AUTH_ERROR
         else:
-            warning('Warning! Cloud service upload failed: %s' % response.text)
+            print('Warning! Cloud service upload failed: %s' % response.text)
             return UPLOAD_ERROR
         return ERROR
     else:

@@ -24,7 +24,6 @@ import traceback
 import numpy as np
 from tensorflow import keras
 
-from ..abstractions import display
 from .. import config as config_module
 
 
@@ -107,8 +106,7 @@ class KerasHyperModel(HyperModel):
                 if config_module.DEBUG:
                     traceback.print_exc()
 
-                display.warning('Invalid model %s/%s' %
-                                (i, self._max_fail_streak))
+                print('Invalid model %s/%s' % (i, self._max_fail_streak))
 
                 if i == self._max_fail_streak:
                     raise RuntimeError(
@@ -124,8 +122,7 @@ class KerasHyperModel(HyperModel):
             # Check model size.
             size = maybe_compute_model_size(model)
             if self.max_model_size and size > self.max_model_size:
-                display.warning(
-                    'Oversized model: %s parameters -- skipping' % (size))
+                print('Oversized model: %s parameters -- skipping' % (size))
                 if i == self._max_fail_streak:
                     raise RuntimeError(
                         'Too many consecutive oversized models.')

@@ -415,18 +415,6 @@ class Oracle(stateful.Stateful):
             break
         return values
 
-    def get_trial_number(self, trial):
-        return self.trial_number.get(trial.trial_id)
-
-    def get_time_remaining(self):
-        if self.max_trials:
-            trials_done = len(self.trials) - len(self.ongoing_trials)
-            if trials_done <= 0:
-                return None
-            elapsed_time = time.time() - self.start_time
-            return elapsed_time * (self.max_trials - trials_done) / trials_done
-        else:
-            return None
 
 def _format_objective(objective):
     if isinstance(objective, list):

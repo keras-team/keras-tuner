@@ -45,9 +45,7 @@ class OracleClient(object):
             'objective',
             'max_trials',
             'allow_new_entries',
-            'tune_new_entries',
-            'get_trial_number',
-            'get_time_remaining'}
+            'tune_new_entries'}
         if name in whitelisted_attrs:
             return getattr(self._oracle, name)
         raise AttributeError(

@@ -17,6 +17,29 @@ from packaging.version import parse
 import tensorflow as tf
 
 
+# Check if we are in a ipython/colab environement
+try:
+    class_name = get_ipython().__class__.__name__
+    if "Terminal" in class_name:
+        IS_NOTEBOOK = False
+    else:
+        IS_NOTEBOOK = True
+
+except NameError:
+    IS_NOTEBOOK = False
+
+
+if IS_NOTEBOOK:
+    from IPython import display
+
+
+def try_clear():
+    if IS_NOTEBOOK:
+        display.clear_output()
+    else:
+        print()
+
+
 def create_directory(path, remove_existing=False):
     # Create the directory if it doesn't exist.
     if not tf.io.gfile.exists(path):
