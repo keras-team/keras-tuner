@@ -23,7 +23,6 @@ import hashlib
 import os
 import random
 import tensorflow as tf
-import time
 
 from .. import utils
 from . import hyperparameters as hp_module
@@ -86,8 +85,6 @@ class Oracle(stateful.Stateful):
 
         # trial_id -> Trial
         self.trials = {}
-        # trial_id -> Trial Number
-        self.trial_number = {}
         # tuner_id -> Trial
         self.ongoing_trials = {}
 
@@ -98,8 +95,6 @@ class Oracle(stateful.Stateful):
         # Maximum number of identical values that can be generated
         # before we consider the space to be exhausted.
         self._max_collisions = 5
-
-        self.start_time = time.time()
 
         # Set in `BaseTuner` via `set_project_dir`.
         self.directory = None
@@ -181,8 +176,6 @@ class Oracle(stateful.Stateful):
         if status == trial_lib.TrialStatus.RUNNING:
             self.ongoing_trials[tuner_id] = trial
             self.trials[trial_id] = trial
-            if trial_id not in self.trial_number:
-                self.trial_number[trial_id] = len(self.trial_number) + 1
             self._save_trial(trial)
             self.save()
 
