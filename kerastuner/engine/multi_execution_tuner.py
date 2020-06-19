@@ -72,13 +72,18 @@ class MultiExecutionTuner(tuner_module.Tuner):
         pass
 
     def run_trial(self, trial, *fit_args, **fit_kwargs):
+        save_freq = 'epoch'
+        if 'save_freq' in fit_kwargs:
+            save_freq = int(fit_kwargs.pop('save_freq'))
+
         model_checkpoint = keras.callbacks.ModelCheckpoint(
             filepath=self._get_checkpoint_fname(
                 trial.trial_id, self._reported_step),
             monitor=self.oracle.objective.name,
             mode=self.oracle.objective.direction,
             save_best_only=True,
-            save_weights_only=True)
+            save_weights_only=True, 
+            save_freq=save_freq)
         original_callbacks = fit_kwargs.pop('callbacks', [])
 
         # Run the training process multiple times.
