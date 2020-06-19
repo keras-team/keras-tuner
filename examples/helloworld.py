@@ -82,9 +82,9 @@ tuner.search(x, y,
 
 class MyHyperModel(HyperModel):
 
-    def __init__(self, img_size, num_classes):
+    def __init__(self, img_size, classes):
         self.img_size = img_size
-        self.num_classes = num_classes
+        self.classes = classes
 
     def build(self, hp):
         model = keras.Sequential()
@@ -92,7 +92,7 @@ class MyHyperModel(HyperModel):
         for i in range(hp.Int('num_layers', 2, 20)):
             model.add(layers.Dense(units=hp.Int('units_' + str(i), 32, 512, 32),
                                    activation='relu'))
-        model.add(layers.Dense(self.num_classes, activation='softmax'))
+        model.add(layers.Dense(self.classes, activation='softmax'))
         model.compile(
             optimizer=keras.optimizers.Adam(
                 hp.Choice('learning_rate', [1e-2, 1e-3, 1e-4])),
@@ -102,7 +102,7 @@ class MyHyperModel(HyperModel):
 
 
 tuner = RandomSearch(
-    MyHyperModel(img_size=(28, 28), num_classes=10),
+    MyHyperModel(img_size=(28, 28), classes=10),
     objective='val_accuracy',
     max_trials=5,
     directory='test_dir')
