@@ -22,6 +22,8 @@ import os
 
 import tensorflow as tf
 
+import warnings
+
 from . import base_tuner
 from . import hypermodel as hm_module
 from . import tuner_utils
@@ -179,9 +181,13 @@ class Tuner(base_tuner.BaseTuner):
         # indicates at what epoch the best value of the objective was
         # obtained.
         best_epoch = trial.best_step
-        with hm_module.maybe_distribute(self.distribution_strategy):
-            model.load_weights(self._get_checkpoint_fname(
-                trial.trial_id, best_epoch))
+        try:
+            with hm_module.maybe_distribute(self.distribution_strategy):
+                model.load_weights(self._get_checkpoint_fname(
+                    trial.trial_id, best_epoch))
+        except:
+            warnings.warn('Model with best hyperparameter is created, but weights are not loaded.\nThe model needs to be retrained for weights.')
+
         return model
 
     def on_epoch_begin(self, trial, model, epoch, logs=None):
