@@ -88,7 +88,7 @@ tuner.search_space_summary()
 
 # Perform the model search. The search function has the same signature
 # as `model.fit()`.
-tuner.search(x_train, y_train, batch_size=128, epochs=2,
+tuner.search(x_train, y_train, batch_size=128, epochs=EPOCHS,
              validation_data=(x_val, y_val))
 
 # Display the best models, their hyperparameters, and the resulting metrics.
