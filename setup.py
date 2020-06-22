@@ -19,7 +19,7 @@ from __future__ import absolute_import
 from setuptools import find_packages
 from setuptools import setup
 
-version = '1.0.0'
+version = '1.0.2rc0'
 
 setup(
     name='keras-tuner',
