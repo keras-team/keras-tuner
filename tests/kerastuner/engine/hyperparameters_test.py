@@ -346,6 +346,26 @@ def test_Fixed():
     assert fixed.default == 'value'
     assert fixed.random_sample() == 'value'
 
+    fixed = hp_module.Fixed('fixed', True)
+    assert fixed.default is True
+    assert fixed.random_sample() is True
+
+    fixed = hp_module.Fixed('fixed', False)
+    fixed = hp_module.Fixed.from_config(fixed.get_config())
+    assert fixed.default is False
+    assert fixed.random_sample() is False
+
+    fixed = hp_module.Fixed('fixed', 1)
+    assert fixed.value == 1
+    assert fixed.random_sample() == 1
+
+    fixed = hp_module.Fixed('fixed', 8.2)
+    assert fixed.value == 8.2
+    assert fixed.random_sample() == 8.2
+
+    with pytest.raises(ValueError, match='value must be an'):
+        hp_module.Fixed('fixed', None)
+
 
 def test_merge():
     hp = hp_module.HyperParameters()
