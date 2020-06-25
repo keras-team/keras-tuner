@@ -17,14 +17,15 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from .. import utils
+
 import math
 import numpy as np
 import six
+import time
 
 import tensorflow as tf
 from tensorflow import keras
-
-from ..abstractions import display
 
 
 class TunerStats(object):
@@ -36,8 +37,9 @@ class TunerStats(object):
         self.num_oversized_models = 0  # num models with params> max_params
 
     def summary(self, extended=False):
-        display.subsection('Tuning stats')
-        display.display_settings(self.get_config())
+        print('Tuning stats')
+        for setting, value in self.get_config():
+            print(setting + ':', value)
 
     def get_config(self):
         return {
@@ -94,17 +96,74 @@ class TunerCallback(keras.callbacks.Callback):
 # TODO: Add more extensive display.
 class Display(object):
 
-    def __init__(self, verbose=1):
+    def __init__(self, oracle, verbose=1):
         self.verbose = verbose
+        self.oracle = oracle
+        self.trial_number = 0
+
+        # Start time for the overall search
+        self.search_start = None
+
+        # Start time of the latest trial
+        self.trial_start = None
 
     def on_trial_begin(self, trial):
         if self.verbose >= 1:
-            display.section('Starting new trial')
+
+            self.trial_number += 1
+            print()
+            print('Search: Running Trial #{}'.format(self.trial_number))
+            print()
+
+            self.trial_start = time.time()
+            if self.search_start is None:
+                self.search_start = time.time()
+
+            self.show_hyperparameter_table(trial)
+            print()
 
     def on_trial_end(self, trial):
         if self.verbose >= 1:
-            display.section('Trial complete')
-            trial.summary()
+            utils.try_clear()
+
+            time_taken_str = self.format_time(time.time() - self.trial_start)
+            print('Trial {} Complete [{}]'.format(self.trial_number, time_taken_str))
+
+            if trial.score is not None:
+                print('{}: {}'.format(self.oracle.objective.name, trial.score))
+
+            print()
+            best_trials = self.oracle.get_best_trials()
+            if len(best_trials) > 0:
+                best_score = best_trials[0].score
+            else:
+                best_score = None
+            print('Best {} So Far: {}'.format(
+                self.oracle.objective.name, best_score))
+
+            time_elapsed_str = self.format_time(time.time() - self.search_start)
+            print('Total elapsed time: {}'.format(time_elapsed_str))
+
+    def show_hyperparameter_table(self, trial):
+        template = "{0:20}|{1:10}|{2:20}"
+        best_trials = self.oracle.get_best_trials()
+        if len(best_trials) > 0:
+            best_trial = best_trials[0]
+        else:
+            best_trial = None
+        if trial.hyperparameters.values:
+            print(template.format('Hyperparameter', 'Value', 'Best Value So Far'))
+            for hp, value in trial.hyperparameters.values.items():
+                if best_trial:
+                    best_value = str(best_trial.hyperparameters.values.get(hp))
+                else:
+                    best_value = '?'
+                print(template.format(hp, str(value), best_value))
+        else:
+            print('default configuration')
+
+    def format_time(self, t):
+        return time.strftime("%Hh %Mm %Ss", time.gmtime(t))
 
 
 def average_histories(histories):

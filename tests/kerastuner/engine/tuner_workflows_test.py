@@ -645,6 +645,7 @@ def test_reloading_error_message(tmp_dir):
             executions_per_trial=3,
             directory=shared_dir)
 
+
 def test_search_logging_verbosity(tmp_dir):
     tuner = kerastuner.tuners.RandomSearch(
         build_model,

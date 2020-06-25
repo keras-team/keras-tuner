@@ -21,7 +21,6 @@ import os
 import tensorflow as tf
 
 from .. import utils
-from ..abstractions import display
 from ..distribute import utils as dist_utils
 from ..distribute import oracle_chief
 from ..distribute import oracle_client
@@ -86,7 +85,7 @@ class BaseTuner(stateful.Stateful):
 
         # Logs etc
         self.logger = logger
-        self._display = tuner_utils.Display()
+        self._display = tuner_utils.Display(oracle=self.oracle)
 
         self._populate_initial_space()
 
@@ -271,15 +270,14 @@ class BaseTuner(stateful.Stateful):
             extended: Bool, optional. Display extended summary.
                 Defaults to False.
         """
-        display.section('Search space summary')
+        print('Search space summary')
         hp = self.oracle.get_space()
-        display.display_setting(
-            'Default search space size: %d' % len(hp.space))
+        print('Default search space size: %d' % len(hp.space))
         for p in hp.space:
             config = p.get_config()
             name = config.pop('name')
-            display.subsection('%s (%s)' % (name, p.__class__.__name__))
-            display.display_settings(config)
+            print('%s (%s)' % (name, p.__class__.__name__))
+            print(config)
 
     def results_summary(self, num_trials=10):
         """Display tuning results summary.
@@ -287,13 +285,11 @@ class BaseTuner(stateful.Stateful):
         Args:
             num_trials (int, optional): Number of trials to display.
                 Defaults to 10.
-            sort_metric (str, optional): Sorting metric, when not specified
-                sort models by objective value. Defaults to None.
         """
-        display.section('Results summary')
-        display.display_setting('Results in %s' % self.project_dir)
-        display.display_setting('Showing %d best trials' % num_trials)
-        display.display_setting('{}'.format(self.oracle.objective))
+        print('Results summary')
+        print('Results in %s' % self.project_dir)
+        print('Showing %d best trials' % num_trials)
+        print('{}'.format(self.oracle.objective))
 
         best_trials = self.oracle.get_best_trials(num_trials)
         for trial in best_trials:
