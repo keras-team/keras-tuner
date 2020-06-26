@@ -484,7 +484,11 @@ class Fixed(HyperParameter):
         return self.value
 
     def get_config(self):
-        return {'name': self.name, 'value': self.value}
+        config = super(Fixed, self).get_config()
+        config['name'] = self.name
+        config.pop('default')
+        config['value'] = self.value
+        return config
 
     @classmethod
     def from_proto(cls, proto):
@@ -631,7 +635,7 @@ class HyperParameters(object):
         self._space.append(hp)
         value = hp.default
         # Only add active values to `self.values`.
-        if self._conditions_are_active():
+        if self._conditions_are_active(hp.conditions):
             self.values[hp.name] = value
             return value
         return None  # Ensures inactive values are not relied on by user.
