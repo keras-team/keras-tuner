@@ -85,7 +85,6 @@ def start_server(oracle):
 
         if oracle_servicer.stop_triggered:
             while oracle.ongoing_trials:
-                print(f'Stop is triggered. Remaining open trials: {oracle.ongoing_trials}.')
                 time.sleep(10)
 
             print('Exiting in 10s.')
