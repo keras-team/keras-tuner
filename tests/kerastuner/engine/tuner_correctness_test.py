@@ -176,6 +176,33 @@ def test_tuner_errors(tmp_dir):
                      validation_data=(VAL_INPUTS, VAL_TARGETS))
     # TODO: test no optimizer
 
+def test_custom_checkpoint_callback_on_multi_execution_tuner(tmp_dir):
+    def build_model(hp):
+        model = keras.Sequential([
+            keras.layers.Dense(hp.Int('size', 5, 10)),
+            keras.layers.Dense(1)])
+        model.compile('sgd', 'mse', metrics=['accuracy'])
+        return model
+
+    tuner = kerastuner.tuners.RandomSearch(
+        hypermodel=build_model,
+        objective='val_accuracy',
+        max_trials=1,
+        directory=tmp_dir,
+    )
+    x, y = np.ones((1, 5)), np.ones((1, 1))
+    # save_freq larger than epochs suppresses checkpointing
+    model_checkpoint = keras.callbacks.ModelCheckpoint('', save_freq=1000)
+    tuner.search(x,
+                 y,
+                 validation_data=(x, y),
+                 epochs=5,
+                 callbacks=[model_checkpoint])
+    trial = list(tuner.oracle.trials.values())[0]
+    trial_id = trial.trial_id
+    # no checkpoint should be saved because of the callback
+    for epoch in range(5):
+        assert not tf.io.gfile.exists(tuner._get_checkpoint_fname(trial_id, epoch))
 
 def test_checkpoint_removal(tmp_dir):
     def build_model(hp):
