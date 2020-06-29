@@ -72,19 +72,27 @@ class MultiExecutionTuner(tuner_module.Tuner):
         pass
 
     def run_trial(self, trial, *fit_args, **fit_kwargs):
-        save_freq = 'epoch'
-        if 'save_freq' in fit_kwargs:
-            save_freq = int(fit_kwargs.pop('save_freq'))
-
-        model_checkpoint = keras.callbacks.ModelCheckpoint(
-            filepath=self._get_checkpoint_fname(
-                trial.trial_id, self._reported_step),
-            monitor=self.oracle.objective.name,
-            mode=self.oracle.objective.direction,
-            save_best_only=True,
-            save_weights_only=True, 
-            save_freq=save_freq)
         original_callbacks = fit_kwargs.pop('callbacks', [])
+
+        model_checkpoint = None
+        for callback in original_callbacks:
+            # Patching checkpoint dir
+            if callback.__class__.__name__ == 'ModelCheckpoint':
+                callback.filepath = os.path.join(
+                    str(callback.filepath),
+                    self._get_checkpoint_fname(
+                        trial.trial_id, self._reported_step))
+                break
+        else:
+            # Creat checkpoint call back if not already passed in
+            model_checkpoint = keras.callbacks.ModelCheckpoint(
+                filepath=self._get_checkpoint_fname(
+                    trial.trial_id, self._reported_step),
+                monitor=self.oracle.objective.name,
+                mode=self.oracle.objective.direction,
+                save_best_only=True,
+                save_weights_only=True)
+
 
         # Run the training process multiple times.
         metrics = collections.defaultdict(list)
@@ -93,8 +101,10 @@ class MultiExecutionTuner(tuner_module.Tuner):
             callbacks = self._deepcopy_callbacks(original_callbacks)
             self._configure_tensorboard_dir(callbacks, trial.trial_id, execution)
             callbacks.append(tuner_utils.TunerCallback(self, trial))
-            # Only checkpoint the best epoch across all executions.
-            callbacks.append(model_checkpoint)
+            
+            if model_checkpoint:
+                # Only checkpoint the best epoch across all executions
+                callbacks.append(model_checkpoint)
             copied_fit_kwargs['callbacks'] = callbacks
 
             model = self.hypermodel.build(trial.hyperparameters)
