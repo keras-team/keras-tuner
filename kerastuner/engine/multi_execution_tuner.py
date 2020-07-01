@@ -76,12 +76,17 @@ class MultiExecutionTuner(tuner_module.Tuner):
 
         model_checkpoint = None
         for callback in original_callbacks:
-            # Patching checkpoint dir
+            # Patching checkpoint path in callback
             if callback.__class__.__name__ == 'ModelCheckpoint':
-                callback.filepath = os.path.join(
-                    str(callback.filepath),
-                    self._get_checkpoint_fname(
-                        trial.trial_id, self._reported_step))
+                ckpt_path = self._get_checkpoint_fname(trial.trial_id,
+                                                       self._reported_step)
+
+                # if the path is absolute, pick only part under project_dir
+                if os.path.isabs(ckpt_path):
+                    ckpt_path = 'trial' + ckpt_path.split('/trial')[-1]
+
+                callback.filepath = os.path.join(str(callback.filepath),
+                                                 ckpt_path)
                 break
         else:
             # Creat checkpoint call back if not already passed in
