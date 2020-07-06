@@ -26,6 +26,7 @@ import copy
 import numpy as np
 import os
 from tensorflow import keras
+import warning
 
 
 class MultiExecutionTuner(tuner_module.Tuner):
@@ -80,13 +81,21 @@ class MultiExecutionTuner(tuner_module.Tuner):
             if callback.__class__.__name__ == 'ModelCheckpoint':
                 ckpt_path = self._get_checkpoint_fname(trial.trial_id,
                                                        self._reported_step)
+                # if callback filepath is not specified, use project_dir
+                if callback.filepath == '':
+                    print('Custom checkpoint callback not changing filepath.')
+                    callback.filepath = ckpt_path
+                else:
+                    warning.warn('Setting custom checkpoint filepath {}. '
+                                 'Tuner will not be able to automatically '
+                                 'load best model.'.format(callback.filepath))
 
-                # if the path is absolute, pick only part under project_dir
-                if os.path.isabs(ckpt_path):
-                    ckpt_path = 'trial' + ckpt_path.split('/trial')[-1]
+                    # if the path is absolute, pick only part under project_dir
+                    if os.path.isabs(ckpt_path):
+                        ckpt_path = 'trial' + ckpt_path.split('/trial')[-1]
 
-                callback.filepath = os.path.join(str(callback.filepath),
-                                                 ckpt_path)
+                    callback.filepath = os.path.join(str(callback.filepath),
+                                                     ckpt_path)
                 break
         else:
             # Creat checkpoint call back if not already passed in
