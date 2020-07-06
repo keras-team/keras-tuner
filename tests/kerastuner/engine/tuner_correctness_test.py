@@ -22,6 +22,8 @@ from kerastuner.engine import tuner as tuner_module
 import tensorflow as tf
 from tensorflow import keras
 
+import os
+
 INPUT_DIM = 2
 NUM_CLASSES = 3
 NUM_SAMPLES = 64
@@ -192,17 +194,19 @@ def test_custom_checkpoint_callback_on_multi_execution_tuner(tmp_dir):
     )
     x, y = np.ones((1, 5)), np.ones((1, 1))
     # save_freq larger than epochs suppresses checkpointing
-    model_checkpoint = keras.callbacks.ModelCheckpoint('', save_freq=1000)
+    model_checkpoint = keras.callbacks.ModelCheckpoint('', save_freq=11)
     tuner.search(x,
                  y,
                  validation_data=(x, y),
-                 epochs=5,
+                 epochs=10,
                  callbacks=[model_checkpoint])
+
     trial = list(tuner.oracle.trials.values())[0]
     trial_id = trial.trial_id
     # no checkpoint should be saved because of the callback
-    for epoch in range(5):
+    for epoch in range(10):
         assert not tf.io.gfile.exists(tuner._get_checkpoint_fname(trial_id, epoch))
+
 
 def test_checkpoint_removal(tmp_dir):
     def build_model(hp):
