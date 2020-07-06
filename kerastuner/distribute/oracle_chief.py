@@ -87,6 +87,7 @@ def start_server(oracle):
             while oracle.ongoing_trials:
                 time.sleep(10)
 
-            print('Exiting in 10s.')
+            print('Oracle server on chief is exiting in 10s.'
+                  'The chief will go on with post-search code.')
             server.stop(10)
             break
