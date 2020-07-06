@@ -26,7 +26,7 @@ import copy
 import numpy as np
 import os
 from tensorflow import keras
-import warning
+import warnings
 
 
 class MultiExecutionTuner(tuner_module.Tuner):

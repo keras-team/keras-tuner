@@ -185,8 +185,11 @@ class Tuner(base_tuner.BaseTuner):
             with hm_module.maybe_distribute(self.distribution_strategy):
                 model.load_weights(self._get_checkpoint_fname(
                     trial.trial_id, best_epoch))
-        except:
-            warnings.warn('Model with best hyperparameter is created, but weights are not loaded.\nThe model needs to be retrained for weights.')
+        except ValueError as e:
+            if 'files' in str(e):
+                warnings.warn('Model with best hyperparameter is created, '
+                              'but weights are not loaded.\nThe model weights '
+                              'needs to be retrained or manually loaded.')
 
         return model
 
