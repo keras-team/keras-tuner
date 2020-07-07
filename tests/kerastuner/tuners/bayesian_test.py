@@ -129,6 +129,17 @@ def test_bayesian_optimization_tuner(tmp_dir):
     assert isinstance(tuner.oracle, bo_module.BayesianOptimizationOracle)
 
 
+def test_bayesian_optimization_tuner_set_alpha_beta(tmp_dir):
+    tuner = bo_module.BayesianOptimization(
+        build_model,
+        alpha=1e-4,
+        beta=2.6,
+        objective='val_accuracy',
+        max_trials=15,
+        directory=tmp_dir)
+    assert isinstance(tuner.oracle, bo_module.BayesianOptimizationOracle)
+
+
 def test_save_before_result(tmp_dir):
     hps = hp_module.HyperParameters()
     hps.Choice('a', [1, 2], default=1)
