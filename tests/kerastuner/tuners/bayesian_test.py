@@ -56,17 +56,25 @@ def test_bayesian_oracle_with_zero_y(tmp_dir):
     hps.Float('c', 0, 1, 0.1, default=0)
     hps.Fixed('d', 7)
     hps.Choice('e', [9, 0], default=9)
+    num_initial_points = 2
     oracle = bo_module.BayesianOptimizationOracle(
         objective=kt.Objective('score', 'max'),
         max_trials=20,
-        num_initial_points=2,
+        num_initial_points=num_initial_points,
         hyperparameters=hps)
     oracle._set_project_dir(tmp_dir, 'untitled')
-    for i in range(5):
-        trial = oracle.create_trial(str(i))
-        #with pytest.warns(RuntimeWarning):
-        oracle.update_trial(trial.trial_id, {'score': 0})
-        oracle.end_trial(trial.trial_id, "COMPLETED")
+
+    with pytest.warns(RuntimeWarning) as records:
+        for i in range(5):
+            trial = oracle.create_trial(str(i))
+            oracle.update_trial(trial.trial_id, {'score': 0})
+            oracle.end_trial(trial.trial_id, "COMPLETED")
+    messages = [str(x.message) for x in records]
+    # filter the messages on repeating score
+    messages = [x for x in messages if 'All scores for the first' in x]
+
+    assert len(messages) == 5 - num_initial_points
+  
 
 
 def test_bayesian_dynamic_space(tmp_dir):
