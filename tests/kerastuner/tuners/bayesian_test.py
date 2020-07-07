@@ -8,6 +8,7 @@ from kerastuner.engine import trial as trial_module
 from kerastuner.tuners import bayesian as bo_module
 
 
+
 @pytest.fixture(scope='function')
 def tmp_dir(tmpdir_factory):
     return tmpdir_factory.mktemp('bayesian_test', numbered=True)
@@ -63,6 +64,7 @@ def test_bayesian_oracle_with_zero_y(tmp_dir):
     oracle._set_project_dir(tmp_dir, 'untitled')
     for i in range(5):
         trial = oracle.create_trial(str(i))
+        #with pytest.warns(RuntimeWarning):
         oracle.update_trial(trial.trial_id, {'score': 0})
         oracle.end_trial(trial.trial_id, "COMPLETED")
 

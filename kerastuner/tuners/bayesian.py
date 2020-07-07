@@ -10,6 +10,8 @@ from ..engine import multi_execution_tuner
 from ..engine import oracle as oracle_module
 from ..engine import trial as trial_lib
 
+from warnings import warn
+
 
 class BayesianOptimizationOracle(oracle_module.Oracle):
     """Bayesian optimization oracle.
@@ -106,6 +108,13 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         except exceptions.ConvergenceWarning:
             # If convergence of the GPR fails, create a random trial.
             return self._random_populate_space()
+        except ValueError as e:
+            if 'NaN' in str(e) and np.all(y == y[0]):
+                warn('All scores for the first {} are identically {}.'
+                     'Running one more random trial.'.format(len(y), y[0]),
+                     category=RuntimeWarning)
+                return self._random_populate_space()
+            raise e
 
         def _upper_confidence_bound(x):
             x = x.reshape(1, -1)
