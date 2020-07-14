@@ -533,3 +533,22 @@ def test_prob_one_choice():
 
     value = hp_module.cumulative_prob_to_value(0, hp)
     assert value == 0
+
+
+def test_return_populated_value_for_new_hp():
+    hp = hp_module.HyperParameters()
+
+    hp.values['hp_name'] = 'hp_value'
+    assert hp.Choice(
+        'hp_name',
+        ['hp_value', 'hp_value_default'],
+        default='hp_value_default') == 'hp_value'
+
+
+def test_return_default_value_if_not_populated():
+    hp = hp_module.HyperParameters()
+
+    assert hp.Choice(
+        'hp_name',
+        ['hp_value', 'hp_value_default'],
+        default='hp_value_default') == 'hp_value_default'

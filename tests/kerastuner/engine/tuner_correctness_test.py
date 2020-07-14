@@ -347,10 +347,10 @@ def save_model_setup_tuner():
 def test_save_model_delete_not_called(tmp_dir):
     tuner = save_model_setup_tuner()
     tuner.save_model('a', None, step=15)
-    assert not tuner.was_called 
+    assert not tuner.was_called
 
 
 def test_save_model_delete_called(tmp_dir):
     tuner = save_model_setup_tuner()
     tuner.save_model('a', None, step=16)
-    assert tuner.was_called 
+    assert tuner.was_called

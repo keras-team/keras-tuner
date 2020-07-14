@@ -636,8 +636,10 @@ class HyperParameters(object):
         value = hp.default
         # Only add active values to `self.values`.
         if self._conditions_are_active(hp.conditions):
-            self.values[hp.name] = value
-            return value
+            # Use the default value only if not populated.
+            if hp.name not in self.values:
+                self.values[hp.name] = value
+            return self.values[hp.name]
         return None  # Ensures inactive values are not relied on by user.
 
     def get(self, name):
