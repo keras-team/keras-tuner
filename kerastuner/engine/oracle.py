@@ -22,6 +22,7 @@ import json
 import hashlib
 import os
 import random
+import math
 import tensorflow as tf
 
 from .. import utils
@@ -266,7 +267,8 @@ class Oracle(stateful.Stateful):
     def get_best_trials(self, num_trials=1):
         """Returns the best `Trial`s."""
         trials = [t for t in self.trials.values()
-                  if t.status == trial_lib.TrialStatus.COMPLETED]
+                  if t.status == trial_lib.TrialStatus.COMPLETED
+                  and not math.isnan(t.score)]
 
         sorted_trials = sorted(
             trials,
