@@ -15,6 +15,7 @@
 import numpy as np
 import os
 import pickle
+import math
 import pytest
 
 import kerastuner
@@ -55,7 +56,7 @@ def test_base_tuner(tmp_dir):
     def build_model(hp):
         class MyModel(object):
             def __init__(self):
-                self.factor = hp.Float('a', 0, 10)
+                self.factor = hp.Choice('a', [float('nan'), 1., 2., 3., 4., 5.])
 
             def __call__(self, x):
                 return self.factor * x
@@ -63,7 +64,7 @@ def test_base_tuner(tmp_dir):
 
     oracle = kerastuner.tuners.randomsearch.RandomSearchOracle(
         objective=kerastuner.Objective('score', 'max'),
-        max_trials=5)
+        max_trials=6)
     tuner = MyTuner(
         oracle=oracle,
         hypermodel=build_model,
@@ -76,6 +77,12 @@ def test_base_tuner(tmp_dir):
                               key=lambda m: m.factor,
                               reverse=True)
     assert models[0] == models_by_factor[0]
+
+    # check that NaN objectives where filtered out
+    best_hps = tuner.get_best_hyperparameters(num_trials=6)
+    assert len(best_hps) == 5
+    for x in tuner.get_best_hyperparameters(num_trials=10):
+        assert not math.isnan(x.get('a'))
 
 
 def test_simple_sklearn_tuner(tmp_dir):
