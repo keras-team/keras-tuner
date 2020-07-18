@@ -303,18 +303,16 @@ def test_on_train_begin_in_tuner(tmp_dir):
         def _on_train_begin(self, model, hp, *fit_args, **fit_kwargs):
             self.was_called = True
 
-    class MyOracle(kerastuner.engine.oracle.Oracle):
-        def update_trial(self, trial_id, metrics, step=0):
-            pass
-
     tuner = MyTuner(
-        oracle=MyOracle(objective='val_accuracy'),
+        oracle=kerastuner.tuners.randomsearch.RandomSearchOracle(
+            objective='val_loss',
+            max_trials=2,
+        ),
         hypermodel=build_model,
         directory=tmp_dir)
 
     tuner.run_trial(
-        kerastuner.engine.trial.Trial(
-            kerastuner.engine.hyperparameters.HyperParameters()),
+        tuner.oracle.create_trial('tuner0'),
         TRAIN_INPUTS,
         TRAIN_TARGETS,
         validation_data=(VAL_INPUTS, VAL_TARGETS))
@@ -322,7 +320,7 @@ def test_on_train_begin_in_tuner(tmp_dir):
     assert tuner.was_called
 
 
-def save_model_setup_tuner():
+def save_model_setup_tuner(tmp_dir):
     class MyTuner(tuner_module.Tuner):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
@@ -345,12 +343,12 @@ def save_model_setup_tuner():
 
 
 def test_save_model_delete_not_called(tmp_dir):
-    tuner = save_model_setup_tuner()
+    tuner = save_model_setup_tuner(tmp_dir)
     tuner.save_model('a', None, step=15)
     assert not tuner.was_called
 
 
 def test_save_model_delete_called(tmp_dir):
-    tuner = save_model_setup_tuner()
+    tuner = save_model_setup_tuner(tmp_dir)
     tuner.save_model('a', None, step=16)
     assert tuner.was_called

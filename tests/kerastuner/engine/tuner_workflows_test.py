@@ -189,20 +189,26 @@ def test_override_compile(tmp_dir):
     assert tuner.hypermodel.metrics == ['mse', 'accuracy']
 
     tuner.search_space_summary()
+    model = tuner.hypermodel.build(tuner.oracle.hyperparameters)
 
     tuner.search(x=TRAIN_INPUTS,
                  y=TRAIN_TARGETS,
                  epochs=2,
                  validation_data=(VAL_INPUTS, VAL_TARGETS))
+    model = tuner.hypermodel.build(tuner.oracle.hyperparameters)
 
     tuner.results_summary()
 
     model = tuner.hypermodel.build(tuner.oracle.hyperparameters)
+    model.fit(np.random.rand(2, INPUT_DIM),
+              np.random.rand(2,),
+              verbose=False)
+
     assert model.optimizer.__class__.__name__ == 'RMSprop'
     assert model.loss == 'sparse_categorical_crossentropy'
-    assert len(model.metrics) == 2
-    assert model.metrics[0]._fn.__name__ == 'mean_squared_error'
-    assert model.metrics[1]._fn.__name__ == 'sparse_categorical_accuracy'
+    assert len(model.metrics) >= 2
+    assert model.metrics[-2]._fn.__name__ == 'mean_squared_error'
+    assert model.metrics[-1]._fn.__name__ == 'sparse_categorical_accuracy'
 
 
 def test_static_space(tmp_dir):
