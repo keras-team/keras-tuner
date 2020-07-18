@@ -78,7 +78,7 @@ def test_base_tuner(tmp_dir):
                               reverse=True)
     assert models[0] == models_by_factor[0]
 
-    # check that NaN objectives where filtered out
+    # check that NaN objectives were filtered out
     best_hps = tuner.get_best_hyperparameters(num_trials=6)
     assert len(best_hps) == 5
     for x in tuner.get_best_hyperparameters(num_trials=10):
