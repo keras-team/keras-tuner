@@ -101,7 +101,7 @@ class HyperFixedAugment(HyperAugment):
     """
 
     def build(self, hp):
-        model = keras.Sequential(name='FixedAugment')
+        model = keras.Sequential(name='fixed_augment')
 
         if self.input_tensor is not None:
             model.add(self.input_tensor)
@@ -186,6 +186,6 @@ class HyperRandAugment(HyperAugment):
                 # selection matches the transform index `i`
                 x = tf.where(tf.equal(i, selection), x_trans, x)
                 
-        model = keras.Model(inputs, x, name='RandAugment')
+        model = keras.Model(inputs, x, name='rand_augment')
         return model
 
