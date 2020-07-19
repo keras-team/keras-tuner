@@ -140,22 +140,10 @@ class KerasHyperModel(HyperModel):
                     'metrics': model.metrics,
                 }
                 if self.loss:
-                    if model.compiled_loss:
-                        print('The hypermodel {} already compiled loss;'
-                              'but is overriden by loss passed by Tuner.'
-                              .format(self.hypermodel))
                     compile_kwargs['loss'] = self.loss
                 if self.optimizer:
-                    if model.optimizer:
-                        print('The hypermodel {} already compiled optimizer;'
-                              'but is overriden by optimizer passed by Tuner.'
-                              .format(self.hypermodel))
                     compile_kwargs['optimizer'] = self.optimizer
                 if self.metrics:
-                    if model.compiled_metrics:
-                        print('The hypermodel {} already compiled metrics;'
-                              'but is overriden by metrics passed by Tuner.'
-                              .format(self.hypermodel))
                     compile_kwargs['metrics'] = self.metrics
                 model.compile(**compile_kwargs)
             return model
