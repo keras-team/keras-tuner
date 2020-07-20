@@ -626,7 +626,7 @@ class HyperParameters(object):
             return None  # Ensures inactive values are not relied on by user.
         return self._register(hp)
 
-    def _register(self, hyperparameter):
+    def _register(self, hyperparameter, overwrite=False):
         """Registers a `HyperParameter` into this container."""
         hp = hyperparameter
         # Copy to ensure this param can be serialized.
@@ -637,7 +637,7 @@ class HyperParameters(object):
         # Only add active values to `self.values`.
         if self._conditions_are_active(hp.conditions):
             # Use the default value only if not populated.
-            if hp.name not in self.values:
+            if overwrite or hp.name not in self.values:
                 self.values[hp.name] = value
             return self.values[hp.name]
         return None  # Ensures inactive values are not relied on by user.
@@ -881,7 +881,7 @@ class HyperParameters(object):
                    if not self._exists(hp.name, hp.conditions)]
 
         for hp in hps:
-            self._register(hp)
+            self._register(hp, overwrite)
 
     @classmethod
     def from_proto(cls, proto):
