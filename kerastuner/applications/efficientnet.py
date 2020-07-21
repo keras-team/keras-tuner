@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Hypertunable version of ResNet based on Keras.applications."""
+"""Hypertunable version of EfficientNet based on Keras.applications."""
 
 import tensorflow as tf
 import tensorflow.keras as keras
@@ -24,16 +24,23 @@ from tensorflow.keras.layers.experimental import preprocessing
 from kerastuner.engine import hypermodel
 
 
-EFFICIENTNET_MODELS = {
-    'B0': efficientnet.EfficientNetB0,
-    'B1': efficientnet.EfficientNetB1,
-    'B2': efficientnet.EfficientNetB2,
-    'B3': efficientnet.EfficientNetB3,
-    'B4': efficientnet.EfficientNetB4,
-    'B5': efficientnet.EfficientNetB5,
-    'B6': efficientnet.EfficientNetB6,
-    'B7': efficientnet.EfficientNetB7,
-}
+EFFICIENTNET_MODELS = {'B0': efficientnet.EfficientNetB0,
+                       'B1': efficientnet.EfficientNetB1,
+                       'B2': efficientnet.EfficientNetB2,
+                       'B3': efficientnet.EfficientNetB3,
+                       'B4': efficientnet.EfficientNetB4,
+                       'B5': efficientnet.EfficientNetB5,
+                       'B6': efficientnet.EfficientNetB6,
+                       'B7': efficientnet.EfficientNetB7}
+
+EFFICIENTNET_IMG_SIZE = {'B0': 224,
+                         'B1': 240,
+                         'B2': 260,
+                         'B3': 300,
+                         'B4': 380,
+                         'B5': 456,
+                         'B6': 528,
+                         'B7': 600}
 
 
 class HyperEfficientNet(hypermodel.HyperModel):
@@ -51,7 +58,7 @@ class HyperEfficientNet(hypermodel.HyperModel):
               One of `input_shape` or `input_tensor` must be
               specified.
         classes: number of classes to classify images into.
-        augmentation: optional Model or HyperModel for image augmentation.
+        augmentation_model: optional Model or HyperModel for image augmentation.
         **kwargs: Additional keyword arguments that apply to all
             HyperModels. See `kerastuner.HyperModel`.
     """
@@ -59,8 +66,7 @@ class HyperEfficientNet(hypermodel.HyperModel):
                  input_shape=None,
                  input_tensor=None,
                  classes=None,
-                 augmentation=None,
-                 **kwargs):
+                 augmentation_model=None, **kwargs):
 
         super(HyperEfficientNet, self).__init__(**kwargs)
         if not classes:
@@ -68,12 +74,18 @@ class HyperEfficientNet(hypermodel.HyperModel):
 
         if input_shape is None and input_tensor is None:
             raise ValueError('You must specify either `input_shape` '
-                           'or `input_tensor`.')
+                             'or `input_tensor`.')
 
         self.input_shape = input_shape
         self.input_tensor = input_tensor
         self.classes = classes
-        self.augmentation = augmentation
+        if (isinstance(augmentation_model, hypermodel.HyperModel) or 
+            isinstance(augmentation_model, keras.models.Model)):
+            self.augmentation_model = augmentation_model
+        else:
+            raise ValueError('Keyword augmentation_model should be '
+                             'either a HyperModel or a Keras Model, '
+                             'received {}.'.format(augmentation_model))
 
     def build(self, hp):
 
@@ -84,26 +96,17 @@ class HyperEfficientNet(hypermodel.HyperModel):
             inputs = layers.Input(shape=self.input_shape)
             x = inputs
 
-        if self.augmentation:
-            if isinstance(self.augmentation, hypermodel.HyperModel):
-                augmentation = self.augmentation.build(hp)
-            elif isinstance(self.augmentation, keras.models.Model):
-                augmentation = self.augmentation
-            else:
-                raise ValueError('Keyword augment is either a HyperModel or a Keras Model')
-            x = augment(x)
+        if self.augmentation_model:
+            if isinstance(self.augmentation_model, hypermodel.HyperModel):
+                augmentation_model = self.augmentation_model.build(hp)
+            elif isinstance(self.augmentation_model, keras.models.Model):
+                augmentation_model = self.augmentation
+
+            x = augmentation_model(x)
 
         # Select one of pre-trained EfficientNet as feature extractor
         version = hp.Choice('version', ['B{}'.format(i) for i in range(8)], default='B0')
-        img_size_dict = {'B0': 224,
-                         'B1': 240,
-                         'B2': 260,
-                         'B3': 300,
-                         'B4': 380,
-                         'B5': 456,
-                         'B6': 528,
-                         'B7': 600}
-        img_size = img_size_dict[version]
+        img_size = EFFICIENTNET_IMG_SIZE[version]
 
         x = preprocessing.Resizing(img_size, img_size, interpolation='bilinear')(x)
         efficientnet_model = EFFICIENTNET_MODELS[version](include_top=False, input_tensor=x)
@@ -117,7 +120,11 @@ class HyperEfficientNet(hypermodel.HyperModel):
         elif pooling == 'max':
             x = layers.GlobalMaxPooling2D(name='max_pool')(x)
 
-        top_dropout_rate = hp.Float('top_dropout_rate', 0.2, 0.8, step=0.2, default=0.2)
+        top_dropout_rate = hp.Float('top_dropout_rate',
+                                    min_value=0.2,
+                                    max_value=0.8,
+                                    step=0.2,
+                                    default=0.2)
         x = layers.Dropout(top_dropout_rate, name='top_dropout')(x)        
 
         x = layers.Dense(
