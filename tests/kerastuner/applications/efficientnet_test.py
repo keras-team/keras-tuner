@@ -64,3 +64,26 @@ def test_input_tensor():
     model = hypermodel.build(hp)
     assert model.inputs == [inputs]
 
+def test_override_compiling_phase():
+    class MyHyperEfficientNet(efficientnet.HyperEfficientNet):
+        def _compile(self, model, hp):
+            learning_rate = 0.1
+            optimizer_name = hp.Choice('optimizer', ['adam', 'sgd'], default='adam')
+            if optimizer_name == 'sgd':
+                optimizer = tf.keras.optimizers.SGD(
+                    momentum=0.1,
+                    learning_rate=learning_rate)
+            elif optimizer_name == 'adam':
+                optimizer = tf.keras.optimizers.Adam(
+                    learning_rate=learning_rate)
+            model.compile(
+                optimizer=optimizer,
+                loss='categorical_crossentropy',
+                metrics=['accuracy'])
+
+    hp = hp_module.HyperParameters()
+    hypermodel = MyHyperEfficientNet(input_shape=(32, 32, 3), classes=5)
+    hypermodel.build(hp)
+    assert 'learning_rate' not in hp.values
+    assert hp.values['optimizer'] == 'adam'
+
