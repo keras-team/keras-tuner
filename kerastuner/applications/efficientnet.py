@@ -68,15 +68,12 @@ class HyperEfficientNet(hypermodel.HyperModel):
                  classes=None,
                  augmentation_model=None,
                  **kwargs):
-        if isinstance(augmentation_model, (hypermodel.HyperModel,
-                                           keras.Model)):
-            self.augmentation_model = augmentation_model
-        elif augmentation_model is None:
-            self.augmentation_model = None
-        else:
+        if not isinstance(augmentation_model, (hypermodel.HyperModel,
+                                               keras.Model,
+                                               type(None))):
             raise ValueError('Keyword augmentation_model should be '
-                             'either a HyperModel or a Keras Model, '
-                             'received {}.'.format(augmentation_model))
+                             'a HyperModel, a Keras Model or empty. '
+                             'Received {}.'.format(augmentation_model))
 
         if not classes:
             raise ValueError('You must specify `classes`')
@@ -88,6 +85,7 @@ class HyperEfficientNet(hypermodel.HyperModel):
         self.input_shape = input_shape
         self.input_tensor = input_tensor
         self.classes = classes
+        self.augmentation_model = augmentation_model
 
         super(HyperEfficientNet, self).__init__(**kwargs)
 
