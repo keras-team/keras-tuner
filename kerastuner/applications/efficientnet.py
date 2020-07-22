@@ -66,9 +66,18 @@ class HyperEfficientNet(hypermodel.HyperModel):
                  input_shape=None,
                  input_tensor=None,
                  classes=None,
-                 augmentation_model=None, **kwargs):
+                 augmentation_model=None,
+                 **kwargs):
+        if isinstance(augmentation_model, (hypermodel.HyperModel,
+                                           keras.Model)):
+            self.augmentation_model = augmentation_model
+        elif augmentation_model is None:
+            self.augmentation_model = None
+        else:
+            raise ValueError('Keyword augmentation_model should be '
+                             'either a HyperModel or a Keras Model, '
+                             'received {}.'.format(augmentation_model))
 
-        super(HyperEfficientNet, self).__init__(**kwargs)
         if not classes:
             raise ValueError('You must specify `classes`')
 
@@ -79,13 +88,8 @@ class HyperEfficientNet(hypermodel.HyperModel):
         self.input_shape = input_shape
         self.input_tensor = input_tensor
         self.classes = classes
-        if (isinstance(augmentation_model, hypermodel.HyperModel) or 
-            isinstance(augmentation_model, keras.models.Model)):
-            self.augmentation_model = augmentation_model
-        else:
-            raise ValueError('Keyword augmentation_model should be '
-                             'either a HyperModel or a Keras Model, '
-                             'received {}.'.format(augmentation_model))
+
+        super(HyperEfficientNet, self).__init__(**kwargs)
 
     def build(self, hp):
 
@@ -100,7 +104,7 @@ class HyperEfficientNet(hypermodel.HyperModel):
             if isinstance(self.augmentation_model, hypermodel.HyperModel):
                 augmentation_model = self.augmentation_model.build(hp)
             elif isinstance(self.augmentation_model, keras.models.Model):
-                augmentation_model = self.augmentation
+                augmentation_model = self.augmentation_model
 
             x = augmentation_model(x)
 
