@@ -31,10 +31,10 @@ import random
 # Each function takes a factor (0 to 1) for the strength
 # of the transform.
 TRANSFORMS = {
-'translate_x': lambda x: preprocessing.RandomTranslation(x, 0),
-'translate_y': lambda y: preprocessing.RandomTranslation(0, y),
-'rotate': preprocessing.RandomRotation,
-'contrast': preprocessing.RandomContrast,
+    'translate_x': lambda x: preprocessing.RandomTranslation(x, 0),
+    'translate_y': lambda y: preprocessing.RandomTranslation(0, y),
+    'rotate': preprocessing.RandomRotation,
+    'contrast': preprocessing.RandomContrast,
 }
 
 class HyperAugment(hypermodel.HyperModel):
@@ -52,12 +52,12 @@ class HyperAugment(hypermodel.HyperModel):
             HyperModels. See `kerastuner.HyperModel`.
     """
     def __init__(self,
-        input_shape=None,
-        input_tensor=None,
-        rotate=True,
-        translate_x=True,
-        translate_y=True,
-        contrast=True):
+                 input_shape=None,
+                 input_tensor=None,
+                 rotate=True,
+                 translate_x=True,
+                 translate_y=True,
+                 contrast=True):
         self.transforms = []
         if rotate:
             self.transforms.append('rotate')
@@ -153,8 +153,8 @@ class HyperRandAugment(HyperAugment):
                  input_tensor=None,
                  **kwargs):
         super(HyperRandAugment, self).__init__(input_shape=input_shape,
-            input_tensor=input_tensor,
-            **kwargs)
+                                               input_tensor=input_tensor,
+                                               **kwargs)
         if input_shape is None and input_tensor is None:
             raise ValueError('You must specify either `input_shape` or '
                              '`intput_tensor` when using HyperRandAugment.')
@@ -171,12 +171,11 @@ class HyperRandAugment(HyperAugment):
         randaug_count = hp.Int('randaug_count', 0, 5, default=2)
 
         for _ in range(randaug_count):
-            # selection tensor determines for each sample, which operation
-            # is used.
+            # selection tensor determines operation for each sample.
             batch_size = tf.shape(x)[0]
             selection = tf.random.uniform([batch_size, 1, 1, 1],
-                maxval=len(self.transforms),
-                dtype='int32')
+                                          maxval=len(self.transforms),
+                                          dtype='int32')
 
             for (i, transform) in enumerate(self.transforms):
                 transform_layer = TRANSFORMS[transform](randaug_mag)
