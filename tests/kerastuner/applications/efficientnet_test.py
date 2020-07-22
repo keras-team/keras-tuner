@@ -20,7 +20,7 @@ import tensorflow as tf
 
 from kerastuner.applications import efficientnet 
 from kerastuner.engine import hyperparameters as hp_module
-
+from kerastuner.engine import hypermodel as hm_module
 
 @pytest.mark.skipif('TRAVIS' in os.environ, reason='Causes CI to stall')
 @pytest.mark.parametrize('version', ['B0', 'B1'])
@@ -87,3 +87,34 @@ def test_override_compiling_phase():
     assert 'learning_rate' not in hp.values
     assert hp.values['optimizer'] == 'adam'
 
+def test_augmentation_param_invalid_input():
+    with pytest.raises(ValueError):
+        hypermodel = efficientnet.HyperEfficientNet(input_shape=(32, 32, 3),
+                                                    classes=10,
+                                                    augmentation_model=0)
+
+def test_augmentation_param_fixed_model():
+    hp = hp_module.HyperParameters()
+    aug_model = tf.keras.Sequential(name='aug')
+    hypermodel = efficientnet.HyperEfficientNet(input_shape=(32, 32, 3),
+                                                classes=10,
+                                                augmentation_model=aug_model)
+    model = hypermodel.build(hp)
+    assert model.layers[1].name == 'aug'
+
+def test_augmentation_param_hyper_model():
+    class HyperAug(hm_module.HyperModel):
+        def build(self, hp):
+            model = tf.keras.Sequential(name='aug')
+            scaling_factor = hp.Choice('scaling_factor', [1])
+            model.add(tf.keras.layers.Lambda(lambda x: x * scaling_factor))
+            return model
+
+    hp = hp_module.HyperParameters()
+    aug_hm = HyperAug()
+    hypermodel = efficientnet.HyperEfficientNet(input_shape=(32, 32, 3),
+                                                classes=10,
+                                                augmentation_model=aug_hm)
+    model = hypermodel.build(hp)
+    assert model.layers[1].name == 'aug'
+    assert hp.values['scaling_factor'] == 1
