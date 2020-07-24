@@ -82,9 +82,9 @@ tuner.search(x, y,
 
 class MyHyperModel(HyperModel):
 
-    def __init__(self, img_size, num_classes):
+    def __init__(self, img_size, classes):
         self.img_size = img_size
-        self.num_classes = num_classes
+        self.classes = classes
 
     def build(self, hp):
         model = keras.Sequential()
@@ -92,7 +92,7 @@ class MyHyperModel(HyperModel):
         for i in range(hp.Int('num_layers', 2, 20)):
             model.add(layers.Dense(units=hp.Int('units_' + str(i), 32, 512, 32),
                                    activation='relu'))
-        model.add(layers.Dense(self.num_classes, activation='softmax'))
+        model.add(layers.Dense(self.classes, activation='softmax'))
         model.compile(
             optimizer=keras.optimizers.Adam(
                 hp.Choice('learning_rate', [1e-2, 1e-3, 1e-4])),
@@ -102,7 +102,7 @@ class MyHyperModel(HyperModel):
 
 
 tuner = RandomSearch(
-    MyHyperModel(img_size=(28, 28), num_classes=10),
+    MyHyperModel(img_size=(28, 28), classes=10),
     objective='val_accuracy',
     max_trials=5,
     directory='test_dir')
@@ -208,3 +208,90 @@ tuner.search(x=x,
              y=y,
              epochs=5,
              validation_data=(val_x, val_y))
+
+
+# """Case #8:
+# - Similar to Base Case.
+# - However, specify conditions on units so that the summary show
+# - only relevant hyperparameters.
+# """
+
+
+def build_model(hp):
+    model = keras.Sequential()
+    model.add(layers.Flatten(input_shape=(28, 28)))
+    min_layers = 2
+    max_layers = 5
+    for i in range(hp.Int('num_layers', min_layers, max_layers)):
+        with hp.conditional_scope('num_layers', list(range(i + 1, max_layers + 1))):
+            model.add(layers.Dense(units=hp.Int('units_' + str(i), 32, 256, 32),
+                                   activation='relu'))
+    model.add(layers.Dense(10, activation='softmax'))
+    model.compile(
+        optimizer=keras.optimizers.Adam(1e-4),
+        loss='sparse_categorical_crossentropy',
+        metrics=['accuracy'])
+    return model
+
+
+tuner = RandomSearch(
+    build_model,
+    objective='val_accuracy',
+    max_trials=10,
+    executions_per_trial=3,
+    directory='test_dir')
+
+tuner.search_space_summary()
+
+tuner.search(x=x,
+             y=y,
+             epochs=3,
+             validation_data=(val_x, val_y))
+
+tuner.results_summary()
+
+
+# """Case #9:
+# - Similar to Case #8, but use parent_name, parent_value keywords pair for
+# - conditional scope Using keywords for conditional scope does not
+# - support nested conditions.
+# """
+
+
+def build_model(hp):
+    model = keras.Sequential()
+    model.add(layers.Flatten(input_shape=(28, 28)))
+    min_layers = 2
+    max_layers = 5
+    for i in range(hp.Int('num_layers', min_layers, max_layers)):
+        model.add(layers.Dense(units=hp.Int(
+            'units_' + str(i),
+            32,
+            256,
+            32,
+            parent_name='num_layers',
+            parent_values=list(range(i + 1, max_layers + 1))),
+            activation='relu'))
+        model.add(layers.Dense(10, activation='softmax'))
+        model.compile(
+            optimizer=keras.optimizers.Adam(1e-4),
+            loss='sparse_categorical_crossentropy',
+            metrics=['accuracy'])
+        return model
+
+
+tuner = RandomSearch(
+    build_model,
+    objective='val_accuracy',
+    max_trials=10,
+    executions_per_trial=3,
+    directory='test_dir')
+
+tuner.search_space_summary()
+
+tuner.search(x=x,
+             y=y,
+             epochs=3,
+             validation_data=(val_x, val_y))
+
+tuner.results_summary()

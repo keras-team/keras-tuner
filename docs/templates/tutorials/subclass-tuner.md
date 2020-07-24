@@ -40,7 +40,7 @@ class MyTuner(kt.Tuner):
         model = self.hypermodel.build(trial.hyperparameters)
         score = ...
         self.oracle.update_trial(trial.trial_id, {'score': score})
-        self.oracle.save_model(trail.trial_id, model)
+        self.oracle.save_model(trial.trial_id, model)
 ```
 
 ### Adding HyperParameters during preprocessing, evaluation, etc.

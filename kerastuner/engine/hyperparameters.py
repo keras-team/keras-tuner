@@ -460,7 +460,9 @@ class Fixed(HyperParameter):
             name=name, default=value, **kwargs)
         self.name = name
 
-        if isinstance(value, six.integer_types):
+        if isinstance(value, bool):
+            value = bool(value)
+        elif isinstance(value, six.integer_types):
             value = int(value)
         elif isinstance(value, six.string_types):
             value = str(value)
@@ -482,7 +484,11 @@ class Fixed(HyperParameter):
         return self.value
 
     def get_config(self):
-        return {'name': self.name, 'value': self.value}
+        config = super(Fixed, self).get_config()
+        config['name'] = self.name
+        config.pop('default')
+        config['value'] = self.value
+        return config
 
     @classmethod
     def from_proto(cls, proto):
@@ -620,7 +626,7 @@ class HyperParameters(object):
             return None  # Ensures inactive values are not relied on by user.
         return self._register(hp)
 
-    def _register(self, hyperparameter):
+    def _register(self, hyperparameter, overwrite=False):
         """Registers a `HyperParameter` into this container."""
         hp = hyperparameter
         # Copy to ensure this param can be serialized.
@@ -629,9 +635,11 @@ class HyperParameters(object):
         self._space.append(hp)
         value = hp.default
         # Only add active values to `self.values`.
-        if self._conditions_are_active():
-            self.values[hp.name] = value
-            return value
+        if self._conditions_are_active(hp.conditions):
+            # Use the default value only if not populated.
+            if overwrite or hp.name not in self.values:
+                self.values[hp.name] = value
+            return self.values[hp.name]
         return None  # Ensures inactive values are not relied on by user.
 
     def get(self, name):
@@ -873,7 +881,7 @@ class HyperParameters(object):
                    if not self._exists(hp.name, hp.conditions)]
 
         for hp in hps:
-            self._register(hp)
+            self._register(hp, overwrite)
 
     @classmethod
     def from_proto(cls, proto):

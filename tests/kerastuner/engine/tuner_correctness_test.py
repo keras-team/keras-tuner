@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import collections
 
 import pytest
 import numpy as np
@@ -302,20 +303,52 @@ def test_on_train_begin_in_tuner(tmp_dir):
         def _on_train_begin(self, model, hp, *fit_args, **fit_kwargs):
             self.was_called = True
 
-    class MyOracle(kerastuner.engine.oracle.Oracle):
-        def update_trial(self, trial_id, metrics, step=0):
-            pass
-
     tuner = MyTuner(
-        oracle=MyOracle(objective='val_accuracy'),
+        oracle=kerastuner.tuners.randomsearch.RandomSearchOracle(
+            objective='val_loss',
+            max_trials=2,
+        ),
         hypermodel=build_model,
         directory=tmp_dir)
 
     tuner.run_trial(
-        kerastuner.engine.trial.Trial(
-            kerastuner.engine.hyperparameters.HyperParameters()),
+        tuner.oracle.create_trial('tuner0'),
         TRAIN_INPUTS,
         TRAIN_TARGETS,
         validation_data=(VAL_INPUTS, VAL_TARGETS))
 
+    assert tuner.was_called
+
+
+def save_model_setup_tuner(tmp_dir):
+    class MyTuner(tuner_module.Tuner):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.was_called = False
+
+        def _delete_checkpoint(self, trial_id, epoch):
+            self.was_called = True
+
+        def _checkpoint_model(self, model, trial_id, epoch):
+            pass
+
+    class MyOracle(kerastuner.engine.oracle.Oracle):
+        def get_trial(self, trial_id):
+            return collections.namedtuple('Trial', ['best_step'])(5)
+
+    return MyTuner(
+        oracle=MyOracle(objective='val_accuracy'),
+        hypermodel=build_model,
+        directory=tmp_dir)
+
+
+def test_save_model_delete_not_called(tmp_dir):
+    tuner = save_model_setup_tuner(tmp_dir)
+    tuner.save_model('a', None, step=15)
+    assert not tuner.was_called
+
+
+def test_save_model_delete_called(tmp_dir):
+    tuner = save_model_setup_tuner(tmp_dir)
+    tuner.save_model('a', None, step=16)
     assert tuner.was_called
