@@ -25,8 +25,6 @@ from kerastuner.engine import hypermodel
 from tensorflow.keras import layers
 from tensorflow.keras.layers.experimental import preprocessing
 
-import random
-
 # dict of functions that create layers for transforms.
 # Each function takes a factor (0 to 1) for the strength
 # of the transform.
@@ -36,6 +34,7 @@ TRANSFORMS = {
     'rotate': preprocessing.RandomRotation,
     'contrast': preprocessing.RandomContrast,
 }
+
 
 class HyperAugment(hypermodel.HyperModel):
     """ Builds HyperModel for image augmentation.
@@ -72,7 +71,8 @@ class HyperAugment(hypermodel.HyperModel):
         self.input_tensor = input_tensor
 
     def build(self, hp):
-        raise NotImplemented
+        raise NotImplementedError
+
 
 class HyperFixedAugment(HyperAugment):
     """An HyperModel for fixed policy augmentation.
@@ -109,11 +109,16 @@ class HyperFixedAugment(HyperAugment):
             model.add(keras.Input(shape=self.input_shape))
 
         for transform in self.transforms:
-            transform_factor = hp.Float(f'factor_{transform}', 0.05, 1, step=0.05, default=0.15)
+            transform_factor = hp.Float(f'factor_{transform}',
+                                        min_value=0.05,
+                                        max_value=1,
+                                        step=0.05,
+                                        default=0.15)
             transform_layer = TRANSFORMS[transform](transform_factor)
             model.add(transform_layer)
 
         return model
+
 
 class HyperRandAugment(HyperAugment):
     """An HyperModel for Rand augmentation.
@@ -184,7 +189,6 @@ class HyperRandAugment(HyperAugment):
                 # for each sample, apply the transform if and only if
                 # selection matches the transform index `i`
                 x = tf.where(tf.equal(i, selection), x_trans, x)
-                
+
         model = keras.Model(inputs, x, name='rand_augment')
         return model
-
