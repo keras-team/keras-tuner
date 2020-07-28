@@ -101,6 +101,11 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
 
         # Fit a GPR to the completed trials and return the predicted optimum values.
         x, y = self._vectorize_trials()
+        
+        # Remove trials with non-finite outcomes
+        x = x[np.isfinite(y)]
+        y = y[np.isfinite(y)]
+        
         try:
             self.gpr.fit(x, y)
         except exceptions.ConvergenceWarning:
