@@ -18,9 +18,10 @@ import os
 import pytest
 import tensorflow as tf
 
-from kerastuner.applications import efficientnet 
+from kerastuner.applications import efficientnet
 from kerastuner.engine import hyperparameters as hp_module
 from kerastuner.engine import hypermodel as hm_module
+
 
 @pytest.mark.skipif('TRAVIS' in os.environ, reason='Causes CI to stall')
 @pytest.mark.parametrize('version', ['B0', 'B1'])
@@ -40,7 +41,8 @@ def test_model_construction(version):
 
 def test_hyperparameter_existence_and_defaults():
     hp = hp_module.HyperParameters()
-    hypermodel = efficientnet.HyperEfficientNet(input_shape=(224, 224, 3), classes=10)
+    hypermodel = efficientnet.HyperEfficientNet(input_shape=(224, 224, 3),
+                                                classes=10)
     hypermodel.build(hp)
     assert hp.get('version') == 'B0'
     assert hp.get('top_dropout_rate') == 0.2
@@ -52,10 +54,12 @@ def test_hyperparameter_override():
     hp = hp_module.HyperParameters()
     hp.Choice('version', ['B1'])
     hp.Fixed('top_dropout_rate', 0.5)
-    hypermodel = efficientnet.HyperEfficientNet(input_shape=(256, 256, 3), classes=10)
+    hypermodel = efficientnet.HyperEfficientNet(input_shape=(256, 256, 3),
+                                                classes=10)
     hypermodel.build(hp)
     assert hp.get('version') == 'B1'
     assert hp.get('top_dropout_rate') == 0.5
+
 
 def test_input_tensor():
     hp = hp_module.HyperParameters()
@@ -63,6 +67,7 @@ def test_input_tensor():
     hypermodel = efficientnet.HyperEfficientNet(input_tensor=inputs, classes=10)
     model = hypermodel.build(hp)
     assert model.inputs == [inputs]
+
 
 def test_override_compiling_phase():
     class MyHyperEfficientNet(efficientnet.HyperEfficientNet):
@@ -87,11 +92,13 @@ def test_override_compiling_phase():
     assert 'learning_rate' not in hp.values
     assert hp.values['optimizer'] == 'adam'
 
+
 def test_augmentation_param_invalid_input():
     with pytest.raises(ValueError):
-        hypermodel = efficientnet.HyperEfficientNet(input_shape=(32, 32, 3),
-                                                    classes=10,
-                                                    augmentation_model=0)
+        efficientnet.HyperEfficientNet(input_shape=(32, 32, 3),
+                                       classes=10,
+                                       augmentation_model=0)
+
 
 def test_augmentation_param_fixed_model():
     hp = hp_module.HyperParameters()
@@ -101,6 +108,7 @@ def test_augmentation_param_fixed_model():
                                                 augmentation_model=aug_model)
     model = hypermodel.build(hp)
     assert model.layers[1].name == 'aug'
+
 
 def test_augmentation_param_hyper_model():
     class HyperAug(hm_module.HyperModel):

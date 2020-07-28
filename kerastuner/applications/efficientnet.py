@@ -50,7 +50,7 @@ class HyperEfficientNet(hypermodel.HyperModel):
 
         input_shape: shape tuple, e.g. `(256, 256, 3)`.
               Input images will be resized if different from
-              the default input size of the version of 
+              the default input size of the version of
               efficientnet base model used.
               One of `input_shape` or `input_tensor` must be
               specified.
@@ -107,11 +107,14 @@ class HyperEfficientNet(hypermodel.HyperModel):
             x = augmentation_model(x)
 
         # Select one of pre-trained EfficientNet as feature extractor
-        version = hp.Choice('version', ['B{}'.format(i) for i in range(8)], default='B0')
+        version = hp.Choice('version',
+                            ['B{}'.format(i) for i in range(8)],
+                            default='B0')
         img_size = EFFICIENTNET_IMG_SIZE[version]
 
         x = preprocessing.Resizing(img_size, img_size, interpolation='bilinear')(x)
-        efficientnet_model = EFFICIENTNET_MODELS[version](include_top=False, input_tensor=x)
+        efficientnet_model = EFFICIENTNET_MODELS[version](include_top=False,
+                                                          input_tensor=x)
 
         # Rebuild top layers of the model.
         x = efficientnet_model.output
@@ -127,7 +130,7 @@ class HyperEfficientNet(hypermodel.HyperModel):
                                     max_value=0.8,
                                     step=0.2,
                                     default=0.2)
-        x = layers.Dropout(top_dropout_rate, name='top_dropout')(x)        
+        x = layers.Dropout(top_dropout_rate, name='top_dropout')(x)
 
         x = layers.Dense(
             self.classes, activation='softmax', name='probs')(x)
@@ -137,7 +140,6 @@ class HyperEfficientNet(hypermodel.HyperModel):
         self._compile(model, hp)
 
         return model
-
 
     def _compile(self, model, hp):
         """ Compile model using hyperparameters in hp.
@@ -153,4 +155,3 @@ class HyperEfficientNet(hypermodel.HyperModel):
             optimizer=optimizer,
             loss='categorical_crossentropy',
             metrics=['accuracy'])
-
