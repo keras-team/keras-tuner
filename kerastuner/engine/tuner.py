@@ -290,7 +290,7 @@ class Tuner(base_tuner.BaseTuner):
             # Each checkpoint is saved in its own directory.
             self._get_checkpoint_dir(trial_id, epoch),
             'checkpoint')
-        if (isinstance(tf.distribute.get_strategy(), tf.distribute.TPUStrategy) and
+        if (isinstance(self.distribution_strategy, tf.distribute.TPUStrategy) and
                 'gs://' not in self.project_dir):
             # TPU strategy only support saving h5 format on local path
             return checkpoint_fname + '.h5'
