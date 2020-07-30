@@ -48,6 +48,9 @@ class HyperEfficientNet(hypermodel.HyperModel):
 
       # Arguments:
 
+        include_top: whether to include the fully-connected
+            layer at the top of the network. Model is not
+            compiled if include_top is set to False.
         input_shape: shape tuple, e.g. `(256, 256, 3)`.
               Input images will be resized if different from
               the default input size of the version of
@@ -63,6 +66,7 @@ class HyperEfficientNet(hypermodel.HyperModel):
             HyperModels. See `kerastuner.HyperModel`.
     """
     def __init__(self,
+                 include_top=True,
                  input_shape=None,
                  input_tensor=None,
                  classes=None,
@@ -75,13 +79,15 @@ class HyperEfficientNet(hypermodel.HyperModel):
                              'a HyperModel, a Keras Model or empty. '
                              'Received {}.'.format(augmentation_model))
 
-        if not classes:
-            raise ValueError('You must specify `classes`')
+        if include_top and classes is None:
+            raise ValueError('You must specify `classes` when '
+                             '`include_top=True`')
 
         if input_shape is None and input_tensor is None:
             raise ValueError('You must specify either `input_shape` '
                              'or `input_tensor`.')
 
+        self.include_top = include_top
         self.input_shape = input_shape
         self.input_tensor = input_tensor
         self.classes = classes
@@ -125,21 +131,24 @@ class HyperEfficientNet(hypermodel.HyperModel):
         elif pooling == 'max':
             x = layers.GlobalMaxPooling2D(name='max_pool')(x)
 
-        top_dropout_rate = hp.Float('top_dropout_rate',
-                                    min_value=0.2,
-                                    max_value=0.8,
-                                    step=0.2,
-                                    default=0.2)
-        x = layers.Dropout(top_dropout_rate, name='top_dropout')(x)
+        if self.include_top:
+            top_dropout_rate = hp.Float('top_dropout_rate',
+                                        min_value=0.2,
+                                        max_value=0.8,
+                                        step=0.2,
+                                        default=0.2)
+            x = layers.Dropout(top_dropout_rate, name='top_dropout')(x)
 
-        x = layers.Dense(
-            self.classes, activation='softmax', name='probs')(x)
+            x = layers.Dense(
+                self.classes, activation='softmax', name='probs')(x)
 
-        # compile
-        model = keras.Model(inputs, x, name='EfficientNet')
-        self._compile(model, hp)
+            # compile
+            model = keras.Model(inputs, x, name='EfficientNet')
+            self._compile(model, hp)
 
-        return model
+            return model
+        else:
+            return keras.Model(inputs, x, name='EfficientNet')
 
     def _compile(self, model, hp):
         """ Compile model using hyperparameters in hp.
