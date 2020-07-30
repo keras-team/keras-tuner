@@ -36,7 +36,7 @@ TRANSFORMS = {
 }
 
 
-class HyperAugment(hypermodel.HyperModel):
+class HyperImageAugment(hypermodel.HyperModel):
     """ Builds HyperModel for image augmentation.
 
     # Arguments:
@@ -74,7 +74,7 @@ class HyperAugment(hypermodel.HyperModel):
         raise NotImplementedError
 
 
-class HyperFixedAugment(HyperAugment):
+class HyperImageFixedAugment(HyperImageAugment):
     """An HyperModel for fixed policy augmentation.
        A tunable hyperparameter is assigned to each of the
        transforms chosen, and the transforms are applied
@@ -120,8 +120,8 @@ class HyperFixedAugment(HyperAugment):
         return model
 
 
-class HyperRandAugment(HyperAugment):
-    """An HyperModel for Rand augmentation.
+class HyperImageRandAugment(HyperImageAugment):
+    """An HyperModel for RandAugment for image.
        Based on https://arxiv.org/abs/1909.13719.
        This augmentation randomly picks `randaug_count` augmentation transforms
        from a pool of transforms for each sample, and set the augmentation
@@ -157,12 +157,12 @@ class HyperRandAugment(HyperAugment):
                  input_shape=None,
                  input_tensor=None,
                  **kwargs):
-        super(HyperRandAugment, self).__init__(input_shape=input_shape,
+        super(HyperImageRandAugment, self).__init__(input_shape=input_shape,
                                                input_tensor=input_tensor,
                                                **kwargs)
         if input_shape is None and input_tensor is None:
             raise ValueError('You must specify either `input_shape` or '
-                             '`intput_tensor` when using HyperRandAugment.')
+                             '`intput_tensor` when using HyperImageRandAugment.')
 
     def build(self, hp):
         if self.input_tensor is not None:
