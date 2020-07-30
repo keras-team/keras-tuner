@@ -14,6 +14,7 @@
 import collections
 
 import pytest
+import mock
 import numpy as np
 
 import kerastuner
@@ -202,6 +203,47 @@ def test_checkpoint_removal(tmp_dir):
     trial_id = trial.trial_id
     assert tf.io.gfile.exists(tuner._get_checkpoint_fname(trial_id, 20))
     assert not tf.io.gfile.exists(tuner._get_checkpoint_fname(trial_id, 10))
+
+
+def test_checkpoint_fname_tpu(tmp_dir):
+    def build_model(hp):
+        model = keras.Sequential([
+            keras.layers.Dense(hp.Int('size', 5, 10)),
+            keras.layers.Dense(1)])
+        model.compile('sgd', 'mse', metrics=['accuracy'])
+        return model
+
+    strategy = mock.MagicMock(spec=tf.distribute.TPUStrategy)
+
+    tuner = kerastuner.Tuner(
+        oracle=kerastuner.tuners.randomsearch.RandomSearchOracle(
+            objective='val_accuracy',
+            max_trials=1,
+            seed=1337),
+        hypermodel=build_model,
+        directory=tmp_dir,
+        distribution_strategy=strategy,
+    )
+    assert tuner._get_checkpoint_fname(trial_id=0, epoch=20).endswith('.h5')
+
+
+def test_checkpoint_fname_no_tpu(tmp_dir):
+    def build_model(hp):
+        model = keras.Sequential([
+            keras.layers.Dense(hp.Int('size', 5, 10)),
+            keras.layers.Dense(1)])
+        model.compile('sgd', 'mse', metrics=['accuracy'])
+        return model
+
+    tuner = kerastuner.Tuner(
+        oracle=kerastuner.tuners.randomsearch.RandomSearchOracle(
+            objective='val_accuracy',
+            max_trials=1,
+            seed=1337),
+        hypermodel=build_model,
+        directory=tmp_dir,
+    )
+    assert not tuner._get_checkpoint_fname(trial_id=0, epoch=20).endswith('.h5')
 
 
 def test_metric_direction_inferred_from_objective(tmp_dir):
