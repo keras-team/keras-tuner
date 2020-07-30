@@ -30,16 +30,18 @@ from kerastuner.engine import hyperparameters as hp_module
 def test_transforms_choice(augment):
     hm = augment(input_shape=(32, 32, 3))
     # Default choice
-    assert hm.transforms == ['rotate',
-                             'translate_x',
-                             'translate_y',
-                             'contrast']
+    assert hm.transforms == [('rotate', (0, 0.2)),
+                             ('translate_x', (0, 0.1)),
+                             ('translate_y', (0, 0.1)),
+                             ('contrast', (0, 0.1))]
 
     hm = augment(input_shape=(32, 32, 3),
-                 rotate=True,
-                 translate_x=False,
-                 contrast=False)
-    assert hm.transforms == ['rotate', 'translate_y']
+                 rotate=0.3,
+                 translate_x=[0.1, 0.5],
+                 contrast=None)
+    assert hm.transforms == [('rotate', (0, 0.3)),
+                             ('translate_x', (0.1, 0.5)),
+                             ('translate_y', (0, 0.1))]
 
 
 def test_input_requirement_fixed_aug():
@@ -65,9 +67,18 @@ def test_input_requirement_rand_aug():
     assert model.built
 
 
-def test_model_construction_fixed_aug():
+def test_model_construction_factor_zero_fixed_aug():
     hp = hp_module.HyperParameters()
     hm = aug_module.HyperImageFixedAugment(input_shape=(None, None, 3))
+    model = hm.build(hp)
+    # factors default all zero, the model should be empty
+    assert not model.layers
+
+
+def test_model_construction_fixed_aug():
+    hp = hp_module.HyperParameters()
+    hm = aug_module.HyperImageFixedAugment(input_shape=(None, None, 3),
+                                           rotate=[0.2, 0.5])
     model = hm.build(hp)
     assert model.layers
     assert model.name == 'fixed_augment'
@@ -80,9 +91,18 @@ def test_model_construction_fixed_aug():
     assert (out != 1).sum() == 0
 
 
-def test_model_construction_rand_aug():
+def test_model_construction_factor_zero_rand_aug():
     hp = hp_module.HyperParameters()
     hm = aug_module.HyperImageRandAugment(input_shape=(None, None, 3))
+    model = hm.build(hp)
+    # factors default all zero, the model should only have input layer
+    assert len(model.layers) == 1
+
+
+def test_model_construction_rand_aug():
+    hp = hp_module.HyperParameters()
+    hm = aug_module.HyperImageRandAugment(input_shape=(None, None, 3),
+                                          rotate=[0.2, 0.5])
     model = hm.build(hp)
     assert model.layers
     assert model.name == 'rand_augment'
@@ -95,23 +115,25 @@ def test_model_construction_rand_aug():
     assert (out != 1).sum() == 0
 
 
-def test_hyperparameter_selection_and_defaults_fixed_aug():
+def test_hyperparameter_selection_and_hp_defaults_fixed_aug():
     hp = hp_module.HyperParameters()
     hm = aug_module.HyperImageFixedAugment(input_shape=(32, 32, 3),
-                                           contrast=False)
+                                           translate_x=[0.2, 0.4],
+                                           contrast=None)
     hm.build(hp)
-    assert hp.get('factor_rotate') == 0.15
-    assert hp.get('factor_translate_x') == 0.15
-    assert hp.get('factor_translate_y') == 0.15
+    assert hp.get('factor_rotate') == 0
+    assert hp.get('factor_translate_x') == 0.2
+    assert hp.get('factor_translate_y') == 0
     assert 'factor_contrast' not in hp.values
 
 
-def test_hyperparameter_existence_and_defaults_rand_aug():
+def test_hyperparameter_existence_and_hp_defaults_rand_aug():
     hp = hp_module.HyperParameters()
     hm = aug_module.HyperImageRandAugment(input_shape=(32, 32, 3),
+                                          randaug_count=[2, 5],
                                           contrast=False)
     hm.build(hp)
-    assert hp.get('randaug_mag') == 0.2
+    assert hp.get('randaug_mag') == 0
     assert hp.get('randaug_count') == 2
 
 
@@ -123,8 +145,8 @@ def test_hyperparameter_override_fixed_aug():
     hm.build(hp)
     assert hp.get('factor_rotate') == 0.9
     assert hp.get('factor_translate_x') == 0.8
-    assert hp.get('factor_translate_y') == 0.15
-    assert hp.get('factor_contrast') == 0.15
+    assert hp.get('factor_translate_y') == 0.0
+    assert hp.get('factor_contrast') == 0.0
 
 
 def test_hyperparameter_override_rand_aug():
