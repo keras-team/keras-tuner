@@ -44,7 +44,7 @@ EFFICIENTNET_IMG_SIZE = {'B0': 224,
 
 
 class HyperEfficientNet(hypermodel.HyperModel):
-    """An EfficientNet HyperModel. 
+    """An EfficientNet HyperModel.
     Models built by this HyperModel takes input image data in
     ints [0, 255]. The output data should be one-hot encoded
     with number of classes matching `classes`.
