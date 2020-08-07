@@ -57,14 +57,14 @@ class HyperImageAugment(hypermodel.HyperModel):
             horizontal translation transform in the augmentation. A factor is
             chosen for each trial. It sets maximum of horizontal translation in
             terms of ratio over the width among all samples in the trial.
-            Default is 0.3. When `translate_x` is a single number, the search range
+            Default is 0.4. When `translate_x` is a single number, the search range
             is [0, `translate_x`].
             The transform is off when set to None.
         translate_y: A number between [0, 1], a list of two numbers between [0, 1]
             or None. Configures the search space of the factor of random vertical
             translation transform in the augmentation. A factor is chosen for each
             trial. It sets maximum of vertical translation in terms of ratio over
-            the height among all samples in the trial. Default is 0.3. When
+            the height among all samples in the trial. Default is 0.4. When
             `translate_y` is a single number ,the search range is [0, `translate_y`].
             The transform is off when set to None.
         contrast: A number between [0, 1], a list of two numbers between [0, 1]
@@ -123,8 +123,8 @@ class HyperImageAugment(hypermodel.HyperModel):
                  input_shape=None,
                  input_tensor=None,
                  rotate=0.5,
-                 translate_x=0.3,
-                 translate_y=0.3,
+                 translate_x=0.4,
+                 translate_y=0.4,
                  contrast=0.3,
                  augment_layers=3,
                  **kwargs):
@@ -153,7 +153,7 @@ class HyperImageAugment(hypermodel.HyperModel):
             if not (isinstance(augment_layers_min, int) and
                     isinstance(augment_layers_max, int)):
                 raise ValueError('Keyword argument `augment_layers` must be int,'
-                                 'but received {}. '.format(randaug_mag))
+                                 'but received {}. '.format(augment_layers))
 
             self.augment_layers_min = augment_layers_min
             self.augment_layers_max = augment_layers_max
