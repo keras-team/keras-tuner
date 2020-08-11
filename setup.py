@@ -35,7 +35,7 @@ setup(
     install_requires=[
         'packaging',
         'future',
-        'numpy',
+        'numpy < 1.19.0',
         'tabulate',
         'terminaltables',
         'colorama',
