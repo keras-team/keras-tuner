@@ -67,10 +67,10 @@ class HyperEfficientNet(hypermodel.HyperModel):
               specified.
         classes: number of classes to classify images into.
         weights: str or None. Default is 'imagenet', where the weights pre-trained
-              on imagenet will be downloaded. Otherwise the weights will be loaded from
-              the directory in 'weights', and are expected to be in h5 format with naming
-              convention '{weights}/b{n}_notop.h5' where n is 0 to 7. If set to None,
-              the weights will be initiated from scratch.
+              on imagenet will be downloaded. Otherwise the weights will be
+              loaded from the directory in 'weights', and are expected to be in
+              h5 format with naming convention '{weights}/b{n}_notop.h5' where n
+              is 0 to 7. If set to None, the weights will be initiated from scratch.
         augmentation_model: optional Model or HyperModel for image augmentation.
         **kwargs: Additional keyword arguments that apply to all
             HyperModels. See `kerastuner.HyperModel`.
@@ -80,7 +80,7 @@ class HyperEfficientNet(hypermodel.HyperModel):
                  input_shape=None,
                  input_tensor=None,
                  classes=None,
-                 weights='imagenet'
+                 weights='imagenet',
                  augmentation_model=None,
                  **kwargs):
         if not isinstance(augmentation_model, (hypermodel.HyperModel,
