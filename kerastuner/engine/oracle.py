@@ -292,6 +292,9 @@ class Oracle(stateful.Stateful):
         # Hyperparameters are part of the state because they can be added to
         # during the course of the search.
         state['hyperparameters'] = self.hyperparameters.get_config()
+        state['seed'] = self.seed
+        state['seed_state'] = self._seed_state
+        state['tried_so_far'] = list(self._tried_so_far)
         return state
 
     def set_state(self, state):
@@ -301,6 +304,9 @@ class Oracle(stateful.Stateful):
             for tuner_id, trial_id in state['ongoing_trials'].items()}
         self.hyperparameters = hp_module.HyperParameters.from_config(
             state['hyperparameters'])
+        self.seed = state['seed']
+        self._seed_state = state['seed_state']
+        self._tried_so_far = set(state['tried_so_far'])
 
     def _set_project_dir(self, directory, project_name, overwrite=False):
         """Sets the project directory and reloads the Oracle."""
