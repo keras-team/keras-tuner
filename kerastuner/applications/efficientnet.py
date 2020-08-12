@@ -64,6 +64,11 @@ class HyperEfficientNet(hypermodel.HyperModel):
               One of `input_shape` or `input_tensor` must be
               specified.
         classes: number of classes to classify images into.
+        weights: str or None. Default is 'imagenet', where the weights pre-trained
+              on imagenet will be downloaded. Otherwise the weights will be loaded from
+              the directory in 'weights', and are expected to be in h5 format with naming
+              convention 'weights/b[0-7]_notop.h5'. If set to None, the weights will be
+              initiated from scratch.
         augmentation_model: optional Model or HyperModel for image augmentation.
         **kwargs: Additional keyword arguments that apply to all
             HyperModels. See `kerastuner.HyperModel`.
@@ -73,6 +78,7 @@ class HyperEfficientNet(hypermodel.HyperModel):
                  input_shape=None,
                  input_tensor=None,
                  classes=None,
+                 weights='imagenet'
                  augmentation_model=None,
                  **kwargs):
         if not isinstance(augmentation_model, (hypermodel.HyperModel,
@@ -95,6 +101,7 @@ class HyperEfficientNet(hypermodel.HyperModel):
         self.input_tensor = input_tensor
         self.classes = classes
         self.augmentation_model = augmentation_model
+        self.weights = weights
 
         super(HyperEfficientNet, self).__init__(**kwargs)
 
@@ -121,9 +128,14 @@ class HyperEfficientNet(hypermodel.HyperModel):
                             default='B0')
         img_size = EFFICIENTNET_IMG_SIZE[version]
 
+        if weights and (weights != 'imagenet'):
+            weights = os.path.join(weights, version.lower())
+            weights += '_notop.h5'
+
         x = preprocessing.Resizing(img_size, img_size, interpolation='bilinear')(x)
         efficientnet_model = EFFICIENTNET_MODELS[version](include_top=False,
-                                                          input_tensor=x)
+                                                          input_tensor=x,
+                                                          weights=weights)
 
         # Rebuild top layers of the model.
         x = efficientnet_model.output
@@ -138,7 +150,6 @@ class HyperEfficientNet(hypermodel.HyperModel):
             top_dropout_rate = hp.Float('top_dropout_rate',
                                         min_value=0.2,
                                         max_value=0.8,
-                                        step=0.2,
                                         default=0.2)
             x = layers.Dropout(top_dropout_rate, name='top_dropout')(x)
 
