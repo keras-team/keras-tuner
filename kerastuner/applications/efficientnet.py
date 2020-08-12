@@ -23,6 +23,8 @@ from tensorflow.keras.layers.experimental import preprocessing
 
 from kerastuner.engine import hypermodel
 
+import os
+
 
 EFFICIENTNET_MODELS = {'B0': efficientnet.EfficientNetB0,
                        'B1': efficientnet.EfficientNetB1,
@@ -67,8 +69,8 @@ class HyperEfficientNet(hypermodel.HyperModel):
         weights: str or None. Default is 'imagenet', where the weights pre-trained
               on imagenet will be downloaded. Otherwise the weights will be loaded from
               the directory in 'weights', and are expected to be in h5 format with naming
-              convention 'weights/b[0-7]_notop.h5'. If set to None, the weights will be
-              initiated from scratch.
+              convention '{weights}/b{n}_notop.h5' where n is 0 to 7. If set to None,
+              the weights will be initiated from scratch.
         augmentation_model: optional Model or HyperModel for image augmentation.
         **kwargs: Additional keyword arguments that apply to all
             HyperModels. See `kerastuner.HyperModel`.
@@ -131,6 +133,9 @@ class HyperEfficientNet(hypermodel.HyperModel):
         if weights and (weights != 'imagenet'):
             weights = os.path.join(weights, version.lower())
             weights += '_notop.h5'
+            if not os.path.isfile(weights):
+                raise ValueError('Expect path {} to include weight file; but '
+                                 'no file is found'.format(weights))
 
         x = preprocessing.Resizing(img_size, img_size, interpolation='bilinear')(x)
         efficientnet_model = EFFICIENTNET_MODELS[version](include_top=False,
