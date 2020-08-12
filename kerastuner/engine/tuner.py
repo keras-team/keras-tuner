@@ -124,6 +124,9 @@ class Tuner(base_tuner.BaseTuner):
         This method is called during `search` to evaluate a set of
         hyperparameters.
 
+        The training loop should be in `_run_fit` method for easier
+        override.
+
         # Arguments:
             trial: A `Trial` instance that contains the information
               needed to run this trial. `Hyperparameters` can be accessed
@@ -150,7 +153,8 @@ class Tuner(base_tuner.BaseTuner):
         model = self.hypermodel.build(trial.hyperparameters)
         self._on_train_begin(model, trial.hyperparameters,
                              *fit_args, **copied_fit_kwargs)
-        model.fit(*fit_args, **copied_fit_kwargs)
+        self._run_fit(model, trial.hyperparameters,
+                      *fit_args, **copied_fit_kwargs)
 
     def _on_train_begin(model, hp, *fit_args, **fit_kwargs):
         """For AutoKeras to override.
@@ -162,6 +166,20 @@ class Tuner(base_tuner.BaseTuner):
         This is different from the callback's on_train_begin.
         """
         pass
+
+    def _run_fit(self, model, hp, *fit_args, **fit_kwargs):
+        """ The training loop for run_trial.
+
+        When subclassing a tuner or a subclass of tuner, override this method rather
+        than `run_trial` if the only intended change is on training loop.
+
+        # Arguments:
+            model: The model to train, passed by `run_trial`.
+            hp: The HyperParameters instance passed by `run_trial`.
+            *fit_args: Positional arguments passed by `search`.
+            *fit_kwargs: Keyword arguments passed by `search`.
+        """
+        return model.fit(*fit_args, **fit_kwargs)
 
     def save_model(self, trial_id, model, step=0):
         epoch = step

@@ -95,7 +95,8 @@ class MultiExecutionTuner(tuner_module.Tuner):
             model = self.hypermodel.build(trial.hyperparameters)
             self._on_train_begin(model, trial.hyperparameters,
                                  *fit_args, **copied_fit_kwargs)
-            history = model.fit(*fit_args, **copied_fit_kwargs)
+            history = self._run_fit(model, trial.hyperparameters,
+                                    *fit_args, **copied_fit_kwargs)
             for metric, epoch_values in history.history.items():
                 if self.oracle.objective.direction == 'min':
                     best_value = np.min(epoch_values)

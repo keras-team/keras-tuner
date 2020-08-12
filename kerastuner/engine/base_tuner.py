@@ -147,7 +147,7 @@ class BaseTuner(stateful.Stateful):
         ```python
         def run_trial(self, trial, x, y, val_x, val_y):
             model = self.hypermodel.build(trial.hyperparameters)
-            model.fit(x, y)
+            self._run_fit(model, trial.hyperparameters, x, y, val_x, val_y)
             loss = model.evaluate(val_x, val_y)
             self.oracle.update_trial(
               trial.trial_id, {'loss': loss})
@@ -158,6 +158,38 @@ class BaseTuner(stateful.Stateful):
             trial: A `Trial` instance that contains the information
               needed to run this trial. Hyperparameters can be accessed
               via `trial.hyperparameters`.
+            *fit_args: Positional arguments passed by `search`.
+            *fit_kwargs: Keyword arguments passed by `search`.
+        """
+        raise NotImplementedError
+
+    def _run_fit(self, model, hp, *args, **kwargs):
+        """Model fitting part of `run_trial`.
+
+        This method is called by `run_trial` to fit a model. In
+        certain use cases people may want subclass a tuner class
+        (such as MultiExecutionTuner) other than the bare tuner
+        for a modified training loop. In such a case,
+        overriding the entire `run_trial` method may not be ideal
+        as `run_trial` function includes lots of essential code (such as
+        `MultiExecutionTuner`).
+
+        This is currently a private method as experimental.
+
+        For subclass implementers: This method is responsible solely
+        for fitting the model, and should return the history that
+        `model.fit()` return or a compatible structure.
+
+        Simplest example:
+
+        ```python
+        def _run_fit(self, model, hp, *fit_args, **fit_kwargs):
+            return model.fit(*fit_args, **fit_kwargs)
+        ```
+
+        # Arguments:
+            model: The model to train, passed by `run_trial`.
+            hp: The HyperParameters instance passed by `run_trial`.
             *fit_args: Positional arguments passed by `search`.
             *fit_kwargs: Keyword arguments passed by `search`.
         """
