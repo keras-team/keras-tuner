@@ -130,6 +130,7 @@ class HyperEfficientNet(hypermodel.HyperModel):
                             default='B0')
         img_size = EFFICIENTNET_IMG_SIZE[version]
 
+        weights = self.weights
         if weights and (weights != 'imagenet'):
             weights = os.path.join(weights, version.lower())
             weights += '_notop.h5'
