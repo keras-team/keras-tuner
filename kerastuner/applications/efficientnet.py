@@ -158,7 +158,7 @@ class HyperEfficientNet(hypermodel.HyperModel):
                                         max_value=0.8,
                                         default=0.2)
             x = layers.Dropout(top_dropout_rate, name='top_dropout')(x)
-            if classes == 1:
+            if self.classes == 1:
                 x = layers.Dense(1, activation='sigmoid', name='probs')(x)
             else:
                 x = layers.Dense(self.classes, activation='softmax', name='probs')(x)
