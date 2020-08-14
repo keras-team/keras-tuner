@@ -124,9 +124,6 @@ class Tuner(base_tuner.BaseTuner):
         This method is called during `search` to evaluate a set of
         hyperparameters.
 
-        The training loop should be in `_run_fit` method for easier
-        override.
-
         # Arguments:
             trial: A `Trial` instance that contains the information
               needed to run this trial. `Hyperparameters` can be accessed
@@ -170,8 +167,8 @@ class Tuner(base_tuner.BaseTuner):
     def _run_fit(self, model, hp, *fit_args, **fit_kwargs):
         """ The training loop for run_trial.
 
-        When subclassing a tuner or a subclass of tuner, override this method rather
-        than `run_trial` if the only intended change is on training loop.
+        When subclassing a tuner or a subclass of tuner, we can override this
+        method rather than `run_trial` if the only difference is the training loop.
 
         # Arguments:
             model: The model to train, passed by `run_trial`.
