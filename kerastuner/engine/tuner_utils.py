@@ -169,9 +169,9 @@ class Display(object):
         return time.strftime("%Hh %Mm %Ss", time.gmtime(t))
 
     def _format_value(self, v):
-        if isinstance(v, (float)):
+        if isinstance(v, float):
             if v >= 1e-4 and v < 10000:
-                # e.g.: 0.001032 -> 0.001, 9999 -> 9999
+                # e.g.: 0.001032 -> 0.001, 9999.000001 -> 9999
                 return '{:.4f}'.format(v).rstrip('0').rstrip('.')
             else:
                 # e.g.: 0.00001 -> 1e-5
