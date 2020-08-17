@@ -172,7 +172,7 @@ class HyperbandOracle(oracle_module.Oracle):
 
         # Max sweeps has been reached, no more brackets should be created.
         if (self._current_bracket == 0 and
-                self._current_iteration + 1 == self.hyperband_iterations):
+                self._current_iteration + 1 >= self.hyperband_iterations):
             # Stop creating new brackets, but wait to complete other brackets.
             if self.ongoing_trials:
                 return {'status': 'IDLE'}
@@ -197,6 +197,8 @@ class HyperbandOracle(oracle_module.Oracle):
         if self._current_bracket < 0:
             self._current_bracket = self._get_num_brackets() - 1
             self._current_iteration += 1
+            if self._current_iteration > self.hyperband_iterations:
+                self._current_bracket = 0
 
     def _remove_completed_brackets(self):
         # Filter out completed brackets.
