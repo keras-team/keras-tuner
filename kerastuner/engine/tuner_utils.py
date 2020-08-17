@@ -100,6 +100,7 @@ class Display(object):
         self.verbose = verbose
         self.oracle = oracle
         self.trial_number = 0
+        self.col_width = 18
 
         # Start time for the overall search
         self.search_start = None
@@ -145,7 +146,7 @@ class Display(object):
             print('Total elapsed time: {}'.format(time_elapsed_str))
 
     def show_hyperparameter_table(self, trial):
-        template = "{0:20}|{1:10}|{2:20}"
+        template = '{{0:{0}}}|{{1:{0}}}|{{2:{0}}}'.format(self.col_width)
         best_trials = self.oracle.get_best_trials()
         if len(best_trials) > 0:
             best_trial = best_trials[0]
@@ -155,12 +156,25 @@ class Display(object):
             print(template.format('Hyperparameter', 'Value', 'Best Value So Far'))
             for hp, value in trial.hyperparameters.values.items():
                 if best_trial:
-                    best_value = str(best_trial.hyperparameters.values.get(hp))
+                    best_value = best_trial.hyperparameters.values.get(hp)
                 else:
                     best_value = '?'
-                print(template.format(hp, str(value), best_value))
+                print(template.format(
+                    self.format_value(hp),
+                    self.format_value(value),
+                    self.format_value(best_value)
+                ))
         else:
             print('default configuration')
+
+    def format_value(self, val):
+        if isinstance(val, (int, float)) and not isinstance(val, bool):
+            return '{:.5g}'.format(val)
+        else:
+            val_str = str(val)
+            if len(val_str) > self.col_width:
+                val_str = val_str[:self.col_width-3] + '...'
+            return val_str
 
     def format_time(self, t):
         return time.strftime("%Hh %Mm %Ss", time.gmtime(t))
