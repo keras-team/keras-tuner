@@ -155,15 +155,30 @@ class Display(object):
             print(template.format('Hyperparameter', 'Value', 'Best Value So Far'))
             for hp, value in trial.hyperparameters.values.items():
                 if best_trial:
-                    best_value = str(best_trial.hyperparameters.values.get(hp))
+                    best_value = self._format_value(
+                        best_trial.hyperparameters.values.get(hp))
                 else:
                     best_value = '?'
-                print(template.format(hp, str(value), best_value))
+                print(template.format(hp,
+                                      self._format_value(value),
+                                      best_value))
         else:
             print('default configuration')
 
     def format_time(self, t):
         return time.strftime("%Hh %Mm %Ss", time.gmtime(t))
+
+    def _format_value(self, v):
+        if isinstance(v, (float)):
+            if v >= 1e-4 and v < 10000:
+                # e.g.: 0.001032 -> 0.001, 9999 -> 9999
+                return '{:.4f}'.format(v).rstrip('0').rstrip('.')
+            else:
+                # e.g.: 0.00001 -> 1e-5
+                a, b = '{:.4e}'.format(v).split('e')
+                return 'e'.join([a.rstrip('0').rstrip('.'), b])
+        else:
+            return str(v)
 
 
 def average_histories(histories):
