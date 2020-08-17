@@ -168,13 +168,13 @@ class Display(object):
             print('default configuration')
 
     def format_value(self, val):
-        if isinstance(val, (bool, str)):
+        if isinstance(val, (int, float)) and not isinstance(val, bool):
+            return '{:.5g}'.format(val)
+        else:
             val_str = str(val)
             if len(val_str) > self.col_width:
                 val_str = val_str[:self.col_width-3] + '...'
             return val_str
-        else:
-            return '{:.5g}'.format(val)
 
     def format_time(self, t):
         return time.strftime("%Hh %Mm %Ss", time.gmtime(t))
