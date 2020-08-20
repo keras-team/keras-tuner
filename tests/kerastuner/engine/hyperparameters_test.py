@@ -274,12 +274,21 @@ def test_sampling_arg():
     with pytest.raises(ValueError, match='`sampling` must be one of'):
         hp_module.Int('j', 0, 10, sampling='invalid')
 
-def test_sampling_zero_length_intervals():
-    f = hp_module.Float('f', 1, 1)
-    rand_sample = f.random_sample()
-    assert rand_sample == 1
+    val = 11
+    with pytest.raises(ValueError, match='`value` must be in the range'):
+        prob = hp_module.value_to_cumulative_prob(val, i)
 
-    val = 
+def test_sampling_zero_length_intervals():
+    f = hp_module.Float('f', 2, 2)
+    rand_sample = f.random_sample()
+    assert rand_sample == 2
+
+    val = 0.3
+    with pytest.raises(ValueError, match='`value` must be in the range'):
+        prob = hp_module.value_to_cumulative_prob(val, f)
+    val = 2
+    prob = hp_module.value_to_cumulative_prob(val, f)
+    assert prob == 1
 
 def test_log_sampling_random_state():
     f = hp_module.Float('f', 1e-3, 1e3, sampling='log')

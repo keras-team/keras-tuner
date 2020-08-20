@@ -1061,9 +1061,10 @@ def value_to_cumulative_prob(value, hp):
         # Center the value in its probability bucket.
         return (index + 0.5) * ele_prob
     elif isinstance(hp, (Int, Float)):
+        if value < hp.min_value or value > hp.max_value:
+            raise ValueError('`value` must be in the range defined in the '
+                             'HyperParameter.')
         if hp.max_value == hp.min_value:
-            if value != hp.min_value:
-                return 0
             return 1
         sampling = hp.sampling or 'linear'
         if sampling == 'linear':
