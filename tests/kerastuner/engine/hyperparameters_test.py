@@ -274,6 +274,12 @@ def test_sampling_arg():
     with pytest.raises(ValueError, match='`sampling` must be one of'):
         hp_module.Int('j', 0, 10, sampling='invalid')
 
+def test_sampling_zero_length_intervals():
+    f = hp_module.Float('f', 1, 1)
+    rand_sample = f.random_sample()
+    assert rand_sample == 1
+
+    val = 
 
 def test_log_sampling_random_state():
     f = hp_module.Float('f', 1e-3, 1e3, sampling='log')

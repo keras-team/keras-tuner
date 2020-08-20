@@ -1054,11 +1054,17 @@ def value_to_cumulative_prob(value, hp):
             return 0.75
         return 0.25
     elif isinstance(hp, Choice):
+        if not hp.values:
+            return 0
         ele_prob = 1 / len(hp.values)
         index = hp.values.index(value)
         # Center the value in its probability bucket.
         return (index + 0.5) * ele_prob
     elif isinstance(hp, (Int, Float)):
+        if hp.max_value == hp.min_value:
+            if value != hp.min_value:
+                return 0
+            return 1
         sampling = hp.sampling or 'linear'
         if sampling == 'linear':
             return (value - hp.min_value) / (hp.max_value - hp.min_value)
