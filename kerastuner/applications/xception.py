@@ -36,6 +36,7 @@ class HyperXception(hypermodel.HyperModel):
         classes: optional number of classes to classify images
             into, only to be specified if `include_top` is True,
             and if no `weights` argument is specified.
+        augmentation_model: optional Model or HyperModel for image augmentation.
         **kwargs: Additional keyword arguments that apply to all
             HyperModels. See `kerastuner.HyperModel`.
     """
@@ -45,6 +46,7 @@ class HyperXception(hypermodel.HyperModel):
                  input_shape=None,
                  input_tensor=None,
                  classes=None,
+                 augmentation_model=None,
                  **kwargs):
         super(HyperXception, self).__init__(**kwargs)
         if include_top and classes is None:
@@ -55,10 +57,18 @@ class HyperXception(hypermodel.HyperModel):
             raise ValueError('You must specify either `input_shape` '
                              'or `input_tensor`.')
 
+        if not isinstance(augmentation_model, (hypermodel.HyperModel,
+                                               keras.Model,
+                                               type(None))):
+            raise ValueError('Keyword augmentation_model should be '
+                             'a HyperModel, a Keras Model or empty. '
+                             'Received {}.'.format(augmentation_model))
+
         self.include_top = include_top
         self.input_shape = input_shape
         self.input_tensor = input_tensor
         self.classes = classes
+        self.augmentation_model = augmentation_model
 
     def build(self, hp):
         activation = hp.Choice('activation', ['relu', 'selu'])
@@ -70,6 +80,14 @@ class HyperXception(hypermodel.HyperModel):
         else:
             inputs = layers.Input(shape=self.input_shape)
             x = inputs
+
+        if self.augmentation_model:
+            if isinstance(self.augmentation_model, hypermodel.HyperModel):
+                augmentation_model = self.augmentation_model.build(hp)
+            elif isinstance(self.augmentation_model, keras.models.Model):
+                augmentation_model = self.augmentation_model
+
+            x = augmentation_model(x)
 
         # Initial conv2d.
         conv2d_num_filters = hp.Choice(
