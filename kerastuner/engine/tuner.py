@@ -149,15 +149,15 @@ class Tuner(base_tuner.BaseTuner):
 
         model = self.hypermodel.build(trial.hyperparameters)
         self._on_train_begin(model, trial.hyperparameters,
-                             *fit_args, **copied_fit_kwargs)
+                             fit_args, copied_fit_kwargs)
         model.fit(*fit_args, **copied_fit_kwargs)
 
-    def _on_train_begin(model, hp, *fit_args, **fit_kwargs):
+    def _on_train_begin(self, model, hp, fit_args, fit_kwargs):
         """For AutoKeras to override.
 
-        DO NOT REMOVE this function until Keras Tuner support preprocessing layers.
-        AutoKeras overrides the function to support preprocessing layers and tuning
-        of other fit_args and fit_kwargs.
+        DO NOT REMOVE this function. AutoKeras overrides the function to adapt
+        preprocessing layers, search tf.data preprocessing pipelines and tune
+        other fit_args and fit_kwargs.
 
         This is different from the callback's on_train_begin.
         """
