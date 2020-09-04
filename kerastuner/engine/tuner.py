@@ -147,21 +147,31 @@ class Tuner(base_tuner.BaseTuner):
         callbacks.append(tuner_utils.TunerCallback(self, trial))
         copied_fit_kwargs['callbacks'] = callbacks
 
+        self._on_build_begin(trial.trial_id, trial.hyperparameters,
+                             fit_args, copied_fit_kwargs)
         model = self.hypermodel.build(trial.hyperparameters)
         self._on_train_begin(model, trial.hyperparameters,
                              fit_args, copied_fit_kwargs)
         model.fit(*fit_args, **copied_fit_kwargs)
 
+    def _on_build_begin(self, trial_id, hp, fit_args, fit_kwargs):
+        """For AutoKeras to override.
+
+        DO NOT REMOVE this function. AutoKeras overrides the function to tune
+        tf.data preprocessing pipelines, and preprocess the dataset to obtain
+        the input shape before building the model.
+        """
+        return
+
     def _on_train_begin(self, model, hp, fit_args, fit_kwargs):
         """For AutoKeras to override.
 
         DO NOT REMOVE this function. AutoKeras overrides the function to adapt
-        preprocessing layers, search tf.data preprocessing pipelines and tune
-        other fit_args and fit_kwargs.
+        preprocessing layers,  and tune other fit_args and fit_kwargs.
 
         This is different from the callback's on_train_begin.
         """
-        pass
+        return
 
     def save_model(self, trial_id, model, step=0):
         epoch = step

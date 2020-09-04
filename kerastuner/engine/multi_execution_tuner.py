@@ -92,6 +92,8 @@ class MultiExecutionTuner(tuner_module.Tuner):
             callbacks.append(model_checkpoint)
             copied_fit_kwargs['callbacks'] = callbacks
 
+            self._on_build_begin(trial.trial_id, trial.hyperparameters,
+                                 fit_args, copied_fit_kwargs)
             model = self.hypermodel.build(trial.hyperparameters)
             self._on_train_begin(model, trial.hyperparameters,
                                  fit_args, copied_fit_kwargs)
