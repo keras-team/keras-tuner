@@ -118,6 +118,27 @@ class Tuner(base_tuner.BaseTuner):
 
         self.tuner_id = tuner_id or self.tuner_id
 
+    def _build_and_fit_model(self, trial, fit_args, fit_kwargs):
+        """For AutoKeras to override.
+
+        DO NOT REMOVE this function. AutoKeras overrides the function to tune
+        tf.data preprocessing pipelines, preprocess the dataset to obtain
+        the input shape before building the model, adapt preprocessing layers,
+        and tune other fit_args and fit_kwargs.
+
+        # Arguments:
+            trial: A `Trial` instance that contains the information
+              needed to run this trial. `Hyperparameters` can be accessed
+              via `trial.hyperparameters`.
+            fit_args: Positional arguments passed by `search`.
+            fit_kwargs: Keyword arguments passed by `search`.
+
+        # Returns:
+            The fit history.
+        """
+        model = self.hypermodel.build(trial.hyperparameters)
+        return model.fit(*fit_args, **fit_kwargs)
+
     def run_trial(self, trial, *fit_args, **fit_kwargs):
         """Evaluates a set of hyperparameter values.
 
@@ -147,31 +168,7 @@ class Tuner(base_tuner.BaseTuner):
         callbacks.append(tuner_utils.TunerCallback(self, trial))
         copied_fit_kwargs['callbacks'] = callbacks
 
-        self._on_build_begin(trial.trial_id, trial.hyperparameters,
-                             fit_args, copied_fit_kwargs)
-        model = self.hypermodel.build(trial.hyperparameters)
-        self._on_train_begin(model, trial.hyperparameters,
-                             fit_args, copied_fit_kwargs)
-        model.fit(*fit_args, **copied_fit_kwargs)
-
-    def _on_build_begin(self, trial_id, hp, fit_args, fit_kwargs):
-        """For AutoKeras to override.
-
-        DO NOT REMOVE this function. AutoKeras overrides the function to tune
-        tf.data preprocessing pipelines, and preprocess the dataset to obtain
-        the input shape before building the model.
-        """
-        return
-
-    def _on_train_begin(self, model, hp, fit_args, fit_kwargs):
-        """For AutoKeras to override.
-
-        DO NOT REMOVE this function. AutoKeras overrides the function to adapt
-        preprocessing layers,  and tune other fit_args and fit_kwargs.
-
-        This is different from the callback's on_train_begin.
-        """
-        return
+        self._build_and_fit_model(trial, fit_args, copied_fit_kwargs)
 
     def save_model(self, trial_id, model, step=0):
         epoch = step
