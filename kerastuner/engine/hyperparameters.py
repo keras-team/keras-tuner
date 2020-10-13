@@ -223,7 +223,7 @@ class Choice(HyperParameter):
 class Int(HyperParameter):
     """Integer range.
 
-    Note that unlinke Python's `range` function, `max_value` is *included* in
+    Note that unlike Python's `range` function, `max_value` is *included* in
     the possible values this parameter can take on.
 
     # Arguments:
@@ -709,7 +709,7 @@ class HyperParameters(object):
             parent_values=None):
         """Integer range.
 
-        Note that unlinke Python's `range` function, `max_value` is *included* in
+        Note that unlike Python's `range` function, `max_value` is *included* in
         the possible values this parameter can take on.
 
         # Arguments:

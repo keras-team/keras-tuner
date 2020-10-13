@@ -18,8 +18,10 @@ from __future__ import division
 from __future__ import print_function
 
 import copy
+import numpy as np
 import os
 
+from tensorboard.plugins.hparams import api as hparams_api
 import tensorflow as tf
 
 from . import base_tuner
@@ -156,7 +158,7 @@ class Tuner(base_tuner.BaseTuner):
         copied_fit_kwargs = copy.copy(fit_kwargs)
         callbacks = fit_kwargs.pop('callbacks', [])
         callbacks = self._deepcopy_callbacks(callbacks)
-        self._configure_tensorboard_dir(callbacks, trial.trial_id)
+        self._configure_tensorboard_dir(callbacks, trial)
         # `TunerCallback` calls:
         # - `Tuner.on_epoch_begin`
         # - `Tuner.on_batch_begin`
@@ -276,13 +278,22 @@ class Tuner(base_tuner.BaseTuner):
                 (callbacks,))
         return callbacks
 
-    def _configure_tensorboard_dir(self, callbacks, trial_id):
+    def _configure_tensorboard_dir(self, callbacks, trial):
         for callback in callbacks:
-            # Patching tensorboard log dir
             if callback.__class__.__name__ == 'TensorBoard':
-                callback.log_dir = os.path.join(
-                    str(callback.log_dir),
-                    str(trial_id))
+                # Patch TensorBoard log_dir and add HParams KerasCallback
+                logdir = _get_tensorboard_dir(callback.log_dir, trial.trial_id)
+                callback.log_dir = logdir
+                hparams = tuner_utils.convert_hyperparams_to_hparams(
+                    trial.hyperparameters)
+                callbacks.append(
+                    hparams_api.KerasCallback(
+                        writer=logdir,
+                        hparams=hparams,
+                        trial_id=trial.trial_id))
+
+    def _get_tensorboard_dir(self, logdir, trial_id):
+        return os.path.join(str(logdir), str(trial_id))
 
     def _get_checkpoint_dir(self, trial_id, epoch):
         checkpoint_dir = os.path.join(
