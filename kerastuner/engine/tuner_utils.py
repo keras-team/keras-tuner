@@ -233,12 +233,9 @@ def convert_hyperparams_to_hparams(hyperparams):
                 hparams_domain = hparams_api.RealInterval(
                     hp.min_value, hp.max_value)
         elif isinstance(hp, hp_module.Boolean):
-            hparams_domain = hparams_api.Discrete(["True", "False"])
+            hparams_domain = hparams_api.Discrete([True, False])
         elif isinstance(hp, hp_module.Fixed):
-            if isinstance(hp.value, (str, bool)):
-                hparams_domain = hparams_api.Discrete([str(hp.value)])
-            else:
-                hparams_domain = hparams_api.Discrete([float(hp.value)])
+            hparams_domain = hparams_api.Discrete([hp.value])
         else:
             raise ValueError(
                 "`HyperParameter` type not recognized: {}".format(hp))
