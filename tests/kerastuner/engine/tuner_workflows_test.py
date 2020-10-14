@@ -672,8 +672,8 @@ def test_search_logging_verbosity(tmp_dir):
 
 def test_convert_hyperparams_to_hparams():
     def _check_hparams_equal(hp1, hp2):
-        assert hparams_api.hparams_pb(hp1).SerializeToString() ==
-            hparams_api.hparams_pb(hp2).SerializeToString()
+        assert (hparams_api.hparams_pb(hp1).SerializeToString() ==
+            hparams_api.hparams_pb(hp2).SerializeToString())
 
     hps = kerastuner.engine.hyperparameters.HyperParameters()
     hps.Choice("learning_rate", [1e-4, 1e-3, 1e-2])
