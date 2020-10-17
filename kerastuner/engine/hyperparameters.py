@@ -659,7 +659,7 @@ class HyperParameters(object):
         try:
             self.get(name)
             return True
-        except ValueError:
+        except (KeyError, ValueError):
             return False
 
     def Choice(self,
