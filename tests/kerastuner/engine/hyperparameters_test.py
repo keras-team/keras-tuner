@@ -46,7 +46,7 @@ def test_hyperparameters():
     assert hp.values == {'choice': 3}
     assert len(hp.space) == 1
     assert hp.space[0].name == 'choice'
-    with pytest.raises(ValueError, match='does not exist'):
+    with pytest.raises(KeyError, match='does not exist'):
         hp.get('wrong')
 
 
@@ -516,7 +516,7 @@ def test_dict_methods():
     assert hps['b'] == 2
     # Ok to access 'c' here since there is an active 'c'.
     assert hps['c'] == -25
-    with pytest.raises(ValueError, match='does not exist'):
+    with pytest.raises(KeyError, match='does not exist'):
         hps['d']
 
     assert 'a' in hps
