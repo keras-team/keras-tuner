@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import collections
+import unittest
 
 import pytest
 import mock
@@ -378,7 +379,10 @@ def save_model_setup_tuner(tmp_dir):
 
     class MyOracle(kerastuner.engine.oracle.Oracle):
         def get_trial(self, trial_id):
-            return collections.namedtuple('Trial', ['best_step'])(5)
+            trial = unittest.mock.Mock()
+            trial.metrics = unittest.mock.Mock()
+            trial.metrics.get_best_step.return_value = 5
+            return trial
 
     return MyTuner(
         oracle=MyOracle(objective='val_accuracy'),

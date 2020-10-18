@@ -175,7 +175,10 @@ class Tuner(base_tuner.BaseTuner):
         self._checkpoint_model(model, trial_id, epoch)
         # TODO: save the top epoch checkpoints instead of last ones.
         epoch_to_delete = epoch - self._save_n_checkpoints
-        best_epoch = self.oracle.get_trial(trial_id).best_step
+        best_epoch = 0
+        if epoch > 0:
+            best_epoch = self.oracle.get_trial(
+                trial_id).metrics.get_best_step(self.oracle.objective.name)
         if epoch > self._save_n_checkpoints and epoch_to_delete != best_epoch:
             self._delete_checkpoint(
                 trial_id, epoch_to_delete)
