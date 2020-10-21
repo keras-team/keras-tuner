@@ -24,8 +24,11 @@ import numpy as np
 import six
 import time
 
+from tensorboard.plugins.hparams import api as hparams_api
 import tensorflow as tf
 from tensorflow import keras
+
+from . import hyperparameters as hp_module
 
 
 class TunerStats(object):
@@ -194,3 +197,52 @@ def average_histories(histories):
     # Convert {str: [float]} to [{str: float}]
     averaged = [dict(zip(metrics, vals)) for vals in zip(*averaged.values())]
     return averaged
+
+
+def convert_hyperparams_to_hparams(hyperparams):
+    """Converts KerasTuner HyperParameters to TensorBoard HParams."""
+    hparams = {}
+    for hp in hyperparams.space:
+        hparams_value = {}
+        try:
+            hparams_value = hyperparams.get(hp.name)
+        except ValueError:
+            continue
+
+        hparams_domain = {}
+        if isinstance(hp, hp_module.Choice):
+            hparams_domain = hparams_api.Discrete(hp.values)
+        elif isinstance(hp, hp_module.Int):
+            if hp.step is not None and hp.step != 1:
+                # Note: `hp.max_value` is inclusive, unlike the end index
+                # of Python `range()`, which is exclusive
+                values = list(
+                    range(hp.min_value, hp.max_value + 1, hp.step))
+                hparams_domain = hparams_api.Discrete(values)
+            else:
+                hparams_domain = hparams_api.IntInterval(
+                    hp.min_value, hp.max_value)
+        elif isinstance(hp, hp_module.Float):
+            if hp.step is not None:
+                # Note: `hp.max_value` is inclusive, which is also
+                # the default for Numpy's linspace
+                num_samples = int((hp.max_value - hp.min_value) / hp.step)
+                end_value = hp.min_value + (num_samples * hp.step)
+                values = np.linspace(
+                    hp.min_value, end_value, num_samples).tolist()
+                hparams_domain = hparams_api.Discrete(values)
+            else:
+                hparams_domain = hparams_api.RealInterval(
+                    hp.min_value, hp.max_value)
+        elif isinstance(hp, hp_module.Boolean):
+            hparams_domain = hparams_api.Discrete([True, False])
+        elif isinstance(hp, hp_module.Fixed):
+            hparams_domain = hparams_api.Discrete([hp.value])
+        else:
+            raise ValueError(
+                "`HyperParameter` type not recognized: {}".format(hp))
+
+        hparams_key = hparams_api.HParam(hp.name, hparams_domain)
+        hparams[hparams_key] = hparams_value
+
+    return hparams

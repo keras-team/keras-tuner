@@ -20,6 +20,7 @@ from unittest.mock import patch
 
 import numpy as np
 
+from tensorboard.plugins.hparams import api as hparams_api
 import tensorflow as tf
 from tensorflow import keras
 import kerastuner
@@ -667,3 +668,81 @@ def test_search_logging_verbosity(tmp_dir):
                      validation_data=(VAL_INPUTS, VAL_TARGETS),
                      verbose=0)
         assert output.getvalue().strip() == ""
+
+
+def test_convert_hyperparams_to_hparams():
+    def _check_hparams_equal(hp1, hp2):
+        assert (
+            hparams_api.hparams_pb(
+                hp1, start_time_secs = 0).SerializeToString() ==
+            hparams_api.hparams_pb(
+                hp2, start_time_secs = 0).SerializeToString())
+
+    hps = kerastuner.engine.hyperparameters.HyperParameters()
+    hps.Choice("learning_rate", [1e-4, 1e-3, 1e-2])
+    hparams = kerastuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
+    _check_hparams_equal(hparams, {hparams_api.HParam(
+        "learning_rate", hparams_api.Discrete([1e-4, 1e-3, 1e-2])): 1e-4})
+
+    hps = kerastuner.engine.hyperparameters.HyperParameters()
+    hps.Int("units", min_value=2, max_value=16)
+    hparams = kerastuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
+    _check_hparams_equal(hparams, {hparams_api.HParam(
+        "units", hparams_api.IntInterval(2, 16)): 2})
+
+    hps = kerastuner.engine.hyperparameters.HyperParameters()
+    hps.Int("units", min_value=32, max_value=128, step=32)
+    hparams = kerastuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
+    _check_hparams_equal(hparams, {hparams_api.HParam(
+        "units", hparams_api.Discrete([32, 64, 96, 128])): 32})
+
+    hps = kerastuner.engine.hyperparameters.HyperParameters()
+    hps.Float("learning_rate", min_value=0.1, max_value=0.5, step=0.1)
+    hparams = kerastuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
+    _check_hparams_equal(hparams, {hparams_api.HParam(
+        "learning_rate", hparams_api.Discrete([0.1, 0.2, 0.3, 0.4, 0.5])): 0.1})
+
+    hps = kerastuner.engine.hyperparameters.HyperParameters()
+    hps.Float("learning_rate", min_value=1e-4, max_value=1e-1)
+    hparams = kerastuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
+    _check_hparams_equal(hparams, {hparams_api.HParam(
+        "learning_rate", hparams_api.RealInterval(1e-4, 1e-1)): 1e-4})
+
+    hps = kerastuner.engine.hyperparameters.HyperParameters()
+    hps.Float("theta", min_value=0.0, max_value=1.57)
+    hps.Float("r", min_value=0.0, max_value=1.0)
+    hparams = kerastuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
+    _check_hparams_equal(hparams, {
+        hparams_api.HParam("theta", hparams_api.RealInterval(0.0, 1.57)): 0.0,
+        hparams_api.HParam("r", hparams_api.RealInterval(0.0, 1.0)): 0.0,
+    })
+
+    hps = kerastuner.engine.hyperparameters.HyperParameters()
+    hps.Boolean("has_beta")
+    hparams = kerastuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
+    _check_hparams_equal(hparams, {hparams_api.HParam(
+        "has_beta", hparams_api.Discrete([True, False])): False})
+
+    hps = kerastuner.engine.hyperparameters.HyperParameters()
+    hps.Fixed("beta", 0.1)
+    hparams = kerastuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
+    _check_hparams_equal(hparams, {hparams_api.HParam(
+        "beta", hparams_api.Discrete([0.1])): 0.1})
+
+    hps = kerastuner.engine.hyperparameters.HyperParameters()
+    hps.Fixed("type", "WIDE_AND_DEEP")
+    hparams = kerastuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
+    _check_hparams_equal(hparams, {hparams_api.HParam(
+        "type", hparams_api.Discrete(["WIDE_AND_DEEP"])): "WIDE_AND_DEEP"})
+
+    hps = kerastuner.engine.hyperparameters.HyperParameters()
+    hps.Fixed("condition", True)
+    hparams = kerastuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
+    _check_hparams_equal(hparams, {hparams_api.HParam(
+        "condition", hparams_api.Discrete([True])): True})
+
+    hps = kerastuner.engine.hyperparameters.HyperParameters()
+    hps.Fixed("num_layers", 2)
+    hparams = kerastuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
+    _check_hparams_equal(hparams, {hparams_api.HParam(
+        "num_layers", hparams_api.Discrete([2])): 2})
