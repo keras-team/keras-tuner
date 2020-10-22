@@ -39,9 +39,9 @@ class Tuner(base_tuner.BaseTuner):
         hypermodel: Instance of HyperModel class
             (or callable that takes hyperparameters
             and returns a Model instance).
-        max_model_size: Int. Maximum size of weights
-            (in floating point coefficients) for a valid
-            models. Models larger than this are rejected.
+        max_model_size: Int. Maximum number of scalars
+            in the parameters of a model. Models larger
+            than this are rejected.
         optimizer: Optional. Optimizer instance.
             May be used to override the `optimizer`
             argument in the `compile` step for the
