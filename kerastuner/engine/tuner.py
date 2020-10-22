@@ -177,6 +177,10 @@ class Tuner(base_tuner.BaseTuner):
         epoch_to_delete = epoch - self._save_n_checkpoints
         best_epoch = 0
         if epoch > 0:
+            # TODO: `get_best_models` would load the `best_step` checkpoint after
+            # training. It would break if oracle picks a different `best_step` than
+            # `metrics.get_best_step` since it might be deleted due to it was
+            # not the `best_epoch` during the training.
             best_epoch = self.oracle.get_trial(
                 trial_id).metrics.get_best_step(self.oracle.objective.name)
         if epoch > self._save_n_checkpoints and epoch_to_delete != best_epoch:
