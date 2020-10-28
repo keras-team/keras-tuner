@@ -699,10 +699,10 @@ def test_convert_hyperparams_to_hparams():
         "units", hparams_api.Discrete([32, 64, 96, 128])): 32})
 
     hps = kerastuner.engine.hyperparameters.HyperParameters()
-    hps.Float("learning_rate", min_value=0.1, max_value=0.5, step=0.1)
+    hps.Float("learning_rate", min_value=0.5, max_value=1.25, step=0.25)
     hparams = kerastuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
     _check_hparams_equal(hparams, {hparams_api.HParam(
-        "learning_rate", hparams_api.Discrete([0.1, 0.2, 0.3, 0.4, 0.5])): 0.1})
+        "learning_rate", hparams_api.Discrete([0.5, 0.75, 1.0, 1.25])): 0.25})
 
     hps = kerastuner.engine.hyperparameters.HyperParameters()
     hps.Float("learning_rate", min_value=1e-4, max_value=1e-1)

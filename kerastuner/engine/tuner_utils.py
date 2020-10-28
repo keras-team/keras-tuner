@@ -224,12 +224,10 @@ def convert_hyperparams_to_hparams(hyperparams):
                     hp.min_value, hp.max_value)
         elif isinstance(hp, hp_module.Float):
             if hp.step is not None:
-                # Note: `hp.max_value` is inclusive, which is also
-                # the default for Numpy's linspace
-                num_samples = int((hp.max_value - hp.min_value) / hp.step)
-                end_value = hp.min_value + (num_samples * hp.step)
-                values = np.linspace(
-                    hp.min_value, end_value, num_samples).tolist()
+                # Note: `hp.max_value` is inclusive, unlike the end index
+                # of Numpy's arange(), which is exclusive
+                values = np.arange(
+                    hp.min_value, hp.max_value + 1e-7, step=hp.step).tolist()
                 hparams_domain = hparams_api.Discrete(values)
             else:
                 hparams_domain = hparams_api.RealInterval(
