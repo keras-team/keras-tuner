@@ -702,7 +702,7 @@ def test_convert_hyperparams_to_hparams():
     hps.Float("learning_rate", min_value=0.5, max_value=1.25, step=0.25)
     hparams = kerastuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
     _check_hparams_equal(hparams, {hparams_api.HParam(
-        "learning_rate", hparams_api.Discrete([0.5, 0.75, 1.0, 1.25])): 0.25})
+        "learning_rate", hparams_api.Discrete([0.5, 0.75, 1.0, 1.25])): 0.5})
 
     hps = kerastuner.engine.hyperparameters.HyperParameters()
     hps.Float("learning_rate", min_value=1e-4, max_value=1e-1)
