@@ -140,7 +140,7 @@ def test_callbacks_in_fit_kwargs(tmp_dir):
         max_trials=2,
         executions_per_trial=3,
         directory=tmp_dir)
-    with patch('kerastuner.engine.tuner._build_and_fit_model') as mock_bf_model:
+    with patch('kerastuner.Tuner._build_and_fit_model') as mock_bf_model:
         tuner.search(x=TRAIN_INPUTS,
                      y=TRAIN_TARGETS,
                      epochs=2,
