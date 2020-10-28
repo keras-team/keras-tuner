@@ -140,15 +140,13 @@ def test_callbacks_in_fit_kwargs(tmp_dir):
         max_trials=2,
         executions_per_trial=3,
         directory=tmp_dir)
-    with patch('kerastuner.Tuner._build_and_fit_model') as mock_bf_model:
-        tuner.search(x=TRAIN_INPUTS,
-                     y=TRAIN_TARGETS,
-                     epochs=2,
-                     validation_data=(VAL_INPUTS, VAL_TARGETS),
-                     callbacks=[keras.callbacks.EarlyStopping(),
-                                keras.callbacks.TensorBoard(tmp_dir)])
-        assert len(tuner.oracle.trials) == 2
-        assert len(mock_bf_model.call_args[0][2] == 3)
+    tuner.search(x=TRAIN_INPUTS,
+                 y=TRAIN_TARGETS,
+                 epochs=2,
+                 validation_data=(VAL_INPUTS, VAL_TARGETS),
+                 callbacks=[keras.callbacks.EarlyStopping(),
+                            keras.callbacks.TensorBoard(tmp_dir)])
+    assert len(tuner.oracle.trials) == 2
 
 
 def test_hypermodel_with_dynamic_space(tmp_dir):
