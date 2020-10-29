@@ -674,9 +674,9 @@ def test_convert_hyperparams_to_hparams():
     def _check_hparams_equal(hp1, hp2):
         assert (
             hparams_api.hparams_pb(
-                hp1, start_time_secs = 0).SerializeToString() ==
+                hp1, start_time_secs=0).SerializeToString() ==
             hparams_api.hparams_pb(
-                hp2, start_time_secs = 0).SerializeToString())
+                hp2, start_time_secs=0).SerializeToString())
 
     hps = kerastuner.engine.hyperparameters.HyperParameters()
     hps.Choice("learning_rate", [1e-4, 1e-3, 1e-2])
