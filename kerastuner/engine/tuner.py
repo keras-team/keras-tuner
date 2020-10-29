@@ -18,7 +18,6 @@ from __future__ import division
 from __future__ import print_function
 
 import copy
-import numpy as np
 import os
 
 from tensorboard.plugins.hparams import api as hparams_api
@@ -289,7 +288,7 @@ class Tuner(base_tuner.BaseTuner):
         for callback in callbacks:
             if callback.__class__.__name__ == 'TensorBoard':
                 # Patch TensorBoard log_dir and add HParams KerasCallback
-                logdir = _get_tensorboard_dir(callback.log_dir, trial.trial_id)
+                logdir = self._get_tensorboard_dir(callback.log_dir, trial.trial_id)
                 callback.log_dir = logdir
                 hparams = tuner_utils.convert_hyperparams_to_hparams(
                     trial.hyperparameters)

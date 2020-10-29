@@ -674,9 +674,9 @@ def test_convert_hyperparams_to_hparams():
     def _check_hparams_equal(hp1, hp2):
         assert (
             hparams_api.hparams_pb(
-                hp1, start_time_secs = 0).SerializeToString() ==
+                hp1, start_time_secs=0).SerializeToString() ==
             hparams_api.hparams_pb(
-                hp2, start_time_secs = 0).SerializeToString())
+                hp2, start_time_secs=0).SerializeToString())
 
     hps = kerastuner.engine.hyperparameters.HyperParameters()
     hps.Choice("learning_rate", [1e-4, 1e-3, 1e-2])
@@ -697,10 +697,10 @@ def test_convert_hyperparams_to_hparams():
         "units", hparams_api.Discrete([32, 64, 96, 128])): 32})
 
     hps = kerastuner.engine.hyperparameters.HyperParameters()
-    hps.Float("learning_rate", min_value=0.1, max_value=0.5, step=0.1)
+    hps.Float("learning_rate", min_value=0.5, max_value=1.25, step=0.25)
     hparams = kerastuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
     _check_hparams_equal(hparams, {hparams_api.HParam(
-        "learning_rate", hparams_api.Discrete([0.1, 0.2, 0.3, 0.4, 0.5])): 0.1})
+        "learning_rate", hparams_api.Discrete([0.5, 0.75, 1.0, 1.25])): 0.5})
 
     hps = kerastuner.engine.hyperparameters.HyperParameters()
     hps.Float("learning_rate", min_value=1e-4, max_value=1e-1)
@@ -712,10 +712,15 @@ def test_convert_hyperparams_to_hparams():
     hps.Float("theta", min_value=0.0, max_value=1.57)
     hps.Float("r", min_value=0.0, max_value=1.0)
     hparams = kerastuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
-    _check_hparams_equal(hparams, {
+    expected_hparams = {
         hparams_api.HParam("theta", hparams_api.RealInterval(0.0, 1.57)): 0.0,
         hparams_api.HParam("r", hparams_api.RealInterval(0.0, 1.0)): 0.0,
-    })
+    }
+    hparams_repr_list = [repr(hparams[x]) for x in hparams.keys()]
+    expected_hparams_repr_list = [
+        repr(expected_hparams[x]) for x in expected_hparams.keys()
+    ]
+    assert sorted(hparams_repr_list) == sorted(expected_hparams_repr_list)
 
     hps = kerastuner.engine.hyperparameters.HyperParameters()
     hps.Boolean("has_beta")
