@@ -60,7 +60,7 @@ class Tuner(base_tuner.BaseTuner):
         distribution_strategy: Optional. A TensorFlow
             `tf.distribute` DistributionStrategy instance. If
             specified, each trial will run under this scope. For
-            example, `tf.distribute.MirroredStrategy(['/gpu:0, /'gpu:1])`
+            example, `tf.distribute.MirroredStrategy(['/gpu:0', '/gpu:1'])`
             will run each trial on two GPUs. Currently only
             single-worker strategies are supported.
         directory: String. Path to the working directory (relative).
