@@ -140,8 +140,8 @@ def test_callbacks_in_fit_kwargs(tmp_dir):
         max_trials=2,
         executions_per_trial=3,
         directory=tmp_dir)
-    with patch.object(tuner, '_build_and_fit_model',
-        wraps=tuner._build_and_fit_model
+    with patch.object(
+        tuner, "_build_and_fit_model", wraps=tuner._build_and_fit_model
     ) as mock_build_and_fit_model:
         tuner.search(x=TRAIN_INPUTS,
                      y=TRAIN_TARGETS,
@@ -152,7 +152,7 @@ def test_callbacks_in_fit_kwargs(tmp_dir):
         assert len(tuner.oracle.trials) == 2
         callback_class_names = [
             x.__class__.__name__
-                for x in mock_build_and_fit_model.call_args[0][-1]['callbacks']
+            for x in mock_build_and_fit_model.call_args[0][-1]['callbacks']
         ]
         assert callback_class_names == [
             'EarlyStopping',
