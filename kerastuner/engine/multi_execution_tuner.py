@@ -25,6 +25,7 @@ import collections
 import copy
 import numpy as np
 import os
+from tensorboard.plugins.hparams import api as hparams_api
 from tensorflow import keras
 
 
@@ -86,7 +87,7 @@ class MultiExecutionTuner(tuner_module.Tuner):
         for execution in range(self.executions_per_trial):
             copied_fit_kwargs = copy.copy(fit_kwargs)
             callbacks = self._deepcopy_callbacks(original_callbacks)
-            self._configure_tensorboard_dir(callbacks, trial.trial_id, execution)
+            self._configure_tensorboard_dir(callbacks, trial, execution)
             callbacks.append(tuner_utils.TunerCallback(self, trial))
             # Only checkpoint the best epoch across all executions.
             callbacks.append(model_checkpoint)
@@ -107,12 +108,21 @@ class MultiExecutionTuner(tuner_module.Tuner):
         self.oracle.update_trial(
             trial.trial_id, metrics=averaged_metrics, step=self._reported_step)
 
-    def _configure_tensorboard_dir(self, callbacks, trial_id, execution=0):
+    def _configure_tensorboard_dir(self, callbacks, trial, execution=0):
         for callback in callbacks:
-            # Patching tensorboard log dir
             if callback.__class__.__name__ == 'TensorBoard':
-                callback.log_dir = os.path.join(
-                    str(callback.log_dir),
-                    trial_id,
-                    'execution{}'.format(execution))
-        return callbacks
+                # Patch TensorBoard log_dir and add HParams KerasCallback
+                logdir = self._get_tensorboard_dir(
+                    callback.log_dir, trial.trial_id, execution)
+                callback.log_dir = logdir
+                hparams = tuner_utils.convert_hyperparams_to_hparams(
+                    trial.hyperparameters)
+                callbacks.append(
+                    hparams_api.KerasCallback(
+                        writer=logdir,
+                        hparams=hparams,
+                        trial_id=trial.trial_id))
+
+    def _get_tensorboard_dir(self, logdir, trial_id, execution):
+        return os.path.join(
+            str(logdir), str(trial_id), 'execution{}'.format(execution))
