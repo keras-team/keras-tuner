@@ -2,7 +2,11 @@
 .idea
 *.pyc
 .pytest_cache
+
+#VS Code files and container
 .vscode/
+.devcontainer/
+
 build/
 dist/
 bigquery/
