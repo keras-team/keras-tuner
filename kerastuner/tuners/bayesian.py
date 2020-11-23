@@ -40,7 +40,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         seed: Int. Random seed.
         hyperparameters: HyperParameters class instance.
             Can be used to override (or register in advance)
-            hyperparamters in the search space.
+            hyperparameters in the search space.
         tune_new_entries: Whether hyperparameter entries
             that are requested by the hypermodel
             but that were not specified in `hyperparameters`
