@@ -1,6 +1,6 @@
 # Keras Tuner
 
-A hyperparameter tuner for [Keras](https://keras.io), specifically for `tf.keras` with TensorFlow 2.0.
+A hyperparameter tuner for [Keras](https://keras.io), specifically for `tf.keras` with TensorFlow 2.2.
 
 Full documentation and tutorials available on the [Keras Tuner website.](https://keras-team.github.io/keras-tuner/)
 
