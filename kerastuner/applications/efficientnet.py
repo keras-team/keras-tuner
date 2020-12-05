@@ -49,7 +49,7 @@ class HyperEfficientNet(hypermodel.HyperModel):
     ints [0, 255]. The output data should be one-hot encoded
     with number of classes matching `classes`.
 
-      # Arguments:
+      # Args:
 
         input_shape: shape tuple, e.g. `(256, 256, 3)`.
               Input images will be resized if different from

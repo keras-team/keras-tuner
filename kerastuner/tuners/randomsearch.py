@@ -26,7 +26,7 @@ from ..engine import trial as trial_lib
 class RandomSearchOracle(oracle_module.Oracle):
     """Random search oracle.
 
-    # Arguments:
+    # Args:
         objective: String or `kerastuner.Objective`. If a string,
           the direction of the optimization (min or max) will be
           inferred.
@@ -87,7 +87,7 @@ class RandomSearchOracle(oracle_module.Oracle):
 class RandomSearch(multi_execution_tuner.MultiExecutionTuner):
     """Random search tuner.
 
-    # Arguments:
+    # Args:
         hypermodel: Instance of HyperModel class
             (or callable that takes hyperparameters
             and returns a Model instance).

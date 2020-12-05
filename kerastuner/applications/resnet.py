@@ -25,7 +25,7 @@ from kerastuner.engine import hypermodel
 class HyperResNet(hypermodel.HyperModel):
     """A ResNet HyperModel.
 
-    # Arguments:
+    # Args:
 
         include_top: whether to include the fully-connected
             layer at the top of the network.

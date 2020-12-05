@@ -48,7 +48,7 @@ class HyperModel(object):
     def build(self, hp):
         """Builds a model.
 
-        # Arguments:
+        # Args:
             hp: A `HyperParameters` instance.
 
         # Returns:

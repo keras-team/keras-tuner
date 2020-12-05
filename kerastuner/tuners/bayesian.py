@@ -241,7 +241,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
 class BayesianOptimization(multi_execution_tuner.MultiExecutionTuner):
     """BayesianOptimization tuning with Gaussian process.
 
-    # Arguments:
+    # Args:
         hypermodel: Instance of HyperModel class
             (or callable that takes hyperparameters
             and returns a Model instance).

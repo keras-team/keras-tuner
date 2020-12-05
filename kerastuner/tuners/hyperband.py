@@ -56,7 +56,7 @@ class HyperbandOracle(oracle_module.Oracle):
             self.on_epoch_end(...)
     ```
 
-    # Arguments:
+    # Args:
         objective: String or `kerastuner.Objective`. If a string,
           the direction of the optimization (min or max) will be
           inferred.

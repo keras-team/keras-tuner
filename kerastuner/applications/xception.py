@@ -22,7 +22,7 @@ from kerastuner.engine import hypermodel
 class HyperXception(hypermodel.HyperModel):
     """An Xception HyperModel.
 
-    # Arguments:
+    # Args:
 
         include_top: whether to include the fully-connected
             layer at the top of the network.

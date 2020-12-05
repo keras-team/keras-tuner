@@ -28,7 +28,7 @@ class Sklearn(base_tuner.BaseTuner):
     Performs cross-validated hyperparameter search for Scikit-learn
     models.
 
-    # Arguments:
+    # Args:
         oracle: An instance of the `kerastuner.Oracle` class. Note that for
           this `Tuner`, the `objective` for the `Oracle` should always be set
           to `Objective('score', direction='max')`. Also, `Oracle`s that exploit
@@ -114,7 +114,7 @@ class Sklearn(base_tuner.BaseTuner):
     def search(self, X, y, sample_weight=None, groups=None):
         """Performs hyperparameter search.
 
-        Arguments:
+        Args:
           X: See docstring for `model.fit` for the `sklearn` Models being tuned.
           y: See docstring for `model.fit` for the `sklearn` Models being tuned.
           sample_weight: (Optional). See docstring for `model.fit` for the
