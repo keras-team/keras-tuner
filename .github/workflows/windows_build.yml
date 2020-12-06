@@ -7,7 +7,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        tf_version: [tensorflow<2.0, tensorflow>=2.0]
+        tf: [tensorflow<2.0, tensorflow]
         os: [windows-latest, ubuntu-18.04]
 
     steps:
@@ -17,11 +17,9 @@ jobs:
       with:
         python-version: 3.6
     - name: Install
-      env:
-        TF_VERSION: ${{ matrix.tf_version }}
       run: |
         python -m pip install --upgrade pip
-        pip install $TF_VERSION
+        pip install "${{ matrix.tf }}"
         pip install keras_autodoc
         pip install Sphinx==3.0.4
         pip install -e .[tests]

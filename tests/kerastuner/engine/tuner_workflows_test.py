@@ -16,6 +16,7 @@ import pytest
 import os
 
 from io import StringIO
+from packaging import version
 from unittest.mock import patch
 
 import numpy as np
@@ -103,15 +104,21 @@ class ExampleHyperModel(kerastuner.HyperModel):
         return model
 
 
+def get_objective():
+    if version.parse(tf.__version__) >= version.parse('2.0.0'):
+        return 'val_accuracy'
+    return 'val_acc'
+
+
 def test_basic_tuner_attributes(tmp_dir):
     tuner = kerastuner.tuners.RandomSearch(
         build_model,
-        objective='val_accuracy',
+        objective=get_objective(),
         max_trials=2,
         executions_per_trial=3,
         directory=tmp_dir)
 
-    assert tuner.oracle.objective.name == 'val_accuracy'
+    assert tuner.oracle.objective.name == get_objective()
     assert tuner.oracle.max_trials == 2
     assert tuner.executions_per_trial == 3
     assert tuner.directory == tmp_dir
@@ -136,7 +143,7 @@ def test_basic_tuner_attributes(tmp_dir):
 def test_callbacks_in_fit_kwargs(tmp_dir):
     tuner = kerastuner.tuners.RandomSearch(
         build_model,
-        objective='val_accuracy',
+        objective=get_objective(),
         max_trials=2,
         executions_per_trial=3,
         directory=tmp_dir)
@@ -167,7 +174,7 @@ def test_hypermodel_with_dynamic_space(tmp_dir):
     hypermodel = ExampleHyperModel()
     tuner = kerastuner.tuners.RandomSearch(
         hypermodel,
-        objective='val_accuracy',
+        objective=get_objective(),
         max_trials=2,
         executions_per_trial=3,
         directory=tmp_dir)
@@ -252,7 +259,7 @@ def test_static_space(tmp_dir):
     hp.Choice('learning_rate', [0.01, 0.001])
     tuner = kerastuner.tuners.RandomSearch(
         build_model_static,
-        objective='val_accuracy',
+        objective=get_objective(),
         max_trials=4,
         directory=tmp_dir,
         hyperparameters=hp,
@@ -293,7 +300,7 @@ def test_static_space_errors(tmp_dir):
     with pytest.raises(RuntimeError, match='`allow_new_entries` is `False`'):
         tuner = kerastuner.tuners.RandomSearch(
             build_model_static,
-            objective='val_accuracy',
+            objective=get_objective(),
             max_trials=2,
             directory=tmp_dir,
             hyperparameters=hp,
@@ -324,7 +331,7 @@ def test_static_space_errors(tmp_dir):
                        match='`allow_new_entries` is `False`'):
         tuner = kerastuner.tuners.RandomSearch(
             build_model_static_invalid,
-            objective='val_accuracy',
+            objective=get_objective(),
             max_trials=2,
             directory=tmp_dir,
             hyperparameters=hp,
@@ -343,7 +350,7 @@ def test_restricted_space_using_defaults(tmp_dir):
 
     tuner = kerastuner.tuners.RandomSearch(
         build_model,
-        objective='val_accuracy',
+        objective=get_objective(),
         max_trials=4,
         directory=tmp_dir,
         hyperparameters=hp,
@@ -377,7 +384,7 @@ def test_restricted_space_with_custom_defaults(tmp_dir):
 
     tuner = kerastuner.tuners.RandomSearch(
         build_model,
-        objective='val_accuracy',
+        objective=get_objective(),
         max_trials=4,
         directory=tmp_dir,
         hyperparameters=hp,
@@ -402,7 +409,7 @@ def test_reparameterized_space(tmp_dir):
     tuner = kerastuner.tuners.RandomSearch(
         build_model,
         seed=1337,
-        objective='val_accuracy',
+        objective=get_objective(),
         max_trials=4,
         directory=tmp_dir,
         hyperparameters=hp,
@@ -424,7 +431,7 @@ def test_reparameterized_space(tmp_dir):
 def test_get_best_models(tmp_dir):
     tuner = kerastuner.tuners.RandomSearch(
         build_model,
-        objective='val_accuracy',
+        objective=get_objective(),
         max_trials=4,
         directory=tmp_dir)
 
@@ -444,7 +451,7 @@ def test_saving_and_reloading(tmp_dir):
 
     tuner = kerastuner.tuners.RandomSearch(
         build_model,
-        objective='val_accuracy',
+        objective=get_objective(),
         max_trials=4,
         executions_per_trial=2,
         directory=tmp_dir)
@@ -457,7 +464,7 @@ def test_saving_and_reloading(tmp_dir):
 
     new_tuner = kerastuner.tuners.RandomSearch(
         build_model,
-        objective='val_accuracy',
+        objective=get_objective(),
         max_trials=4,
         executions_per_trial=2,
         directory=tmp_dir)
@@ -475,7 +482,7 @@ def test_saving_and_reloading(tmp_dir):
 def test_subclass_model(tmp_dir):
     tuner = kerastuner.tuners.RandomSearch(
         build_subclass_model,
-        objective='val_accuracy',
+        objective=get_objective(),
         max_trials=2,
         directory=tmp_dir)
 
@@ -493,7 +500,7 @@ def test_subclass_model(tmp_dir):
 def test_subclass_model_loading(tmp_dir):
     tuner = kerastuner.tuners.RandomSearch(
         build_subclass_model,
-        objective='val_accuracy',
+        objective=get_objective(),
         max_trials=2,
         directory=tmp_dir)
 
@@ -529,7 +536,7 @@ def test_update_trial(tmp_dir):
                 trial_id, metrics, step)
 
     my_oracle = MyOracle(
-        objective='val_accuracy',
+        objective=get_objective(),
         max_trials=2)
     tuner = kerastuner.Tuner(
         oracle=my_oracle,
@@ -544,7 +551,7 @@ def test_update_trial(tmp_dir):
 
     for trial in my_oracle.trials.values():
         # Test that early stopping worked.
-        assert len(trial.metrics.get_history('val_accuracy')) == 3
+        assert len(trial.metrics.get_history(get_objective())) == 3
 
 
 def test_objective_formats():
@@ -631,7 +638,7 @@ def test_get_best_hyperparameters(tmp_dir):
     trial2.score = 9
 
     tuner = kerastuner.RandomSearch(
-        objective='val_accuracy',
+        objective=get_objective(),
         hypermodel=build_model,
         max_trials=2,
         directory=tmp_dir)
@@ -648,7 +655,7 @@ def test_reloading_error_message(tmp_dir):
 
     tuner = kerastuner.tuners.RandomSearch(
         build_model,
-        objective='val_accuracy',
+        objective=get_objective(),
         max_trials=2,
         executions_per_trial=3,
         directory=shared_dir)
@@ -661,7 +668,7 @@ def test_reloading_error_message(tmp_dir):
     with pytest.raises(RuntimeError, match='pass `overwrite=True`'):
         kerastuner.tuners.BayesianOptimization(
             build_model,
-            objective='val_accuracy',
+            objective=get_objective(),
             max_trials=2,
             executions_per_trial=3,
             directory=shared_dir)
@@ -670,7 +677,7 @@ def test_reloading_error_message(tmp_dir):
 def test_search_logging_verbosity(tmp_dir):
     tuner = kerastuner.tuners.RandomSearch(
         build_model,
-        objective='val_accuracy',
+        objective=get_objective(),
         max_trials=2,
         executions_per_trial=3,
         directory=tmp_dir)

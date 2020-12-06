@@ -19,6 +19,7 @@ from __future__ import print_function
 
 import copy
 import os
+from packaging import version
 
 from tensorboard.plugins.hparams import api as hparams_api
 import tensorflow as tf
@@ -314,7 +315,8 @@ class Tuner(base_tuner.BaseTuner):
             # Each checkpoint is saved in its own directory.
             self._get_checkpoint_dir(trial_id, epoch),
             'checkpoint')
-        if (isinstance(self.distribution_strategy, tf.distribute.TPUStrategy) and
+        if (version.parse(tf.__version__) >= version.parse('2.0.0') and
+            isinstance(self.distribution_strategy, tf.distribute.TPUStrategy) and
                 not self.project_dir.startswith('gs://')):
             # TPU strategy only support saving h5 format on local path
             return checkpoint_fname + '.h5'
