@@ -18,7 +18,7 @@ import os
 import pytest
 import tensorflow as tf
 
-from kerastuner.applications import efficientnet
+from kerastuner import applications
 from kerastuner.engine import hyperparameters as hp_module
 from kerastuner.engine import hypermodel as hm_module
 
@@ -26,9 +26,11 @@ from kerastuner.engine import hypermodel as hm_module
 @pytest.mark.skipif('TRAVIS' in os.environ, reason='Causes CI to stall')
 @pytest.mark.parametrize('version', ['B0', 'B1'])
 def test_model_construction(version):
+    if applications.HyperEfficientNet is None:
+        return
     hp = hp_module.HyperParameters()
     hp.Choice('version', [version])
-    hypermodel = efficientnet.HyperEfficientNet(input_shape=(32, 32, 3), classes=10)
+    hypermodel = applications.HyperEfficientNet(input_shape=(32, 32, 3), classes=10)
     model = hypermodel.build(hp)
     assert hp.values['version'] == version
     assert model.layers
@@ -40,8 +42,10 @@ def test_model_construction(version):
 
 
 def test_hyperparameter_existence_and_defaults():
+    if applications.HyperEfficientNet is None:
+        return
     hp = hp_module.HyperParameters()
-    hypermodel = efficientnet.HyperEfficientNet(input_shape=(224, 224, 3),
+    hypermodel = applications.HyperEfficientNet(input_shape=(224, 224, 3),
                                                 classes=10)
     hypermodel.build(hp)
     assert hp.get('version') == 'B0'
@@ -51,10 +55,12 @@ def test_hyperparameter_existence_and_defaults():
 
 
 def test_hyperparameter_override():
+    if applications.HyperEfficientNet is None:
+        return
     hp = hp_module.HyperParameters()
     hp.Choice('version', ['B1'])
     hp.Fixed('top_dropout_rate', 0.5)
-    hypermodel = efficientnet.HyperEfficientNet(input_shape=(256, 256, 3),
+    hypermodel = applications.HyperEfficientNet(input_shape=(256, 256, 3),
                                                 classes=10)
     hypermodel.build(hp)
     assert hp.get('version') == 'B1'
@@ -62,15 +68,20 @@ def test_hyperparameter_override():
 
 
 def test_input_tensor():
+    if applications.HyperEfficientNet is None:
+        return
     hp = hp_module.HyperParameters()
     inputs = tf.keras.Input(shape=(256, 256, 3))
-    hypermodel = efficientnet.HyperEfficientNet(input_tensor=inputs, classes=10)
+    hypermodel = applications.HyperEfficientNet(input_tensor=inputs, classes=10)
     model = hypermodel.build(hp)
     assert model.inputs == [inputs]
 
 
 def test_override_compiling_phase():
-    class MyHyperEfficientNet(efficientnet.HyperEfficientNet):
+    if applications.HyperEfficientNet is None:
+        return
+
+    class MyHyperEfficientNet(applications.HyperEfficientNet):
         def _compile(self, model, hp):
             learning_rate = 0.1
             optimizer_name = hp.Choice('optimizer', ['adam', 'sgd'], default='adam')
@@ -94,16 +105,20 @@ def test_override_compiling_phase():
 
 
 def test_augmentation_param_invalid_input():
+    if applications.HyperEfficientNet is None:
+        return
     with pytest.raises(ValueError):
-        efficientnet.HyperEfficientNet(input_shape=(32, 32, 3),
+        applications.HyperEfficientNet(input_shape=(32, 32, 3),
                                        classes=10,
                                        augmentation_model=0)
 
 
 def test_augmentation_param_fixed_model():
+    if applications.HyperEfficientNet is None:
+        return
     hp = hp_module.HyperParameters()
     aug_model = tf.keras.Sequential(name='aug')
-    hypermodel = efficientnet.HyperEfficientNet(input_shape=(32, 32, 3),
+    hypermodel = applications.HyperEfficientNet(input_shape=(32, 32, 3),
                                                 classes=10,
                                                 augmentation_model=aug_model)
     model = hypermodel.build(hp)
@@ -111,6 +126,9 @@ def test_augmentation_param_fixed_model():
 
 
 def test_augmentation_param_hyper_model():
+    if applications.HyperEfficientNet is None:
+        return
+
     class HyperAug(hm_module.HyperModel):
         def build(self, hp):
             model = tf.keras.Sequential(name='aug')
@@ -120,7 +138,7 @@ def test_augmentation_param_hyper_model():
 
     hp = hp_module.HyperParameters()
     aug_hm = HyperAug()
-    hypermodel = efficientnet.HyperEfficientNet(input_shape=(32, 32, 3),
+    hypermodel = applications.HyperEfficientNet(input_shape=(32, 32, 3),
                                                 classes=10,
                                                 augmentation_model=aug_hm)
     model = hypermodel.build(hp)

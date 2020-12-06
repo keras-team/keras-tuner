@@ -32,7 +32,4 @@ from .tuners import BayesianOptimization
 from .tuners import Hyperband
 from .tuners import RandomSearch
 
-from .utils import check_tf_version
-check_tf_version()
-
 __version__ = '1.0.3'

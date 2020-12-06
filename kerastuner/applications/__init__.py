@@ -16,4 +16,13 @@ from __future__ import absolute_import
 
 from .resnet import HyperResNet
 from .xception import HyperXception
-from .augment import HyperImageAugment
+
+try:
+    from .augment import HyperImageAugment
+except ImportError:
+    HyperImageAugment = None
+
+try:
+    from .augment import HyperEfficientNet
+except ImportError:
+    HyperEfficientNet = None
