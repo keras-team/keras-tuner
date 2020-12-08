@@ -111,7 +111,7 @@ class HyperbandOracle(oracle_module.Oracle):
         self.min_epochs = 1
         self.factor = factor
 
-        self.seed = seed or random.randint(1, 1e4)
+        self.seed = seed or random.randint(1, 10000)
         self._max_collisions = 20
         self._seed_state = self.seed
         self._tried_so_far = set()

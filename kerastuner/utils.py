@@ -13,13 +13,14 @@
 # limitations under the License.
 """Keras Tuner utilities."""
 
+import IPython
 from packaging.version import parse
 import tensorflow as tf
 
 
 # Check if we are in a ipython/colab environement
 try:
-    class_name = get_ipython().__class__.__name__
+    class_name = IPython.get_ipython().__class__.__name__
     if "Terminal" in class_name:
         IS_NOTEBOOK = False
     else:
