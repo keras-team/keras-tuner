@@ -8,3 +8,5 @@ terminaltables
 pathlib
 scipy
 scikit-learn
+tensorboard
+ipython

@@ -88,7 +88,7 @@ class Oracle(stateful.Stateful):
         # tuner_id -> Trial
         self.ongoing_trials = {}
 
-        self.seed = seed or random.randint(1, 1e4)
+        self.seed = seed or random.randint(1, 10000)
         self._seed_state = self.seed
         # Hashes of values tried so far.
         self._tried_so_far = set()
