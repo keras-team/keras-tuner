@@ -42,7 +42,9 @@ setup(
         'tqdm',
         'requests',
         'scipy',
-        'scikit-learn'
+        'scikit-learn',
+        'tensorboard',
+        'ipython'
     ],
     extras_require={
         'tests': ['pytest',
