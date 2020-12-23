@@ -19,6 +19,8 @@ from sklearn import ensemble
 from sklearn import linear_model
 from sklearn import metrics
 from sklearn import model_selection
+from sklearn import decomposition
+from sklearn import pipeline
 
 import kerastuner as kt
 from kerastuner.tuners import sklearn_tuner
@@ -39,6 +41,29 @@ def build_model(hp):
         raise ValueError('Unrecognized model_type')
     return model
 
+
+def build_pipeline(hp):
+    n_components=hp.Choice("n_components", [2, 5, 10], default=5)
+    pca = decomposition.PCA(n_components=n_components)
+
+    model_type = hp.Choice('model_type', ['random_forest', 'ridge'])
+    if model_type == 'random_forest':
+        with hp.conditional_scope('model_type', 'random_forest'):
+            model = ensemble.RandomForestClassifier(
+                n_estimators=hp.Int('n_estimators', 10, 50, step=10),
+                max_depth=hp.Int('max_depth', 3, 10))
+    elif model_type == 'ridge':
+        with hp.conditional_scope('model_type', 'ridge'):
+            model = linear_model.RidgeClassifier(
+                alpha=hp.Float('alpha', 1e-3, 1, sampling='log'))
+    else:
+        raise ValueError('Unrecognized model_type')
+
+    pipeline = Pipeline([
+        ('pca', pca),
+        ('clf', model)
+        ])
+    return pipeline
 
 @pytest.fixture(scope='function')
 def tmp_dir(tmpdir_factory):
@@ -150,6 +175,32 @@ def test_sklearn_sample_weight(tmp_dir):
     # Make sure best model can be reloaded.
     best_model = tuner.get_best_models()[0]
     best_model.score(x, y)
+
+
+def test_sklearn_pipeline(tmp_dir):
+    tuner = sklearn_tuner.Sklearn(
+        oracle=kt.oracles.BayesianOptimization(
+            objective=kt.Objective('score', 'max'),
+            max_trials=10),
+        hypermodel=build_pipeline,
+        directory=tmp_dir)
+
+    x = np.random.uniform(size=(50, 10))
+    y = np.random.randint(0, 2, size=(50,))
+    sample_weight = np.random.uniform(0.1, 1, size=(50,))
+    tuner.search(x, y, sample_weight=sample_weight)
+
+    assert len(tuner.oracle.trials) == 10
+
+    best_trial = tuner.oracle.get_best_trials()[0]
+    assert best_trial.status == 'COMPLETED'
+    assert best_trial.score is not None
+    assert best_trial.best_step == 0
+    assert best_trial.metrics.exists('score')
+
+    # Make sure best pipeline can be reloaded.
+    best_pipeline = tuner.get_best_models()[0]
+    best_pipeline.score(x, y)
 
 
 def test_sklearn_cv_with_groups(tmp_dir):

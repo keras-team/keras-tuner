@@ -17,6 +17,7 @@ import numpy as np
 import os
 import pickle
 from sklearn import model_selection
+from sklearn.pipeline import Pipeline
 import tensorflow as tf
 
 from ..engine import base_tuner
@@ -145,7 +146,10 @@ class Sklearn(base_tuner.BaseTuner):
                 sample_weight[train_indices] if sample_weight is not None else None)
 
             model = self.hypermodel.build(trial.hyperparameters)
-            model.fit(X_train, y_train, sample_weight=sample_weight_train)
+            if isinstance(model, Pipeline):
+                model.fit(X_train, y_train)
+            else:
+                model.fit(X_train, y_train, sample_weight=sample_weight_train)
 
             X_test = X[test_indices]
             y_test = y[test_indices]
