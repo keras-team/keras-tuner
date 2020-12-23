@@ -59,7 +59,7 @@ def build_pipeline(hp):
     else:
         raise ValueError('Unrecognized model_type')
 
-    pipeline = Pipeline([
+    pipeline = pipeline.Pipeline([
         ('pca', pca),
         ('clf', model)
         ])
