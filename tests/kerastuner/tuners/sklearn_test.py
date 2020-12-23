@@ -59,11 +59,11 @@ def build_pipeline(hp):
     else:
         raise ValueError('Unrecognized model_type')
 
-    pipeline = pipeline.Pipeline([
+    skpipeline = pipeline.Pipeline([
         ('pca', pca),
         ('clf', model)
         ])
-    return pipeline
+    return skpipeline
 
 @pytest.fixture(scope='function')
 def tmp_dir(tmpdir_factory):
