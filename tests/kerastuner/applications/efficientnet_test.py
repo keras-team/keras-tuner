@@ -14,7 +14,6 @@
 """Tests for HyperEfficientNet Model."""
 
 import numpy as np
-import os
 import pytest
 import tensorflow as tf
 
@@ -23,7 +22,6 @@ from kerastuner.engine import hyperparameters as hp_module
 from kerastuner.engine import hypermodel as hm_module
 
 
-@pytest.mark.skipif('TRAVIS' in os.environ, reason='Causes CI to stall')
 @pytest.mark.parametrize('version', ['B0', 'B1'])
 def test_model_construction(version):
     hp = hp_module.HyperParameters()
@@ -34,8 +32,8 @@ def test_model_construction(version):
     assert model.layers
     assert model.name == 'EfficientNet'
     assert model.output_shape == (None, 10)
-    model.train_on_batch(np.ones((1, 128, 128, 3)), np.ones((1, 10)))
-    out = model.predict(np.ones((1, 128, 128, 3)))
+    model.train_on_batch(np.ones((1, 32, 32, 3)), np.ones((1, 10)))
+    out = model.predict(np.ones((1, 32, 32, 3)))
     assert out.shape == (1, 10)
 
 
