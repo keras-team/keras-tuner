@@ -650,7 +650,7 @@ class HyperParameters(object):
         elif name in self._hps:
             raise ValueError('{} is currently inactive.'.format(name))
         else:
-            raise ValueError('{} does not exist.'.format(name))
+            raise KeyError('{} does not exist.'.format(name))
 
     def __getitem__(self, name):
         return self.get(name)
@@ -659,7 +659,7 @@ class HyperParameters(object):
         try:
             self.get(name)
             return True
-        except ValueError:
+        except (KeyError, ValueError):
             return False
 
     def Choice(self,
