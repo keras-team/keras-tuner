@@ -37,6 +37,12 @@ def _check_sampling_arg(sampling,
                         hp_type='int'):
     if sampling is None:
         return None
+    if min_value > max_value:
+        raise ValueError(
+            '`sampling` `min_value` '
+            + str(min_value)
+            + ' is greater than the `max_value` '
+            + str(max_value))
     if hp_type == 'int' and step != 1:
         raise ValueError(
             '`sampling` can only be set on an `Int` when `step=1`.')

@@ -274,6 +274,16 @@ def test_sampling_arg():
     with pytest.raises(ValueError, match='`sampling` must be one of'):
         hp_module.Int('j', 0, 10, sampling='invalid')
 
+    with pytest.raises(
+            ValueError,
+            match='`sampling` `min_value` 1 is greater than the `max_value` 0'):
+        hp_module.Int('k', 1, 0, sampling='linear')
+
+    with pytest.raises(
+            ValueError,
+            match='`sampling` `min_value` 1 is greater than the `max_value` 0'):
+        hp_module.Int('k', 1, 0, sampling='linear')
+
 
 def test_log_sampling_random_state():
     f = hp_module.Float('f', 1e-3, 1e3, sampling='log')
