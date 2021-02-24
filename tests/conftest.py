@@ -1,6 +1,7 @@
-import pytest
 import random
+
 import numpy as np
+import pytest
 import tensorflow as tf
 
 

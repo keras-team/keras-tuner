@@ -19,25 +19,24 @@ from __future__ import print_function
 
 import tensorflow as tf
 import tensorflow.keras as keras
-
-from kerastuner.engine import hypermodel
-
 from tensorflow.keras import layers
 from tensorflow.keras.layers.experimental import preprocessing
+
+from kerastuner.engine import hypermodel
 
 # dict of functions that create layers for transforms.
 # Each function takes a factor (0 to 1) for the strength
 # of the transform.
 TRANSFORMS = {
-    'translate_x': lambda x: preprocessing.RandomTranslation(x, 0),
-    'translate_y': lambda y: preprocessing.RandomTranslation(0, y),
-    'rotate': preprocessing.RandomRotation,
-    'contrast': preprocessing.RandomContrast,
+    "translate_x": lambda x: preprocessing.RandomTranslation(x, 0),
+    "translate_y": lambda y: preprocessing.RandomTranslation(0, y),
+    "rotate": preprocessing.RandomRotation,
+    "contrast": preprocessing.RandomContrast,
 }
 
 
 class HyperImageAugment(hypermodel.HyperModel):
-    """ Builds HyperModel for image augmentation.
+    """Builds HyperModel for image augmentation.
     Only supporting augmentations available in Keras preprocessing layers currently.
 
     # Arguments:
@@ -119,48 +118,56 @@ class HyperImageAugment(hypermodel.HyperModel):
         between [0, 3]. Each layer on each sample will be chosen from rotate,
         translate_x and translate_y.
     """
-    def __init__(self,
-                 input_shape=None,
-                 input_tensor=None,
-                 rotate=0.5,
-                 translate_x=0.4,
-                 translate_y=0.4,
-                 contrast=0.3,
-                 augment_layers=3,
-                 **kwargs):
+
+    def __init__(
+        self,
+        input_shape=None,
+        input_tensor=None,
+        rotate=0.5,
+        translate_x=0.4,
+        translate_y=0.4,
+        contrast=0.3,
+        augment_layers=3,
+        **kwargs,
+    ):
 
         if input_shape is None and input_tensor is None:
-            raise ValueError('You must specify either `input_shape` or '
-                             '`intput_tensor`.')
+            raise ValueError(
+                "You must specify either `input_shape` or " "`intput_tensor`."
+            )
 
         self.transforms = []
-        self._register_transform('rotate', rotate)
-        self._register_transform('translate_x', translate_x)
-        self._register_transform('translate_y', translate_y)
-        self._register_transform('contrast', contrast)
+        self._register_transform("rotate", rotate)
+        self._register_transform("translate_x", translate_x)
+        self._register_transform("translate_y", translate_y)
+        self._register_transform("contrast", contrast)
 
         self.input_shape = input_shape
         self.input_tensor = input_tensor
 
         if augment_layers:
-            self.model_name = 'image_rand_augment'
+            self.model_name = "image_rand_augment"
             try:
                 augment_layers_min = augment_layers[0]
                 augment_layers_max = augment_layers[1]
             except TypeError:
                 augment_layers_min = 0
                 augment_layers_max = augment_layers
-            if not (isinstance(augment_layers_min, int) and
-                    isinstance(augment_layers_max, int)):
-                raise ValueError('Keyword argument `augment_layers` must be int,'
-                                 'but received {}. '.format(augment_layers))
+            if not (
+                isinstance(augment_layers_min, int)
+                and isinstance(augment_layers_max, int)
+            ):
+                raise ValueError(
+                    "Keyword argument `augment_layers` must be int,"
+                    "but received {}. ".format(augment_layers)
+                )
 
             self.augment_layers_min = augment_layers_min
             self.augment_layers_max = augment_layers_max
         else:
             # Separatedly tune and apply all augment transforms if
             # `randaug_count` is set to 0.
-            self.model_name = 'image_augment'
+            self.model_name = "image_augment"
 
         super(HyperImageAugment, self).__init__(**kwargs)
 
@@ -172,7 +179,7 @@ class HyperImageAugment(hypermodel.HyperModel):
             inputs = layers.Input(shape=self.input_shape)
             x = inputs
 
-        if self.model_name == 'image_rand_augment':
+        if self.model_name == "image_rand_augment":
             x = self._build_randaug_layers(x, hp)
         else:
             x = self._build_fixedaug_layers(x, hp)
@@ -181,24 +188,23 @@ class HyperImageAugment(hypermodel.HyperModel):
         return model
 
     def _build_randaug_layers(self, inputs, hp):
-        augment_layers = hp.Int('augment_layers',
-                                self.augment_layers_min,
-                                self.augment_layers_max,
-                                default=self.augment_layers_min)
+        augment_layers = hp.Int(
+            "augment_layers",
+            self.augment_layers_min,
+            self.augment_layers_max,
+            default=self.augment_layers_min,
+        )
         x = inputs
         for _ in range(augment_layers):
             # selection tensor determines operation for each sample.
             batch_size = tf.shape(x)[0]
-            selection = tf.random.uniform([batch_size, 1, 1, 1],
-                                          maxval=len(self.transforms),
-                                          dtype='int32')
+            selection = tf.random.uniform(
+                [batch_size, 1, 1, 1], maxval=len(self.transforms), dtype="int32"
+            )
 
             for i, (transform, (f_min, f_max)) in enumerate(self.transforms):
                 # Factor for each transform is determined per each trial.
-                factor = hp.Float(f'factor_{transform}',
-                                  f_min,
-                                  f_max,
-                                  default=f_min)
+                factor = hp.Float(f"factor_{transform}", f_min, f_max, default=f_min)
                 if factor == 0:
                     continue
                 transform_layer = TRANSFORMS[transform](factor)
@@ -212,11 +218,13 @@ class HyperImageAugment(hypermodel.HyperModel):
     def _build_fixedaug_layers(self, inputs, hp):
         x = inputs
         for transform, (factor_min, factor_max) in self.transforms:
-            transform_factor = hp.Float(f'factor_{transform}',
-                                        factor_min,
-                                        factor_max,
-                                        step=0.05,
-                                        default=factor_min)
+            transform_factor = hp.Float(
+                f"factor_{transform}",
+                factor_min,
+                factor_max,
+                step=0.05,
+                default=factor_min,
+            )
             if transform_factor == 0:
                 continue
             transform_layer = TRANSFORMS[transform](transform_factor)
@@ -240,17 +248,24 @@ class HyperImageAugment(hypermodel.HyperModel):
             transform_factor_min = transform_params[0]
             transform_factor_max = transform_params[1]
             if len(transform_params) > 2:
-                raise ValueError('Length of keyword argument {} must not exceed 2.'
-                                 .format(transform_name))
+                raise ValueError(
+                    "Length of keyword argument {} must not exceed 2.".format(
+                        transform_name
+                    )
+                )
         except TypeError:
             transform_factor_min = 0
             transform_factor_max = transform_params
 
-        if not (isinstance(transform_factor_max, (int, float)) and
-                isinstance(transform_factor_min, (int, float))):
-            raise ValueError('Keyword argument {} must be int or float, '
-                             'but received {}. '
-                             .format(transform_name, transform_params))
+        if not (
+            isinstance(transform_factor_max, (int, float))
+            and isinstance(transform_factor_min, (int, float))
+        ):
+            raise ValueError(
+                "Keyword argument {} must be int or float, "
+                "but received {}. ".format(transform_name, transform_params)
+            )
 
-        self.transforms.append((transform_name,
-                                (transform_factor_min, transform_factor_max)))
+        self.transforms.append(
+            (transform_name, (transform_factor_min, transform_factor_max))
+        )

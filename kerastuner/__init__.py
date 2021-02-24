@@ -19,20 +19,19 @@ from __future__ import print_function
 from . import applications
 from . import oracles
 from . import tuners
-
-from .engine.hyperparameters import HyperParameters
-from .engine.hyperparameters import HyperParameter
 from .engine.hypermodel import HyperModel
-from .engine.tuner import Tuner
+from .engine.hyperparameters import HyperParameter
+from .engine.hyperparameters import HyperParameters
+from .engine.logger import CloudLogger
+from .engine.logger import Logger
 from .engine.oracle import Objective
 from .engine.oracle import Oracle
-from .engine.logger import Logger
-from .engine.logger import CloudLogger
+from .engine.tuner import Tuner
 from .tuners import BayesianOptimization
 from .tuners import Hyperband
 from .tuners import RandomSearch
-
 from .utils import check_tf_version
+
 check_tf_version()
 
-__version__ = '1.0.3'
+__version__ = "1.0.3"

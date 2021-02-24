@@ -18,15 +18,16 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from . import tuner as tuner_module
-from . import tuner_utils
-
 import collections
 import copy
-import numpy as np
 import os
+
+import numpy as np
 from tensorboard.plugins.hparams import api as hparams_api
 from tensorflow import keras
+
+from . import tuner as tuner_module
+from . import tuner_utils
 
 
 class MultiExecutionTuner(tuner_module.Tuner):
@@ -50,17 +51,14 @@ class MultiExecutionTuner(tuner_module.Tuner):
             Please see the docstring for `Tuner`.
     """
 
-    def __init__(self,
-                 oracle,
-                 hypermodel,
-                 executions_per_trial=1,
-                 **kwargs):
-        super(MultiExecutionTuner, self).__init__(
-            oracle, hypermodel, **kwargs)
+    def __init__(self, oracle, hypermodel, executions_per_trial=1, **kwargs):
+        super(MultiExecutionTuner, self).__init__(oracle, hypermodel, **kwargs)
         if isinstance(oracle.objective, list):
             raise ValueError(
-                'Multi-objective is not supported, found: {}'.format(
-                    oracle.objective))
+                "Multi-objective is not supported, found: {}".format(
+                    oracle.objective
+                )
+            )
         self.executions_per_trial = executions_per_trial
         # This is the `step` that will be reported to the Oracle at the end
         # of the Trial. Since intermediate results are not used, this is set
@@ -74,13 +72,13 @@ class MultiExecutionTuner(tuner_module.Tuner):
 
     def run_trial(self, trial, *fit_args, **fit_kwargs):
         model_checkpoint = keras.callbacks.ModelCheckpoint(
-            filepath=self._get_checkpoint_fname(
-                trial.trial_id, self._reported_step),
+            filepath=self._get_checkpoint_fname(trial.trial_id, self._reported_step),
             monitor=self.oracle.objective.name,
             mode=self.oracle.objective.direction,
             save_best_only=True,
-            save_weights_only=True)
-        original_callbacks = fit_kwargs.pop('callbacks', [])
+            save_weights_only=True,
+        )
+        original_callbacks = fit_kwargs.pop("callbacks", [])
 
         # Run the training process multiple times.
         metrics = collections.defaultdict(list)
@@ -91,11 +89,11 @@ class MultiExecutionTuner(tuner_module.Tuner):
             callbacks.append(tuner_utils.TunerCallback(self, trial))
             # Only checkpoint the best epoch across all executions.
             callbacks.append(model_checkpoint)
-            copied_fit_kwargs['callbacks'] = callbacks
+            copied_fit_kwargs["callbacks"] = callbacks
 
             history = self._build_and_fit_model(trial, fit_args, copied_fit_kwargs)
             for metric, epoch_values in history.history.items():
-                if self.oracle.objective.direction == 'min':
+                if self.oracle.objective.direction == "min":
                     best_value = np.min(epoch_values)
                 else:
                     best_value = np.max(epoch_values)
@@ -106,23 +104,27 @@ class MultiExecutionTuner(tuner_module.Tuner):
         for metric, execution_values in metrics.items():
             averaged_metrics[metric] = np.mean(execution_values)
         self.oracle.update_trial(
-            trial.trial_id, metrics=averaged_metrics, step=self._reported_step)
+            trial.trial_id, metrics=averaged_metrics, step=self._reported_step
+        )
 
     def _configure_tensorboard_dir(self, callbacks, trial, execution=0):
         for callback in callbacks:
-            if callback.__class__.__name__ == 'TensorBoard':
+            if callback.__class__.__name__ == "TensorBoard":
                 # Patch TensorBoard log_dir and add HParams KerasCallback
                 logdir = self._get_tensorboard_dir(
-                    callback.log_dir, trial.trial_id, execution)
+                    callback.log_dir, trial.trial_id, execution
+                )
                 callback.log_dir = logdir
                 hparams = tuner_utils.convert_hyperparams_to_hparams(
-                    trial.hyperparameters)
+                    trial.hyperparameters
+                )
                 callbacks.append(
                     hparams_api.KerasCallback(
-                        writer=logdir,
-                        hparams=hparams,
-                        trial_id=trial.trial_id))
+                        writer=logdir, hparams=hparams, trial_id=trial.trial_id
+                    )
+                )
 
     def _get_tensorboard_dir(self, logdir, trial_id, execution):
         return os.path.join(
-            str(logdir), str(trial_id), 'execution{}'.format(execution))
+            str(logdir), str(trial_id), "execution{}".format(execution)
+        )

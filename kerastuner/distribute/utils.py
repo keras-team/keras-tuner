@@ -29,22 +29,24 @@ def has_chief_oracle():
     Returns:
       bool. Whether distributed tuning with a chief Oracle should be run.
     """
-    if 'KERASTUNER_ORACLE_IP' in os.environ:
-        if 'KERASTUNER_ORACLE_PORT' not in os.environ:
+    if "KERASTUNER_ORACLE_IP" in os.environ:
+        if "KERASTUNER_ORACLE_PORT" not in os.environ:
             raise RuntimeError(
                 'Environment variable "KERASTUNER_ORACLE_IP" was set, '
                 'but "KERASTUNER_ORACLE_PORT" was not. Please specify '
-                'a port.')
-        if 'KERASTUNER_TUNER_ID' not in os.environ:
+                "a port."
+            )
+        if "KERASTUNER_TUNER_ID" not in os.environ:
             raise RuntimeError(
                 'Environment variable "KERASTUNER_ORACLE_IP" was set, '
                 'but "KERASTUNER_TUNER_ID" was not. Please specify '
-                'an ID for each tuner.')
+                "an ID for each tuner."
+            )
         return True
     return False
 
 
 def is_chief_oracle():
     if has_chief_oracle():
-        return 'chief' in os.environ['KERASTUNER_TUNER_ID']
+        return "chief" in os.environ["KERASTUNER_TUNER_ID"]
     return False

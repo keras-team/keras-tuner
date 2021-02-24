@@ -18,10 +18,11 @@ from __future__ import division
 from __future__ import print_function
 
 import collections
-import json
 import hashlib
+import json
 import os
 import random
+
 import tensorflow as tf
 
 from .. import utils
@@ -30,8 +31,7 @@ from . import metrics_tracking
 from . import stateful
 from . import trial as trial_lib
 
-
-Objective = collections.namedtuple('Objective', 'name direction')
+Objective = collections.namedtuple("Objective", "name direction")
 
 
 class Oracle(stateful.Stateful):
@@ -57,26 +57,30 @@ class Oracle(stateful.Stateful):
         seed: Int. Random seed.
     """
 
-    def __init__(self,
-                 objective,
-                 max_trials=None,
-                 hyperparameters=None,
-                 allow_new_entries=True,
-                 tune_new_entries=True,
-                 seed=None):
+    def __init__(
+        self,
+        objective,
+        max_trials=None,
+        hyperparameters=None,
+        allow_new_entries=True,
+        tune_new_entries=True,
+        seed=None,
+    ):
         self.objective = _format_objective(objective)
         self.max_trials = max_trials
         if not hyperparameters:
             if not tune_new_entries:
                 raise ValueError(
-                    'If you set `tune_new_entries=False`, you must'
-                    'specify the search space via the '
-                    '`hyperparameters` argument.')
+                    "If you set `tune_new_entries=False`, you must"
+                    "specify the search space via the "
+                    "`hyperparameters` argument."
+                )
             if not allow_new_entries:
                 raise ValueError(
-                    'If you set `allow_new_entries=False`, you must'
-                    'specify the search space via the '
-                    '`hyperparameters` argument.')
+                    "If you set `allow_new_entries=False`, you must"
+                    "specify the search space via the "
+                    "`hyperparameters` argument."
+                )
             self.hyperparameters = hp_module.HyperParameters()
         else:
             self.hyperparameters = hyperparameters
@@ -163,15 +167,14 @@ class Oracle(stateful.Stateful):
             values = None
         else:
             response = self._populate_space(trial_id)
-            status = response['status']
-            values = response['values'] if 'values' in response else None
+            status = response["status"]
+            values = response["values"] if "values" in response else None
 
         hyperparameters = self.hyperparameters.copy()
         hyperparameters.values = values or {}
         trial = trial_lib.Trial(
-            hyperparameters=hyperparameters,
-            trial_id=trial_id,
-            status=status)
+            hyperparameters=hyperparameters, trial_id=trial_id, status=status
+        )
 
         if status == trial_lib.TrialStatus.RUNNING:
             self.ongoing_trials[tuner_id] = trial
@@ -201,14 +204,15 @@ class Oracle(stateful.Stateful):
         for metric_name, metric_value in metrics.items():
             if not trial.metrics.exists(metric_name):
                 direction = _maybe_infer_direction_from_objective(
-                    self.objective, metric_name)
+                    self.objective, metric_name
+                )
                 trial.metrics.register(metric_name, direction=direction)
             trial.metrics.update(metric_name, metric_value, step=step)
         self._save_trial(trial)
         # To signal early stopping, set Trial.status to "STOPPED".
         return trial.status
 
-    def end_trial(self, trial_id, status='COMPLETED'):
+    def end_trial(self, trial_id, status="COMPLETED"):
         """Record the measured objective for a set of parameter values.
 
         Args:
@@ -224,8 +228,7 @@ class Oracle(stateful.Stateful):
                 break
 
         if not trial:
-            raise ValueError(
-                'Ongoing trial with id: {} not found.'.format(trial_id))
+            raise ValueError("Ongoing trial with id: {} not found.".format(trial_id))
 
         trial.status = status
         if status == trial_lib.TrialStatus.COMPLETED:
@@ -252,8 +255,10 @@ class Oracle(stateful.Stateful):
                 new_hps.append(hp)
 
         if new_hps and not self.allow_new_entries:
-            raise RuntimeError('`allow_new_entries` is `False`, but found '
-                               'new entries {}'.format(new_hps))
+            raise RuntimeError(
+                "`allow_new_entries` is `False`, but found "
+                "new entries {}".format(new_hps)
+            )
         if not self.tune_new_entries:
             # New entries should always use the default value.
             return
@@ -265,14 +270,17 @@ class Oracle(stateful.Stateful):
 
     def get_best_trials(self, num_trials=1):
         """Returns the best `Trial`s."""
-        trials = [t for t in self.trials.values()
-                  if t.status == trial_lib.TrialStatus.COMPLETED]
+        trials = [
+            t
+            for t in self.trials.values()
+            if t.status == trial_lib.TrialStatus.COMPLETED
+        ]
 
         sorted_trials = sorted(
             trials,
             key=lambda trial: trial.score,
             # Assumes single objective, subclasses can override.
-            reverse=self.objective.direction == 'max'
+            reverse=self.objective.direction == "max",
         )
         return sorted_trials[:num_trials]
 
@@ -286,42 +294,46 @@ class Oracle(stateful.Stateful):
         # `self.trials` are saved in their own, Oracle-agnostic files.
         # Just save the IDs for ongoing trials, since these are in `trials`.
         state = {}
-        state['ongoing_trials'] = {
+        state["ongoing_trials"] = {
             tuner_id: trial.trial_id
-            for tuner_id, trial in self.ongoing_trials.items()}
+            for tuner_id, trial in self.ongoing_trials.items()
+        }
         # Hyperparameters are part of the state because they can be added to
         # during the course of the search.
-        state['hyperparameters'] = self.hyperparameters.get_config()
-        state['seed'] = self.seed
-        state['seed_state'] = self._seed_state
-        state['tried_so_far'] = list(self._tried_so_far)
+        state["hyperparameters"] = self.hyperparameters.get_config()
+        state["seed"] = self.seed
+        state["seed_state"] = self._seed_state
+        state["tried_so_far"] = list(self._tried_so_far)
         return state
 
     def set_state(self, state):
         # `self.trials` are saved in their own, Oracle-agnostic files.
         self.ongoing_trials = {
             tuner_id: self.trials[trial_id]
-            for tuner_id, trial_id in state['ongoing_trials'].items()}
+            for tuner_id, trial_id in state["ongoing_trials"].items()
+        }
         self.hyperparameters = hp_module.HyperParameters.from_config(
-            state['hyperparameters'])
-        self.seed = state['seed']
-        self._seed_state = state['seed_state']
-        self._tried_so_far = set(state['tried_so_far'])
+            state["hyperparameters"]
+        )
+        self.seed = state["seed"]
+        self._seed_state = state["seed_state"]
+        self._tried_so_far = set(state["tried_so_far"])
 
     def _set_project_dir(self, directory, project_name, overwrite=False):
         """Sets the project directory and reloads the Oracle."""
         self._directory = directory
         self._project_name = project_name
         if not overwrite and tf.io.gfile.exists(self._get_oracle_fname()):
-            tf.get_logger().info('Reloading Oracle from existing project {}'.format(
-                self._get_oracle_fname()))
+            tf.get_logger().info(
+                "Reloading Oracle from existing project {}".format(
+                    self._get_oracle_fname()
+                )
+            )
             self.reload()
 
     @property
     def _project_dir(self):
-        dirname = os.path.join(
-            str(self._directory),
-            self._project_name)
+        dirname = os.path.join(str(self._directory), self._project_name)
         utils.create_directory(dirname)
         return dirname
 
@@ -331,10 +343,11 @@ class Oracle(stateful.Stateful):
 
     def reload(self):
         # Reload trials from their own files.
-        trial_fnames = tf.io.gfile.glob(os.path.join(
-            self._project_dir, 'trial_*', 'trial.json'))
+        trial_fnames = tf.io.gfile.glob(
+            os.path.join(self._project_dir, "trial_*", "trial.json")
+        )
         for fname in trial_fnames:
-            with tf.io.gfile.GFile(fname, 'r') as f:
+            with tf.io.gfile.GFile(fname, "r") as f:
                 trial_data = f.read()
             trial_state = json.loads(trial_data)
             trial = trial_lib.Trial.from_state(trial_state)
@@ -343,20 +356,19 @@ class Oracle(stateful.Stateful):
             super(Oracle, self).reload(self._get_oracle_fname())
         except KeyError:
             raise RuntimeError(
-                'Error reloading `Oracle` from existing project. If you did not '
-                'mean to reload from an existing project, change the `project_name` '
-                'or pass `overwrite=True` when creating the `Tuner`. Found existing '
-                'project at: {}'.format(self._project_dir))
+                "Error reloading `Oracle` from existing project. If you did not "
+                "mean to reload from an existing project, change the `project_name` "
+                "or pass `overwrite=True` when creating the `Tuner`. Found existing "
+                "project at: {}".format(self._project_dir)
+            )
 
     def _get_oracle_fname(self):
-        return os.path.join(
-            self._project_dir,
-            'oracle.json')
+        return os.path.join(self._project_dir, "oracle.json")
 
     def _compute_values_hash(self, values):
         keys = sorted(values.keys())
-        s = ''.join(str(k) + '=' + str(values[k]) for k in keys)
-        return hashlib.sha256(s.encode('utf-8')).hexdigest()[:32]
+        s = "".join(str(k) + "=" + str(values[k]) for k in keys)
+        return hashlib.sha256(s.encode("utf-8")).hexdigest()[:32]
 
     def _check_objective_found(self, metrics):
         if isinstance(self.objective, Objective):
@@ -368,23 +380,21 @@ class Oracle(stateful.Stateful):
                 objective_names.remove(metric_name)
         if objective_names:
             raise ValueError(
-                'Objective value missing in metrics reported to the '
-                'Oracle, expected: {}, found: {}'.format(
-                    objective_names, metrics.keys()))
+                "Objective value missing in metrics reported to the "
+                "Oracle, expected: {}, found: {}".format(
+                    objective_names, metrics.keys()
+                )
+            )
 
     def _get_trial_dir(self, trial_id):
-        dirname = os.path.join(
-            self._project_dir,
-            'trial_' + str(trial_id))
+        dirname = os.path.join(self._project_dir, "trial_" + str(trial_id))
         utils.create_directory(dirname)
         return dirname
 
     def _save_trial(self, trial):
         # Write trial status to trial directory
         trial_id = trial.trial_id
-        trial.save(os.path.join(
-            self._get_trial_dir(trial_id),
-            'trial.json'))
+        trial.save(os.path.join(self._get_trial_dir(trial_id), "trial.json"))
 
     def _random_values(self):
         """Fills the hyperparameter space with random values.
@@ -426,14 +436,17 @@ def _format_objective(objective):
             error_msg = (
                 'Could not infer optimization direction ("min" or "max") '
                 'for unknown metric "{obj}". Please specify the objective  as'
-                'a `kerastuner.Objective`, for example `kerastuner.Objective('
-                '"{obj}", direction="min")`.')
+                "a `kerastuner.Objective`, for example `kerastuner.Objective("
+                '"{obj}", direction="min")`.'
+            )
             error_msg = error_msg.format(obj=objective)
             raise ValueError(error_msg)
         return Objective(name=objective, direction=direction)
     else:
-        raise ValueError('`objective` not understood, expected str or '
-                         '`Objective` object, found: {}'.format(objective))
+        raise ValueError(
+            "`objective` not understood, expected str or "
+            "`Objective` object, found: {}".format(objective)
+        )
 
 
 def _maybe_infer_direction_from_objective(objective, metric_name):

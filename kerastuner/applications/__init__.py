@@ -14,6 +14,6 @@
 
 from __future__ import absolute_import
 
+from .augment import HyperImageAugment
 from .resnet import HyperResNet
 from .xception import HyperXception
-from .augment import HyperImageAugment

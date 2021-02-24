@@ -1,7 +1,8 @@
 import random
+import sys
+
 import numpy as np
 import tensorflow as tf
-import sys
 
 
 def test_seed_set_before_each_test():

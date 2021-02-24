@@ -19,50 +19,54 @@ from __future__ import absolute_import
 from setuptools import find_packages
 from setuptools import setup
 
-version = '1.0.3'
+version = "1.0.3"
 
 setup(
-    name='keras-tuner',
+    name="keras-tuner",
     version=version,
-    description='Hypertuner for Keras',
-    url='https://github.com/keras-team/keras-tuner',
-    author='The Keras Tuner authors',
-    author_email='kerastuner@google.com',
-    license='Apache License 2.0',
+    description="Hypertuner for Keras",
+    url="https://github.com/keras-team/keras-tuner",
+    author="The Keras Tuner authors",
+    author_email="kerastuner@google.com",
+    license="Apache License 2.0",
     # tensorflow isn't a dependency because it would force the
     # download of the gpu version or the cpu version.
     # users should install it manually.
     install_requires=[
-        'packaging',
-        'future',
-        'numpy',
-        'tabulate',
-        'terminaltables',
-        'colorama',
-        'tqdm',
-        'requests',
-        'scipy',
-        'scikit-learn',
-        'tensorboard',
-        'ipython'
+        "packaging",
+        "future",
+        "numpy",
+        "tabulate",
+        "terminaltables",
+        "colorama",
+        "tqdm",
+        "requests",
+        "scipy",
+        "scikit-learn",
+        "tensorboard",
+        "ipython",
     ],
     extras_require={
-        'tests': ['pytest',
-                  'flake8',
-                  'mock',
-                  'portpicker',
-                  'pytest-xdist',
-                  'pytest-cov'],
+        "tests": [
+            "pytest",
+            "flake8",
+            "isort",
+            "black",
+            "mock",
+            "portpicker",
+            "pytest-xdist",
+            "pytest-cov",
+        ],
     },
     classifiers=[
-        'Programming Language :: Python',
-        'Programming Language :: Python :: 3.6',
-        'Operating System :: Unix',
-        'Operating System :: Microsoft :: Windows',
-        'Operating System :: MacOS',
-        'Intended Audience :: Science/Research',
-        'Topic :: Scientific/Engineering',
-        'Topic :: Software Development'
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3.6",
+        "Operating System :: Unix",
+        "Operating System :: Microsoft :: Windows",
+        "Operating System :: MacOS",
+        "Intended Audience :: Science/Research",
+        "Topic :: Scientific/Engineering",
+        "Topic :: Software Development",
     ],
-    packages=find_packages(exclude=('tests',))
+    packages=find_packages(exclude=("tests",)),
 )
