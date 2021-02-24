@@ -20,8 +20,8 @@ from __future__ import print_function
 import copy
 import os
 
-from tensorboard.plugins.hparams import api as hparams_api
 import tensorflow as tf
+from tensorboard.plugins.hparams import api as hparams_api
 
 from . import base_tuner
 from . import hypermodel as hm_module
@@ -73,19 +73,21 @@ class Tuner(base_tuner.BaseTuner):
             of the same name if one is found. Otherwise, overwrites the project.
     """
 
-    def __init__(self,
-                 oracle,
-                 hypermodel,
-                 max_model_size=None,
-                 optimizer=None,
-                 loss=None,
-                 metrics=None,
-                 distribution_strategy=None,
-                 directory=None,
-                 project_name=None,
-                 logger=None,
-                 tuner_id=None,
-                 overwrite=False):
+    def __init__(
+        self,
+        oracle,
+        hypermodel,
+        max_model_size=None,
+        optimizer=None,
+        loss=None,
+        metrics=None,
+        distribution_strategy=None,
+        directory=None,
+        project_name=None,
+        logger=None,
+        tuner_id=None,
+        overwrite=False,
+    ):
 
         # Subclasses of `KerasHyperModel` are not automatically wrapped.
         if not isinstance(hypermodel, hm_module.KerasHyperModel):
@@ -95,14 +97,17 @@ class Tuner(base_tuner.BaseTuner):
                 optimizer=optimizer,
                 loss=loss,
                 metrics=metrics,
-                distribution_strategy=distribution_strategy)
+                distribution_strategy=distribution_strategy,
+            )
 
-        super(Tuner, self).__init__(oracle=oracle,
-                                    hypermodel=hypermodel,
-                                    directory=directory,
-                                    project_name=project_name,
-                                    logger=logger,
-                                    overwrite=overwrite)
+        super(Tuner, self).__init__(
+            oracle=oracle,
+            hypermodel=hypermodel,
+            directory=directory,
+            project_name=project_name,
+            logger=logger,
+            overwrite=overwrite,
+        )
 
         self.distribution_strategy = distribution_strategy
 
@@ -110,9 +115,11 @@ class Tuner(base_tuner.BaseTuner):
         # Only the chief worker in each cluster should report results.
         if self.distribution_strategy is not None:
             self.oracle.multi_worker = (
-                self.distribution_strategy.extended._in_multi_worker_mode())
+                self.distribution_strategy.extended._in_multi_worker_mode()
+            )
             self.oracle.should_report = (
-                self.distribution_strategy.extended.should_checkpoint)
+                self.distribution_strategy.extended.should_checkpoint
+            )
 
         # Save only the last N checkpoints.
         self._save_n_checkpoints = 10
@@ -155,7 +162,7 @@ class Tuner(base_tuner.BaseTuner):
         """
         # Handle any callbacks passed to `fit`.
         copied_fit_kwargs = copy.copy(fit_kwargs)
-        callbacks = fit_kwargs.pop('callbacks', [])
+        callbacks = fit_kwargs.pop("callbacks", [])
         callbacks = self._deepcopy_callbacks(callbacks)
         self._configure_tensorboard_dir(callbacks, trial)
         # `TunerCallback` calls:
@@ -167,7 +174,7 @@ class Tuner(base_tuner.BaseTuner):
         # you are subclassing `Tuner` to write a custom training loop, you should
         # make calls to these methods within `run_trial`.
         callbacks.append(tuner_utils.TunerCallback(self, trial))
-        copied_fit_kwargs['callbacks'] = callbacks
+        copied_fit_kwargs["callbacks"] = callbacks
 
         self._build_and_fit_model(trial, fit_args, copied_fit_kwargs)
 
@@ -182,11 +189,11 @@ class Tuner(base_tuner.BaseTuner):
             # training. It would break if oracle picks a different `best_step` than
             # `metrics.get_best_step` since it might be deleted due to it was
             # not the `best_epoch` during the training.
-            best_epoch = self.oracle.get_trial(
-                trial_id).metrics.get_best_step(self.oracle.objective.name)
+            best_epoch = self.oracle.get_trial(trial_id).metrics.get_best_step(
+                self.oracle.objective.name
+            )
         if epoch > self._save_n_checkpoints and epoch_to_delete != best_epoch:
-            self._delete_checkpoint(
-                trial_id, epoch_to_delete)
+            self._delete_checkpoint(trial_id, epoch_to_delete)
 
     def load_model(self, trial):
         model = self.hypermodel.build(trial.hyperparameters)
@@ -195,8 +202,9 @@ class Tuner(base_tuner.BaseTuner):
         # obtained.
         best_epoch = trial.best_step
         with hm_module.maybe_distribute(self.distribution_strategy):
-            model.load_weights(self._get_checkpoint_fname(
-                trial.trial_id, best_epoch))
+            model.load_weights(
+                self._get_checkpoint_fname(trial.trial_id, best_epoch)
+            )
         return model
 
     def on_epoch_begin(self, trial, model, epoch, logs=None):
@@ -246,8 +254,7 @@ class Tuner(base_tuner.BaseTuner):
         """
         self.save_model(trial.trial_id, model, step=epoch)
         # Report intermediate metrics to the `Oracle`.
-        status = self.oracle.update_trial(
-            trial.trial_id, metrics=logs, step=epoch)
+        status = self.oracle.update_trial(trial.trial_id, metrics=logs, step=epoch)
         trial.status = status
         if trial.status == "STOPPED":
             model.stop_training = True
@@ -277,35 +284,35 @@ class Tuner(base_tuner.BaseTuner):
             callbacks = copy.deepcopy(callbacks)
         except:
             raise ValueError(
-                'All callbacks used during a search '
-                'should be deep-copyable (since they are '
-                'reused across trials). '
-                'It is not possible to do `copy.deepcopy(%s)`' %
-                (callbacks,))
+                "All callbacks used during a search "
+                "should be deep-copyable (since they are "
+                "reused across trials). "
+                "It is not possible to do `copy.deepcopy(%s)`" % (callbacks,)
+            )
         return callbacks
 
     def _configure_tensorboard_dir(self, callbacks, trial):
         for callback in callbacks:
-            if callback.__class__.__name__ == 'TensorBoard':
+            if callback.__class__.__name__ == "TensorBoard":
                 # Patch TensorBoard log_dir and add HParams KerasCallback
                 logdir = self._get_tensorboard_dir(callback.log_dir, trial.trial_id)
                 callback.log_dir = logdir
                 hparams = tuner_utils.convert_hyperparams_to_hparams(
-                    trial.hyperparameters)
+                    trial.hyperparameters
+                )
                 callbacks.append(
                     hparams_api.KerasCallback(
-                        writer=logdir,
-                        hparams=hparams,
-                        trial_id=trial.trial_id))
+                        writer=logdir, hparams=hparams, trial_id=trial.trial_id
+                    )
+                )
 
     def _get_tensorboard_dir(self, logdir, trial_id):
         return os.path.join(str(logdir), str(trial_id))
 
     def _get_checkpoint_dir(self, trial_id, epoch):
         checkpoint_dir = os.path.join(
-            self.get_trial_dir(trial_id),
-            'checkpoints',
-            'epoch_' + str(epoch))
+            self.get_trial_dir(trial_id), "checkpoints", "epoch_" + str(epoch)
+        )
         tf.io.gfile.makedirs(checkpoint_dir)
         return checkpoint_dir
 
@@ -313,11 +320,13 @@ class Tuner(base_tuner.BaseTuner):
         checkpoint_fname = os.path.join(
             # Each checkpoint is saved in its own directory.
             self._get_checkpoint_dir(trial_id, epoch),
-            'checkpoint')
-        if (isinstance(self.distribution_strategy, tf.distribute.TPUStrategy) and
-                not self.project_dir.startswith('gs://')):
+            "checkpoint",
+        )
+        if isinstance(
+            self.distribution_strategy, tf.distribute.TPUStrategy
+        ) and not self.project_dir.startswith("gs://"):
             # TPU strategy only support saving h5 format on local path
-            return checkpoint_fname + '.h5'
+            return checkpoint_fname + ".h5"
         return checkpoint_fname
 
     def _checkpoint_model(self, model, trial_id, epoch):

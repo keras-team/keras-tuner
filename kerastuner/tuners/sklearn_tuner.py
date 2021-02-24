@@ -13,12 +13,13 @@
 # limitations under the License.
 """Tuner for Scikit-learn Models."""
 import collections
-import numpy as np
 import os
 import pickle
+
+import numpy as np
+import tensorflow as tf
 from sklearn import model_selection
 from sklearn.pipeline import Pipeline
-import tensorflow as tf
 
 from ..engine import base_tuner
 
@@ -90,17 +91,17 @@ class Sklearn(base_tuner.BaseTuner):
     best_model = tuner.get_best_models(num_models=1)[0]
     ```
     """
-    def __init__(self,
-                 oracle,
-                 hypermodel,
-                 scoring=None,
-                 metrics=None,
-                 cv=model_selection.KFold(5, shuffle=True, random_state=1),
-                 **kwargs):
-        super(Sklearn, self).__init__(
-            oracle=oracle,
-            hypermodel=hypermodel,
-            **kwargs)
+
+    def __init__(
+        self,
+        oracle,
+        hypermodel,
+        scoring=None,
+        metrics=None,
+        cv=model_selection.KFold(5, shuffle=True, random_state=1),
+        **kwargs
+    ):
+        super(Sklearn, self).__init__(oracle=oracle, hypermodel=hypermodel, **kwargs)
 
         self.scoring = scoring
 
@@ -126,24 +127,20 @@ class Sklearn(base_tuner.BaseTuner):
         """
         # Only overridden for the docstring.
         return super(Sklearn, self).search(
-            X, y, sample_weight=sample_weight, groups=groups)
+            X, y, sample_weight=sample_weight, groups=groups
+        )
 
-    def run_trial(self,
-                  trial,
-                  X,
-                  y,
-                  sample_weight=None,
-                  groups=None):
+    def run_trial(self, trial, X, y, sample_weight=None, groups=None):
 
         metrics = collections.defaultdict(list)
         # For cross-validation methods that expect a `groups` argument.
-        cv_kwargs = {'groups': groups} if groups is not None else {}
-        for train_indices, test_indices in self.cv.split(
-                X, y, **cv_kwargs):
+        cv_kwargs = {"groups": groups} if groups is not None else {}
+        for train_indices, test_indices in self.cv.split(X, y, **cv_kwargs):
             X_train = X[train_indices]
             y_train = y[train_indices]
             sample_weight_train = (
-                sample_weight[train_indices] if sample_weight is not None else None)
+                sample_weight[train_indices] if sample_weight is not None else None
+            )
 
             model = self.hypermodel.build(trial.hyperparameters)
             if isinstance(model, Pipeline):
@@ -154,21 +151,23 @@ class Sklearn(base_tuner.BaseTuner):
             X_test = X[test_indices]
             y_test = y[test_indices]
             sample_weight_test = (
-                sample_weight[test_indices] if sample_weight is not None else None)
+                sample_weight[test_indices] if sample_weight is not None else None
+            )
 
             if self.scoring is None:
-                score = model.score(
-                    X_test, y_test, sample_weight=sample_weight_test)
+                score = model.score(X_test, y_test, sample_weight=sample_weight_test)
             else:
                 score = self.scoring(
-                    model, X_test, y_test, sample_weight=sample_weight_test)
-            metrics['score'].append(score)
+                    model, X_test, y_test, sample_weight=sample_weight_test
+                )
+            metrics["score"].append(score)
 
             if self.metrics:
                 y_test_pred = model.predict(X_test)
                 for metric in self.metrics:
                     result = metric(
-                        y_test, y_test_pred, sample_weight=sample_weight_test)
+                        y_test, y_test_pred, sample_weight=sample_weight_test
+                    )
                     metrics[metric.__name__].append(result)
 
         trial_metrics = {name: np.mean(values) for name, values in metrics.items()}
@@ -176,12 +175,11 @@ class Sklearn(base_tuner.BaseTuner):
         self.save_model(trial.trial_id, model)
 
     def save_model(self, trial_id, model, step=0):
-        fname = os.path.join(self.get_trial_dir(trial_id), 'model.pickle')
-        with tf.io.gfile.GFile(fname, 'wb') as f:
+        fname = os.path.join(self.get_trial_dir(trial_id), "model.pickle")
+        with tf.io.gfile.GFile(fname, "wb") as f:
             pickle.dump(model, f)
 
     def load_model(self, trial):
-        fname = os.path.join(
-            self.get_trial_dir(trial.trial_id), 'model.pickle')
-        with tf.io.gfile.GFile(fname, 'rb') as f:
+        fname = os.path.join(self.get_trial_dir(trial.trial_id), "model.pickle")
+        with tf.io.gfile.GFile(fname, "rb") as f:
             return pickle.load(f)

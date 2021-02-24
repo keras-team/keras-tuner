@@ -5,88 +5,85 @@ import shutil
 import keras_autodoc
 
 PAGES = {
-    'documentation/tuners.md': [
-        'kerastuner.BayesianOptimization',
-        'kerastuner.Hyperband',
-        'kerastuner.RandomSearch',
-        'kerastuner.tuners.Sklearn',
-        'kerastuner.Tuner',
-        'kerastuner.Tuner.get_best_models',
-        'kerastuner.Tuner.get_state',
-        'kerastuner.Tuner.load_model',
-        'kerastuner.Tuner.on_epoch_begin',
-        'kerastuner.Tuner.on_batch_begin',
-        'kerastuner.Tuner.on_batch_end',
-        'kerastuner.Tuner.on_epoch_end',
-        'kerastuner.Tuner.run_trial',
-        'kerastuner.Tuner.save_model',
-        'kerastuner.Tuner.search',
-        'kerastuner.Tuner.set_state',
-        'kerastuner.Tuner.get_best_hyperparameters',
-        'kerastuner.Tuner.get_best_models',
-        'kerastuner.Tuner.get_state',
-        'kerastuner.Tuner.load_model',
-        'kerastuner.Tuner.run_trial',
-        'kerastuner.Tuner.save_model',
-        'kerastuner.Tuner.search',
-        'kerastuner.Tuner.set_state'
+    "documentation/tuners.md": [
+        "kerastuner.BayesianOptimization",
+        "kerastuner.Hyperband",
+        "kerastuner.RandomSearch",
+        "kerastuner.tuners.Sklearn",
+        "kerastuner.Tuner",
+        "kerastuner.Tuner.get_best_models",
+        "kerastuner.Tuner.get_state",
+        "kerastuner.Tuner.load_model",
+        "kerastuner.Tuner.on_epoch_begin",
+        "kerastuner.Tuner.on_batch_begin",
+        "kerastuner.Tuner.on_batch_end",
+        "kerastuner.Tuner.on_epoch_end",
+        "kerastuner.Tuner.run_trial",
+        "kerastuner.Tuner.save_model",
+        "kerastuner.Tuner.search",
+        "kerastuner.Tuner.set_state",
+        "kerastuner.Tuner.get_best_hyperparameters",
+        "kerastuner.Tuner.get_best_models",
+        "kerastuner.Tuner.get_state",
+        "kerastuner.Tuner.load_model",
+        "kerastuner.Tuner.run_trial",
+        "kerastuner.Tuner.save_model",
+        "kerastuner.Tuner.search",
+        "kerastuner.Tuner.set_state",
     ],
-    'documentation/hypermodels.md': [
-        'kerastuner.HyperModel',
-        'kerastuner.HyperModel.build',
-        'kerastuner.applications.HyperXception',
-        'kerastuner.applications.HyperResNet'
+    "documentation/hypermodels.md": [
+        "kerastuner.HyperModel",
+        "kerastuner.HyperModel.build",
+        "kerastuner.applications.HyperXception",
+        "kerastuner.applications.HyperResNet",
     ],
-
-    'documentation/hyperparameters.md': [
-        'kerastuner.HyperParameters',
-        'kerastuner.HyperParameters.Boolean',
-        'kerastuner.HyperParameters.Choice',
-        'kerastuner.HyperParameters.Fixed',
-        'kerastuner.HyperParameters.Float',
-        'kerastuner.HyperParameters.Int',
-        'kerastuner.HyperParameters.conditional_scope',
-        'kerastuner.HyperParameters.get'
+    "documentation/hyperparameters.md": [
+        "kerastuner.HyperParameters",
+        "kerastuner.HyperParameters.Boolean",
+        "kerastuner.HyperParameters.Choice",
+        "kerastuner.HyperParameters.Fixed",
+        "kerastuner.HyperParameters.Float",
+        "kerastuner.HyperParameters.Int",
+        "kerastuner.HyperParameters.conditional_scope",
+        "kerastuner.HyperParameters.get",
     ],
-    'documentation/oracles.md': [
-        'kerastuner.oracles.BayesianOptimization',
-        'kerastuner.oracles.Hyperband',
-        'kerastuner.oracles.RandomSearch',
-        'kerastuner.Oracle',
-        'kerastuner.Oracle._populate_space',
-        'kerastuner.Oracle._score_trial',
-        'kerastuner.Oracle.create_trial',
-        'kerastuner.Oracle.end_trial',
-        'kerastuner.Oracle.get_best_trials',
-        'kerastuner.Oracle.get_state',
-        'kerastuner.Oracle.set_state',
-        'kerastuner.Oracle.update_trial'
-    ]
+    "documentation/oracles.md": [
+        "kerastuner.oracles.BayesianOptimization",
+        "kerastuner.oracles.Hyperband",
+        "kerastuner.oracles.RandomSearch",
+        "kerastuner.Oracle",
+        "kerastuner.Oracle._populate_space",
+        "kerastuner.Oracle._score_trial",
+        "kerastuner.Oracle.create_trial",
+        "kerastuner.Oracle.end_trial",
+        "kerastuner.Oracle.get_best_trials",
+        "kerastuner.Oracle.get_state",
+        "kerastuner.Oracle.set_state",
+        "kerastuner.Oracle.update_trial",
+    ],
 }
 
 kerastuner_dir = pathlib.Path(__file__).resolve().parents[1]
 
 
 def generate(dest_dir):
-    template_dir = kerastuner_dir / 'docs' / 'templates'
+    template_dir = kerastuner_dir / "docs" / "templates"
 
     doc_generator = keras_autodoc.DocumentationGenerator(
         PAGES,
-        'https://github.com/keras-team/keras-tuner/blob/master',
+        "https://github.com/keras-team/keras-tuner/blob/master",
         template_dir,
-        kerastuner_dir / 'examples'
+        kerastuner_dir / "examples",
     )
     doc_generator.generate(dest_dir)
 
-    readme = (kerastuner_dir / 'README.md').read_text()
-    index = (template_dir / 'index.md').read_text()
-    index = index.replace('{{autogenerated}}', readme[readme.find('##'):])
-    (dest_dir / 'index.md').write_text(index, encoding='utf-8')
-    shutil.copyfile(kerastuner_dir / 'CONTRIBUTING.md',
-                    dest_dir / 'contributing.md')
-    shutil.copyfile(kerastuner_dir / 'docs' / 'extra.css',
-                    dest_dir / 'extra.css')
+    readme = (kerastuner_dir / "README.md").read_text()
+    index = (template_dir / "index.md").read_text()
+    index = index.replace("{{autogenerated}}", readme[readme.find("##") :])
+    (dest_dir / "index.md").write_text(index, encoding="utf-8")
+    shutil.copyfile(kerastuner_dir / "CONTRIBUTING.md", dest_dir / "contributing.md")
+    shutil.copyfile(kerastuner_dir / "docs" / "extra.css", dest_dir / "extra.css")
 
 
-if __name__ == '__main__':
-    generate(kerastuner_dir / 'docs' / 'sources')
+if __name__ == "__main__":
+    generate(kerastuner_dir / "docs" / "sources")

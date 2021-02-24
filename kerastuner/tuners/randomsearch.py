@@ -49,20 +49,23 @@ class RandomSearchOracle(oracle_module.Oracle):
             `hyperparameters`.
     """
 
-    def __init__(self,
-                 objective,
-                 max_trials,
-                 seed=None,
-                 hyperparameters=None,
-                 allow_new_entries=True,
-                 tune_new_entries=True):
+    def __init__(
+        self,
+        objective,
+        max_trials,
+        seed=None,
+        hyperparameters=None,
+        allow_new_entries=True,
+        tune_new_entries=True,
+    ):
         super(RandomSearchOracle, self).__init__(
             objective=objective,
             max_trials=max_trials,
             hyperparameters=hyperparameters,
             tune_new_entries=tune_new_entries,
             allow_new_entries=allow_new_entries,
-            seed=seed)
+            seed=seed,
+        )
 
     def _populate_space(self, _):
         """Fill the hyperparameter space with values.
@@ -78,10 +81,8 @@ class RandomSearchOracle(oracle_module.Oracle):
         """
         values = self._random_values()
         if values is None:
-            return {'status': trial_lib.TrialStatus.STOPPED,
-                    'values': None}
-        return {'status': trial_lib.TrialStatus.RUNNING,
-                'values': values}
+            return {"status": trial_lib.TrialStatus.STOPPED, "values": None}
+        return {"status": trial_lib.TrialStatus.RUNNING, "values": values}
 
 
 class RandomSearch(multi_execution_tuner.MultiExecutionTuner):
@@ -114,15 +115,17 @@ class RandomSearch(multi_execution_tuner.MultiExecutionTuner):
             Please see the docstring for `Tuner`.
     """
 
-    def __init__(self,
-                 hypermodel,
-                 objective,
-                 max_trials,
-                 seed=None,
-                 hyperparameters=None,
-                 tune_new_entries=True,
-                 allow_new_entries=True,
-                 **kwargs):
+    def __init__(
+        self,
+        hypermodel,
+        objective,
+        max_trials,
+        seed=None,
+        hyperparameters=None,
+        tune_new_entries=True,
+        allow_new_entries=True,
+        **kwargs
+    ):
         self.seed = seed
         oracle = RandomSearchOracle(
             objective=objective,
@@ -130,8 +133,6 @@ class RandomSearch(multi_execution_tuner.MultiExecutionTuner):
             seed=seed,
             hyperparameters=hyperparameters,
             tune_new_entries=tune_new_entries,
-            allow_new_entries=allow_new_entries)
-        super(RandomSearch, self).__init__(
-            oracle,
-            hypermodel,
-            **kwargs)
+            allow_new_entries=allow_new_entries,
+        )
+        super(RandomSearch, self).__init__(oracle, hypermodel, **kwargs)

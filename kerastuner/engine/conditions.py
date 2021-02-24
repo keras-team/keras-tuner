@@ -18,6 +18,7 @@ from __future__ import division
 from __future__ import print_function
 
 import abc
+
 import six
 
 from ..protos import kerastuner_pb2
@@ -54,15 +55,15 @@ class Condition(object):
         # Returns:
             bool.
         """
-        raise NotImplementedError('Must be implemented in subclasses.')
+        raise NotImplementedError("Must be implemented in subclasses.")
 
     @abc.abstractmethod
     def __eq__(self, other):
-        raise NotImplementedError('Must be implemented in subclasses.')
+        raise NotImplementedError("Must be implemented in subclasses.")
 
     @abc.abstractmethod
     def get_config(self):
-        raise NotImplementedError('Must be implemented in subclasses.')
+        raise NotImplementedError("Must be implemented in subclasses.")
 
     @classmethod
     def from_config(cls, config):
@@ -70,14 +71,14 @@ class Condition(object):
 
     @classmethod
     def from_proto(self, proto):
-        kind = proto.WhichOneof('kind')
-        if kind == 'parent':
+        kind = proto.WhichOneof("kind")
+        if kind == "parent":
             parent = getattr(proto, kind)
             name = parent.name
             values = parent.values
-            values = [getattr(v, v.WhichOneof('kind')) for v in values]
+            values = [getattr(v, v.WhichOneof("kind")) for v in values]
             return Parent(name=name, values=values)
-        raise ValueError('Unrecognized condition of type: {}'.format(kind))
+        raise ValueError("Unrecognized condition of type: {}".format(kind))
 
 
 class Parent(Condition):
@@ -99,6 +100,7 @@ class Parent(Condition):
         values: Values for which the `HyperParameter` this object is
             passed to should be considered active.
     """
+
     def __init__(self, name, values):
         self.name = name
 
@@ -111,22 +113,24 @@ class Parent(Condition):
             values = [int(v) for v in values]
         elif not isinstance(first_val, (bool, float)):
             raise TypeError(
-                'Can contain only `int`, `float`, `str`, or '
-                '`bool`, found values: ' + str(values) + 'with '
-                'types: ' + str(type(first_val)))
+                "Can contain only `int`, `float`, `str`, or "
+                "`bool`, found values: " + str(values) + "with "
+                "types: " + str(type(first_val))
+            )
         self.values = values
 
     def is_active(self, values):
-        return (self.name in values and values[self.name] in self.values)
+        return self.name in values and values[self.name] in self.values
 
     def __eq__(self, other):
-        return (isinstance(other, Parent) and
-                other.name == self.name and
-                other.values == self.values)
+        return (
+            isinstance(other, Parent)
+            and other.name == self.name
+            and other.values == self.values
+        )
 
     def get_config(self):
-        return {'name': self.name,
-                'values': self.values}
+        return {"name": self.name, "values": self.values}
 
     def to_proto(self):
         if isinstance(self.values[0], six.string_types):
@@ -137,9 +141,8 @@ class Parent(Condition):
             values = [kerastuner_pb2.Value(float_value=v) for v in self.values]
 
         return kerastuner_pb2.Condition(
-            parent=kerastuner_pb2.Condition.Parent(
-                name=self.name,
-                values=values))
+            parent=kerastuner_pb2.Condition.Parent(name=self.name, values=values)
+        )
 
 
 def _to_list(values):

@@ -19,21 +19,20 @@ from kerastuner.engine import trial as trial_module
 
 def test_trial_proto():
     hps = hp_module.HyperParameters()
-    hps.Int('a', 0, 10, default=3)
-    trial = trial_module.Trial(
-        hps, trial_id='trial1', status='COMPLETED')
-    trial.metrics.register('score', direction='max')
-    trial.metrics.update('score', 10, step=1)
+    hps.Int("a", 0, 10, default=3)
+    trial = trial_module.Trial(hps, trial_id="trial1", status="COMPLETED")
+    trial.metrics.register("score", direction="max")
+    trial.metrics.update("score", 10, step=1)
 
     proto = trial.to_proto()
     assert len(proto.hyperparameters.space.int_space) == 1
-    assert proto.hyperparameters.values.values['a'].int_value == 3
-    assert not proto.HasField('score')
+    assert proto.hyperparameters.values.values["a"].int_value == 3
+    assert not proto.HasField("score")
 
     new_trial = trial_module.Trial.from_proto(proto)
-    assert new_trial.status == 'COMPLETED'
-    assert new_trial.hyperparameters.get('a') == 3
-    assert new_trial.trial_id == 'trial1'
+    assert new_trial.status == "COMPLETED"
+    assert new_trial.hyperparameters.get("a") == 3
+    assert new_trial.trial_id == "trial1"
     assert new_trial.score is None
     assert new_trial.best_step is None
 
@@ -41,12 +40,13 @@ def test_trial_proto():
     trial.best_step = 3
 
     proto = trial.to_proto()
-    assert proto.HasField('score')
+    assert proto.HasField("score")
     assert proto.score.value == -10
     assert proto.score.step == 3
 
     new_trial = trial_module.Trial.from_proto(proto)
     assert new_trial.score == -10
     assert new_trial.best_step == 3
-    assert new_trial.metrics.get_history('score') == [
-        metrics_tracking.MetricObservation(10, step=1)]
+    assert new_trial.metrics.get_history("score") == [
+        metrics_tracking.MetricObservation(10, step=1)
+    ]

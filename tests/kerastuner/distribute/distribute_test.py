@@ -16,39 +16,39 @@
 import copy
 import logging
 import os
-import numpy as np
+import sys
 import threading
+
+import numpy as np
 import pytest
 import tensorflow as tf
 from tensorflow import keras
 
 import kerastuner as kt
 from kerastuner.distribute import utils as dist_utils
-import sys
+
 from .. import mock_distribute
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def tmp_dir(tmpdir_factory):
-    return tmpdir_factory.mktemp('integration_test', numbered=True)
+    return tmpdir_factory.mktemp("integration_test", numbered=True)
 
 
 class SimpleTuner(kt.engine.base_tuner.BaseTuner):
     def run_trial(self, trial):
         score = self.hypermodel.build(trial.hyperparameters)
-        self.oracle.update_trial(
-            trial.trial_id,
-            {'score': score})
+        self.oracle.update_trial(trial.trial_id, {"score": score})
         self.save_model(trial.trial_id, score)
 
     def save_model(self, trial_id, score, step=0):
         save_path = os.path.join(self.project_dir, trial_id)
-        with tf.io.gfile.GFile(save_path, 'w') as f:
+        with tf.io.gfile.GFile(save_path, "w") as f:
             f.write(str(score))
 
     def load_model(self, trial):
         save_path = os.path.join(self.project_dir, trial.trial_id)
-        with tf.io.gfile.GFile(save_path, 'r') as f:
+        with tf.io.gfile.GFile(save_path, "r") as f:
             score = int(f.read())
         return score
 
@@ -60,14 +60,15 @@ def test_base_tuner_distribution(tmp_dir):
 
     def _test_base_tuner():
         def build_model(hp):
-            return hp.Int('a', 1, 100)
+            return hp.Int("a", 1, 100)
 
         tuner = SimpleTuner(
             oracle=kt.oracles.RandomSearch(
-                objective=kt.Objective('score', 'max'),
-                max_trials=10),
+                objective=kt.Objective("score", "max"), max_trials=10
+            ),
             hypermodel=build_model,
-            directory=tmp_dir)
+            directory=tmp_dir,
+        )
         tuner.search()
 
         # Only worker makes it to this point, server runs until thread stops.
@@ -93,12 +94,14 @@ def test_random_search(tmp_dir):
         def build_model(hp):
             model = keras.Sequential()
             model.add(keras.layers.Dense(3, input_shape=(5,)))
-            for i in range(hp.Int('num_layers', 1, 3)):
-                model.add(keras.layers.Dense(
-                    hp.Int('num_units_%i' % i, 1, 3),
-                    activation='relu'))
-            model.add(keras.layers.Dense(1, activation='sigmoid'))
-            model.compile('sgd', 'binary_crossentropy')
+            for i in range(hp.Int("num_layers", 1, 3)):
+                model.add(
+                    keras.layers.Dense(
+                        hp.Int("num_units_%i" % i, 1, 3), activation="relu"
+                    )
+                )
+            model.add(keras.layers.Dense(1, activation="sigmoid"))
+            model.compile("sgd", "binary_crossentropy")
             return model
 
         x = np.random.uniform(-1, 1, size=(2, 5))
@@ -106,9 +109,10 @@ def test_random_search(tmp_dir):
 
         tuner = kt.tuners.RandomSearch(
             hypermodel=build_model,
-            objective='val_loss',
+            objective="val_loss",
             max_trials=10,
-            directory=tmp_dir)
+            directory=tmp_dir,
+        )
 
         # Only worker makes it to this point, server runs until thread stops.
         assert dist_utils.has_chief_oracle()

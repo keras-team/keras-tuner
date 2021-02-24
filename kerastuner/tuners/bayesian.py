@@ -52,23 +52,26 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             `hyperparameters`.
     """
 
-    def __init__(self,
-                 objective,
-                 max_trials,
-                 num_initial_points=None,
-                 alpha=1e-4,
-                 beta=2.6,
-                 seed=None,
-                 hyperparameters=None,
-                 allow_new_entries=True,
-                 tune_new_entries=True):
+    def __init__(
+        self,
+        objective,
+        max_trials,
+        num_initial_points=None,
+        alpha=1e-4,
+        beta=2.6,
+        seed=None,
+        hyperparameters=None,
+        allow_new_entries=True,
+        tune_new_entries=True,
+    ):
         super(BayesianOptimizationOracle, self).__init__(
             objective=objective,
             max_trials=max_trials,
             hyperparameters=hyperparameters,
             tune_new_entries=tune_new_entries,
             allow_new_entries=allow_new_entries,
-            seed=seed)
+            seed=seed,
+        )
         self.num_initial_points = num_initial_points
         self.alpha = alpha
         self.beta = beta
@@ -85,12 +88,14 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             n_restarts_optimizer=20,
             normalize_y=True,
             alpha=self.alpha,
-            random_state=self.seed)
+            random_state=self.seed,
+        )
 
     def _populate_space(self, trial_id):
         # Generate enough samples before training Gaussian process.
-        completed_trials = [t for t in self.trials.values()
-                            if t.status == 'COMPLETED']
+        completed_trials = [
+            t for t in self.trials.values() if t.status == "COMPLETED"
+        ]
 
         # Use 3 times the dimensionality of the space as the default number of
         # random points.
@@ -107,7 +112,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             # If convergence of the GPR fails, create a random trial.
             return self._random_populate_space()
         except ValueError as e:
-            if 'array must not contain infs or NaNs' in str(e):
+            if "array must not contain infs or NaNs" in str(e):
                 return self._random_populate_space()
             raise e
 
@@ -116,48 +121,47 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             mu, sigma = self.gpr.predict(x, return_std=True)
             return mu - self.beta * sigma
 
-        optimal_val = float('inf')
+        optimal_val = float("inf")
         optimal_x = None
         num_restarts = 50
         bounds = self._get_hp_bounds()
-        x_seeds = self._random_state.uniform(bounds[:, 0], bounds[:, 1],
-                                             size=(num_restarts, bounds.shape[0]))
+        x_seeds = self._random_state.uniform(
+            bounds[:, 0], bounds[:, 1], size=(num_restarts, bounds.shape[0])
+        )
         for x_try in x_seeds:
             # Sign of score is flipped when maximizing.
-            result = scipy_optimize.minimize(_upper_confidence_bound,
-                                             x0=x_try,
-                                             bounds=bounds,
-                                             method='L-BFGS-B')
+            result = scipy_optimize.minimize(
+                _upper_confidence_bound, x0=x_try, bounds=bounds, method="L-BFGS-B"
+            )
             if result.fun[0] < optimal_val:
                 optimal_val = result.fun[0]
                 optimal_x = result.x
 
         values = self._vector_to_values(optimal_x)
-        return {'status': trial_lib.TrialStatus.RUNNING,
-                'values': values}
+        return {"status": trial_lib.TrialStatus.RUNNING, "values": values}
 
     def _random_populate_space(self):
         values = self._random_values()
         if values is None:
-            return {'status': trial_lib.TrialStatus.STOPPED,
-                    'values': None}
-        return {'status': trial_lib.TrialStatus.RUNNING,
-                'values': values}
+            return {"status": trial_lib.TrialStatus.STOPPED, "values": None}
+        return {"status": trial_lib.TrialStatus.RUNNING, "values": values}
 
     def get_state(self):
         state = super(BayesianOptimizationOracle, self).get_state()
-        state.update({
-            'num_initial_points': self.num_initial_points,
-            'alpha': self.alpha,
-            'beta': self.beta,
-        })
+        state.update(
+            {
+                "num_initial_points": self.num_initial_points,
+                "alpha": self.alpha,
+                "beta": self.beta,
+            }
+        )
         return state
 
     def set_state(self, state):
         super(BayesianOptimizationOracle, self).set_state(state)
-        self.num_initial_points = state['num_initial_points']
-        self.alpha = state['alpha']
-        self.beta = state['beta']
+        self.num_initial_points = state["num_initial_points"]
+        self.alpha = state["alpha"]
+        self.beta = state["beta"]
         self.gpr = self._make_gpr()
 
     def _vectorize_trials(self):
@@ -187,11 +191,11 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                 y_h_mean, y_h_std = self.gpr.predict(x_h, return_std=True)
                 # Give a pessimistic estimate of the ongoing trial.
                 score = y_h_mean[0] + y_h_std[0]
-            elif trial.status == 'COMPLETED':
+            elif trial.status == "COMPLETED":
                 score = trial.score
                 # Always frame the optimization as a minimization for scipy.minimize.
-                if self.objective.direction == 'max':
-                    score = -1*score
+                if self.objective.direction == "max":
+                    score = -1 * score
             else:
                 continue
 
@@ -228,8 +232,11 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         return array[index]
 
     def _nonfixed_space(self):
-        return [hp for hp in self.hyperparameters.space
-                if not isinstance(hp, hp_module.Fixed)]
+        return [
+            hp
+            for hp in self.hyperparameters.space
+            if not isinstance(hp, hp_module.Fixed)
+        ]
 
     def _get_hp_bounds(self):
         bounds = []
@@ -275,18 +282,20 @@ class BayesianOptimization(multi_execution_tuner.MultiExecutionTuner):
             Please see the docstring for `Tuner`.
     """
 
-    def __init__(self,
-                 hypermodel,
-                 objective,
-                 max_trials,
-                 num_initial_points=2,
-                 alpha=1e-4,
-                 beta=2.6,
-                 seed=None,
-                 hyperparameters=None,
-                 tune_new_entries=True,
-                 allow_new_entries=True,
-                 **kwargs):
+    def __init__(
+        self,
+        hypermodel,
+        objective,
+        max_trials,
+        num_initial_points=2,
+        alpha=1e-4,
+        beta=2.6,
+        seed=None,
+        hyperparameters=None,
+        tune_new_entries=True,
+        allow_new_entries=True,
+        **kwargs
+    ):
         oracle = BayesianOptimizationOracle(
             objective=objective,
             max_trials=max_trials,
@@ -296,7 +305,9 @@ class BayesianOptimization(multi_execution_tuner.MultiExecutionTuner):
             seed=seed,
             hyperparameters=hyperparameters,
             tune_new_entries=tune_new_entries,
-            allow_new_entries=allow_new_entries)
-        super(BayesianOptimization, self, ).__init__(oracle=oracle,
-                                                     hypermodel=hypermodel,
-                                                     **kwargs)
+            allow_new_entries=allow_new_entries,
+        )
+        super(
+            BayesianOptimization,
+            self,
+        ).__init__(oracle=oracle, hypermodel=hypermodel, **kwargs)

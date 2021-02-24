@@ -13,12 +13,13 @@
 # limitations under the License.
 """Mock running KerasTuner in a distributed tuning setting."""
 
-import mock
 import os
-import portpicker
-import six
 import sys
 import threading
+
+import mock
+import portpicker
+import six
 
 
 class ExceptionStoringThread(threading.Thread):
@@ -32,12 +33,13 @@ class ExceptionStoringThread(threading.Thread):
 
 class MockEnvVars(dict):
     """Allows setting different environment variables in threads."""
+
     def __init__(self):
         self.thread_local = threading.local()
         self.initial_env_vars = os.environ.copy()
 
     def _setup_thread(self):
-        if getattr(self.thread_local, 'environ', None) is None:
+        if getattr(self.thread_local, "environ", None) is None:
             self.thread_local.environ = self.initial_env_vars.copy()
 
     def get(self, name, default=None):
@@ -60,18 +62,19 @@ class MockEnvVars(dict):
 def mock_distribute(fn, num_workers=2):
     """Runs `fn` in multiple processes, setting appropriate env vars."""
     port = str(portpicker.pick_unused_port())
-    with mock.patch.object(os, 'environ', MockEnvVars()):
+    with mock.patch.object(os, "environ", MockEnvVars()):
 
         def chief_fn():
             # The IP address of the chief Oracle. Run in distributed mode when
             # present. Cloud oracle does not run in this mode because the Cloud
             # API coordinates workers itself.
-            os.environ['KERASTUNER_ORACLE_IP'] = '127.0.0.1'
+            os.environ["KERASTUNER_ORACLE_IP"] = "127.0.0.1"
             # The port of the chief Oracle.
-            os.environ['KERASTUNER_ORACLE_PORT'] = port
+            os.environ["KERASTUNER_ORACLE_PORT"] = port
             # The ID of this process. 'chief' will run the OracleServicer server.
-            os.environ['KERASTUNER_TUNER_ID'] = 'chief'
+            os.environ["KERASTUNER_TUNER_ID"] = "chief"
             fn()
+
         chief_thread = ExceptionStoringThread(target=chief_fn)
         chief_thread.daemon = True
         chief_thread.start()
@@ -80,12 +83,13 @@ def mock_distribute(fn, num_workers=2):
         for i in range(num_workers):
 
             def worker_fn():
-                os.environ['KERASTUNER_ORACLE_IP'] = '127.0.0.1'
-                os.environ['KERASTUNER_ORACLE_PORT'] = port
+                os.environ["KERASTUNER_ORACLE_IP"] = "127.0.0.1"
+                os.environ["KERASTUNER_ORACLE_PORT"] = port
                 # Workers that are part of the same multi-worker
                 # DistributionStrategy should have the same TUNER_ID.
-                os.environ['KERASTUNER_TUNER_ID'] = 'worker{}'.format(i)
+                os.environ["KERASTUNER_TUNER_ID"] = "worker{}".format(i)
                 fn()
+
             worker_thread = ExceptionStoringThread(target=worker_fn)
             worker_thread.start()
             worker_threads.append(worker_thread)

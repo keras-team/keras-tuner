@@ -18,12 +18,13 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+
 import tensorflow as tf
 
 from .. import utils
-from ..distribute import utils as dist_utils
 from ..distribute import oracle_chief
 from ..distribute import oracle_client
+from ..distribute import utils as dist_utils
 from . import hypermodel as hm_module
 from . import oracle as oracle_module
 from . import stateful
@@ -50,25 +51,29 @@ class BaseTuner(stateful.Stateful):
             of the same name if one is found. Otherwise, overwrites the project.
     """
 
-    def __init__(self,
-                 oracle,
-                 hypermodel,
-                 directory=None,
-                 project_name=None,
-                 logger=None,
-                 overwrite=False):
+    def __init__(
+        self,
+        oracle,
+        hypermodel,
+        directory=None,
+        project_name=None,
+        logger=None,
+        overwrite=False,
+    ):
         # Ops and metadata
-        self.directory = directory or '.'
-        self.project_name = project_name or 'untitled_project'
+        self.directory = directory or "."
+        self.project_name = project_name or "untitled_project"
         if overwrite and tf.io.gfile.exists(self.project_dir):
             tf.io.gfile.rmtree(self.project_dir)
 
         if not isinstance(oracle, oracle_module.Oracle):
-            raise ValueError('Expected oracle to be '
-                             'an instance of Oracle, got: %s' % (oracle,))
+            raise ValueError(
+                "Expected oracle to be " "an instance of Oracle, got: %s" % (oracle,)
+            )
         self.oracle = oracle
         self.oracle._set_project_dir(
-            self.directory, self.project_name, overwrite=overwrite)
+            self.directory, self.project_name, overwrite=overwrite
+        )
 
         # Run in distributed mode.
         if dist_utils.is_chief_oracle():
@@ -79,7 +84,7 @@ class BaseTuner(stateful.Stateful):
             self.oracle = oracle_client.OracleClient(self.oracle)
 
         # To support tuning distribution.
-        self.tuner_id = os.environ.get('KERASTUNER_TUNER_ID', 'tuner0')
+        self.tuner_id = os.environ.get("KERASTUNER_TUNER_ID", "tuner0")
 
         self.hypermodel = hm_module.get_hypermodel(hypermodel)
 
@@ -90,8 +95,9 @@ class BaseTuner(stateful.Stateful):
         self._populate_initial_space()
 
         if not overwrite and tf.io.gfile.exists(self._get_tuner_fname()):
-            tf.get_logger().info('Reloading Tuner from {}'.format(
-                self._get_tuner_fname()))
+            tf.get_logger().info(
+                "Reloading Tuner from {}".format(self._get_tuner_fname())
+            )
             self.reload()
 
     def _populate_initial_space(self):
@@ -114,14 +120,14 @@ class BaseTuner(stateful.Stateful):
             *fit_kwargs: Keyword arguments that should be passed to
               `run_trial`, for example the training and validation data.
         """
-        if 'verbose' in fit_kwargs:
-            self._display.verbose = fit_kwargs.get('verbose')
+        if "verbose" in fit_kwargs:
+            self._display.verbose = fit_kwargs.get("verbose")
         self.on_search_begin()
         while True:
             trial = self.oracle.create_trial(self.tuner_id)
             if trial.status == trial_module.TrialStatus.STOPPED:
                 # Oracle triggered exit.
-                tf.get_logger().info('Oracle triggered exit')
+                tf.get_logger().info("Oracle triggered exit")
                 break
             if trial.status == trial_module.TrialStatus.IDLE:
                 # Oracle is calculating, resend request.
@@ -210,8 +216,7 @@ class BaseTuner(stateful.Stateful):
         if self.logger:
             self.logger.report_trial_state(trial.trial_id, trial.get_state())
 
-        self.oracle.end_trial(
-            trial.trial_id, trial_module.TrialStatus.COMPLETED)
+        self.oracle.end_trial(trial.trial_id, trial_module.TrialStatus.COMPLETED)
         self.oracle.update_space(trial.hyperparameters)
         # Display needs the updated trial scored by the Oracle.
         self._display.on_trial_end(self.oracle.get_trial(trial.trial_id))
@@ -270,13 +275,13 @@ class BaseTuner(stateful.Stateful):
             extended: Bool, optional. Display extended summary.
                 Defaults to False.
         """
-        print('Search space summary')
+        print("Search space summary")
         hp = self.oracle.get_space()
-        print('Default search space size: %d' % len(hp.space))
+        print("Default search space size: %d" % len(hp.space))
         for p in hp.space:
             config = p.get_config()
-            name = config.pop('name')
-            print('%s (%s)' % (name, p.__class__.__name__))
+            name = config.pop("name")
+            print("%s (%s)" % (name, p.__class__.__name__))
             print(config)
 
     def results_summary(self, num_trials=10):
@@ -286,10 +291,10 @@ class BaseTuner(stateful.Stateful):
             num_trials (int, optional): Number of trials to display.
                 Defaults to 10.
         """
-        print('Results summary')
-        print('Results in %s' % self.project_dir)
-        print('Showing %d best trials' % num_trials)
-        print('{}'.format(self.oracle.objective))
+        print("Results summary")
+        print("Results in %s" % self.project_dir)
+        print("Showing %d best trials" % num_trials)
+        print("{}".format(self.oracle.objective))
 
         best_trials = self.oracle.get_best_trials(num_trials)
         for trial in best_trials:
@@ -323,20 +328,14 @@ class BaseTuner(stateful.Stateful):
 
     @property
     def project_dir(self):
-        dirname = os.path.join(
-            str(self.directory),
-            self.project_name)
+        dirname = os.path.join(str(self.directory), self.project_name)
         utils.create_directory(dirname)
         return dirname
 
     def get_trial_dir(self, trial_id):
-        dirname = os.path.join(
-            str(self.project_dir),
-            'trial_' + str(trial_id))
+        dirname = os.path.join(str(self.project_dir), "trial_" + str(trial_id))
         utils.create_directory(dirname)
         return dirname
 
     def _get_tuner_fname(self):
-        return os.path.join(
-            str(self.project_dir),
-            str(self.tuner_id) + '.json')
+        return os.path.join(str(self.project_dir), str(self.tuner_id) + ".json")

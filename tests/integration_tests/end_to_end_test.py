@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
-
 import numpy as np
+import pytest
 import tensorflow as tf
 from tensorflow import keras
+
 import kerastuner
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def tmp_dir(tmpdir_factory):
-    return tmpdir_factory.mktemp('integration_test', numbered=True)
+    return tmpdir_factory.mktemp("integration_test", numbered=True)
 
 
 def get_data():
@@ -46,45 +46,51 @@ def get_data():
 def build_model(hp):
     inputs = keras.Input(shape=(28, 28))
     x = keras.layers.Reshape((28 * 28,))(inputs)
-    for i in range(hp.Int('num_layers', 1, 4)):
+    for i in range(hp.Int("num_layers", 1, 4)):
         x = keras.layers.Dense(
-            units=hp.Int('units_' + str(i), 128, 512, 32, default=256),
-            activation='relu')(x)
-    x = keras.layers.Dropout(hp.Float('dp', 0., 0.6, 0.1, default=0.5))(x)
-    outputs = keras.layers.Dense(10, activation='softmax')(x)
+            units=hp.Int("units_" + str(i), 128, 512, 32, default=256),
+            activation="relu",
+        )(x)
+    x = keras.layers.Dropout(hp.Float("dp", 0.0, 0.6, 0.1, default=0.5))(x)
+    outputs = keras.layers.Dense(10, activation="softmax")(x)
     model = keras.Model(inputs, outputs)
     model.compile(
         optimizer=keras.optimizers.Adam(
-            hp.Choice('learning_rate', [1e-2, 2e-3, 5e-4])),
-        loss='sparse_categorical_crossentropy',
-        metrics=['accuracy'])
+            hp.Choice("learning_rate", [1e-2, 2e-3, 5e-4])
+        ),
+        loss="sparse_categorical_crossentropy",
+        metrics=["accuracy"],
+    )
     return model
 
 
 @pytest.mark.parametrize(
-    'distribution_strategy',
-    [tf.distribute.OneDeviceStrategy('/cpu:0'), None])
+    "distribution_strategy", [tf.distribute.OneDeviceStrategy("/cpu:0"), None]
+)
 def test_end_to_end_workflow(tmp_dir, distribution_strategy):
-    tf.get_logger().setLevel('ERROR')
+    tf.get_logger().setLevel("ERROR")
     (x, y), (val_x, val_y) = get_data()
-    x = x.astype('float32') / 255.
-    val_x = val_x.astype('float32') / 255.
+    x = x.astype("float32") / 255.0
+    val_x = val_x.astype("float32") / 255.0
 
     tuner = kerastuner.tuners.RandomSearch(
         build_model,
-        objective='val_accuracy',
+        objective="val_accuracy",
         max_trials=20,
         distribution_strategy=distribution_strategy,
-        directory=tmp_dir)
+        directory=tmp_dir,
+    )
 
     tuner.search_space_summary()
 
-    tuner.search(x=x,
-                 y=y,
-                 epochs=10,
-                 batch_size=128,
-                 callbacks=[keras.callbacks.EarlyStopping(patience=2)],
-                 validation_data=(val_x, val_y))
+    tuner.search(
+        x=x,
+        y=y,
+        epochs=10,
+        batch_size=128,
+        callbacks=[keras.callbacks.EarlyStopping(patience=2)],
+        validation_data=(val_x, val_y),
+    )
 
     tuner.results_summary()
 
@@ -94,5 +100,5 @@ def test_end_to_end_workflow(tmp_dir, distribution_strategy):
     assert val_acc > 0.955
 
 
-if __name__ == '__main__':
-    test_end_to_end_workflow('test_dir', None)
+if __name__ == "__main__":
+    test_end_to_end_workflow("test_dir", None)

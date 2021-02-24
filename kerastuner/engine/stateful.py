@@ -18,11 +18,11 @@ from __future__ import division
 from __future__ import print_function
 
 import json
+
 import tensorflow as tf
 
 
 class Stateful(object):
-
     def get_state(self):
         """Returns the current state of this object.
 
@@ -48,7 +48,7 @@ class Stateful(object):
         """
         state = self.get_state()
         state_json = json.dumps(state)
-        with tf.io.gfile.GFile(fname, 'w') as f:
+        with tf.io.gfile.GFile(fname, "w") as f:
             f.write(state_json)
         return str(fname)
 
@@ -58,7 +58,7 @@ class Stateful(object):
         # Arguments:
           fname: The file name to restore from.
         """
-        with tf.io.gfile.GFile(fname, 'r') as f:
+        with tf.io.gfile.GFile(fname, "r") as f:
             state_data = f.read()
         state = json.loads(state_data)
         self.set_state(state)

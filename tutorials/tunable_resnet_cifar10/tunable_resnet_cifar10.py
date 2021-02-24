@@ -14,10 +14,11 @@
 
 """Example on how to use Tunable Resnet."""
 
-from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.datasets import cifar10
-from kerastuner.applications import HyperResNet
+from tensorflow.keras.utils import to_categorical
+
 from kerastuner import RandomSearch
+from kerastuner.applications import HyperResNet
 
 # Import the Cifar10 dataset.
 NUM_CLASSES = 10
@@ -26,18 +27,17 @@ y_train = to_categorical(y_train, NUM_CLASSES)
 y_test = to_categorical(y_test, NUM_CLASSES)
 
 # Import an hypertunable version of Resnet.
-hypermodel = HyperResNet(
-    input_shape=x_train.shape[1:],
-    classes=NUM_CLASSES)
+hypermodel = HyperResNet(input_shape=x_train.shape[1:], classes=NUM_CLASSES)
 
 # Initialize the hypertuner: we should find the model that maximixes the
 # validation accuracy, using 40 trials in total.
 tuner = RandomSearch(
     hypermodel,
-    objective='val_accuracy',
+    objective="val_accuracy",
     max_trials=40,
-    project_name='cifar10_resnet',
-    directory='test_directory')
+    project_name="cifar10_resnet",
+    directory="test_directory",
+)
 
 # Display search overview.
 tuner.search_space_summary()
@@ -53,5 +53,5 @@ best_model = tuner.get_best_models(num_models=1)[0]
 
 # Evaluate the best model.
 loss, accuracy = best_model.evaluate(x_test, y_test)
-print('loss:', loss)
-print('accuracy:', accuracy)
+print("loss:", loss)
+print("accuracy:", accuracy)
