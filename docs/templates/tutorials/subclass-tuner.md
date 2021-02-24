@@ -126,7 +126,7 @@ class MyTuner(kt.Tuner):
                 # Add any regularization losses.
                 if model.losses:
                     loss += tf.math.add_n(model.losses)
-                gradients = tape.gradient(loss, model.trainable_variables)
+            gradients = tape.gradient(loss, model.trainable_variables)
             optimizer.apply_gradients(zip(gradients, model.trainable_variables))
             epoch_loss_metric.update_state(loss)
             return loss
