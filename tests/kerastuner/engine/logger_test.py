@@ -1,6 +1,7 @@
+from unittest.mock import patch
+
 import numpy as np
 import pytest
-from mock import patch
 from tensorflow import keras
 
 import kerastuner
