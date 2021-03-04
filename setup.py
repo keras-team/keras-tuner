@@ -34,12 +34,7 @@ setup(
     # users should install it manually.
     install_requires=[
         "packaging",
-        "future",
         "numpy",
-        "tabulate",
-        "terminaltables",
-        "colorama",
-        "tqdm",
         "requests",
         "scipy",
         "scikit-learn",
@@ -52,7 +47,6 @@ setup(
             "flake8",
             "isort",
             "black",
-            "mock",
             "portpicker",
             "pytest-xdist",
             "pytest-cov",
