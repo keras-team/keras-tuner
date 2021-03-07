@@ -37,7 +37,6 @@ setup(
         "numpy",
         "requests",
         "scipy",
-        "scikit-learn",
         "tensorboard",
         "ipython",
     ],
@@ -50,6 +49,7 @@ setup(
             "portpicker",
             "pytest-xdist",
             "pytest-cov",
+            "scikit-learn",
         ],
     },
     classifiers=[
