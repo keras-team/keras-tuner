@@ -18,8 +18,11 @@ import pickle
 
 import numpy as np
 import tensorflow as tf
-from sklearn import model_selection
-from sklearn.pipeline import Pipeline
+
+try:
+    import sklearn
+except ImportError:
+    sklearn = None
 
 from ..engine import base_tuner
 
@@ -93,15 +96,14 @@ class Sklearn(base_tuner.BaseTuner):
     """
 
     def __init__(
-        self,
-        oracle,
-        hypermodel,
-        scoring=None,
-        metrics=None,
-        cv=model_selection.KFold(5, shuffle=True, random_state=1),
-        **kwargs
+        self, oracle, hypermodel, scoring=None, metrics=None, cv=None, **kwargs
     ):
         super(Sklearn, self).__init__(oracle=oracle, hypermodel=hypermodel, **kwargs)
+
+        if sklearn is None:
+            raise ImportError(
+                "Please install sklearn before using the `Sklearn` tuner."
+            )
 
         self.scoring = scoring
 
@@ -111,7 +113,9 @@ class Sklearn(base_tuner.BaseTuner):
             metrics = [metrics]
         self.metrics = metrics
 
-        self.cv = cv
+        self.cv = cv or sklearn.model_selection.KFold(
+            5, shuffle=True, random_state=1
+        )
 
     def search(self, X, y, sample_weight=None, groups=None):
         """Performs hyperparameter search.
@@ -143,7 +147,7 @@ class Sklearn(base_tuner.BaseTuner):
             )
 
             model = self.hypermodel.build(trial.hyperparameters)
-            if isinstance(model, Pipeline):
+            if isinstance(model, sklearn.pipeline.Pipeline):
                 model.fit(X_train, y_train)
             else:
                 model.fit(X_train, y_train, sample_weight=sample_weight_train)

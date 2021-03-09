@@ -263,3 +263,17 @@ def test_sklearn_real_data(tmp_dir):
 
     assert best_model_score > 0.8
     assert best_model_score >= worst_model_score
+
+
+def test_sklearn_not_install_error(tmp_dir):
+    sklearn_module = sklearn_tuner.sklearn
+    sklearn_tuner.sklearn = None
+    with pytest.raises(ImportError, match="Please install sklearn"):
+        sklearn_tuner.Sklearn(
+            oracle=kt.oracles.BayesianOptimization(
+                objective=kt.Objective("score", "max"), max_trials=10
+            ),
+            hypermodel=build_model,
+            directory=tmp_dir,
+        )
+    sklearn_tuner.sklearn = sklearn_module
