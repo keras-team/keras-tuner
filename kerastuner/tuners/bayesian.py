@@ -1,14 +1,103 @@
+import math
 import random
 
 import numpy as np
+from scipy import linalg
 from scipy import optimize as scipy_optimize
-from sklearn import exceptions
-from sklearn import gaussian_process
+from scipy.spatial import distance
 
 from ..engine import hyperparameters as hp_module
 from ..engine import multi_execution_tuner
 from ..engine import oracle as oracle_module
 from ..engine import trial as trial_lib
+
+
+def matern_kernel(x, y=None):
+    # nu = 2.5
+    if y is None:
+        dists = distance.pdist(x, metric="euclidean")
+    else:
+        dists = distance.cdist(x, y, metric="euclidean")
+    dists *= math.sqrt(5)
+    kernel_matrix = (1.0 + dists + dists ** 2 / 3.0) * np.exp(-dists)
+    if y is None:
+        kernel_matrix = distance.squareform(kernel_matrix)
+        np.fill_diagonal(kernel_matrix, 1)
+    return kernel_matrix
+
+
+class GaussianProcessRegressor(object):
+    """A Gaussian process regressor.
+
+    # Arguments
+        alpha: Float. Value added to the diagonal of the kernel matrix
+            during fitting. It represents the expected amount of noise
+            in the observed performances in Bayesian optimization.
+        seed: Int. Random seed.
+    """
+
+    def __init__(self, alpha, seed=None):
+        self.kernel = matern_kernel
+        self.n_restarts_optimizer = 20
+        self.normalize_y = True
+        self.alpha = alpha
+        self.seed = seed
+        self._x = None
+        self._y = None
+
+    def fit(self, x, y):
+        """Fit the Gaussian process regressor.
+
+        # Arguments
+            x: np.ndarray with shape (samples, features).
+            y: np.ndarray with shape (samples, 1).
+        """
+        self._x_train = np.copy(x)
+        self._y_train = np.copy(y)
+
+        # Normalize y.
+        self._y_train_mean = np.mean(self._y_train, axis=0)
+        self._y_train_std = np.std(self._y_train, axis=0)
+        self._y_train = (self._y_train - self._y_train_mean) / self._y_train_std
+
+        # TODO: choose a theta for the kernel.
+        kernel_matrix = self.kernel(self._x_train)
+        kernel_matrix[np.diag_indices_from(kernel_matrix)] += self.alpha
+
+        # l_matrix * l_matrix^T == kernel_matrix
+        self._l_matrix = linalg.cholesky(kernel_matrix, lower=True)
+        self._alpha_vector = linalg.cho_solve((self._l_matrix, True), self._y_train)
+
+    def predict(self, x):
+        """Predict the mean and standard deviation of the target.
+
+        # Arguments
+            x: np.ndarray with shape (samples, features).
+
+        # Returns
+            Two 1-D vectors, the mean vector and standard deviation vector.
+        """
+        # Compute the mean.
+        kernel_trans = self.kernel(x, self._x_train)
+        y_mean = kernel_trans.dot(self._alpha_vector)
+
+        # Compute the variance.
+        l_inv = linalg.solve_triangular(
+            self._l_matrix.T, np.eye(self._l_matrix.shape[0])
+        )
+        kernel_inv = l_inv.dot(l_inv.T)
+
+        y_var = np.ones(len(x), dtype=np.float)
+        y_var -= np.einsum(
+            "ij,ij->i", np.dot(kernel_trans, kernel_inv), kernel_trans
+        )
+        y_var[y_var < 0] = 0.0
+
+        # Undo normalize y.
+        y_var *= self._y_train_std ** 2
+        y_mean = self._y_train_std * y_mean + self._y_train_mean
+
+        return y_mean, np.sqrt(y_var)
 
 
 class BayesianOptimizationOracle(oracle_module.Oracle):
@@ -83,12 +172,9 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         self.gpr = self._make_gpr()
 
     def _make_gpr(self):
-        return gaussian_process.GaussianProcessRegressor(
-            kernel=gaussian_process.kernels.Matern(nu=2.5),
-            n_restarts_optimizer=20,
-            normalize_y=True,
+        return GaussianProcessRegressor(
             alpha=self.alpha,
-            random_state=self.seed,
+            seed=self.seed,
         )
 
     def _populate_space(self, trial_id):
@@ -108,9 +194,6 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         x, y = self._vectorize_trials()
         try:
             self.gpr.fit(x, y)
-        except exceptions.ConvergenceWarning:
-            # If convergence of the GPR fails, create a random trial.
-            return self._random_populate_space()
         except ValueError as e:
             if "array must not contain infs or NaNs" in str(e):
                 return self._random_populate_space()
@@ -118,7 +201,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
 
         def _upper_confidence_bound(x):
             x = x.reshape(1, -1)
-            mu, sigma = self.gpr.predict(x, return_std=True)
+            mu, sigma = self.gpr.predict(x)
             return mu - self.beta * sigma
 
         optimal_val = float("inf")
@@ -188,7 +271,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                 # "Hallucinate" the results of ongoing trials. This ensures that
                 # repeat trials are not selected when running distributed.
                 x_h = np.array(vector).reshape((1, -1))
-                y_h_mean, y_h_std = self.gpr.predict(x_h, return_std=True)
+                y_h_mean, y_h_std = self.gpr.predict(x_h)
                 # Give a pessimistic estimate of the ongoing trial.
                 score = y_h_mean[0] + y_h_std[0]
             elif trial.status == "COMPLETED":
