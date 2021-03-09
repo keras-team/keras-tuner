@@ -91,6 +91,10 @@ class Oracle(stateful.Stateful):
         self.trials = {}
         # tuner_id -> Trial
         self.ongoing_trials = {}
+        # List of trial_ids in the order of the trials start
+        self.start_order = []
+        # List of trial_ids in the order of the trials end
+        self.end_order = []
 
         self.seed = seed or random.randint(1, 10000)
         self._seed_state = self.seed
@@ -179,6 +183,7 @@ class Oracle(stateful.Stateful):
         if status == trial_lib.TrialStatus.RUNNING:
             self.ongoing_trials[tuner_id] = trial
             self.trials[trial_id] = trial
+            self.start_order.append(trial_id)
             self._save_trial(trial)
             self.save()
 
@@ -233,6 +238,7 @@ class Oracle(stateful.Stateful):
         trial.status = status
         if status == trial_lib.TrialStatus.COMPLETED:
             self._score_trial(trial)
+        self.end_order.append(trial_id)
         self._save_trial(trial)
         self.save()
 
