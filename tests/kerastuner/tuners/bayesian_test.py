@@ -37,9 +37,9 @@ def build_model(hp):
 
 def test_gpr_mse_is_small():
     x_train = np.random.rand(1000, 2)
-    y_train = np.multiply(x_train, x_train).mean(axis=-1).reshape(-1, 1)
+    y_train = np.multiply(x_train, x_train).mean(axis=-1)
     x_test = np.random.rand(1000, 2)
-    y_test = np.multiply(x_test, x_test).mean(axis=-1).reshape(-1, 1)
+    y_test = np.multiply(x_test, x_test).mean(axis=-1)
 
     gpr = bo_module.GaussianProcessRegressor(alpha=1e-4, seed=3)
     gpr.fit(x_train, y_train)

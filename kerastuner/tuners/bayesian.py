@@ -2,9 +2,8 @@ import math
 import random
 
 import numpy as np
-from scipy import linalg
+import tensorflow as tf
 from scipy import optimize as scipy_optimize
-from scipy.spatial import distance
 
 from ..engine import hyperparameters as hp_module
 from ..engine import multi_execution_tuner
@@ -12,17 +11,31 @@ from ..engine import oracle as oracle_module
 from ..engine import trial as trial_lib
 
 
+def cdist(x, y=None):
+    if y is None:
+        y = x
+    return np.linalg.norm(x[:, None, :] - y[None, :, :], axis=-1)
+
+
+def solve_triangular(a, b, lower):
+    if np.isnan(a).any() or np.isnan(b).any():
+        raise ValueError("array must not contain infs or NaNs")
+    a = tf.constant(a, dtype=tf.float32)
+    b = tf.constant(b, dtype=tf.float32)
+    return tf.linalg.triangular_solve(a, b, lower=lower).numpy()
+
+
+def cho_solve(l_matrix, b):
+    # Ax=b LL^T=A => Ly=b L^Tx=y
+    y = solve_triangular(l_matrix, b.reshape(-1, 1), lower=True)
+    return solve_triangular(l_matrix.T, y.reshape(-1, 1), lower=False)
+
+
 def matern_kernel(x, y=None):
     # nu = 2.5
-    if y is None:
-        dists = distance.pdist(x, metric="euclidean")
-    else:
-        dists = distance.cdist(x, y, metric="euclidean")
+    dists = cdist(x, y)
     dists *= math.sqrt(5)
     kernel_matrix = (1.0 + dists + dists ** 2 / 3.0) * np.exp(-dists)
-    if y is None:
-        kernel_matrix = distance.squareform(kernel_matrix)
-        np.fill_diagonal(kernel_matrix, 1)
     return kernel_matrix
 
 
@@ -50,7 +63,7 @@ class GaussianProcessRegressor(object):
 
         # Arguments
             x: np.ndarray with shape (samples, features).
-            y: np.ndarray with shape (samples, 1).
+            y: np.ndarray with shape (samples,).
         """
         self._x_train = np.copy(x)
         self._y_train = np.copy(y)
@@ -65,8 +78,8 @@ class GaussianProcessRegressor(object):
         kernel_matrix[np.diag_indices_from(kernel_matrix)] += self.alpha
 
         # l_matrix * l_matrix^T == kernel_matrix
-        self._l_matrix = linalg.cholesky(kernel_matrix, lower=True)
-        self._alpha_vector = linalg.cho_solve((self._l_matrix, True), self._y_train)
+        self._l_matrix = np.linalg.cholesky(kernel_matrix)
+        self._alpha_vector = cho_solve(self._l_matrix, self._y_train)
 
     def predict(self, x):
         """Predict the mean and standard deviation of the target.
@@ -82,8 +95,8 @@ class GaussianProcessRegressor(object):
         y_mean = kernel_trans.dot(self._alpha_vector)
 
         # Compute the variance.
-        l_inv = linalg.solve_triangular(
-            self._l_matrix.T, np.eye(self._l_matrix.shape[0])
+        l_inv = solve_triangular(
+            self._l_matrix.T, np.eye(self._l_matrix.shape[0]), lower=False
         )
         kernel_inv = l_inv.dot(l_inv.T)
 
@@ -97,7 +110,7 @@ class GaussianProcessRegressor(object):
         y_var *= self._y_train_std ** 2
         y_mean = self._y_train_std * y_mean + self._y_train_mean
 
-        return y_mean, np.sqrt(y_var)
+        return y_mean.flatten(), np.sqrt(y_var)
 
 
 class BayesianOptimizationOracle(oracle_module.Oracle):
