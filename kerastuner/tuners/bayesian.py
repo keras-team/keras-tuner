@@ -14,28 +14,18 @@ from ..engine import trial as trial_lib
 def cdist(x, y=None):
     if y is None:
         y = x
-    return np.linalg.norm(x[:, None, :] - y[None, :, :], axis=-1)
+    return tf.norm(x[:, None, :] - y[None, :, :], axis=-1)
 
 
 def solve_triangular(a, b, lower):
-    if np.isnan(a).any() or np.isnan(b).any():
-        raise ValueError("array must not contain infs or NaNs")
-    a = tf.constant(a, dtype=tf.float32)
-    b = tf.constant(b, dtype=tf.float32)
-    return tf.linalg.triangular_solve(a, b, lower=lower).numpy()
-
-
-def cho_solve(l_matrix, b):
-    # Ax=b LL^T=A => Ly=b L^Tx=y
-    y = solve_triangular(l_matrix, b.reshape(-1, 1), lower=True)
-    return solve_triangular(l_matrix.T, y.reshape(-1, 1), lower=False)
+    return tf.linalg.triangular_solve(a, b, lower=lower)
 
 
 def matern_kernel(x, y=None):
     # nu = 2.5
     dists = cdist(x, y)
     dists *= math.sqrt(5)
-    kernel_matrix = (1.0 + dists + dists ** 2 / 3.0) * np.exp(-dists)
+    kernel_matrix = (1.0 + dists + dists ** 2 / 3.0) * tf.math.exp(-dists)
     return kernel_matrix
 
 
@@ -65,21 +55,27 @@ class GaussianProcessRegressor(object):
             x: np.ndarray with shape (samples, features).
             y: np.ndarray with shape (samples,).
         """
-        self._x_train = np.copy(x)
-        self._y_train = np.copy(y)
+        self._x_train = tf.constant(x, dtype=tf.float32)
+        self._y_train = tf.constant(y, dtype=tf.float32)
 
         # Normalize y.
-        self._y_train_mean = np.mean(self._y_train, axis=0)
-        self._y_train_std = np.std(self._y_train, axis=0)
+        self._y_train_mean = tf.math.reduce_mean(self._y_train, axis=0)
+        self._y_train_std = tf.math.reduce_std(self._y_train, axis=0)
         self._y_train = (self._y_train - self._y_train_mean) / self._y_train_std
 
         # TODO: choose a theta for the kernel.
         kernel_matrix = self.kernel(self._x_train)
-        kernel_matrix[np.diag_indices_from(kernel_matrix)] += self.alpha
+        kernel_matrix = tf.linalg.set_diag(
+            kernel_matrix, tf.linalg.diag_part(kernel_matrix) + self.alpha
+        )
 
         # l_matrix * l_matrix^T == kernel_matrix
-        self._l_matrix = np.linalg.cholesky(kernel_matrix)
-        self._alpha_vector = cho_solve(self._l_matrix, self._y_train)
+        self._l_matrix = tf.linalg.cholesky(kernel_matrix)
+        self._alpha_vector = tf.linalg.cholesky_solve(
+            self._l_matrix, tf.reshape(self._y_train, [-1, 1])
+        )
+        if tf.math.is_nan(tf.reduce_sum(self._alpha_vector)):
+            raise ValueError("array must not contain infs or NaNs")
 
     def predict(self, x):
         """Predict the mean and standard deviation of the target.
@@ -92,25 +88,27 @@ class GaussianProcessRegressor(object):
         """
         # Compute the mean.
         kernel_trans = self.kernel(x, self._x_train)
-        y_mean = kernel_trans.dot(self._alpha_vector)
+        y_mean = tf.matmul(kernel_trans, self._alpha_vector)
 
         # Compute the variance.
         l_inv = solve_triangular(
-            self._l_matrix.T, np.eye(self._l_matrix.shape[0]), lower=False
+            tf.transpose(self._l_matrix),
+            tf.eye(self._l_matrix.shape[0]),
+            lower=False,
         )
-        kernel_inv = l_inv.dot(l_inv.T)
+        kernel_inv = tf.matmul(l_inv, tf.transpose(l_inv))
 
-        y_var = np.ones(len(x), dtype=np.float)
-        y_var -= np.einsum(
-            "ij,ij->i", np.dot(kernel_trans, kernel_inv), kernel_trans
+        y_var = tf.ones(x.shape[0], dtype=tf.float32)
+        y_var -= tf.einsum(
+            "ij,ij->i", tf.matmul(kernel_trans, kernel_inv), kernel_trans
         )
-        y_var[y_var < 0] = 0.0
+        y_var = tf.where(y_var < 0, 0, y_var)
 
         # Undo normalize y.
         y_var *= self._y_train_std ** 2
         y_mean = self._y_train_std * y_mean + self._y_train_mean
 
-        return y_mean.flatten(), np.sqrt(y_var)
+        return tf.squeeze(y_mean, -1).numpy(), np.sqrt(y_var)
 
 
 class BayesianOptimizationOracle(oracle_module.Oracle):

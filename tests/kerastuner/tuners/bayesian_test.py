@@ -289,6 +289,7 @@ def test_float_optimization(tmp_dir):
             objective=kt.Objective("score", "max"),
             hyperparameters=hps,
             max_trials=50,
+            seed=5,
         ),
         directory=tmp_dir,
     )
