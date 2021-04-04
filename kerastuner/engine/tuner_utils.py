@@ -30,7 +30,7 @@ from .. import utils
 from . import hyperparameters as hp_module
 
 
-class TunerStats(object):
+class TunerStats:
     """Track tuner statistics."""
 
     def __init__(self):
@@ -93,7 +93,7 @@ class TunerCallback(keras.callbacks.Callback):
 
 
 # TODO: Add more extensive display.
-class Display(object):
+class Display:
     def __init__(self, oracle, verbose=1):
         self.verbose = verbose
         self.oracle = oracle

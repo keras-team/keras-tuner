@@ -67,7 +67,7 @@ def _check_int(val, arg):
     return int_val
 
 
-class HyperParameter(object):
+class HyperParameter:
     """HyperParameter base class.
 
     # Arguments:
@@ -531,7 +531,7 @@ class Fixed(HyperParameter):
         )
 
 
-class HyperParameters(object):
+class HyperParameters:
     """Container for both a hyperparameter space, and current values.
 
     # Attributes:

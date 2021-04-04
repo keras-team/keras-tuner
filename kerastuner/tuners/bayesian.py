@@ -39,7 +39,7 @@ def matern_kernel(x, y=None):
     return kernel_matrix
 
 
-class GaussianProcessRegressor(object):
+class GaussianProcessRegressor:
     """A Gaussian process regressor.
 
     # Arguments

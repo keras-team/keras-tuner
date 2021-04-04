@@ -27,7 +27,7 @@ from tensorflow import keras
 from .. import config as config_module
 
 
-class HyperModel(object):
+class HyperModel:
     """Defines a searchable space of Models and builds Models from this space.
 
     # Attributes:

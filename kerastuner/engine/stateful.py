@@ -22,7 +22,7 @@ import json
 import tensorflow as tf
 
 
-class Stateful(object):
+class Stateful:
     def get_state(self):
         """Returns the current state of this object.
 

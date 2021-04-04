@@ -23,7 +23,7 @@ from tensorflow import keras
 from ..protos import kerastuner_pb2
 
 
-class MetricObservation(object):
+class MetricObservation:
     def __init__(self, value, step):
         if not isinstance(value, list):
             value = [value]
@@ -61,7 +61,7 @@ class MetricObservation(object):
         return cls(value=list(proto.value), step=proto.step)
 
 
-class MetricHistory(object):
+class MetricHistory:
     def __init__(self, direction="min"):
         if direction not in {"min", "max"}:
             raise ValueError(
@@ -152,7 +152,7 @@ class MetricHistory(object):
         return instance
 
 
-class MetricsTracker(object):
+class MetricsTracker:
     def __init__(self, metrics=None):
         # str -> MetricHistory
         self.metrics = {}

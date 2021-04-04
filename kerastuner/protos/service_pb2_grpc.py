@@ -4,7 +4,7 @@ import grpc
 from kerastuner.protos import service_pb2 as kerastuner_dot_protos_dot_service__pb2
 
 
-class OracleStub(object):
+class OracleStub:
   # missing associated documentation comment in .proto file
   pass
 
@@ -51,7 +51,7 @@ class OracleStub(object):
         )
 
 
-class OracleServicer(object):
+class OracleServicer:
   # missing associated documentation comment in .proto file
   pass
 

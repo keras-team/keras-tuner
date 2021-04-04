@@ -23,7 +23,7 @@ from ..protos import service_pb2
 from ..protos import service_pb2_grpc
 
 
-class OracleClient(object):
+class OracleClient:
     """Wraps an `Oracle` on a worker to send requests to the chief."""
 
     def __init__(self, oracle):
