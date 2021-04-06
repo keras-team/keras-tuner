@@ -18,11 +18,12 @@ def cdist(x, y=None):
 
 
 def solve_triangular(a, b, lower):
-    if np.isnan(a).any() or np.isnan(b).any():
+    if np.isfinite(a).all() and np.isfinite(b).all():
+        a = tf.constant(a, dtype=tf.float32)
+        b = tf.constant(b, dtype=tf.float32)
+        return tf.linalg.triangular_solve(a, b, lower=lower).numpy()
+    else:
         raise ValueError("array must not contain infs or NaNs")
-    a = tf.constant(a, dtype=tf.float32)
-    b = tf.constant(b, dtype=tf.float32)
-    return tf.linalg.triangular_solve(a, b, lower=lower).numpy()
 
 
 def cho_solve(l_matrix, b):
