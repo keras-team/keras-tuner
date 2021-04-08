@@ -289,7 +289,7 @@ hypermodel = MyHyperModel(classes=10)
 tuner = RandomSearch(
     hypermodel,
     objective='val_accuracy',
-    max_epochs=10,
+    max_trials=10,
     directory='my_dir',
     project_name='helloworld')
 
