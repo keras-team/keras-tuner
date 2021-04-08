@@ -4,9 +4,9 @@
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        
-        
-        
+
+
+
         <link rel="shortcut icon" href="../../img/favicon.ico">
         <title>Subclassing Tuner for Custom Training Loops - Keras Tuner</title>
         <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
@@ -32,7 +32,7 @@
 
             ga('create', 'UA-61785484-2', 'keras-team.github.io/keras-tuner');
             ga('send', 'pageview');
-        </script> 
+        </script>
     </head>
 
     <body>
@@ -62,11 +62,11 @@
                             <li class="dropdown active">
                                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Tutorials <b class="caret"></b></a>
                                 <ul class="dropdown-menu">
-                                    
+
 <li >
     <a href="../distributed-tuning/">Distributed Tuning</a>
 </li>
-                                    
+
 <li class="active">
     <a href="./">Subclassing Tuner for Custom Training Loops</a>
 </li>
@@ -75,19 +75,19 @@
                             <li class="dropdown">
                                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Documentation <b class="caret"></b></a>
                                 <ul class="dropdown-menu">
-                                    
+
 <li >
     <a href="../../documentation/hypermodels/">HyperModels</a>
 </li>
-                                    
+
 <li >
     <a href="../../documentation/hyperparameters/">HyperParameters</a>
 </li>
-                                    
+
 <li >
     <a href="../../documentation/oracles/">Oracles</a>
 </li>
-                                    
+
 <li >
     <a href="../../documentation/tuners/">Tuners</a>
 </li>
@@ -96,7 +96,7 @@
                             <li class="dropdown">
                                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Examples <b class="caret"></b></a>
                                 <ul class="dropdown-menu">
-                                    
+
 <li >
     <a href="../../examples/helloworld/">Hello World</a>
 </li>
@@ -178,7 +178,7 @@
         model = self.hypermodel.build(trial.hyperparameters)
         score = ...
         self.oracle.update_trial(trial.trial_id, {'score': score})
-        self.oracle.save_model(trail.trial_id, model)
+        self.save_model(trail.trial_id, model)
 </code></pre>
 
 <h3 id="adding-hyperparameters-during-preprocessing-evaluation-etc">Adding HyperParameters during preprocessing, evaluation, etc.</h3>
