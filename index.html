@@ -5,8 +5,8 @@
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="description" content="Documentation for Keras Tuner.">
-        
-        
+
+
         <link rel="shortcut icon" href="img/favicon.ico">
         <title>Keras Tuner</title>
         <link href="css/bootstrap-custom.min.css" rel="stylesheet">
@@ -32,7 +32,7 @@
 
             ga('create', 'UA-61785484-2', 'keras-team.github.io/keras-tuner');
             ga('send', 'pageview');
-        </script> 
+        </script>
     </head>
 
     <body class="homepage">
@@ -62,11 +62,11 @@
                             <li class="dropdown">
                                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Tutorials <b class="caret"></b></a>
                                 <ul class="dropdown-menu">
-                                    
+
 <li >
     <a href="tutorials/distributed-tuning/">Distributed Tuning</a>
 </li>
-                                    
+
 <li >
     <a href="tutorials/subclass-tuner/">Subclassing Tuner for Custom Training Loops</a>
 </li>
@@ -75,19 +75,19 @@
                             <li class="dropdown">
                                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Documentation <b class="caret"></b></a>
                                 <ul class="dropdown-menu">
-                                    
+
 <li >
     <a href="documentation/hypermodels/">HyperModels</a>
 </li>
-                                    
+
 <li >
     <a href="documentation/hyperparameters/">HyperParameters</a>
 </li>
-                                    
+
 <li >
     <a href="documentation/oracles/">Oracles</a>
 </li>
-                                    
+
 <li >
     <a href="documentation/tuners/">Tuners</a>
 </li>
@@ -96,7 +96,7 @@
                             <li class="dropdown">
                                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">Examples <b class="caret"></b></a>
                                 <ul class="dropdown-menu">
-                                    
+
 <li >
     <a href="examples/helloworld/">Hello World</a>
 </li>
@@ -264,8 +264,8 @@ we name the inner parameters <code>'units_' + str(i)</code>).</p>
 
 class MyHyperModel(HyperModel):
 
-    def __init__(self, num_classes):
-        self.num_classes = num_classes
+    def __init__(self, classes):
+        self.classes = classes
 
     def build(self, hp):
         model = keras.Sequential()
@@ -274,7 +274,7 @@ class MyHyperModel(HyperModel):
                                             max_value=512,
                                             step=32),
                                activation='relu'))
-        model.add(layers.Dense(self.num_classes, activation='softmax'))
+        model.add(layers.Dense(self.classes, activation='softmax'))
         model.compile(
             optimizer=keras.optimizers.Adam(
                 hp.Choice('learning_rate',
@@ -284,7 +284,7 @@ class MyHyperModel(HyperModel):
         return model
 
 
-hypermodel = MyHyperModel(num_classes=10)
+hypermodel = MyHyperModel(classes=10)
 
 tuner = RandomSearch(
     hypermodel,
@@ -304,7 +304,7 @@ tuner.search(x, y,
 <pre><code class="python">from kerastuner.applications import HyperResNet
 from kerastuner.tuners import Hyperband
 
-hypermodel = HyperResNet(input_shape=(128, 128, 3), num_classes=10)
+hypermodel = HyperResNet(input_shape=(128, 128, 3), classes=10)
 
 tuner = Hyperband(
     hypermodel,
@@ -326,7 +326,7 @@ that you didn't list in <code>hyperparameters</code> should not be tuned. For th
 value gets used.</p>
 <pre><code class="python">from kerastuner import HyperParameters
 
-hypermodel = HyperXception(input_shape=(128, 128, 3), num_classes=10)
+hypermodel = HyperXception(input_shape=(128, 128, 3), classes=10)
 
 hp = HyperParameters()
 # This will override the `learning_rate` parameter with your
@@ -363,7 +363,7 @@ you can specify a default value:</p>
 <h2 id="fixing-values-in-a-hypermodel">Fixing values in a hypermodel</h2>
 <p>What if you want to do the reverse -- tune all available parameters in a hypermodel, <strong>except</strong> one (the learning rate)?</p>
 <p>Pass a <code>hyperparameters</code> argument with a <code>Fixed</code> entry (or any number of <code>Fixed</code> entries), and specify <code>tune_new_entries=True</code>.</p>
-<pre><code class="python">hypermodel = HyperXception(input_shape=(128, 128, 3), num_classes=10)
+<pre><code class="python">hypermodel = HyperXception(input_shape=(128, 128, 3), classes=10)
 
 hp = HyperParameters()
 hp.Fixed('learning_rate', value=1e-4)
@@ -385,7 +385,7 @@ tuner.search(x, y,
 <h2 id="overriding-compilation-arguments">Overriding compilation arguments</h2>
 <p>If you have a hypermodel for which you want to change the existing optimizer, loss, or metrics, you can do so by passing these arguments
 to the tuner constructor:</p>
-<pre><code class="python">hypermodel = HyperXception(input_shape=(128, 128, 3), num_classes=10)
+<pre><code class="python">hypermodel = HyperXception(input_shape=(128, 128, 3), classes=10)
 
 tuner = Hyperband(
     hypermodel,
