@@ -354,6 +354,7 @@ def test_build_and_fit_model_in_tuner(tmp_dir):
         TRAIN_INPUTS,
         TRAIN_TARGETS,
         validation_data=(VAL_INPUTS, VAL_TARGETS),
+        keras_verbose=1,
     )
 
     assert tuner.was_called

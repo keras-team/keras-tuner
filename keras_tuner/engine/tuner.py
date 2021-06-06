@@ -143,6 +143,9 @@ class Tuner(base_tuner.BaseTuner):
         Returns:
             The fit history.
         """
+        if "keras_verbose" in fit_kwargs:
+            fit_kwargs["verbose"] = fit_kwargs.pop("keras_verbose", 1)
+
         model = self.hypermodel.build(trial.hyperparameters)
         return model.fit(*fit_args, **fit_kwargs)
 
