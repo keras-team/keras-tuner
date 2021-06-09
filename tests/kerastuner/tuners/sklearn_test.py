@@ -23,7 +23,6 @@ from sklearn import model_selection
 from sklearn import pipeline
 
 import kerastuner as kt
-from kerastuner.tuners import sklearn_tuner
 
 
 def build_model(hp):
@@ -73,7 +72,7 @@ def tmp_dir(tmpdir_factory):
 
 
 def test_sklearn_tuner_simple(tmp_dir):
-    tuner = sklearn_tuner.Sklearn(
+    tuner = kt.Sklearn(
         oracle=kt.oracles.BayesianOptimization(
             objective=kt.Objective("score", "max"), max_trials=10
         ),
@@ -99,7 +98,7 @@ def test_sklearn_tuner_simple(tmp_dir):
 
 
 def test_sklearn_custom_scoring_and_cv(tmp_dir):
-    tuner = sklearn_tuner.Sklearn(
+    tuner = kt.Sklearn(
         oracle=kt.oracles.BayesianOptimization(
             objective=kt.Objective("score", "max"), max_trials=10
         ),
@@ -127,7 +126,7 @@ def test_sklearn_custom_scoring_and_cv(tmp_dir):
 
 
 def test_sklearn_additional_metrics(tmp_dir):
-    tuner = sklearn_tuner.Sklearn(
+    tuner = kt.Sklearn(
         oracle=kt.oracles.BayesianOptimization(
             objective=kt.Objective("score", "max"), max_trials=10
         ),
@@ -156,7 +155,7 @@ def test_sklearn_additional_metrics(tmp_dir):
 
 
 def test_sklearn_sample_weight(tmp_dir):
-    tuner = sklearn_tuner.Sklearn(
+    tuner = kt.Sklearn(
         oracle=kt.oracles.BayesianOptimization(
             objective=kt.Objective("score", "max"), max_trials=10
         ),
@@ -183,7 +182,7 @@ def test_sklearn_sample_weight(tmp_dir):
 
 
 def test_sklearn_pipeline(tmp_dir):
-    tuner = sklearn_tuner.Sklearn(
+    tuner = kt.Sklearn(
         oracle=kt.oracles.BayesianOptimization(
             objective=kt.Objective("score", "max"), max_trials=10
         ),
@@ -210,7 +209,7 @@ def test_sklearn_pipeline(tmp_dir):
 
 
 def test_sklearn_cv_with_groups(tmp_dir):
-    tuner = sklearn_tuner.Sklearn(
+    tuner = kt.Sklearn(
         oracle=kt.oracles.BayesianOptimization(
             objective=kt.Objective("score", "max"), max_trials=10
         ),
@@ -238,7 +237,7 @@ def test_sklearn_cv_with_groups(tmp_dir):
 
 
 def test_sklearn_real_data(tmp_dir):
-    tuner = sklearn_tuner.Sklearn(
+    tuner = kt.Sklearn(
         oracle=kt.oracles.BayesianOptimization(
             objective=kt.Objective("score", "max"), max_trials=10
         ),
@@ -266,14 +265,16 @@ def test_sklearn_real_data(tmp_dir):
 
 
 def test_sklearn_not_install_error(tmp_dir):
-    sklearn_module = sklearn_tuner.sklearn
-    sklearn_tuner.sklearn = None
+    sklearn_module = kt.tuners.sklearn_tuner.sklearn
+    kt.tuners.sklearn_tuner.sklearn = None
+
     with pytest.raises(ImportError, match="Please install sklearn"):
-        sklearn_tuner.Sklearn(
+        kt.Sklearn(
             oracle=kt.oracles.BayesianOptimization(
                 objective=kt.Objective("score", "max"), max_trials=10
             ),
             hypermodel=build_model,
             directory=tmp_dir,
         )
-    sklearn_tuner.sklearn = sklearn_module
+
+    kt.tuners.sklearn_tuner.sklearn = sklearn_module
