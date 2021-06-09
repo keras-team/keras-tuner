@@ -37,7 +37,7 @@ class BaseTuner(stateful.Stateful):
 
     May be subclassed to create new tuners, including for non-Keras models.
 
-    # Arguments:
+    Arguments:
         oracle: Instance of Oracle class.
         hypermodel: Instance of HyperModel class
             (or callable that takes hyperparameters
@@ -114,7 +114,7 @@ class BaseTuner(stateful.Stateful):
     def search(self, *fit_args, **fit_kwargs):
         """Performs a search for best hyperparameter configuations.
 
-        # Arguments:
+        Arguments:
             *fit_args: Positional arguments that should be passed to
               `run_trial`, for example the training and validation data.
             *fit_kwargs: Keyword arguments that should be passed to
@@ -148,7 +148,7 @@ class BaseTuner(stateful.Stateful):
         reporting metrics related to the `Trial` to the `Oracle`
         via `self.oracle.update_trial`.
 
-        Simplest example:
+        Example:
 
         ```python
         def run_trial(self, trial, x, y, val_x, val_y):
@@ -160,7 +160,7 @@ class BaseTuner(stateful.Stateful):
             self.save_model(trial.trial_id, model)
         ```
 
-        # Arguments:
+        Arguments:
             trial: A `Trial` instance that contains the information
               needed to run this trial. Hyperparameters can be accessed
               via `trial.hyperparameters`.
@@ -172,7 +172,7 @@ class BaseTuner(stateful.Stateful):
     def save_model(self, trial_id, model, step=0):
         """Saves a Model for a given trial.
 
-        # Arguments:
+        Arguments:
             trial_id: The ID of the `Trial` that corresponds to this Model.
             model: The trained model.
             step: For models that report intermediate results to the `Oracle`,
@@ -184,7 +184,7 @@ class BaseTuner(stateful.Stateful):
     def load_model(self, trial):
         """Loads a Model from a given trial.
 
-        # Arguments:
+        Arguments:
             trial: A `Trial` instance. For models that report intermediate
               results to the `Oracle`, generally `load_model` should load the
               best reported `step` by relying of `trial.best_step`
@@ -209,7 +209,7 @@ class BaseTuner(stateful.Stateful):
     def on_trial_end(self, trial):
         """A hook called after each trial is run.
 
-        # Arguments:
+        Arguments:
             trial: A `Trial` instance.
         """
         # Send status to Logger
@@ -234,11 +234,11 @@ class BaseTuner(stateful.Stateful):
         recommended to retrain your Model on the full dataset using the best
         hyperparameters found during `search`.
 
-        # Arguments:
+        Arguments:
             num_models (int, optional). Number of best models to return.
                 Models will be returned in sorted order. Defaults to 1.
 
-        # Returns:
+        Returns:
             List of trained model instances.
         """
         best_trials = self.oracle.get_best_trials(num_models)
@@ -258,12 +258,12 @@ class BaseTuner(stateful.Stateful):
         model = tuner.hypermodel.build(best_hp)
         ```
 
-        # Arguments:
+        Arguments:
             num_trials: (int, optional). Number of `HyperParameters` objects to
               return. `HyperParameters` will be returned in sorted order based on
               trial performance.
 
-        # Returns:
+        Returns:
             List of `HyperParameter` objects.
         """
         return [t.hyperparameters for t in self.oracle.get_best_trials(num_trials)]
@@ -271,7 +271,7 @@ class BaseTuner(stateful.Stateful):
     def search_space_summary(self, extended=False):
         """Print search space summary.
 
-        Args:
+        Arguments:
             extended: Bool, optional. Display extended summary.
                 Defaults to False.
         """
@@ -287,7 +287,7 @@ class BaseTuner(stateful.Stateful):
     def results_summary(self, num_trials=10):
         """Display tuning results summary.
 
-        Args:
+        Arguments:
             num_trials (int, optional): Number of trials to display.
                 Defaults to 10.
         """
