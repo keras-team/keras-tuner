@@ -47,12 +47,12 @@ EFFICIENTNET_IMG_SIZE = {
 
 class HyperEfficientNet(hypermodel.HyperModel):
     """An EfficientNet HyperModel.
+
     Models built by this HyperModel takes input image data in
     ints [0, 255]. The output data should be one-hot encoded
     with number of classes matching `classes`.
 
-      # Arguments:
-
+    Arguments:
         input_shape: shape tuple, e.g. `(256, 256, 3)`.
               Input images will be resized if different from
               the default input size of the version of
@@ -152,6 +152,7 @@ class HyperEfficientNet(hypermodel.HyperModel):
 
     def _compile(self, model, hp):
         """Compile model using hyperparameters in hp.
+
         When subclassing the hypermodel, this may
         be overriden to change behavior of compiling.
         """

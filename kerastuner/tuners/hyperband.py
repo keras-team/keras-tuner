@@ -25,19 +25,19 @@ class HyperbandOracle(oracle_module.Oracle):
     class must be able to handle in `Tuner.run_trial` three special hyperparameters
     that will be set by this Tuner:
 
-      - "tuner/trial_id": String, optionally set. The trial_id of the Trial to load
-          from when starting this trial.
-      - "tuner/initial_epoch": Int, always set. The initial epoch the Trial should be
-          started from.
-      - "tuner/epochs": Int, always set. The cumulative number of epochs this Trial
-          should be trained.
+    - "tuner/trial_id": String, optionally set. The trial_id of the Trial to load
+      from when starting this trial.
+    - "tuner/initial_epoch": Int, always set. The initial epoch the Trial should be
+      started from.
+    - "tuner/epochs": Int, always set. The cumulative number of epochs this Trial
+      should be trained.
 
     These hyperparameters will be set during the "successive halving" portion
     of the Hyperband algorithm.
 
-    Example `run_trial`:
+    Example:
 
-    ```
+    ```python
     def run_trial(self, trial, *args, **kwargs):
         hp = trial.hyperparameters
         if "tuner/trial_id" in hp:
@@ -56,7 +56,7 @@ class HyperbandOracle(oracle_module.Oracle):
             self.on_epoch_end(...)
     ```
 
-    # Arguments:
+    Arguments:
         objective: String or `kerastuner.Objective`. If a string,
           the direction of the optimization (min or max) will be
           inferred.

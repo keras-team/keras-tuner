@@ -26,7 +26,7 @@ from ..engine import trial as trial_lib
 class RandomSearchOracle(oracle_module.Oracle):
     """Random search oracle.
 
-    # Arguments:
+    Arguments:
         objective: String or `kerastuner.Objective`. If a string,
           the direction of the optimization (min or max) will be
           inferred.
@@ -70,7 +70,7 @@ class RandomSearchOracle(oracle_module.Oracle):
     def _populate_space(self, _):
         """Fill the hyperparameter space with values.
 
-        Args:
+        Arguments:
           `trial_id`: The id for this Trial.
 
         Returns:
@@ -88,7 +88,7 @@ class RandomSearchOracle(oracle_module.Oracle):
 class RandomSearch(multi_execution_tuner.MultiExecutionTuner):
     """Random search tuner.
 
-    # Arguments:
+    Arguments:
         hypermodel: Instance of HyperModel class
             (or callable that takes hyperparameters
             and returns a Model instance).

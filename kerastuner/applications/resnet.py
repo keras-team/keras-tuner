@@ -25,8 +25,7 @@ from kerastuner.engine import hypermodel
 class HyperResNet(hypermodel.HyperModel):
     """A ResNet HyperModel.
 
-    # Arguments:
-
+    Arguments:
         include_top: whether to include the fully-connected
             layer at the top of the network.
         input_shape: Optional shape tuple, e.g. `(256, 256, 3)`.
@@ -195,13 +194,15 @@ def block1(x, filters, kernel_size=3, stride=1, conv_shortcut=True, name=None):
 
 def stack1(x, filters, blocks, stride1=2, name=None):
     """A set of stacked residual blocks.
-    # Arguments
+
+    Arguments:
         x: input tensor.
         filters: integer, filters of the bottleneck layer in a block.
         blocks: integer, blocks in the stacked blocks.
         stride1: default 2, stride of the first layer in the first block.
         name: string, stack label.
-    # Returns
+
+    Returns:
         Output tensor for the stacked blocks.
     """
     x = block1(x, filters, stride=stride1, name=name + "_block1")
@@ -212,7 +213,8 @@ def stack1(x, filters, blocks, stride1=2, name=None):
 
 def block2(x, filters, kernel_size=3, stride=1, conv_shortcut=False, name=None):
     """A residual block.
-    # Arguments
+
+    Arguments:
         x: input tensor.
         filters: integer, filters of the bottleneck layer.
         kernel_size: default 3, kernel size of the bottleneck layer.
@@ -220,7 +222,8 @@ def block2(x, filters, kernel_size=3, stride=1, conv_shortcut=False, name=None):
         conv_shortcut: default False, use convolution shortcut if True,
             otherwise identity shortcut.
         name: string, block label.
-    # Returns
+
+    Returns:
         Output tensor for the residual block.
     """
     bn_axis = 3 if backend.image_data_format() == "channels_last" else 1
@@ -261,13 +264,15 @@ def block2(x, filters, kernel_size=3, stride=1, conv_shortcut=False, name=None):
 
 def stack2(x, filters, blocks, stride1=2, name=None):
     """A set of stacked residual blocks.
-    # Arguments
+
+    Arguments:
         x: input tensor.
         filters: integer, filters of the bottleneck layer in a block.
         blocks: integer, blocks in the stacked blocks.
         stride1: default 2, stride of the first layer in the first block.
         name: string, stack label.
-    # Returns
+
+    Returns:
         Output tensor for the stacked blocks.
     """
     x = block2(x, filters, conv_shortcut=True, name=name + "_block1")
@@ -281,7 +286,8 @@ def block3(
     x, filters, kernel_size=3, stride=1, groups=32, conv_shortcut=True, name=None
 ):
     """A residual block.
-    # Arguments
+
+    Arguments:
         x: input tensor.
         filters: integer, filters of the bottleneck layer.
         kernel_size: default 3, kernel size of the bottleneck layer.
@@ -290,7 +296,8 @@ def block3(
         conv_shortcut: default True, use convolution shortcut if True,
             otherwise identity shortcut.
         name: string, block label.
-    # Returns
+
+    Returns:
         Output tensor for the residual block.
     """
     bn_axis = 3 if backend.image_data_format() == "channels_last" else 1
@@ -357,14 +364,16 @@ def block3(
 
 def stack3(x, filters, blocks, stride1=2, groups=32, name=None):
     """A set of stacked residual blocks.
-    # Arguments
+
+    Arguments:
         x: input tensor.
         filters: integer, filters of the bottleneck layer in a block.
         blocks: integer, blocks in the stacked blocks.
         stride1: default 2, stride of the first layer in the first block.
         groups: default 32, group size for grouped convolution.
         name: string, stack label.
-    # Returns
+
+    Returns:
         Output tensor for the stacked blocks.
     """
     x = block3(x, filters, stride=stride1, groups=groups, name=name + "_block1")

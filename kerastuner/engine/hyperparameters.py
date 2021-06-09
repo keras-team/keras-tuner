@@ -70,7 +70,7 @@ def _check_int(val, arg):
 class HyperParameter(object):
     """HyperParameter base class.
 
-    # Arguments:
+    Arguments:
         name: Str. Name of parameter. Must be unique.
         default: Default value to return for the
             parameter.
@@ -104,7 +104,7 @@ class HyperParameter(object):
 class Choice(HyperParameter):
     """Choice of one value among a predefined set of possible values.
 
-    # Arguments:
+    Arguments:
         name: Str. Name of parameter. Must be unique.
         values: List of possible values. Values must be int, float,
             str, or bool. All values must be of the same type.
@@ -115,7 +115,6 @@ class Choice(HyperParameter):
             If unspecified, the default value will be:
             - None if None is one of the choices in `values`
             - The first entry in `values` otherwise.
-        **kwargs: Additional keyword arguments.
     """
 
     def __init__(self, name, values, ordered=None, default=None, **kwargs):
@@ -226,7 +225,7 @@ class Int(HyperParameter):
     Note that unlike Python's `range` function, `max_value` is *included* in
     the possible values this parameter can take on.
 
-    # Arguments:
+    Arguments:
         name: Str. Name of parameter. Must be unique.
         min_value: Int. Lower limit of range (included).
         max_value: Int. Upper limit of range (included).
@@ -239,7 +238,6 @@ class Int(HyperParameter):
         default: Default value to return for the parameter.
             If unspecified, the default value will be
             `min_value`.
-        **kwargs: Additional keyword arguments.
     """
 
     def __init__(
@@ -323,7 +321,7 @@ class Int(HyperParameter):
 class Float(HyperParameter):
     """Floating point range, can be evenly divided.
 
-    # Arguments:
+    Arguments:
         name: Str. Name of parameter. Must be unique.
         min_value: Float. Lower bound of the range.
         max_value: Float. Upper bound of the range.
@@ -339,7 +337,6 @@ class Float(HyperParameter):
         default: Default value to return for the parameter.
             If unspecified, the default value will be
             `min_value`.
-        **kwargs: Additional keyword arguments.
     """
 
     def __init__(
@@ -425,11 +422,10 @@ class Float(HyperParameter):
 class Boolean(HyperParameter):
     """Choice between True and False.
 
-    # Arguments
+    Arguments:
         name: Str. Name of parameter. Must be unique.
         default: Default value to return for the parameter.
             If unspecified, the default value will be False.
-        **kwargs: Additional keyword arguments.
     """
 
     def __init__(self, name, default=False, **kwargs):
@@ -465,11 +461,10 @@ class Boolean(HyperParameter):
 class Fixed(HyperParameter):
     """Fixed, untunable value.
 
-    # Arguments
+    Arguments:
         name: Str. Name of parameter. Must be unique.
         value: Value to use (can be any JSON-serializable
             Python type).
-        **kwargs: Additional keyword arguments.
     """
 
     def __init__(self, name, value, **kwargs):
@@ -534,7 +529,7 @@ class Fixed(HyperParameter):
 class HyperParameters(object):
     """Container for both a hyperparameter space, and current values.
 
-    # Attributes:
+    Arguments:
         space: A list of HyperParameter instances.
         values: A dict mapping hyperparameter names to current values.
     """
@@ -582,7 +577,7 @@ class HyperParameters(object):
         Note that any Python code under this scope will execute
         regardless of whether the condition is met.
 
-        # Arguments:
+        Arguments:
             parent_name: The name of the HyperParameter to condition on.
             parent_values: Values of the parent HyperParameter for which
               HyperParameters under this scope should be considered active.
@@ -659,7 +654,7 @@ class HyperParameters(object):
         return None  # Ensures inactive values are not relied on by user.
 
     def get(self, name):
-        """Return the current value of this HyperParameter."""
+        """Return the current value of this hyperparameter set."""
         name = self._get_name(name)  # Add name_scopes.
         if name in self.values:
             return self.values[name]  # Only active values are added here.
@@ -689,7 +684,7 @@ class HyperParameters(object):
     ):
         """Choice of one value among a predefined set of possible values.
 
-        # Arguments:
+        Arguments:
             name: Str. Name of parameter. Must be unique.
             values: List of possible values. Values must be int, float,
                 str, or bool. All values must be of the same type.
@@ -705,7 +700,7 @@ class HyperParameters(object):
             parent_values: (Optional) List. The values of the parent hyperparameter
               for which this hyperparameter should be considered active.
 
-        # Returns:
+        Returns:
             The current value of this hyperparameter.
         """
         with self._maybe_conditional_scope(parent_name, parent_values):
@@ -734,7 +729,7 @@ class HyperParameters(object):
         Note that unlike Python's `range` function, `max_value` is *included* in
         the possible values this parameter can take on.
 
-        # Arguments:
+        Arguments:
             name: Str. Name of parameter. Must be unique.
             min_value: Int. Lower limit of range (included).
             max_value: Int. Upper limit of range (included).
@@ -752,7 +747,7 @@ class HyperParameters(object):
             parent_values: (Optional) List. The values of the parent hyperparameter
               for which this hyperparameter should be considered active.
 
-        # Returns:
+        Returns:
             The current value of this hyperparameter.
         """
         with self._maybe_conditional_scope(parent_name, parent_values):
@@ -780,7 +775,7 @@ class HyperParameters(object):
     ):
         """Floating point range, can be evenly divided.
 
-        # Arguments:
+        Arguments:
             name: Str. Name of parameter. Must be unique.
             min_value: Float. Lower bound of the range.
             max_value: Float. Upper bound of the range.
@@ -801,7 +796,7 @@ class HyperParameters(object):
             parent_values: (Optional) List. The values of the parent hyperparameter
               for which this hyperparameter should be considered active.
 
-        # Returns:
+        Returns:
             The current value of this hyperparameter.
         """
         with self._maybe_conditional_scope(parent_name, parent_values):
@@ -819,7 +814,7 @@ class HyperParameters(object):
     def Boolean(self, name, default=False, parent_name=None, parent_values=None):
         """Choice between True and False.
 
-        # Arguments
+        Arguments:
             name: Str. Name of parameter. Must be unique.
             default: Default value to return for the parameter.
                 If unspecified, the default value will be False.
@@ -828,7 +823,7 @@ class HyperParameters(object):
             parent_values: (Optional) List. The values of the parent hyperparameter
               for which this hyperparameter should be considered active.
 
-        # Returns:
+        Returns:
             The current value of this hyperparameter.
         """
         with self._maybe_conditional_scope(parent_name, parent_values):
@@ -842,7 +837,7 @@ class HyperParameters(object):
     def Fixed(self, name, value, parent_name=None, parent_values=None):
         """Fixed, untunable value.
 
-        # Arguments
+        Arguments:
             name: Str. Name of parameter. Must be unique.
             value: Value to use (can be any JSON-serializable
                 Python type).
@@ -851,7 +846,7 @@ class HyperParameters(object):
             parent_values: (Optional) List. The values of the parent hyperparameter
               for which this hyperparameter should be considered active.
 
-        # Returns:
+        Returns:
             The current value of this hyperparameter.
         """
         with self._maybe_conditional_scope(parent_name, parent_values):

@@ -37,9 +37,10 @@ TRANSFORMS = {
 
 class HyperImageAugment(hypermodel.HyperModel):
     """Builds HyperModel for image augmentation.
+
     Only supporting augmentations available in Keras preprocessing layers currently.
 
-    # Arguments:
+    Arguments:
         input_shape: Optional shape tuple, e.g. `(256, 256, 3)`.
         input_tensor: Optional Keras tensor (i.e. output of
             `layers.Input()`) to use as image input for the model.
@@ -87,36 +88,33 @@ class HyperImageAugment(hypermodel.HyperModel):
         **kwargs: Additional keyword arguments that apply to all
             HyperModels. See `kerastuner.HyperModel`.
 
-    # Search space:
-        'factor_{transform}' for each of the transforms chosen:
-            Float, range is set through corresponding keyword argument.
-        'augment_layers' for number of transform applied to each sample:
-            Int, range is set through keyword argument `augment_layers`.
-            This is only active when `augment_layers` is non zero.
+    Example:
 
-    # Usage example:
-        ```
-        hm_aug = HyperImageAugment(input_shape=(32, 32, 3),
-                                   augment_layers=0,
-                                   rotate=[0.2, 0.3],
-                                   translate_x=0.1,
-                                   translate_y=None,
-                                   contrast=None)
-        ```
-        Then the hypermodel `hm_aug` will search 'factor_rotate' between [0.2, 0.3]
-        and 'factor_translate_x' between [0, 0.1]. These two augments are applied
-        on all samples with factor picked per each trial.
-        ```
-        hm_aug = HyperImageAugment(input_shape=(32, 32, 3),
-                                   translate_x=0.5,
-                                   translate_y=[0.2, 0.4]
-                                   contrast=None)
-        ```
-        Then the hypermodel `hm_aug` will search 'factor_rotate' between [0, 0.2],
-        'factor_translate_x' between [0, 0.5], 'factor_translate_y' between
-        [0.2, 0.4]. It will use RandAugment, searching 'augment_layers'
-        between [0, 3]. Each layer on each sample will be chosen from rotate,
-        translate_x and translate_y.
+    ```python
+    hm_aug = HyperImageAugment(input_shape=(32, 32, 3),
+                               augment_layers=0,
+                               rotate=[0.2, 0.3],
+                               translate_x=0.1,
+                               translate_y=None,
+                               contrast=None)
+    ```
+
+    Then the hypermodel `hm_aug` will search 'factor_rotate' between [0.2, 0.3]
+    and 'factor_translate_x' between [0, 0.1]. These two augments are applied
+    on all samples with factor picked per each trial.
+
+    ```python
+    hm_aug = HyperImageAugment(input_shape=(32, 32, 3),
+                               translate_x=0.5,
+                               translate_y=[0.2, 0.4]
+                               contrast=None)
+    ```
+
+    Then the hypermodel `hm_aug` will search 'factor_rotate' between [0, 0.2],
+    'factor_translate_x' between [0, 0.5], 'factor_translate_y' between
+    [0.2, 0.4]. It will use RandAugment, searching 'augment_layers'
+    between [0, 3]. Each layer on each sample will be chosen from rotate,
+    translate_x and translate_y.
     """
 
     def __init__(
@@ -233,7 +231,7 @@ class HyperImageAugment(hypermodel.HyperModel):
 
     def _register_transform(self, transform_name, transform_params):
         """Register a transform and format parameters for tuning the transform.
-        # Arguments:
+        Arguments:
             transform_name: str, the name of the transform.
             trnasform_params: A number between [0, 1], a list of two numbers
                 between [0, 1] or None. If set to a single number x, the

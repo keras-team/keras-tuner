@@ -43,7 +43,7 @@ def matern_kernel(x, y=None):
 class GaussianProcessRegressor(object):
     """A Gaussian process regressor.
 
-    # Arguments
+    Arguments:
         alpha: Float. Value added to the diagonal of the kernel matrix
             during fitting. It represents the expected amount of noise
             in the observed performances in Bayesian optimization.
@@ -62,7 +62,7 @@ class GaussianProcessRegressor(object):
     def fit(self, x, y):
         """Fit the Gaussian process regressor.
 
-        # Arguments
+        Arguments:
             x: np.ndarray with shape (samples, features).
             y: np.ndarray with shape (samples,).
         """
@@ -85,10 +85,10 @@ class GaussianProcessRegressor(object):
     def predict(self, x):
         """Predict the mean and standard deviation of the target.
 
-        # Arguments
+        Arguments:
             x: np.ndarray with shape (samples, features).
 
-        # Returns
+        Returns:
             Two 1-D vectors, the mean vector and standard deviation vector.
         """
         # Compute the mean.
@@ -119,10 +119,9 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
 
     It uses Bayesian optimization with a underlying Gaussian process model.
     The acquisition function used is upper confidence bound (UCB), which can
-    be found in the following link:
-    https://www.cse.wustl.edu/~garnett/cse515t/spring_2015/files/lecture_notes/12.pdf
+    be found [here](https://www.cse.wustl.edu/~garnett/cse515t/spring_2015/files/lecture_notes/12.pdf).
 
-    # Arguments
+    Arguments:
         objective: String or `kerastuner.Objective`. If a string,
           the direction of the optimization (min or max) will be
           inferred.
@@ -345,7 +344,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
 class BayesianOptimization(multi_execution_tuner.MultiExecutionTuner):
     """BayesianOptimization tuning with Gaussian process.
 
-    # Arguments:
+    Arguments:
         hypermodel: Instance of HyperModel class
             (or callable that takes hyperparameters
             and returns a Model instance).

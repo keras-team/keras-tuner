@@ -33,7 +33,7 @@ class Tuner(base_tuner.BaseTuner):
 
     May be subclassed to create new tuners.
 
-    # Arguments:
+    Arguments:
         oracle: Instance of Oracle class.
         hypermodel: Instance of HyperModel class
             (or callable that takes hyperparameters
@@ -134,14 +134,14 @@ class Tuner(base_tuner.BaseTuner):
         the input shape before building the model, adapt preprocessing layers,
         and tune other fit_args and fit_kwargs.
 
-        # Arguments:
+        Arguments:
             trial: A `Trial` instance that contains the information
               needed to run this trial. `Hyperparameters` can be accessed
               via `trial.hyperparameters`.
             fit_args: Positional arguments passed by `search`.
             fit_kwargs: Keyword arguments passed by `search`.
 
-        # Returns:
+        Returns:
             The fit history.
         """
         model = self.hypermodel.build(trial.hyperparameters)
@@ -153,7 +153,7 @@ class Tuner(base_tuner.BaseTuner):
         This method is called during `search` to evaluate a set of
         hyperparameters.
 
-        # Arguments:
+        Arguments:
             trial: A `Trial` instance that contains the information
               needed to run this trial. `Hyperparameters` can be accessed
               via `trial.hyperparameters`.
@@ -210,7 +210,7 @@ class Tuner(base_tuner.BaseTuner):
     def on_epoch_begin(self, trial, model, epoch, logs=None):
         """A hook called at the start of every epoch.
 
-        # Arguments:
+        Arguments:
             trial: A `Trial` instance.
             model: A Keras `Model`.
             epoch: The current epoch number.
@@ -221,7 +221,7 @@ class Tuner(base_tuner.BaseTuner):
     def on_batch_begin(self, trial, model, batch, logs):
         """A hook called at the start of every batch.
 
-        # Arguments:
+        Arguments:
             trial: A `Trial` instance.
             model: A Keras `Model`.
             batch: The current batch number within the
@@ -233,7 +233,7 @@ class Tuner(base_tuner.BaseTuner):
     def on_batch_end(self, trial, model, batch, logs=None):
         """A hook called at the end of every batch.
 
-        # Arguments:
+        Arguments:
             trial: A `Trial` instance.
             model: A Keras `Model`.
             batch: The current batch number within the
@@ -245,7 +245,7 @@ class Tuner(base_tuner.BaseTuner):
     def on_epoch_end(self, trial, model, epoch, logs=None):
         """A hook called at the end of every epoch.
 
-        # Arguments:
+        Arguments:
             trial: A `Trial` instance.
             model: A Keras `Model`.
             epoch: The current epoch number.
@@ -269,7 +269,7 @@ class Tuner(base_tuner.BaseTuner):
         recommended to retrain your Model on the full dataset using the best
         hyperparameters found during `search`.
 
-        Args:
+        Arguments:
             num_models (int, optional): Number of best models to return.
                 Models will be returned in sorted order. Defaults to 1.
 

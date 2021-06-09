@@ -30,7 +30,7 @@ from .. import config as config_module
 class HyperModel(object):
     """Defines a searchable space of Models and builds Models from this space.
 
-    # Attributes:
+    Arguments:
         name: The name of this HyperModel.
         tunable: Whether the hyperparameters defined in this hypermodel
           should be added to search space. If `False`, either the search
@@ -48,10 +48,10 @@ class HyperModel(object):
     def build(self, hp):
         """Builds a model.
 
-        # Arguments:
+        Arguments:
             hp: A `HyperParameters` instance.
 
-        # Returns:
+        Returns:
             A model instance.
         """
         raise NotImplementedError
