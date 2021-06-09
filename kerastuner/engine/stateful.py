@@ -35,16 +35,16 @@ class Stateful(object):
 
         This method is called during `reload`.
 
-        # Arguments:
-          state: Dict. The state to restore for this object.
+        Arguments:
+            state: Dict. The state to restore for this object.
         """
         raise NotImplementedError
 
     def save(self, fname):
         """Saves this object using `get_state`.
 
-        # Arguments:
-          fname: The file name to save to.
+        Arguments:
+            fname: The file name to save to.
         """
         state = self.get_state()
         state_json = json.dumps(state)
@@ -55,8 +55,8 @@ class Stateful(object):
     def reload(self, fname):
         """Reloads this object using `set_state`.
 
-        # Arguments:
-          fname: The file name to restore from.
+        Arguments:
+            fname: The file name to restore from.
         """
         with tf.io.gfile.GFile(fname, "r") as f:
             state_data = f.read()
