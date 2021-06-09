@@ -119,7 +119,8 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
 
     It uses Bayesian optimization with a underlying Gaussian process model.
     The acquisition function used is upper confidence bound (UCB), which can
-    be found [here](https://www.cse.wustl.edu/~garnett/cse515t/spring_2015/files/lecture_notes/12.pdf).
+    be found [here](
+    https://www.cse.wustl.edu/~garnett/cse515t/spring_2015/files/lecture_notes/12.pdf).
 
     Arguments:
         objective: String or `kerastuner.Objective`. If a string,
