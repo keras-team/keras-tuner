@@ -22,6 +22,7 @@ import hashlib
 import json
 import os
 import random
+import warnings
 
 import tensorflow as tf
 
@@ -114,6 +115,14 @@ class Oracle(stateful.Stateful):
         self.should_report = True
 
     def _populate_space(self, trial_id):
+        warnings.warn(
+            "The `_populate_space` method is deprecated, "
+            "please use `populate_space`.",
+            DeprecationWarning,
+        )
+        return self.populate_space(trial_id)
+
+    def populate_space(self, trial_id):
         """Fill the hyperparameter space with values for a trial.
 
         This method should be overridden in subclasses and called in
@@ -132,6 +141,13 @@ class Oracle(stateful.Stateful):
         raise NotImplementedError
 
     def _score_trial(self, trial):
+        warnings.warn(
+            "The `_score_trial` method is deprecated, please use `score_trial`.",
+            DeprecationWarning,
+        )
+        self.score_trial(trial)
+
+    def score_trial(self, trial):
         """Score a completed `Trial`.
 
         This method can be overridden in subclasses to provide a score for
@@ -139,7 +155,7 @@ class Oracle(stateful.Stateful):
         on completed `Trial`s.
 
         Args:
-          trial: A completed `Trial` object.
+            trial: A completed `Trial` object.
         """
         # Assumes single objective, subclasses can override.
         trial.score = trial.metrics.get_best_value(self.objective.name)
@@ -170,7 +186,7 @@ class Oracle(stateful.Stateful):
             status = trial_lib.TrialStatus.STOPPED
             values = None
         else:
-            response = self._populate_space(trial_id)
+            response = self.populate_space(trial_id)
             status = response["status"]
             values = response["values"] if "values" in response else None
 
@@ -237,7 +253,7 @@ class Oracle(stateful.Stateful):
 
         trial.status = status
         if status == trial_lib.TrialStatus.COMPLETED:
-            self._score_trial(trial)
+            self.score_trial(trial)
         self.end_order.append(trial_id)
         self._save_trial(trial)
         self.save()

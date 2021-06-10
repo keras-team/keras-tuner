@@ -67,7 +67,7 @@ class RandomSearchOracle(oracle_module.Oracle):
             seed=seed,
         )
 
-    def _populate_space(self, _):
+    def populate_space(self, _):
         """Fill the hyperparameter space with values.
 
         Arguments:
