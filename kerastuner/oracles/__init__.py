@@ -11,8 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Oracle aliases."""
 
+# Keep the name of `BayesianOptimization`, `Hyperband` and `RandomSearch`
+# for backward compatibility for 1.0.2 or earlier.
+from ..tuners.bayesian import BayesianOptimizationOracle
 from ..tuners.bayesian import BayesianOptimizationOracle as BayesianOptimization
+from ..tuners.hyperband import HyperbandOracle
 from ..tuners.hyperband import HyperbandOracle as Hyperband
+from ..tuners.randomsearch import RandomSearchOracle
 from ..tuners.randomsearch import RandomSearchOracle as RandomSearch
