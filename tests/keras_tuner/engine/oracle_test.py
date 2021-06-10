@@ -1,6 +1,6 @@
 import pytest
 
-from kerastuner.engine import oracle as oracle_module
+from keras_tuner.engine import oracle as oracle_module
 
 
 class OracleStub(oracle_module.Oracle):
