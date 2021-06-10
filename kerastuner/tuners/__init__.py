@@ -18,3 +18,4 @@ from .bayesian import BayesianOptimization
 from .hyperband import Hyperband
 from .randomsearch import RandomSearch
 from .sklearn_tuner import Sklearn
+from .sklearn_tuner import SklearnTuner

@@ -30,7 +30,7 @@ from .engine.tuner import Tuner
 from .tuners import BayesianOptimization
 from .tuners import Hyperband
 from .tuners import RandomSearch
-from .tuners import Sklearn
+from .tuners import SklearnTuner
 from .utils import check_tf_version
 
 check_tf_version()

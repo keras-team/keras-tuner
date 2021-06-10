@@ -72,7 +72,7 @@ def tmp_dir(tmpdir_factory):
 
 
 def test_sklearn_tuner_simple(tmp_dir):
-    tuner = kt.Sklearn(
+    tuner = kt.SklearnTuner(
         oracle=kt.oracles.BayesianOptimization(
             objective=kt.Objective("score", "max"), max_trials=10
         ),
@@ -98,7 +98,7 @@ def test_sklearn_tuner_simple(tmp_dir):
 
 
 def test_sklearn_custom_scoring_and_cv(tmp_dir):
-    tuner = kt.Sklearn(
+    tuner = kt.SklearnTuner(
         oracle=kt.oracles.BayesianOptimization(
             objective=kt.Objective("score", "max"), max_trials=10
         ),
@@ -126,7 +126,7 @@ def test_sklearn_custom_scoring_and_cv(tmp_dir):
 
 
 def test_sklearn_additional_metrics(tmp_dir):
-    tuner = kt.Sklearn(
+    tuner = kt.SklearnTuner(
         oracle=kt.oracles.BayesianOptimization(
             objective=kt.Objective("score", "max"), max_trials=10
         ),
@@ -155,7 +155,7 @@ def test_sklearn_additional_metrics(tmp_dir):
 
 
 def test_sklearn_sample_weight(tmp_dir):
-    tuner = kt.Sklearn(
+    tuner = kt.SklearnTuner(
         oracle=kt.oracles.BayesianOptimization(
             objective=kt.Objective("score", "max"), max_trials=10
         ),
@@ -182,7 +182,7 @@ def test_sklearn_sample_weight(tmp_dir):
 
 
 def test_sklearn_pipeline(tmp_dir):
-    tuner = kt.Sklearn(
+    tuner = kt.SklearnTuner(
         oracle=kt.oracles.BayesianOptimization(
             objective=kt.Objective("score", "max"), max_trials=10
         ),
@@ -209,7 +209,7 @@ def test_sklearn_pipeline(tmp_dir):
 
 
 def test_sklearn_cv_with_groups(tmp_dir):
-    tuner = kt.Sklearn(
+    tuner = kt.SklearnTuner(
         oracle=kt.oracles.BayesianOptimization(
             objective=kt.Objective("score", "max"), max_trials=10
         ),
@@ -237,7 +237,7 @@ def test_sklearn_cv_with_groups(tmp_dir):
 
 
 def test_sklearn_real_data(tmp_dir):
-    tuner = kt.Sklearn(
+    tuner = kt.SklearnTuner(
         oracle=kt.oracles.BayesianOptimization(
             objective=kt.Objective("score", "max"), max_trials=10
         ),
@@ -269,7 +269,7 @@ def test_sklearn_not_install_error(tmp_dir):
     kt.tuners.sklearn_tuner.sklearn = None
 
     with pytest.raises(ImportError, match="Please install sklearn"):
-        kt.Sklearn(
+        kt.SklearnTuner(
             oracle=kt.oracles.BayesianOptimization(
                 objective=kt.Objective("score", "max"), max_trials=10
             ),
@@ -278,3 +278,14 @@ def test_sklearn_not_install_error(tmp_dir):
         )
 
     kt.tuners.sklearn_tuner.sklearn = sklearn_module
+
+
+def test_sklearn_deprecation_warning(tmp_dir):
+    with pytest.deprecated_call():
+        kt.tuners.Sklearn(
+            oracle=kt.oracles.BayesianOptimization(
+                objective=kt.Objective("score", "max"), max_trials=10
+            ),
+            hypermodel=build_model,
+            directory=tmp_dir,
+        )

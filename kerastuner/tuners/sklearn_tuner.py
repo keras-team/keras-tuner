@@ -15,6 +15,7 @@
 import collections
 import os
 import pickle
+import warnings
 
 import numpy as np
 import tensorflow as tf
@@ -27,7 +28,7 @@ except ImportError:
 from ..engine import base_tuner
 
 
-class Sklearn(base_tuner.BaseTuner):
+class SklearnTuner(base_tuner.BaseTuner):
     """Tuner for Scikit-learn Models.
 
     Performs cross-validated hyperparameter search for Scikit-learn
@@ -75,7 +76,7 @@ class Sklearn(base_tuner.BaseTuner):
             alpha=hp.Float('alpha', 1e-3, 1, sampling='log'))
       return model
 
-    tuner = kt.tuners.Sklearn(
+    tuner = kt.tuners.SklearnTuner(
         oracle=kt.oracles.BayesianOptimization(
             objective=kt.Objective('score', 'max'),
             max_trials=10),
@@ -98,11 +99,11 @@ class Sklearn(base_tuner.BaseTuner):
     def __init__(
         self, oracle, hypermodel, scoring=None, metrics=None, cv=None, **kwargs
     ):
-        super(Sklearn, self).__init__(oracle=oracle, hypermodel=hypermodel, **kwargs)
+        super().__init__(oracle=oracle, hypermodel=hypermodel, **kwargs)
 
         if sklearn is None:
             raise ImportError(
-                "Please install sklearn before using the `Sklearn` tuner."
+                "Please install sklearn before using the `SklearnTuner`."
             )
 
         self.scoring = scoring
@@ -130,9 +131,7 @@ class Sklearn(base_tuner.BaseTuner):
             `sklearn.model_selection.GroupKFold`).
         """
         # Only overridden for the docstring.
-        return super(Sklearn, self).search(
-            X, y, sample_weight=sample_weight, groups=groups
-        )
+        return super().search(X, y, sample_weight=sample_weight, groups=groups)
 
     def run_trial(self, trial, X, y, sample_weight=None, groups=None):
 
@@ -187,3 +186,12 @@ class Sklearn(base_tuner.BaseTuner):
         fname = os.path.join(self.get_trial_dir(trial.trial_id), "model.pickle")
         with tf.io.gfile.GFile(fname, "rb") as f:
             return pickle.load(f)
+
+
+class Sklearn(SklearnTuner):
+    def __init__(self, *args, **kwargs):
+        warnings.warn(
+            "The `Sklearn` class is deprecated, please use `SklearnTuner`.",
+            DeprecationWarning,
+        )
+        super().__init__(*args, **kwargs)
