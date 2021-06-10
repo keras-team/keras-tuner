@@ -556,7 +556,7 @@ def test_subclass_model_loading(tmp_dir):
 
 def test_update_trial(tmp_dir):
     class MyOracle(kerastuner.Oracle):
-        def _populate_space(self, _):
+        def populate_space(self, _):
             values = {p.name: p.random_sample() for p in self.hyperparameters.space}
             return {"values": values, "status": "RUNNING"}
 

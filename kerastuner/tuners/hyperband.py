@@ -126,7 +126,7 @@ class HyperbandOracle(oracle_module.Oracle):
 
         self._start_new_bracket()
 
-    def _populate_space(self, trial_id):
+    def populate_space(self, trial_id):
         self._remove_completed_brackets()
 
         for bracket in self._brackets:
