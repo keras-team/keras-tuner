@@ -17,7 +17,7 @@ import pytest
 import tensorflow as tf
 from tensorflow import keras
 
-import kerastuner
+import keras_tuner
 
 
 @pytest.fixture(scope="function")
@@ -73,7 +73,7 @@ def test_end_to_end_workflow(tmp_dir, distribution_strategy):
     x = x.astype("float32") / 255.0
     val_x = val_x.astype("float32") / 255.0
 
-    tuner = kerastuner.tuners.RandomSearch(
+    tuner = keras_tuner.tuners.RandomSearch(
         build_model,
         objective="val_accuracy",
         max_trials=20,
