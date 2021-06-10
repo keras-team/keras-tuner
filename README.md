@@ -39,7 +39,7 @@ This function returns a compiled model.
 ```python
 from tensorflow import keras
 from tensorflow.keras import layers
-from kerastuner.tuners import RandomSearch
+from keras_tuner.tuners import RandomSearch
 
 
 def build_model(hp):
@@ -149,7 +149,7 @@ This makes it easy to share and reuse hypermodels.
 A `HyperModel` subclass only needs to implement a `build(self, hp)` method.
 
 ```python
-from kerastuner import HyperModel
+from keras_tuner import HyperModel
 
 
 class MyHyperModel(HyperModel):
@@ -195,8 +195,8 @@ These are ready-to-use hypermodels for computer vision.
 They come pre-compiled with `loss="categorical_crossentropy"` and `metrics=["accuracy"]`.
 
 ```python
-from kerastuner.applications import HyperResNet
-from kerastuner.tuners import Hyperband
+from keras_tuner.applications import HyperResNet
+from keras_tuner.tuners import Hyperband
 
 hypermodel = HyperResNet(input_shape=(128, 128, 3), classes=10)
 
@@ -220,7 +220,7 @@ that you didn't list in `hyperparameters` should not be tuned. For these paramet
 value gets used.
 
 ```python
-from kerastuner import HyperParameters
+from keras_tuner import HyperParameters
 
 hypermodel = HyperXception(input_shape=(128, 128, 3), classes=10)
 

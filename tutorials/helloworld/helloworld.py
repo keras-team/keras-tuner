@@ -20,7 +20,7 @@ from tensorflow.keras.datasets import mnist
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
 
-from kerastuner import RandomSearch
+from keras_tuner import RandomSearch
 
 TRIALS = 3  # number of models to train
 EPOCHS = 2  # number of epoch per model

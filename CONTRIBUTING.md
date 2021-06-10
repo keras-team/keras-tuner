@@ -61,6 +61,6 @@ project:
 
 ```
 pip install grpcio-tools
-python -m grpc_tools.protoc --python_out=. --grpc_python_out=. --proto_path=. kerastuner/protos/kerastuner.proto
-python -m grpc_tools.protoc --python_out=. --grpc_python_out=. --proto_path=. kerastuner/protos/service.proto
+python -m grpc_tools.protoc --python_out=. --grpc_python_out=. --proto_path=. keras_tuner/protos/keras_tuner.proto
+python -m grpc_tools.protoc --python_out=. --grpc_python_out=. --proto_path=. keras_tuner/protos/service.proto
 ```

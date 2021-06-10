@@ -37,7 +37,7 @@ jobs:
           pip install -e ".[tests]" --progress-bar off --upgrade
       - name: Test with pytest
         run: |
-          pytest --cov=kerastuner --cov-report xml:coverage.xml
+          pytest --cov=keras_tuner --cov-report xml:coverage.xml
       - name: Codecov
         uses: codecov/codecov-action@v1
         with:

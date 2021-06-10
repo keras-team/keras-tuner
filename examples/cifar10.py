@@ -3,7 +3,7 @@
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
-import kerastuner as kt
+import keras_tuner as kt
 
 
 def build_model(hp):
