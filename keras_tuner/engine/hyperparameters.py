@@ -70,7 +70,7 @@ def _check_int(val, arg):
 class HyperParameter(object):
     """HyperParameter base class.
 
-    Arguments:
+    Args:
         name: Str. Name of parameter. Must be unique.
         default: Default value to return for the
             parameter.
@@ -104,7 +104,7 @@ class HyperParameter(object):
 class Choice(HyperParameter):
     """Choice of one value among a predefined set of possible values.
 
-    Arguments:
+    Args:
         name: Str. Name of parameter. Must be unique.
         values: List of possible values. Values must be int, float,
             str, or bool. All values must be of the same type.
@@ -225,7 +225,7 @@ class Int(HyperParameter):
     Note that unlike Python's `range` function, `max_value` is *included* in
     the possible values this parameter can take on.
 
-    Arguments:
+    Args:
         name: Str. Name of parameter. Must be unique.
         min_value: Int. Lower limit of range (included).
         max_value: Int. Upper limit of range (included).
@@ -321,7 +321,7 @@ class Int(HyperParameter):
 class Float(HyperParameter):
     """Floating point range, can be evenly divided.
 
-    Arguments:
+    Args:
         name: Str. Name of parameter. Must be unique.
         min_value: Float. Lower bound of the range.
         max_value: Float. Upper bound of the range.
@@ -422,7 +422,7 @@ class Float(HyperParameter):
 class Boolean(HyperParameter):
     """Choice between True and False.
 
-    Arguments:
+    Args:
         name: Str. Name of parameter. Must be unique.
         default: Default value to return for the parameter.
             If unspecified, the default value will be False.
@@ -461,7 +461,7 @@ class Boolean(HyperParameter):
 class Fixed(HyperParameter):
     """Fixed, untunable value.
 
-    Arguments:
+    Args:
         name: Str. Name of parameter. Must be unique.
         value: Value to use (can be any JSON-serializable
             Python type).
@@ -529,7 +529,7 @@ class Fixed(HyperParameter):
 class HyperParameters(object):
     """Container for both a hyperparameter space, and current values.
 
-    Arguments:
+    Args:
         space: A list of HyperParameter instances.
         values: A dict mapping hyperparameter names to current values.
     """
@@ -577,10 +577,10 @@ class HyperParameters(object):
         Note that any Python code under this scope will execute
         regardless of whether the condition is met.
 
-        Arguments:
+        Args:
             parent_name: The name of the HyperParameter to condition on.
             parent_values: Values of the parent HyperParameter for which
-              HyperParameters under this scope should be considered active.
+                HyperParameters under this scope should be considered active.
         """
         parent_name = self._get_name(parent_name)  # Add name_scopes.
         if not self._exists(parent_name):
@@ -597,7 +597,7 @@ class HyperParameters(object):
     def is_active(self, hyperparameter):
         """Checks if a hyperparameter is currently active for a `Trial`.
 
-        # Arguments:
+        Args:
           hp: Str or `HyperParameter`. If str, checks if any
               `HyperParameter` with that name is active. If `HyperParameter`,
               checks that this object is active.
@@ -684,7 +684,7 @@ class HyperParameters(object):
     ):
         """Choice of one value among a predefined set of possible values.
 
-        Arguments:
+        Args:
             name: Str. Name of parameter. Must be unique.
             values: List of possible values. Values must be int, float,
                 str, or bool. All values must be of the same type.
@@ -729,7 +729,7 @@ class HyperParameters(object):
         Note that unlike Python's `range` function, `max_value` is *included* in
         the possible values this parameter can take on.
 
-        Arguments:
+        Args:
             name: Str. Name of parameter. Must be unique.
             min_value: Int. Lower limit of range (included).
             max_value: Int. Upper limit of range (included).
@@ -775,7 +775,7 @@ class HyperParameters(object):
     ):
         """Floating point range, can be evenly divided.
 
-        Arguments:
+        Args:
             name: Str. Name of parameter. Must be unique.
             min_value: Float. Lower bound of the range.
             max_value: Float. Upper bound of the range.
@@ -814,7 +814,7 @@ class HyperParameters(object):
     def Boolean(self, name, default=False, parent_name=None, parent_values=None):
         """Choice between True and False.
 
-        Arguments:
+        Args:
             name: Str. Name of parameter. Must be unique.
             default: Default value to return for the parameter.
                 If unspecified, the default value will be False.
@@ -837,7 +837,7 @@ class HyperParameters(object):
     def Fixed(self, name, value, parent_name=None, parent_values=None):
         """Fixed, untunable value.
 
-        Arguments:
+        Args:
             name: Str. Name of parameter. Must be unique.
             value: Value to use (can be any JSON-serializable
                 Python type).
@@ -886,7 +886,7 @@ class HyperParameters(object):
     def merge(self, hps, overwrite=True):
         """Merges hyperparameters into this object.
 
-        Arguments:
+        Args:
           hps: A `HyperParameters` object or list of `HyperParameter`
             objects.
           overwrite: bool. Whether existing `HyperParameter`s should

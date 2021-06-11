@@ -40,7 +40,7 @@ class HyperImageAugment(hypermodel.HyperModel):
 
     Only supporting augmentations available in Keras preprocessing layers currently.
 
-    Arguments:
+    Args:
         input_shape: Optional shape tuple, e.g. `(256, 256, 3)`.
         input_tensor: Optional Keras tensor (i.e. output of
             `layers.Input()`) to use as image input for the model.
@@ -231,7 +231,8 @@ class HyperImageAugment(hypermodel.HyperModel):
 
     def _register_transform(self, transform_name, transform_params):
         """Register a transform and format parameters for tuning the transform.
-        Arguments:
+
+        Args:
             transform_name: str, the name of the transform.
             trnasform_params: A number between [0, 1], a list of two numbers
                 between [0, 1] or None. If set to a single number x, the

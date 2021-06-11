@@ -48,12 +48,12 @@ class Condition(object):
 
         Determines whether this condition is true for the current `Trial`.
 
-        # Arguments:
+        Args:
             values: Dict. The active values for this `Trial`. Keys are the
                names of the hyperparameters.
 
-        # Returns:
-            bool.
+        Returns:
+            A boolean value of whether the condition is true.
         """
         raise NotImplementedError("Must be implemented in subclasses.")
 
@@ -90,12 +90,12 @@ class Parent(Condition):
 
     Example:
 
-    ```
+    ```python
     a = Choice('model', ['linear', 'dnn'])
     b = Int('num_layers', 5, 10, conditions=[kt.conditions.Parent('a', ['dnn'])])
     ```
 
-    # Arguments:
+    Args:
         name: The name of a `HyperParameter`.
         values: Values for which the `HyperParameter` this object is
             passed to should be considered active.

@@ -43,7 +43,7 @@ def matern_kernel(x, y=None):
 class GaussianProcessRegressor(object):
     """A Gaussian process regressor.
 
-    Arguments:
+    Args:
         alpha: Float. Value added to the diagonal of the kernel matrix
             during fitting. It represents the expected amount of noise
             in the observed performances in Bayesian optimization.
@@ -62,7 +62,7 @@ class GaussianProcessRegressor(object):
     def fit(self, x, y):
         """Fit the Gaussian process regressor.
 
-        Arguments:
+        Args:
             x: np.ndarray with shape (samples, features).
             y: np.ndarray with shape (samples,).
         """
@@ -85,7 +85,7 @@ class GaussianProcessRegressor(object):
     def predict(self, x):
         """Predict the mean and standard deviation of the target.
 
-        Arguments:
+        Args:
             x: np.ndarray with shape (samples, features).
 
         Returns:
@@ -122,7 +122,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
     be found [here](
     https://www.cse.wustl.edu/~garnett/cse515t/spring_2015/files/lecture_notes/12.pdf).
 
-    Arguments:
+    Args:
         objective: String or `keras_tuner.Objective`. If a string,
           the direction of the optimization (min or max) will be
           inferred.
@@ -345,7 +345,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
 class BayesianOptimization(multi_execution_tuner.MultiExecutionTuner):
     """BayesianOptimization tuning with Gaussian process.
 
-    Arguments:
+    Args:
         hypermodel: Instance of HyperModel class
             (or callable that takes hyperparameters
             and returns a Model instance).

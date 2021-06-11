@@ -25,21 +25,19 @@ from keras_tuner.engine import hypermodel
 class HyperResNet(hypermodel.HyperModel):
     """A ResNet HyperModel.
 
-    Arguments:
-        include_top: whether to include the fully-connected
-            layer at the top of the network.
-        input_shape: Optional shape tuple, e.g. `(256, 256, 3)`.
-              One of `input_shape` or `input_tensor` must be
-              specified.
-        input_tensor: Optional Keras tensor (i.e. output of
-            `layers.Input()`) to use as image input for the model.
-              One of `input_shape` or `input_tensor` must be
-              specified.
-        classes: optional number of classes to classify images
-            into, only to be specified if `include_top` is True,
-            and if no `weights` argument is specified.
-        **kwargs: Additional keyword arguments that apply to all
-            HyperModels. See `keras_tuner.HyperModel`.
+    Args:
+        include_top: whether to include the fully-connected layer at the top of
+            the network.
+        input_shape: Optional shape tuple, e.g. `(256, 256, 3)`.  One of
+            `input_shape` or `input_tensor` must be specified.
+        input_tensor: Optional Keras tensor (i.e. output of `layers.Input()`)
+            to use as image input for the model.  One of `input_shape` or
+            `input_tensor` must be specified.
+        classes: optional number of classes to classify images into, only to be
+            specified if `include_top` is True, and if no `weights` argument is
+            specified.
+        **kwargs: Additional keyword arguments that apply to all HyperModels.
+            See `keras_tuner.HyperModel`.
     """
 
     def __init__(
@@ -147,7 +145,8 @@ class HyperResNet(hypermodel.HyperModel):
 
 def block1(x, filters, kernel_size=3, stride=1, conv_shortcut=True, name=None):
     """A residual block.
-    # Arguments
+
+    Args:
         x: input tensor.
         filters: integer, filters of the bottleneck layer.
         kernel_size: default 3, kernel size of the bottleneck layer.
@@ -155,7 +154,8 @@ def block1(x, filters, kernel_size=3, stride=1, conv_shortcut=True, name=None):
         conv_shortcut: default True, use convolution shortcut if True,
             otherwise identity shortcut.
         name: string, block label.
-    # Returns
+
+    Returns:
         Output tensor for the residual block.
     """
     bn_axis = 3 if backend.image_data_format() == "channels_last" else 1
@@ -195,7 +195,7 @@ def block1(x, filters, kernel_size=3, stride=1, conv_shortcut=True, name=None):
 def stack1(x, filters, blocks, stride1=2, name=None):
     """A set of stacked residual blocks.
 
-    Arguments:
+    Args:
         x: input tensor.
         filters: integer, filters of the bottleneck layer in a block.
         blocks: integer, blocks in the stacked blocks.
@@ -214,7 +214,7 @@ def stack1(x, filters, blocks, stride1=2, name=None):
 def block2(x, filters, kernel_size=3, stride=1, conv_shortcut=False, name=None):
     """A residual block.
 
-    Arguments:
+    Args:
         x: input tensor.
         filters: integer, filters of the bottleneck layer.
         kernel_size: default 3, kernel size of the bottleneck layer.
@@ -265,7 +265,7 @@ def block2(x, filters, kernel_size=3, stride=1, conv_shortcut=False, name=None):
 def stack2(x, filters, blocks, stride1=2, name=None):
     """A set of stacked residual blocks.
 
-    Arguments:
+    Args:
         x: input tensor.
         filters: integer, filters of the bottleneck layer in a block.
         blocks: integer, blocks in the stacked blocks.
@@ -287,7 +287,7 @@ def block3(
 ):
     """A residual block.
 
-    Arguments:
+    Args:
         x: input tensor.
         filters: integer, filters of the bottleneck layer.
         kernel_size: default 3, kernel size of the bottleneck layer.
@@ -365,7 +365,7 @@ def block3(
 def stack3(x, filters, blocks, stride1=2, groups=32, name=None):
     """A set of stacked residual blocks.
 
-    Arguments:
+    Args:
         x: input tensor.
         filters: integer, filters of the bottleneck layer in a block.
         blocks: integer, blocks in the stacked blocks.

@@ -52,16 +52,13 @@ class HyperEfficientNet(hypermodel.HyperModel):
     ints [0, 255]. The output data should be one-hot encoded
     with number of classes matching `classes`.
 
-    Arguments:
-        input_shape: shape tuple, e.g. `(256, 256, 3)`.
-              Input images will be resized if different from
-              the default input size of the version of
-              efficientnet base model used.
-              One of `input_shape` or `input_tensor` must be
-              specified.
-        input_tensor: Keras tensor to use as image input for the model.
-              One of `input_shape` or `input_tensor` must be
-              specified.
+    Args:
+        input_shape: shape tuple, e.g. `(256, 256, 3)`. Input images will be
+            resized if different from the default input size of the version of
+            efficientnet base model used.  One of `input_shape` or
+            `input_tensor` must be specified.
+        input_tensor: Keras tensor to use as image input for the model.  One of
+            `input_shape` or `input_tensor` must be specified.
         classes: number of classes to classify images into.
         augmentation_model: optional Model or HyperModel for image augmentation.
         **kwargs: Additional keyword arguments that apply to all

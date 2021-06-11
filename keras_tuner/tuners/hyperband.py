@@ -56,7 +56,7 @@ class HyperbandOracle(oracle_module.Oracle):
             self.on_epoch_end(...)
     ```
 
-    Arguments:
+    Args:
         objective: String or `keras_tuner.Objective`. If a string,
           the direction of the optimization (min or max) will be
           inferred.
@@ -301,7 +301,7 @@ class Hyperband(multi_execution_tuner.MultiExecutionTuner):
             http://jmlr.org/papers/v18/16-558.html).
 
 
-    # Arguments
+    Args:
         hypermodel: Instance of HyperModel class
             (or callable that takes hyperparameters
             and returns a Model instance).

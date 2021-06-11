@@ -38,7 +38,7 @@ Objective = collections.namedtuple("Objective", "name direction")
 class Oracle(stateful.Stateful):
     """Implements a hyperparameter optimization algorithm.
 
-    Arguments:
+    Args:
         objective: String. Name of model metric to minimize
             or maximize, e.g. "val_accuracy".
         max_trials: The maximum number of hyperparameter
@@ -167,14 +167,14 @@ class Oracle(stateful.Stateful):
         A `Trial` corresponds to a unique set of hyperparameters to be run
         by `Tuner.run_trial`.
 
-        Arguments:
-          tuner_id: A ID that identifies the `Tuner` requesting a
-          `Trial`. `Tuners` that should run the same trial (for instance,
-           when running a multi-worker model) should have the same ID.
+        Args:
+            tuner_id: A ID that identifies the `Tuner` requesting a
+                `Trial`. `Tuners` that should run the same trial (for instance,
+                when running a multi-worker model) should have the same ID.
 
         Returns:
-          A `Trial` object containing a set of hyperparameter values to run
-          in a `Tuner`.
+            A `Trial` object containing a set of hyperparameter values to run
+            in a `Tuner`.
         """
         # Allow for multi-worker DistributionStrategy within a Trial.
         if tuner_id in self.ongoing_trials:
@@ -208,7 +208,7 @@ class Oracle(stateful.Stateful):
     def update_trial(self, trial_id, metrics, step=0):
         """Used by a worker to report the status of a trial.
 
-        Arguments:
+        Args:
             trial_id: A previously seen trial id.
             metrics: Dict of float. The current value of this
                 trial's metrics.
@@ -236,7 +236,7 @@ class Oracle(stateful.Stateful):
     def end_trial(self, trial_id, status="COMPLETED"):
         """Record the measured objective for a set of parameter values.
 
-        Arguments:
+        Args:
             trial_id: String. Unique id for this trial.
             status: String, one of "COMPLETED", "INVALID". A status of
                 "INVALID" means a trial has crashed or been deemed
@@ -267,7 +267,7 @@ class Oracle(stateful.Stateful):
 
         Already recorded parameters get ignored.
 
-        Arguments:
+        Args:
             hyperparameters: An updated HyperParameters object.
         """
         hps = hyperparameters.space
