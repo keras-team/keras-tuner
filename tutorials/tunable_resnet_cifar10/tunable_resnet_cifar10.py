@@ -17,8 +17,8 @@
 from tensorflow.keras.datasets import cifar10
 from tensorflow.keras.utils import to_categorical
 
-from kerastuner import RandomSearch
-from kerastuner.applications import HyperResNet
+from keras_tuner import RandomSearch
+from keras_tuner.applications import HyperResNet
 
 # Import the Cifar10 dataset.
 NUM_CLASSES = 10

@@ -39,6 +39,7 @@ setup(
         "scipy",
         "tensorboard",
         "ipython",
+        "kt-legacy",
     ],
     extras_require={
         "tests": [

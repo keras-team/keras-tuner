@@ -5,9 +5,9 @@ Different workflows are shown here.
 from tensorflow import keras
 from tensorflow.keras import layers
 
-from kerastuner.engine.hypermodel import HyperModel
-from kerastuner.engine.hyperparameters import HyperParameters
-from kerastuner.tuners import RandomSearch
+from keras_tuner.engine.hypermodel import HyperModel
+from keras_tuner.engine.hyperparameters import HyperParameters
+from keras_tuner.tuners import RandomSearch
 
 (x, y), (val_x, val_y) = keras.datasets.mnist.load_data()
 x = x.astype("float32") / 255.0
