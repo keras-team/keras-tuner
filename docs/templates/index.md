@@ -1,3 +1,5 @@
+<meta http-equiv="refresh" content="0; URL='https://keras.io/keras_tuner/'" />
+
 # Keras Tuner documentation
 
 
