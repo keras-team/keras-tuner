@@ -22,5 +22,4 @@ tmp.py
 .coverage.*
 htmlcov
 old_code/
-docs/site
 docs/sources
