@@ -23,11 +23,11 @@ import os
 def has_chief_oracle():
     """Checks for distributed tuning with a chief Oracle.
 
-    `CloudOracle` manages its own distribution and so should not set
-    "KERASTUNER_ORACLE_IP"
+    `CloudOracle` manages its own distribution so should not set
+    "KERASTUNER_ORACLE_IP".
 
     Returns:
-      bool. Whether distributed tuning with a chief Oracle should be run.
+        Boolean, whether distributed tuning with a chief Oracle should be run.
     """
     if "KERASTUNER_ORACLE_IP" in os.environ:
         if "KERASTUNER_ORACLE_PORT" not in os.environ:
