@@ -48,9 +48,9 @@ EFFICIENTNET_IMG_SIZE = {
 class HyperEfficientNet(hypermodel.HyperModel):
     """An EfficientNet HyperModel.
 
-    Models built by this HyperModel takes input image data in
-    ints [0, 255]. The output data should be one-hot encoded
-    with number of classes matching `classes`.
+    Models built by HyperEfficientNet take images with shape (height, width,
+    channels) as input. The output are one-hot encoded with the length matching
+    the number of classes specified by the `classes` argument.
 
     Args:
         input_shape: shape tuple, e.g. `(256, 256, 3)`. Input images will be
@@ -150,8 +150,8 @@ class HyperEfficientNet(hypermodel.HyperModel):
     def _compile(self, model, hp):
         """Compile model using hyperparameters in hp.
 
-        When subclassing the hypermodel, this may
-        be overriden to change behavior of compiling.
+        When subclassing the hypermodel, this may be overriden to change
+        behavior of compiling.
         """
         learning_rate = hp.Choice("learning_rate", [0.1, 0.01, 0.001], default=0.01)
         optimizer = tf.keras.optimizers.SGD(

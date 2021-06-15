@@ -36,14 +36,17 @@ TRANSFORMS = {
 
 
 class HyperImageAugment(hypermodel.HyperModel):
-    """Builds HyperModel for image augmentation.
+    """A image augmentation HyperModel.
 
-    Only supporting augmentations available in Keras preprocessing layers currently.
+    The HyperImageAugment class searches for the best combination of image
+    augmentation operations in Keras preprocessing layers. The input shape of
+    the model should be (height, width, channels). The output of the model is
+    of the same shape as the input.
 
     Args:
         input_shape: Optional shape tuple, e.g. `(256, 256, 3)`.
-        input_tensor: Optional Keras tensor (i.e. output of
-            `layers.Input()`) to use as image input for the model.
+        input_tensor: Optional Keras tensor (i.e. output of `layers.Input()`)
+            to use as image input for the model.
         rotate: A number between [0, 1], a list of two numbers between [0, 1]
             or None. Configures the search space of the factor of random
             rotation transform in the augmentation. A factor is chosen for each
@@ -85,8 +88,8 @@ class HyperImageAugment(hypermodel.HyperModel):
             determines number of layers of augment transforms are applied,
             each randomly picked from all available transform types with equal
             probability on each sample.
-        **kwargs: Additional keyword arguments that apply to all
-            HyperModels. See `keras_tuner.HyperModel`.
+        **kwargs: Additional keyword arguments that apply to all HyperModels.
+            See `keras_tuner.HyperModel`.
 
     Example:
 
@@ -233,7 +236,7 @@ class HyperImageAugment(hypermodel.HyperModel):
         """Register a transform and format parameters for tuning the transform.
 
         Args:
-            transform_name: str, the name of the transform.
+            transform_name: A string, the name of the transform.
             trnasform_params: A number between [0, 1], a list of two numbers
                 between [0, 1] or None. If set to a single number x, the
                 corresponding transform factor will be between [0, x].
