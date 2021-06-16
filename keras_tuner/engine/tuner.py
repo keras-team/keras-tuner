@@ -31,46 +31,45 @@ from . import tuner_utils
 class Tuner(base_tuner.BaseTuner):
     """Tuner class for Keras models.
 
-    May be subclassed to create new tuners.
+    This is the base Tuner class for all tuners for Keras models. It manages
+    the building, training, evaluation and saving of the Keras models. New
+    tuners can be created by subclassing the class.
 
     Args:
         oracle: Instance of Oracle class.
-        hypermodel: Instance of HyperModel class
-            (or callable that takes hyperparameters
-            and returns a Model instance).
-        max_model_size: Int. Maximum number of scalars
-            in the parameters of a model. Models larger
-            than this are rejected.
-        optimizer: Optional. Optimizer instance.
-            May be used to override the `optimizer`
-            argument in the `compile` step for the
-            models. If the hypermodel
-            does not compile the models it generates,
-            then this argument must be specified.
-        loss: Optional. May be used to override the `loss`
-            argument in the `compile` step for the
-            models. If the hypermodel
-            does not compile the models it generates,
-            then this argument must be specified.
-        metrics: Optional. May be used to override the
-            `metrics` argument in the `compile` step
-            for the models. If the hypermodel
-            does not compile the models it generates,
-            then this argument must be specified.
-        distribution_strategy: Optional. A TensorFlow
-            `tf.distribute` DistributionStrategy instance. If
-            specified, each trial will run under this scope. For
-            example, `tf.distribute.MirroredStrategy(['/gpu:0', '/gpu:1'])`
-            will run each trial on two GPUs. Currently only
-            single-worker strategies are supported.
-        directory: String. Path to the working directory (relative).
-        project_name: Name to use as prefix for files saved
-            by this Tuner.
-        logger: Optional. Instance of Logger class, used for streaming data
-            to Cloud Service for monitoring.
-        tuner_id: Optional. If set, use this value as the id of this Tuner.
-        overwrite: Bool, default `False`. If `False`, reloads an existing project
-            of the same name if one is found. Otherwise, overwrites the project.
+        hypermodel: Instance of HyperModel class (or callable that takes
+            hyperparameters and returns a Model instance).
+        max_model_size: Integer, maximum number of scalars in the parameters of
+            a model. Models larger than this are rejected.
+        optimizer: Optional Optimizer instance.  May be used to override the
+            `optimizer` argument in the `compile` step for the models. If the
+            hypermodel does not compile the models it generates, then this
+            argument must be specified.
+        loss: Optional loss. May be used to override the `loss` argument in the
+            `compile` step for the models. If the hypermodel does not compile
+            the models it generates, then this argument must be specified.
+        metrics: Optional metrics. May be used to override the `metrics`
+            argument in the `compile` step for the models. If the hypermodel
+            does not compile the models it generates, then this argument must
+            be specified.
+        distribution_strategy: Optional instance of `tf.distribute.Strategy`.
+            If specified, each trial will run under this scope. For example,
+            `tf.distribute.MirroredStrategy(['/gpu:0', '/gpu:1'])` will run
+            each trial on two GPUs. Currently only single-worker strategies are
+            supported.
+        directory: A string, the relative path to the working directory.
+        project_name: A string, the name to use as prefix for files saved by
+            this Tuner.
+        logger: Optional instance of Logger class, used for streaming data to
+            Cloud Service for monitoring.
+        tuner_id: Optional string, used as the ID of this Tuner.
+        overwrite: Boolean, defaults to `False`. If `False`, reloads an
+            existing project of the same name if one is found. Otherwise,
+            overwrites the project.
+
+    Attributes:
+        remaining_trials: Number of trials remaining, `None` if `max_trials` is
+            not set. This is useful when resuming a previously stopped search.
     """
 
     def __init__(
@@ -135,9 +134,9 @@ class Tuner(base_tuner.BaseTuner):
         and tune other fit_args and fit_kwargs.
 
         Args:
-            trial: A `Trial` instance that contains the information
-              needed to run this trial. `Hyperparameters` can be accessed
-              via `trial.hyperparameters`.
+            trial: A `Trial` instance that contains the information needed to
+                run this trial. `Hyperparameters` can be accessed via
+                `trial.hyperparameters`.
             fit_args: Positional arguments passed by `search`.
             fit_kwargs: Keyword arguments passed by `search`.
 
@@ -150,13 +149,16 @@ class Tuner(base_tuner.BaseTuner):
     def run_trial(self, trial, *fit_args, **fit_kwargs):
         """Evaluates a set of hyperparameter values.
 
-        This method is called during `search` to evaluate a set of
-        hyperparameters.
+        This method is called multiple times during `search` to build and
+        evaluate the models with different hyperparameters.
+
+        The method is responsible for reporting metrics related to the `Trial`
+        to the `Oracle` via `self.oracle.update_trial`.
 
         Args:
-            trial: A `Trial` instance that contains the information
-              needed to run this trial. `Hyperparameters` can be accessed
-              via `trial.hyperparameters`.
+            trial: A `Trial` instance that contains the information needed to
+                run this trial. `Hyperparameters` can be accessed via
+                `trial.hyperparameters`.
             *fit_args: Positional arguments passed by `search`.
             **fit_kwargs: Keyword arguments passed by `search`.
         """
@@ -207,8 +209,30 @@ class Tuner(base_tuner.BaseTuner):
             )
         return model
 
+    def on_batch_begin(self, trial, model, batch, logs):
+        """Called at the beginning of a batch.
+
+        Args:
+            trial: A `Trial` instance.
+            model: A Keras `Model`.
+            batch: The current batch number within the curent epoch.
+            logs: Additional metrics.
+        """
+        pass
+
+    def on_batch_end(self, trial, model, batch, logs=None):
+        """Called at the end of a batch.
+
+        Args:
+            trial: A `Trial` instance.
+            model: A Keras `Model`.
+            batch: The current batch number within the curent epoch.
+            logs: Additional metrics.
+        """
+        pass
+
     def on_epoch_begin(self, trial, model, epoch, logs=None):
-        """A hook called at the start of every epoch.
+        """Called at the beginning of an epoch.
 
         Args:
             trial: A `Trial` instance.
@@ -218,32 +242,8 @@ class Tuner(base_tuner.BaseTuner):
         """
         pass
 
-    def on_batch_begin(self, trial, model, batch, logs):
-        """A hook called at the start of every batch.
-
-        Args:
-            trial: A `Trial` instance.
-            model: A Keras `Model`.
-            batch: The current batch number within the
-              curent epoch.
-            logs: Additional metrics.
-        """
-        pass
-
-    def on_batch_end(self, trial, model, batch, logs=None):
-        """A hook called at the end of every batch.
-
-        Args:
-            trial: A `Trial` instance.
-            model: A Keras `Model`.
-            batch: The current batch number within the
-              curent epoch.
-            logs: Additional metrics.
-        """
-        pass
-
     def on_epoch_end(self, trial, model, epoch, logs=None):
-        """A hook called at the end of every epoch.
+        """Called at the end of an epoch.
 
         Args:
             trial: A `Trial` instance.
@@ -265,16 +265,17 @@ class Tuner(base_tuner.BaseTuner):
         The models are loaded with the weights corresponding to
         their best checkpoint (at the end of the best epoch of best trial).
 
-        This method is only a convenience shortcut. For best performance, It is
-        recommended to retrain your Model on the full dataset using the best
-        hyperparameters found during `search`.
+        This method is for querying the the models trained during the search.
+        For best performance, it is recommended to retrain your Model on the
+        full dataset using the best hyperparameters found during `search`,
+        which can be obtained using `tuner.get_best_hyperparameters()`.
 
         Args:
-            num_models (int, optional): Number of best models to return.
-                Models will be returned in sorted order. Defaults to 1.
+            num_models: Optional number of best models to return.
+                Defaults to 1.
 
         Returns:
-            List of trained model instances.
+            List of trained model instances sorted from the best to the worst.
         """
         # Method only exists in this class for the docstring override.
         return super(Tuner, self).get_best_models(num_models)

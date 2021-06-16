@@ -35,20 +35,27 @@ from . import tuner_utils
 class BaseTuner(stateful.Stateful):
     """Tuner base class.
 
-    May be subclassed to create new tuners, including for non-Keras models.
+    BaseTuner is the base class for all Tuners, which manages the search loop,
+    Oracle, logging, saving, etc. Tuners for non-Keras models can be created
+    by subclassing BaseTuner.
 
     Args:
         oracle: Instance of Oracle class.
         hypermodel: Instance of HyperModel class
             (or callable that takes hyperparameters
             and returns a Model instance).
-        directory: String. Path to the working directory (relative).
-        project_name: Name to use as prefix for files saved
-            by this Tuner.
-        logger: Optional. Instance of Logger class, used for streaming data
-            to Cloud Service for monitoring.
-        overwrite: Bool, default `False`. If `False`, reloads an existing project
-            of the same name if one is found. Otherwise, overwrites the project.
+        directory: A string, the relative path to the working directory.
+        project_name: A string, the name to use as prefix for files saved by
+            this Tuner.
+        logger: Optional instance of Logger class, used for streaming data to
+            Cloud Service for monitoring.
+        overwrite: Boolean, defaults to `False`. If `False`, reloads an
+            existing project of the same name if one is found. Otherwise,
+            overwrites the project.
+
+    Attributes:
+        remaining_trials: Number of trials remaining, `None` if `max_trials` is
+            not set. This is useful when resuming a previously stopped search.
     """
 
     def __init__(
@@ -141,12 +148,11 @@ class BaseTuner(stateful.Stateful):
     def run_trial(self, trial, *fit_args, **fit_kwargs):
         """Evaluates a set of hyperparameter values.
 
-        This method is called during `search` to evaluate a set of
-        hyperparameters.
+        This method is called multiple times during `search` to build and
+        evaluate the models with different hyperparameters.
 
-        For subclass implementers: This method is responsible for
-        reporting metrics related to the `Trial` to the `Oracle`
-        via `self.oracle.update_trial`.
+        The method is responsible for reporting metrics related to the `Trial`
+        to the `Oracle` via `self.oracle.update_trial`.
 
         Example:
 
@@ -161,9 +167,9 @@ class BaseTuner(stateful.Stateful):
         ```
 
         Args:
-            trial: A `Trial` instance that contains the information
-              needed to run this trial. Hyperparameters can be accessed
-              via `trial.hyperparameters`.
+            trial: A `Trial` instance that contains the information needed to
+                run this trial. Hyperparameters can be accessed via
+                `trial.hyperparameters`.
             *fit_args: Positional arguments passed by `search`.
             **fit_kwargs: Keyword arguments passed by `search`.
         """
@@ -173,31 +179,29 @@ class BaseTuner(stateful.Stateful):
         """Saves a Model for a given trial.
 
         Args:
-            trial_id: The ID of the `Trial` that corresponds to this Model.
+            trial_id: The ID of the `Trial` corresponding to this Model.
             model: The trained model.
-            step: For models that report intermediate results to the `Oracle`,
-              the step that this saved file should correspond to. For example,
-              for Keras models this is the number of epochs trained.
+            step: Integer, for models that report intermediate results to the
+                `Oracle`, the step the saved file correspond to. For example, for
+                Keras models this is the number of epochs trained.
         """
         raise NotImplementedError
 
     def load_model(self, trial):
         """Loads a Model from a given trial.
 
+        For models that report intermediate results to the `Oracle`, generally
+        `load_model` should load the best reported `step` by relying of
+        `trial.best_step`.
+
         Args:
-            trial: A `Trial` instance. For models that report intermediate
-              results to the `Oracle`, generally `load_model` should load the
-              best reported `step` by relying of `trial.best_step`
+            trial: A `Trial` instance, the `Trial` corresponding to the model
+                to load.
         """
         raise NotImplementedError
 
-    def on_search_begin(self):
-        """A hook called at the beginning of `search`."""
-        if self.logger:
-            self.logger.register_tuner(self.get_state())
-
     def on_trial_begin(self, trial):
-        """A hook called before starting each trial.
+        """Called at the beginning of a trial.
 
         Args:
             trial: A `Trial` instance.
@@ -207,7 +211,7 @@ class BaseTuner(stateful.Stateful):
         self._display.on_trial_begin(self.oracle.get_trial(trial.trial_id))
 
     def on_trial_end(self, trial):
-        """A hook called after each trial is run.
+        """Called at the end of a trial.
 
         Args:
             trial: A `Trial` instance.
@@ -222,24 +226,30 @@ class BaseTuner(stateful.Stateful):
         self._display.on_trial_end(self.oracle.get_trial(trial.trial_id))
         self.save()
 
+    def on_search_begin(self):
+        """Called at the beginning of the `search` method."""
+        if self.logger:
+            self.logger.register_tuner(self.get_state())
+
     def on_search_end(self):
-        """A hook called at the end of `search`."""
+        """Called at the end of the `search` method."""
         if self.logger:
             self.logger.exit()
 
     def get_best_models(self, num_models=1):
         """Returns the best model(s), as determined by the objective.
 
-        This method is only a convenience shortcut. For best performance, It is
-        recommended to retrain your Model on the full dataset using the best
-        hyperparameters found during `search`.
+        This method is for querying the the models trained during the search.
+        For best performance, it is recommended to retrain your Model on the
+        full dataset using the best hyperparameters found during `search`,
+        which can be obtained using `tuner.get_best_hyperparameters()`.
 
         Args:
-            num_models (int, optional). Number of best models to return.
-                Models will be returned in sorted order. Defaults to 1.
+            num_models: Optional number of best models to return.
+                Defaults to 1.
 
         Returns:
-            List of trained model instances.
+            List of trained model instances sorted from the best to the worst.
         """
         best_trials = self.oracle.get_best_trials(num_models)
         models = [self.load_model(trial) for trial in best_trials]
@@ -259,20 +269,21 @@ class BaseTuner(stateful.Stateful):
         ```
 
         Args:
-            num_trials: (int, optional). Number of `HyperParameters` objects to
-              return. `HyperParameters` will be returned in sorted order based on
-              trial performance.
+            num_trials: Optional number of `HyperParameters` objects to return.
 
         Returns:
-            List of `HyperParameter` objects.
+            List of `HyperParameter` objects sorted from the best to the worst.
         """
         return [t.hyperparameters for t in self.oracle.get_best_trials(num_trials)]
 
     def search_space_summary(self, extended=False):
         """Print search space summary.
 
+        The methods prints a summary of the hyperparameters in the search
+        space, which can be called before calling the `search` method.
+
         Args:
-            extended: Bool, optional. Display extended summary.
+            extended: Optional boolean, whether to display an extended summary.
                 Defaults to False.
         """
         print("Search space summary")
@@ -287,9 +298,11 @@ class BaseTuner(stateful.Stateful):
     def results_summary(self, num_trials=10):
         """Display tuning results summary.
 
+        The method prints a summary of the search results including the
+        hyperparameter values and evaluation results for each trial.
+
         Args:
-            num_trials (int, optional): Number of trials to display.
-                Defaults to 10.
+            num_trials: Optional number of trials to display. Defaults to 10.
         """
         print("Results summary")
         print("Results in %s" % self.project_dir)
@@ -304,7 +317,8 @@ class BaseTuner(stateful.Stateful):
     def remaining_trials(self):
         """Returns the number of trials remaining.
 
-        Will return `None` if `max_trials` is not set.
+        Will return `None` if `max_trials` is not set. This is useful when
+        resuming a previously stopped search.
         """
         return self.oracle.remaining_trials()
 

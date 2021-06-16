@@ -44,10 +44,10 @@ class GaussianProcessRegressor(object):
     """A Gaussian process regressor.
 
     Args:
-        alpha: Float. Value added to the diagonal of the kernel matrix
-            during fitting. It represents the expected amount of noise
-            in the observed performances in Bayesian optimization.
-        seed: Int. Random seed.
+        alpha: Float, the value added to the diagonal of the kernel matrix
+            during fitting. It represents the expected amount of noise in the
+            observed performances in Bayesian optimization.
+        seed: Optional int, the random seed.
     """
 
     def __init__(self, alpha, seed=None):
@@ -123,36 +123,33 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
     https://www.cse.wustl.edu/~garnett/cse515t/spring_2015/files/lecture_notes/12.pdf).
 
     Args:
-        objective: String or `keras_tuner.Objective`. If a string,
-          the direction of the optimization (min or max) will be
-          inferred.
-        max_trials: Int. Total number of trials
-            (model configurations) to test at most.
-            Note that the oracle may interrupt the search
-            before `max_trial` models have been tested if the search space has been
-            exhausted.
-        num_initial_points: (Optional) Int. The number of randomly generated samples
-            as initial training data for Bayesian optimization. If not specified,
-            a value of 3 times the dimensionality of the hyperparameter space is
-            used.
-        alpha: Float. Value added to the diagonal of the kernel matrix
-            during fitting. It represents the expected amount of noise
-            in the observed performances in Bayesian optimization.
-        beta: Float. The balancing factor of exploration and exploitation.
-            The larger it is, the more explorative it is.
-        seed: Int. Random seed.
-        hyperparameters: HyperParameters class instance.
-            Can be used to override (or register in advance)
-            hyperparameters in the search space.
-        tune_new_entries: Whether hyperparameter entries
-            that are requested by the hypermodel
-            but that were not specified in `hyperparameters`
-            should be added to the search space, or not.
-            If not, then the default value for these parameters
-            will be used.
-        allow_new_entries: Whether the hypermodel is allowed
-            to request hyperparameter entries not listed in
-            `hyperparameters`.
+        objective: A string or `keras_tuner.Objective` instance. If a string, the
+            direction of the optimization (min or max) will be inferred.
+        max_trials: Integer, the total number of trials (model configurations)
+            to test at most. Note that the oracle may interrupt the search
+            before `max_trial` models have been tested if the search space has
+            been exhausted.
+        num_initial_points: Optional number of randomly generated samples as
+            initial training data for Bayesian optimization. If left
+            unspecified, a value of 3 times the dimensionality of the
+            hyperparameter space is used.
+        alpha: Float, the value added to the diagonal of the kernel matrix
+            during fitting. It represents the expected amount of noise in the
+            observed performances in Bayesian optimization. Defaults to 1e-4.
+        beta: Float, the balancing factor of exploration and exploitation. The
+            larger it is, the more explorative it is. Defaults to 2.6.
+        seed: Optional integer, the random seed.
+        hyperparameters: Optional HyperParameters instance. Can be used to
+            override (or register in advance) hyperparameters in the search
+            space.
+        tune_new_entries: Boolean, whether hyperparameter entries that are
+            requested by the hypermodel but that were not specified in
+            `hyperparameters` should be added to the search space, or not. If
+            not, then the default value for these parameters will be used.
+            Defaults to True.
+        allow_new_entries: Boolean, whether the hypermodel is allowed to
+            request hyperparameter entries not listed in `hyperparameters`.
+            Defaults to True.
     """
 
     def __init__(
@@ -346,37 +343,37 @@ class BayesianOptimization(multi_execution_tuner.MultiExecutionTuner):
     """BayesianOptimization tuning with Gaussian process.
 
     Args:
-        hypermodel: Instance of HyperModel class
-            (or callable that takes hyperparameters
-            and returns a Model instance).
-        objective: String. Name of model metric to minimize
-            or maximize, e.g. "val_accuracy".
-        max_trials: Int. Total number of trials
-            (model configurations) to test at most.
-            Note that the oracle may interrupt the search
+        hypermodel: Instance of HyperModel class (or callable that takes
+            hyperparameters and returns a Model instance).
+        objective: A string or `keras_tuner.Objective` instance. If a string, the
+            direction of the optimization (min or max) will be inferred.
+        max_trials: Integer, the total number of trials (model configurations)
+            to test at most. Note that the oracle may interrupt the search
             before `max_trial` models have been tested if the search space has
             been exhausted.
-        num_initial_points: Int. The number of randomly generated samples as initial
-            training data for Bayesian optimization.
-        alpha: Float or array-like. Value added to the diagonal of
-            the kernel matrix during fitting.
-        beta: Float. The balancing factor of exploration and exploitation.
-            The larger it is, the more explorative it is.
-        seed: Int. Random seed.
-        hyperparameters: HyperParameters class instance.
-            Can be used to override (or register in advance)
-            hyperparamters in the search space.
-        tune_new_entries: Whether hyperparameter entries
-            that are requested by the hypermodel
-            but that were not specified in `hyperparameters`
-            should be added to the search space, or not.
-            If not, then the default value for these parameters
-            will be used.
-        allow_new_entries: Whether the hypermodel is allowed
-            to request hyperparameter entries not listed in
-            `hyperparameters`.
-        **kwargs: Keyword arguments relevant to all `Tuner` subclasses.
-            Please see the docstring for `Tuner`.
+        num_initial_points: Optional number of randomly generated samples as
+            initial training data for Bayesian optimization. If left
+            unspecified, a value of 3 times the dimensionality of the
+            hyperparameter space is used.
+        alpha: Float, the value added to the diagonal of the kernel matrix
+            during fitting. It represents the expected amount of noise in the
+            observed performances in Bayesian optimization. Defaults to 1e-4.
+        beta: Float, the balancing factor of exploration and exploitation. The
+            larger it is, the more explorative it is. Defaults to 2.6.
+        seed: Optional integer, the random seed.
+        hyperparameters: Optional HyperParameters instance. Can be used to
+            override (or register in advance) hyperparameters in the search
+            space.
+        tune_new_entries: Boolean, whether hyperparameter entries that are
+            requested by the hypermodel but that were not specified in
+            `hyperparameters` should be added to the search space, or not. If
+            not, then the default value for these parameters will be used.
+            Defaults to True.
+        allow_new_entries: Boolean, whether the hypermodel is allowed to
+            request hyperparameter entries not listed in `hyperparameters`.
+            Defaults to True.
+        **kwargs: Keyword arguments relevant to all `Tuner` subclasses. Please
+            see the docstring for `Tuner`.
     """
 
     def __init__(
