@@ -35,7 +35,7 @@ class HyperbandOracle(oracle_module.Oracle):
     These hyperparameters will be set during the "successive halving" portion
     of the Hyperband algorithm.
 
-    Example:
+    Examples:
 
     ```python
     def run_trial(self, trial, *args, **kwargs):
@@ -57,33 +57,33 @@ class HyperbandOracle(oracle_module.Oracle):
     ```
 
     Args:
-        objective: String or `keras_tuner.Objective`. If a string,
-          the direction of the optimization (min or max) will be
-          inferred.
-        max_epochs: Int. The maximum number of epochs to train one model. It is
-          recommended to set this to a value slightly higher than the expected epochs
-          to convergence for your largest Model, and to use early stopping during
-          training (for example, via `tf.keras.callbacks.EarlyStopping`).
-        factor: Int. Reduction factor for the number of epochs
-            and number of models for each bracket.
-        hyperband_iterations: Int >= 1. The number of times to iterate over the full
-          Hyperband algorithm. One iteration will run approximately
-          `max_epochs * (math.log(max_epochs, factor) ** 2)` cumulative epochs
-          across all trials. It is recommended to set this to as high a value
-          as is within your resource budget.
-        seed: Int. Random seed.
-        hyperparameters: HyperParameters class instance.
-            Can be used to override (or register in advance)
-            hyperparameters in the search space.
-        tune_new_entries: Whether hyperparameter entries
-            that are requested by the hypermodel
-            but that were not specified in `hyperparameters`
-            should be added to the search space, or not.
-            If not, then the default value for these parameters
-            will be used.
-        allow_new_entries: Whether the hypermodel is allowed
-            to request hyperparameter entries not listed in
-            `hyperparameters`.
+        objective: A string or `keras_tuner.Objective` instance. If a string,
+            the direction of the optimization (min or max) will be inferred.
+        max_epochs: Integer, the maximum number of epochs to train one model.
+            It is recommended to set this to a value slightly higher than the
+            expected epochs to convergence for your largest Model, and to use
+            early stopping during training (for example, via
+            `tf.keras.callbacks.EarlyStopping`).
+        factor: Integer, the reduction factor for the number of epochs
+            and number of models for each bracket. Defaults to 3.
+        hyperband_iterations: Integer, at least 1, the number of times to
+            iterate over the full Hyperband algorithm. One iteration will run
+            approximately `max_epochs * (math.log(max_epochs, factor) ** 2)`
+            cumulative epochs across all trials. It is recommended to set this
+            to as high a value as is within your resource budget. Defaults to
+            1.
+        seed: Optional integer, the random seed.
+        hyperparameters: Optional HyperParameters instance. Can be used to
+            override (or register in advance) hyperparameters in the search
+            space.
+        tune_new_entries: Boolean, whether hyperparameter entries that are
+            requested by the hypermodel but that were not specified in
+            `hyperparameters` should be added to the search space, or not. If
+            not, then the default value for these parameters will be used.
+            Defaults to True.
+        allow_new_entries: Boolean, whether the hypermodel is allowed to
+            request hyperparameter entries not listed in `hyperparameters`.
+            Defaults to True.
     """
 
     def __init__(
@@ -302,35 +302,35 @@ class Hyperband(multi_execution_tuner.MultiExecutionTuner):
 
 
     Args:
-        hypermodel: Instance of HyperModel class
-            (or callable that takes hyperparameters
-            and returns a Model instance).
-        objective: String. Name of model metric to minimize
-            or maximize, e.g. "val_accuracy".
-        max_epochs: Int. The maximum number of epochs to train one model. It is
-          recommended to set this to a value slightly higher than the expected time
-          to convergence for your largest Model, and to use early stopping during
-          training (for example, via `tf.keras.callbacks.EarlyStopping`).
-        factor: Int. Reduction factor for the number of epochs
-            and number of models for each bracket.
-        hyperband_iterations: Int >= 1. The number of times to iterate over the full
-          Hyperband algorithm. One iteration will run approximately
-          `max_epochs * (math.log(max_epochs, factor) ** 2)` cumulative epochs
-          across all trials. It is recommended to set this to as high a value
-          as is within your resource budget.
-        seed: Int. Random seed.
-        hyperparameters: HyperParameters class instance.
-            Can be used to override (or register in advance)
-            hyperparamters in the search space.
-        tune_new_entries: Whether hyperparameter entries
-            that are requested by the hypermodel
-            but that were not specified in `hyperparameters`
-            should be added to the search space, or not.
-            If not, then the default value for these parameters
-            will be used.
-        allow_new_entries: Whether the hypermodel is allowed
-            to request hyperparameter entries not listed in
-            `hyperparameters`.
+        hypermodel: A `HyperModel` instance (or callable that takes
+            hyperparameters and returns a Model instance).
+        objective: A string or `keras_tuner.Objective` instance. If a string,
+            the direction of the optimization (min or max) will be inferred.
+        max_epochs: Integer, the maximum number of epochs to train one model.
+            It is recommended to set this to a value slightly higher than the
+            expected epochs to convergence for your largest Model, and to use
+            early stopping during training (for example, via
+            `tf.keras.callbacks.EarlyStopping`).
+        factor: Integer, the reduction factor for the number of epochs
+            and number of models for each bracket. Defaults to 3.
+        hyperband_iterations: Integer, at least 1, the number of times to
+            iterate over the full Hyperband algorithm. One iteration will run
+            approximately `max_epochs * (math.log(max_epochs, factor) ** 2)`
+            cumulative epochs across all trials. It is recommended to set this
+            to as high a value as is within your resource budget. Defaults to
+            1.
+        seed: Optional integer, the random seed.
+        hyperparameters: Optional HyperParameters instance. Can be used to
+            override (or register in advance) hyperparameters in the search
+            space.
+        tune_new_entries: Boolean, whether hyperparameter entries that are
+            requested by the hypermodel but that were not specified in
+            `hyperparameters` should be added to the search space, or not. If
+            not, then the default value for these parameters will be used.
+            Defaults to True.
+        allow_new_entries: Boolean, whether the hypermodel is allowed to
+            request hyperparameter entries not listed in `hyperparameters`.
+            Defaults to True.
         **kwargs: Keyword arguments relevant to all `Tuner` subclasses.
             Please see the docstring for `Tuner`.
     """

@@ -123,8 +123,8 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
     https://www.cse.wustl.edu/~garnett/cse515t/spring_2015/files/lecture_notes/12.pdf).
 
     Args:
-        objective: A string or `keras_tuner.Objective` instance. If a string, the
-            direction of the optimization (min or max) will be inferred.
+        objective: A string or `keras_tuner.Objective` instance. If a string,
+            the direction of the optimization (min or max) will be inferred.
         max_trials: Integer, the total number of trials (model configurations)
             to test at most. Note that the oracle may interrupt the search
             before `max_trial` models have been tested if the search space has
@@ -343,10 +343,10 @@ class BayesianOptimization(multi_execution_tuner.MultiExecutionTuner):
     """BayesianOptimization tuning with Gaussian process.
 
     Args:
-        hypermodel: Instance of HyperModel class (or callable that takes
+        hypermodel: A `HyperModel` instance (or callable that takes
             hyperparameters and returns a Model instance).
-        objective: A string or `keras_tuner.Objective` instance. If a string, the
-            direction of the optimization (min or max) will be inferred.
+        objective: A string or `keras_tuner.Objective` instance. If a string,
+            the direction of the optimization (min or max) will be inferred.
         max_trials: Integer, the total number of trials (model configurations)
             to test at most. Note that the oracle may interrupt the search
             before `max_trial` models have been tested if the search space has

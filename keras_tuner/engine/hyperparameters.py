@@ -71,11 +71,11 @@ class HyperParameter(object):
     """HyperParameter base class.
 
     Args:
-        name: Str. Name of parameter. Must be unique.
-        default: Default value to return for the
-            parameter.
-        conditions: A list of `Condition`s for this object to be
-            considered active.
+        name: A string. the name of parameter. Must be unique for each
+            `HyperParameter` instance in the search space.
+        default: The default value to return for the parameter.
+        conditions: A list of `Condition`s for this object to be considered
+            active.
     """
 
     def __init__(self, name, default=None, conditions=None):
@@ -105,13 +105,14 @@ class Choice(HyperParameter):
     """Choice of one value among a predefined set of possible values.
 
     Args:
-        name: Str. Name of parameter. Must be unique.
-        values: List of possible values. Values must be int, float,
+        name: A string. the name of parameter. Must be unique for each
+            `HyperParameter` instance in the search space.
+        values: A list of possible values. Values must be int, float,
             str, or bool. All values must be of the same type.
-        ordered: Whether the values passed should be considered to
-            have an ordering. This defaults to `True` for float/int
-            values. Must be `False` for any other values.
-        default: Default value to return for the parameter.
+        ordered: Optional boolean, whether the values passed should be
+            considered to have an ordering. Defaults to `True` for float/int
+            values.  Must be `False` for any other values.
+        default: Optional default value to return for the parameter.
             If unspecified, the default value will be:
             - None if None is one of the choices in `values`
             - The first entry in `values` otherwise.
@@ -226,18 +227,18 @@ class Int(HyperParameter):
     the possible values this parameter can take on.
 
     Args:
-        name: Str. Name of parameter. Must be unique.
-        min_value: Int. Lower limit of range (included).
-        max_value: Int. Upper limit of range (included).
-        step: Int. Step of range.
-        sampling: Optional. One of "linear", "log",
-            "reverse_log". Acts as a hint for an initial prior
-            probability distribution for how this value should
-            be sampled, e.g. "log" will assign equal
+        name: A string. the name of parameter. Must be unique for each
+            `HyperParameter` instance in the search space.
+        min_value: Integer, the lower limit of range, inclusive.
+        max_value: Integer, the upper limit of range, inclusive.
+        step: Integer, the distance between two consecutive samples in the
+            range. Defaults to 1.
+        sampling: Optional string. One of "linear", "log", "reverse_log". Acts
+            as a hint for an initial prior probability distribution for how
+            this value should be sampled, e.g. "log" will assign equal
             probabilities to each order of magnitude range.
-        default: Default value to return for the parameter.
-            If unspecified, the default value will be
-            `min_value`.
+        default: Integer, default value to return for the parameter. If
+            unspecified, the default value will be `min_value`.
     """
 
     def __init__(
@@ -322,21 +323,20 @@ class Float(HyperParameter):
     """Floating point range, can be evenly divided.
 
     Args:
-        name: Str. Name of parameter. Must be unique.
-        min_value: Float. Lower bound of the range.
-        max_value: Float. Upper bound of the range.
-        step: Optional. Float, e.g. 0.1.
-            smallest meaningful distance between two values.
-            Whether step should be specified is Oracle dependent,
-            since some Oracles can infer an optimal step automatically.
-        sampling: Optional. One of "linear", "log",
-            "reverse_log". Acts as a hint for an initial prior
-            probability distribution for how this value should
-            be sampled, e.g. "log" will assign equal
+        name: A string. the name of parameter. Must be unique for each
+            `HyperParameter` instance in the search space.
+        min_value: Float, the lower bound of the range.
+        max_value: Float, the upper bound of the range.
+        step: Optional float, e.g. 0.1, the smallest meaningful distance
+            between two values. Whether step should be specified is Oracle
+            dependent, since some Oracles can infer an optimal step
+            automatically.
+        sampling: Optional string. One of "linear", "log", "reverse_log". Acts
+            as a hint for an initial prior probability distribution for how
+            this value should be sampled, e.g. "log" will assign equal
             probabilities to each order of magnitude range.
-        default: Default value to return for the parameter.
-            If unspecified, the default value will be
-            `min_value`.
+        default: Float, the default value to return for the parameter. If
+            unspecified, the default value will be `min_value`.
     """
 
     def __init__(
@@ -423,8 +423,9 @@ class Boolean(HyperParameter):
     """Choice between True and False.
 
     Args:
-        name: Str. Name of parameter. Must be unique.
-        default: Default value to return for the parameter.
+        name: A string. the name of parameter. Must be unique for each
+            `HyperParameter` instance in the search space.
+        default: Boolean, the default value to return for the parameter.
             If unspecified, the default value will be False.
     """
 
@@ -462,9 +463,9 @@ class Fixed(HyperParameter):
     """Fixed, untunable value.
 
     Args:
-        name: Str. Name of parameter. Must be unique.
-        value: Value to use (can be any JSON-serializable
-            Python type).
+        name: A string. the name of parameter. Must be unique for each
+            `HyperParameter` instance in the search space.
+        value: The value to use (can be any JSON-serializable Python type).
     """
 
     def __init__(self, name, value, **kwargs):
@@ -529,8 +530,10 @@ class Fixed(HyperParameter):
 class HyperParameters(object):
     """Container for both a hyperparameter space, and current values.
 
-    Args:
-        space: A list of HyperParameter instances.
+    A `HyperParameters` instance can be pass to `HyperModel.build(hp)` as an
+    argument to build a model.
+
+    Attributes:
         values: A dict mapping hyperparameter names to current values.
     """
 
@@ -566,21 +569,50 @@ class HyperParameters(object):
     def conditional_scope(self, parent_name, parent_values):
         """Opens a scope to create conditional HyperParameters.
 
-        All HyperParameters created under this scope will only be active
-        when the parent HyperParameter specified by `parent_name` is
-        equal to one of the values passed in `parent_values`.
+        All `HyperParameter`s created under this scope will only be active when
+        the parent `HyperParameter` specified by `parent_name` is equal to one
+        of the values passed in `parent_values`.
 
-        When the condition is not met, creating a HyperParameter under
-        this scope will register the HyperParameter, but will return
-        `None` rather than a concrete value.
+        When the condition is not met, creating a `HyperParameter` under this
+        scope will register the `HyperParameter`, but will return `None` rather
+        than a concrete value.
 
-        Note that any Python code under this scope will execute
-        regardless of whether the condition is met.
+        Note that any Python code under this scope will execute regardless of
+        whether the condition is met.
+
+        This feature is for the Tuner to collect more information of the search
+        space and the current trial.  It is especially useful for model
+        selection. If the parent `HyperParameter` is for model selection, the
+        `HyperParameter`s in a model should only be active when the model
+        selected, which can be implemented using `conditional_scope`.
+
+        Examples:
+
+        ```python
+        def MyHyperModel(HyperModel):
+            def build(self, hp):
+                model = Sequential()
+                model.add(Input(shape=(32, 32, 3)))
+                model_type = hp.Choice("model_type", ["mlp", "cnn"])
+                if model_type == "mlp":
+                    with hp.conditional_scope("model_type", ["mlp"]):
+                        model.add(Flatten())
+                        model.add(Dense(32, activation='relu'))
+                if model_type == "cnn":
+                    with hp.conditional_scope("model_type", ["cnn"]):
+                        model.add(Conv2D(64, 3, activation='relu'))
+                        model.add(GlobalAveragePooling2D())
+                model.add(Dense(10, activation='softmax'))
+                return model
+        ```
 
         Args:
-            parent_name: The name of the HyperParameter to condition on.
-            parent_values: Values of the parent HyperParameter for which
-                HyperParameters under this scope should be considered active.
+            parent_name: A string, specifying the name of the parent
+                `HyperParameter` to use as the condition to activate the
+                current `HyperParameter`.
+            parent_values: A list of the values of the parent `HyperParameter`
+                to use as the condition to activate the current
+                `HyperParameter`.
         """
         parent_name = self._get_name(parent_name)  # Add name_scopes.
         if not self._exists(parent_name):
@@ -598,9 +630,11 @@ class HyperParameters(object):
         """Checks if a hyperparameter is currently active for a `Trial`.
 
         Args:
-          hp: Str or `HyperParameter`. If str, checks if any
-              `HyperParameter` with that name is active. If `HyperParameter`,
-              checks that this object is active.
+            hp: A string or `HyperParameter` instance. If string, checks if any
+                `HyperParameter` with that name is active. If `HyperParameter`,
+                checks that this object is active.
+        Returns:
+            A boolean, whether the hyperparameter is active.
         """
         hp = hyperparameter
         if isinstance(hp, six.string_types):
@@ -685,20 +719,23 @@ class HyperParameters(object):
         """Choice of one value among a predefined set of possible values.
 
         Args:
-            name: Str. Name of parameter. Must be unique.
-            values: List of possible values. Values must be int, float,
+            name: A string. the name of parameter. Must be unique for each
+                `HyperParameter` instance in the search space.
+            values: A list of possible values. Values must be int, float,
                 str, or bool. All values must be of the same type.
-            ordered: Whether the values passed should be considered to
-                have an ordering. This defaults to `True` for float/int
-                values. Must be `False` for any other values.
-            default: Default value to return for the parameter.
+            ordered: Optional boolean, whether the values passed should be
+                considered to have an ordering. Defaults to `True` for float/int
+                values.  Must be `False` for any other values.
+            default: Optional default value to return for the parameter.
                 If unspecified, the default value will be:
                 - None if None is one of the choices in `values`
                 - The first entry in `values` otherwise.
-            parent_name: (Optional) String. Specifies that this hyperparameter is
-              conditional. The name of the this hyperparameter's parent.
-            parent_values: (Optional) List. The values of the parent hyperparameter
-              for which this hyperparameter should be considered active.
+            parent_name: Optional string, specifying the name of the parent
+                `HyperParameter` to use as the condition to activate the
+                current `HyperParameter`.
+            parent_values: Optional list of the values of the parent
+                `HyperParameter` to use as the condition to activate the
+                current `HyperParameter`.
 
         Returns:
             The current value of this hyperparameter.
@@ -730,22 +767,24 @@ class HyperParameters(object):
         the possible values this parameter can take on.
 
         Args:
-            name: Str. Name of parameter. Must be unique.
-            min_value: Int. Lower limit of range (included).
-            max_value: Int. Upper limit of range (included).
-            step: Int. Step of range.
-            sampling: Optional. One of "linear", "log",
-                "reverse_log". Acts as a hint for an initial prior
-                probability distribution for how this value should
-                be sampled, e.g. "log" will assign equal
+            name: A string. the name of parameter. Must be unique for each
+                `HyperParameter` instance in the search space.
+            min_value: Integer, the lower limit of range, inclusive.
+            max_value: Integer, the upper limit of range, inclusive.
+            step: Integer, the distance between two consecutive samples in the
+                range. Defaults to 1.
+            sampling: Optional string. One of "linear", "log", "reverse_log". Acts
+                as a hint for an initial prior probability distribution for how
+                this value should be sampled, e.g. "log" will assign equal
                 probabilities to each order of magnitude range.
-            default: Default value to return for the parameter.
-                If unspecified, the default value will be
-                `min_value`.
-            parent_name: (Optional) String. Specifies that this hyperparameter is
-              conditional. The name of the this hyperparameter's parent.
-            parent_values: (Optional) List. The values of the parent hyperparameter
-              for which this hyperparameter should be considered active.
+            default: Integer, default value to return for the parameter. If
+                unspecified, the default value will be `min_value`.
+            parent_name: Optional string, specifying the name of the parent
+                `HyperParameter` to use as the condition to activate the
+                current `HyperParameter`.
+            parent_values: Optional list of the values of the parent
+                `HyperParameter` to use as the condition to activate the
+                current `HyperParameter`.
 
         Returns:
             The current value of this hyperparameter.
@@ -776,25 +815,26 @@ class HyperParameters(object):
         """Floating point range, can be evenly divided.
 
         Args:
-            name: Str. Name of parameter. Must be unique.
-            min_value: Float. Lower bound of the range.
-            max_value: Float. Upper bound of the range.
-            step: Optional. Float, e.g. 0.1.
-                smallest meaningful distance between two values.
-                Whether step should be specified is Oracle dependent,
-                since some Oracles can infer an optimal step automatically.
-            sampling: Optional. One of "linear", "log",
-                "reverse_log". Acts as a hint for an initial prior
-                probability distribution for how this value should
-                be sampled, e.g. "log" will assign equal
+            name: A string. the name of parameter. Must be unique for each
+                `HyperParameter` instance in the search space.
+            min_value: Float, the lower bound of the range.
+            max_value: Float, the upper bound of the range.
+            step: Optional float, e.g. 0.1, the smallest meaningful distance
+                between two values. Whether step should be specified is Oracle
+                dependent, since some Oracles can infer an optimal step
+                automatically.
+            sampling: Optional string. One of "linear", "log", "reverse_log". Acts
+                as a hint for an initial prior probability distribution for how
+                this value should be sampled, e.g. "log" will assign equal
                 probabilities to each order of magnitude range.
-            default: Default value to return for the parameter.
-                If unspecified, the default value will be
-                `min_value`.
-            parent_name: (Optional) String. Specifies that this hyperparameter is
-              conditional. The name of the this hyperparameter's parent.
-            parent_values: (Optional) List. The values of the parent hyperparameter
-              for which this hyperparameter should be considered active.
+            default: Float, the default value to return for the parameter. If
+                unspecified, the default value will be `min_value`.
+            parent_name: Optional string, specifying the name of the parent
+                `HyperParameter` to use as the condition to activate the
+                current `HyperParameter`.
+            parent_values: Optional list of the values of the parent
+                `HyperParameter` to use as the condition to activate the
+                current `HyperParameter`.
 
         Returns:
             The current value of this hyperparameter.
@@ -815,13 +855,16 @@ class HyperParameters(object):
         """Choice between True and False.
 
         Args:
-            name: Str. Name of parameter. Must be unique.
-            default: Default value to return for the parameter.
+            name: A string. the name of parameter. Must be unique for each
+                `HyperParameter` instance in the search space.
+            default: Boolean, the default value to return for the parameter.
                 If unspecified, the default value will be False.
-            parent_name: (Optional) String. Specifies that this hyperparameter is
-              conditional. The name of the this hyperparameter's parent.
-            parent_values: (Optional) List. The values of the parent hyperparameter
-              for which this hyperparameter should be considered active.
+            parent_name: Optional string, specifying the name of the parent
+                `HyperParameter` to use as the condition to activate the
+                current `HyperParameter`.
+            parent_values: Optional list of the values of the parent
+                `HyperParameter` to use as the condition to activate the
+                current `HyperParameter`.
 
         Returns:
             The current value of this hyperparameter.
@@ -838,13 +881,15 @@ class HyperParameters(object):
         """Fixed, untunable value.
 
         Args:
-            name: Str. Name of parameter. Must be unique.
-            value: Value to use (can be any JSON-serializable
-                Python type).
-            parent_name: (Optional) String. Specifies that this hyperparameter is
-              conditional. The name of the this hyperparameter's parent.
-            parent_values: (Optional) List. The values of the parent hyperparameter
-              for which this hyperparameter should be considered active.
+            name: A string. the name of parameter. Must be unique for each
+                `HyperParameter` instance in the search space.
+            value: The value to use (can be any JSON-serializable Python type).
+            parent_name: Optional string, specifying the name of the parent
+                `HyperParameter` to use as the condition to activate the
+                current `HyperParameter`.
+            parent_values: Optional list of the values of the parent
+                `HyperParameter` to use as the condition to activate the
+                current `HyperParameter`.
 
         Returns:
             The current value of this hyperparameter.
@@ -887,11 +932,10 @@ class HyperParameters(object):
         """Merges hyperparameters into this object.
 
         Args:
-          hps: A `HyperParameters` object or list of `HyperParameter`
-            objects.
-          overwrite: bool. Whether existing `HyperParameter`s should
-            be overridden by those in `hps` with the same name and
-            conditions.
+            hps: A `HyperParameters` object or list of `HyperParameter`
+                objects.
+            overwrite: bool. Whether existing `HyperParameter`s should be
+                overridden by those in `hps` with the same name and conditions.
         """
         if isinstance(hps, HyperParameters):
             hps = hps.space

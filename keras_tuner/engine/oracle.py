@@ -39,22 +39,23 @@ class Oracle(stateful.Stateful):
     """Implements a hyperparameter optimization algorithm.
 
     Args:
-        objective: String. Name of model metric to minimize
-            or maximize, e.g. "val_accuracy".
-        max_trials: The maximum number of hyperparameter
-            combinations to try.
-        hyperparameters: HyperParameters class instance.
-            Can be used to override (or register in advance)
-            hyperparamters in the search space.
-        tune_new_entries: Whether hyperparameter entries
-            that are requested by the hypermodel
-            but that were not specified in `hyperparameters`
-            should be added to the search space, or not.
-            If not, then the default value for these parameters
-            will be used.
-        allow_new_entries: Whether the hypermodel is allowed
-            to request hyperparameter entries not listed in
-            `hyperparameters`.
+        objective: A string or `keras_tuner.Objective` instance. If a string,
+            the direction of the optimization (min or max) will be inferred.
+        max_trials: Integer, the total number of trials (model configurations)
+            to test at most. Note that the oracle may interrupt the search
+            before `max_trial` models have been tested if the search space has
+            been exhausted.
+        hyperparameters: Optional HyperParameters instance. Can be used to
+            override (or register in advance) hyperparameters in the search
+            space.
+        tune_new_entries: Boolean, whether hyperparameter entries that are
+            requested by the hypermodel but that were not specified in
+            `hyperparameters` should be added to the search space, or not. If
+            not, then the default value for these parameters will be used.
+            Defaults to True.
+        allow_new_entries: Boolean, whether the hypermodel is allowed to
+            request hyperparameter entries not listed in `hyperparameters`.
+            Defaults to True.
         seed: Int. Random seed.
     """
 
@@ -130,7 +131,7 @@ class Oracle(stateful.Stateful):
         values.
 
         Args:
-          `trial_id`: The id for this Trial.
+            trial_id: A string, the ID for this Trial.
 
         Returns:
             A dictionary with keys "values" and "status", where "values" is
@@ -168,7 +169,7 @@ class Oracle(stateful.Stateful):
         by `Tuner.run_trial`.
 
         Args:
-            tuner_id: A ID that identifies the `Tuner` requesting a
+            tuner_id: A string, the ID that identifies the `Tuner` requesting a
                 `Trial`. `Tuners` that should run the same trial (for instance,
                 when running a multi-worker model) should have the same ID.
 
@@ -209,12 +210,11 @@ class Oracle(stateful.Stateful):
         """Used by a worker to report the status of a trial.
 
         Args:
-            trial_id: A previously seen trial id.
-            metrics: Dict of float. The current value of this
-                trial's metrics.
-            step: (Optional) Float. Used to report intermediate results. The
-                current value in a timeseries representing the state of the
-                trial. This is the value that `metrics` will be associated with.
+            trial_id: A string, a previously seen trial id.
+            metrics: Dict of float. The current value of this trial's metrics.
+            step: Optional float, reporting intermediate results. The current
+                value in a timeseries representing the state of the trial. This
+                is the value that `metrics` will be associated with.
 
         Returns:
             Trial object. Trial.status will be set to "STOPPED" if the Trial
@@ -237,10 +237,9 @@ class Oracle(stateful.Stateful):
         """Record the measured objective for a set of parameter values.
 
         Args:
-            trial_id: String. Unique id for this trial.
-            status: String, one of "COMPLETED", "INVALID". A status of
-                "INVALID" means a trial has crashed or been deemed
-                infeasible.
+            trial_id: A string, the unique ID for this trial.
+            status: A string, one of "COMPLETED", "INVALID". A status of
+                "INVALID" means a trial has crashed or been deemed infeasible.
         """
         trial = None
         for tuner_id, ongoing_trial in self.ongoing_trials.items():

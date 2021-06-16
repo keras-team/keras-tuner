@@ -28,18 +28,9 @@ from ..protos import keras_tuner_pb2
 class Condition(object):
     """Abstract condition for a conditional hyperparameter.
 
-    Subclasses of this object can be passed to a `HyperParameter` to
-    specify that this condition must be met in order for that hyperparameter
-    to be considered active for the `Trial`.
-
-    Example:
-
-    ```
-
-    a = Choice('model', ['linear', 'dnn'])
-    condition = kt.conditions.Parent(name='a', value=['dnn'])
-    b = Int('num_layers', 5, 10, conditions=[condition])
-    ```
+    Subclasses of this object can be passed to a `HyperParameter` to specify
+    that this condition must be met for the hyperparameter to be active for the
+    `Trial`.
     """
 
     @abc.abstractmethod
@@ -50,7 +41,7 @@ class Condition(object):
 
         Args:
             values: Dict. The active values for this `Trial`. Keys are the
-               names of the hyperparameters.
+                names of the hyperparameters.
 
         Returns:
             A boolean value of whether the condition is true.
@@ -82,23 +73,25 @@ class Condition(object):
 
 
 class Parent(Condition):
-    """Condition that checks a value is equal to one of a list of values.
+    """Condition checking a `HyperParameter`'s value is in a list of values.
 
-    This object can be passed to a `HyperParameter` to specify that this
-    condition must be met in order for that hyperparameter to be considered
-    active for the `Trial`.
+    It specifies a condition that a `HyperParameter`'s value is in a list of
+    values. It can be used as the condition to activate another
+    `HyperParameter` for the `Trial`.
 
     Example:
 
     ```python
     a = Choice('model', ['linear', 'dnn'])
-    b = Int('num_layers', 5, 10, conditions=[kt.conditions.Parent('a', ['dnn'])])
+    condition = Parent(name='model', value=['dnn'])
+    b = Int('num_layers', 5, 10, conditions=[condition])
     ```
 
     Args:
-        name: The name of a `HyperParameter`.
-        values: Values for which the `HyperParameter` this object is
-            passed to should be considered active.
+        name: A string, the name of the `HyperParameter` to use in the
+            condition.
+        values: A list of values of the `HyperParameter` to activate the
+            condition.
     """
 
     def __init__(self, name, values):

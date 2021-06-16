@@ -28,14 +28,34 @@ from .. import config as config_module
 
 
 class HyperModel(object):
-    """Defines a searchable space of Models and builds Models from this space.
+    """Defines a search space of models.
+
+    A search space is a collection of models. The `build` function will build
+    one of the models from the space using the given `HyperParameters` object.
+
+    Users should subclass the `HyperModel` class to define their search spaces
+    by overriding the `.build(...)` function.
+
+    Examples:
+
+    ```python
+    class MyHyperModel(kt.HyperModel):
+        def build(self, hp):
+            model = keras.Sequential()
+            model.add(keras.layers.Dense(
+                hp.Choice('units', [8, 16, 32]),
+                activation='relu'))
+            model.add(keras.layers.Dense(1, activation='relu'))
+            model.compile(loss='mse')
+            return model
+    ```
 
     Args:
-        name: The name of this HyperModel.
-        tunable: Whether the hyperparameters defined in this hypermodel
-            should be added to search space. If `False`, either the search
-            space for these parameters must be defined in advance, or the
-            default values will be used.
+        name: Optional string, the name of this HyperModel.
+        tunable: Boolean, whether the hyperparameters defined in this
+            hypermodel should be added to search space. If `False`, either the
+            search space for these parameters must be defined in advance, or
+            the default values will be used. Defaults to True.
     """
 
     def __init__(self, name=None, tunable=True):
@@ -65,6 +85,8 @@ class HyperModel(object):
 
 
 class DefaultHyperModel(HyperModel):
+    """Produces HyperModel from a model building function."""
+
     def __init__(self, build, name=None, tunable=True):
         super(DefaultHyperModel, self).__init__(name=name)
         self.build = build

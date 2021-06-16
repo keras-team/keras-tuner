@@ -27,26 +27,24 @@ class RandomSearchOracle(oracle_module.Oracle):
     """Random search oracle.
 
     Args:
-        objective: String or `keras_tuner.Objective`. If a string,
-          the direction of the optimization (min or max) will be
-          inferred.
-        max_trials: Int. Total number of trials
-            (model configurations) to test at most.
-            Note that the oracle may interrupt the search
-            before `max_trial` models have been tested.
-        seed: Int. Random seed.
-        hyperparameters: HyperParameters class instance.
-            Can be used to override (or register in advance)
-            hyperparameters in the search space.
-        tune_new_entries: Whether hyperparameter entries
-            that are requested by the hypermodel
-            but that were not specified in `hyperparameters`
-            should be added to the search space, or not.
-            If not, then the default value for these parameters
-            will be used.
-        allow_new_entries: Whether the hypermodel is allowed
-            to request hyperparameter entries not listed in
-            `hyperparameters`.
+        objective: A string or `keras_tuner.Objective` instance. If a string,
+            the direction of the optimization (min or max) will be inferred.
+        max_trials: Integer, the total number of trials (model configurations)
+            to test at most. Note that the oracle may interrupt the search
+            before `max_trial` models have been tested if the search space has
+            been exhausted.
+        seed: Optional integer, the random seed.
+        hyperparameters: Optional HyperParameters instance. Can be used to
+            override (or register in advance) hyperparameters in the search
+            space.
+        tune_new_entries: Boolean, whether hyperparameter entries that are
+            requested by the hypermodel but that were not specified in
+            `hyperparameters` should be added to the search space, or not. If
+            not, then the default value for these parameters will be used.
+            Defaults to True.
+        allow_new_entries: Boolean, whether the hypermodel is allowed to
+            request hyperparameter entries not listed in `hyperparameters`.
+            Defaults to True.
     """
 
     def __init__(
@@ -67,11 +65,11 @@ class RandomSearchOracle(oracle_module.Oracle):
             seed=seed,
         )
 
-    def populate_space(self, _):
+    def populate_space(self, trial_id):
         """Fill the hyperparameter space with values.
 
         Args:
-          `trial_id`: The id for this Trial.
+            trial_id: A string, the ID for this Trial.
 
         Returns:
             A dictionary with keys "values" and "status", where "values" is
@@ -89,28 +87,26 @@ class RandomSearch(multi_execution_tuner.MultiExecutionTuner):
     """Random search tuner.
 
     Args:
-        hypermodel: Instance of HyperModel class
-            (or callable that takes hyperparameters
-            and returns a Model instance).
-        objective: String. Name of model metric to minimize
-            or maximize, e.g. "val_accuracy".
-        max_trials: Int. Total number of trials
-            (model configurations) to test at most.
-            Note that the oracle may interrupt the search
-            before `max_trial` models have been tested.
-        seed: Int. Random seed.
-        hyperparameters: HyperParameters class instance.
-            Can be used to override (or register in advance)
-            hyperparamters in the search space.
-        tune_new_entries: Whether hyperparameter entries
-            that are requested by the hypermodel
-            but that were not specified in `hyperparameters`
-            should be added to the search space, or not.
-            If not, then the default value for these parameters
-            will be used.
-        allow_new_entries: Whether the hypermodel is allowed
-            to request hyperparameter entries not listed in
-            `hyperparameters`.
+        hypermodel: A `HyperModel` instance (or callable that takes
+            hyperparameters and returns a Model instance).
+        objective: A string or `keras_tuner.Objective` instance. If a string,
+            the direction of the optimization (min or max) will be inferred.
+        max_trials: Integer, the total number of trials (model configurations)
+            to test at most. Note that the oracle may interrupt the search
+            before `max_trial` models have been tested if the search space has
+            been exhausted.
+        seed: Optional integer, the random seed.
+        hyperparameters: Optional HyperParameters instance. Can be used to
+            override (or register in advance) hyperparameters in the search
+            space.
+        tune_new_entries: Boolean, whether hyperparameter entries that are
+            requested by the hypermodel but that were not specified in
+            `hyperparameters` should be added to the search space, or not. If
+            not, then the default value for these parameters will be used.
+            Defaults to True.
+        allow_new_entries: Boolean, whether the hypermodel is allowed to
+            request hyperparameter entries not listed in `hyperparameters`.
+            Defaults to True.
         **kwargs: Keyword arguments relevant to all `Tuner` subclasses.
             Please see the docstring for `Tuner`.
     """
