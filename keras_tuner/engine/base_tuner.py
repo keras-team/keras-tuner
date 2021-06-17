@@ -249,7 +249,7 @@ class BaseTuner(stateful.Stateful):
                 Defaults to 1.
 
         Returns:
-            List of trained model instances sorted from the best to the worst.
+            List of trained models sorted from the best to the worst.
         """
         best_trials = self.oracle.get_best_trials(num_models)
         models = [self.load_model(trial) for trial in best_trials]

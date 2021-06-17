@@ -31,7 +31,7 @@ class HyperResNet(hypermodel.HyperModel):
 
     Args:
         include_top: Boolean, whether to include the fully-connected layer at
-        the top of the network.
+            the top of the network.
         input_shape: Optional shape tuple, e.g. `(256, 256, 3)`.  One of
             `input_shape` or `input_tensor` must be specified.
         input_tensor: Optional Keras tensor (i.e. output of `layers.Input()`)
