@@ -31,31 +31,9 @@ from ..engine import base_tuner
 class SklearnTuner(base_tuner.BaseTuner):
     """Tuner for Scikit-learn Models.
 
-    Performs cross-validated hyperparameter search for Scikit-learn
-    models.
+    Performs cross-validated hyperparameter search for Scikit-learn models.
 
-    Arguments:
-        oracle: An instance of the `keras_tuner.Oracle` class. Note that for
-          this `Tuner`, the `objective` for the `Oracle` should always be set
-          to `Objective('score', direction='max')`. Also, `Oracle`s that exploit
-          Neural-Network-specific training (e.g. `Hyperband`) should not be
-          used with this `Tuner`.
-        hypermodel: Instance of `HyperModel` class (or callable that takes a
-          `Hyperparameters` object and returns a Model instance).
-        scoring: An sklearn `scoring` function. For more information, see
-          `sklearn.metrics.make_scorer`. If not provided, the Model's default
-          scoring will be used via `model.score`. Note that if you are searching
-          across different Model families, the default scoring for these Models
-          will often be different. In this case you should supply `scoring` here
-          in order to make sure your Models are being scored on the same metric.
-        metrics: Additional `sklearn.metrics` functions to monitor during search.
-          Note that these metrics do not affect the search process.
-        cv: An `sklearn.model_selection` Splitter class. Used to
-          determine how samples are split up into groups for cross-validation.
-        **kwargs: Keyword arguments relevant to all `Tuner` subclasses. Please
-          see the docstring for `Tuner`.
-
-    Example:
+    Examples:
 
     ```python
     import keras_tuner as kt
@@ -77,7 +55,7 @@ class SklearnTuner(base_tuner.BaseTuner):
       return model
 
     tuner = kt.tuners.SklearnTuner(
-        oracle=kt.oracles.BayesianOptimization(
+        oracle=kt.oracles.BayesianOptimizationOracle(
             objective=kt.Objective('score', 'max'),
             max_trials=10),
         hypermodel=build_model,
@@ -94,6 +72,29 @@ class SklearnTuner(base_tuner.BaseTuner):
 
     best_model = tuner.get_best_models(num_models=1)[0]
     ```
+
+    Args:
+        oracle: A `keras_tuner.Oracle` instance. Note that for this `Tuner`,
+            the `objective` for the `Oracle` should always be set to
+            `Objective('score', direction='max')`. Also, `Oracle`s that exploit
+            Neural-Network-specific training (e.g. `Hyperband`) should not be
+            used with this `Tuner`.
+        hypermodel: A `HyperModel` instance (or callable that takes
+            hyperparameters and returns a Model instance).
+        scoring: An sklearn `scoring` function. For more information, see
+            `sklearn.metrics.make_scorer`. If not provided, the Model's default
+            scoring will be used via `model.score`. Note that if you are
+            searching across different Model families, the default scoring for
+            these Models will often be different. In this case you should
+            supply `scoring` here in order to make sure your Models are being
+            scored on the same metric.
+        metrics: Additional `sklearn.metrics` functions to monitor during search.
+            Note that these metrics do not affect the search process.
+        cv: An `sklearn.model_selection` Splitter class. Used to
+            determine how samples are split up into groups for
+            cross-validation.
+        **kwargs: Keyword arguments relevant to all `Tuner` subclasses. Please
+            see the docstring for `Tuner`.
     """
 
     def __init__(
@@ -121,14 +122,14 @@ class SklearnTuner(base_tuner.BaseTuner):
     def search(self, X, y, sample_weight=None, groups=None):
         """Performs hyperparameter search.
 
-        Arguments:
+        Args:
             X: See docstring for `model.fit` for the `sklearn` Models being tuned.
             y: See docstring for `model.fit` for the `sklearn` Models being tuned.
-            sample_weight: (Optional). See docstring for `model.fit` for the
-            `sklearn` Models being tuned.
-            groups: (Optional). Required for `sklearn.model_selection` Splitter
-            classes that split based on group labels (For example, see
-            `sklearn.model_selection.GroupKFold`).
+            sample_weight: Optional. See docstring for `model.fit` for the
+                `sklearn` Models being tuned.
+            groups: Optional. Required for `sklearn.model_selection` Splitter
+                classes that split based on group labels (For example, see
+                `sklearn.model_selection.GroupKFold`).
         """
         # Only overridden for the docstring.
         return super().search(X, y, sample_weight=sample_weight, groups=groups)

@@ -46,26 +46,25 @@ EFFICIENTNET_IMG_SIZE = {
 
 
 class HyperEfficientNet(hypermodel.HyperModel):
-    """An EfficientNet HyperModel.
+    """An EfficientNet hypermodel.
 
-    Models built by this HyperModel takes input image data in
-    ints [0, 255]. The output data should be one-hot encoded
-    with number of classes matching `classes`.
+    Models built by `HyperEfficientNet` take images with shape (height, width,
+    channels) as input. The output are one-hot encoded with the length matching
+    the number of classes specified by the `classes` argument.
 
-    Arguments:
-        input_shape: shape tuple, e.g. `(256, 256, 3)`.
-              Input images will be resized if different from
-              the default input size of the version of
-              efficientnet base model used.
-              One of `input_shape` or `input_tensor` must be
-              specified.
-        input_tensor: Keras tensor to use as image input for the model.
-              One of `input_shape` or `input_tensor` must be
-              specified.
-        classes: number of classes to classify images into.
-        augmentation_model: optional Model or HyperModel for image augmentation.
-        **kwargs: Additional keyword arguments that apply to all
-            HyperModels. See `keras_tuner.HyperModel`.
+    Args:
+        input_shape: Optional shape tuple, e.g. `(256, 256, 3)`.  One of
+            `input_shape` or `input_tensor` must be specified.
+        input_tensor: Optional Keras tensor (i.e. output of `layers.Input()`)
+            to use as image input for the model.  One of `input_shape` or
+            `input_tensor` must be specified.
+        classes: Optional number of classes to classify images into, only to be
+            specified if `include_top` is True, and if no `weights` argument is
+            specified.
+        augmentation_model: Optional `Model` or `HyperModel` instance for image
+            augmentation.
+        **kwargs: Additional keyword arguments that apply to all hypermodels.
+            See `keras_tuner.HyperModel`.
     """
 
     def __init__(
@@ -81,7 +80,7 @@ class HyperEfficientNet(hypermodel.HyperModel):
         ):
             raise ValueError(
                 "Keyword augmentation_model should be "
-                "a HyperModel, a Keras Model or empty. "
+                "a `HyperModel`, a Keras `Model` or empty. "
                 "Received {}.".format(augmentation_model)
             )
 
@@ -153,8 +152,8 @@ class HyperEfficientNet(hypermodel.HyperModel):
     def _compile(self, model, hp):
         """Compile model using hyperparameters in hp.
 
-        When subclassing the hypermodel, this may
-        be overriden to change behavior of compiling.
+        When subclassing the hypermodel, this may be overriden to change
+        behavior of compiling.
         """
         learning_rate = hp.Choice("learning_rate", [0.1, 0.01, 0.001], default=0.01)
         optimizer = tf.keras.optimizers.SGD(
