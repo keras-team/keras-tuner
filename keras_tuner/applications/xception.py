@@ -20,9 +20,9 @@ from keras_tuner.engine import hypermodel
 
 
 class HyperXception(hypermodel.HyperModel):
-    """An Xception HyperModel.
+    """An Xception hypermodel.
 
-    Models built by HyperXception take images with shape (height, width,
+    Models built by `HyperXception` take images with shape (height, width,
     channels) as input. The output are one-hot encoded with the length matching
     the number of classes specified by the `classes` argument.
 
@@ -37,7 +37,7 @@ class HyperXception(hypermodel.HyperModel):
         classes: Optional number of classes to classify images into, only to be
             specified if `include_top` is True, and if no `weights` argument is
             specified.
-        **kwargs: Additional keyword arguments that apply to all HyperModels.
+        **kwargs: Additional keyword arguments that apply to all hypermodels.
             See `keras_tuner.HyperModel`.
     """
 

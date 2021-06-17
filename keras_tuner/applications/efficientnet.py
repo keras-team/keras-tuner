@@ -46,23 +46,25 @@ EFFICIENTNET_IMG_SIZE = {
 
 
 class HyperEfficientNet(hypermodel.HyperModel):
-    """An EfficientNet HyperModel.
+    """An EfficientNet hypermodel.
 
-    Models built by HyperEfficientNet take images with shape (height, width,
+    Models built by `HyperEfficientNet` take images with shape (height, width,
     channels) as input. The output are one-hot encoded with the length matching
     the number of classes specified by the `classes` argument.
 
     Args:
-        input_shape: shape tuple, e.g. `(256, 256, 3)`. Input images will be
-            resized if different from the default input size of the version of
-            efficientnet base model used.  One of `input_shape` or
-            `input_tensor` must be specified.
-        input_tensor: Keras tensor to use as image input for the model.  One of
+        input_shape: Optional shape tuple, e.g. `(256, 256, 3)`.  One of
             `input_shape` or `input_tensor` must be specified.
-        classes: number of classes to classify images into.
-        augmentation_model: optional Model or HyperModel for image augmentation.
-        **kwargs: Additional keyword arguments that apply to all
-            HyperModels. See `keras_tuner.HyperModel`.
+        input_tensor: Optional Keras tensor (i.e. output of `layers.Input()`)
+            to use as image input for the model.  One of `input_shape` or
+            `input_tensor` must be specified.
+        classes: Optional number of classes to classify images into, only to be
+            specified if `include_top` is True, and if no `weights` argument is
+            specified.
+        augmentation_model: Optional `Model` or `HyperModel` instance for image
+            augmentation.
+        **kwargs: Additional keyword arguments that apply to all hypermodels.
+            See `keras_tuner.HyperModel`.
     """
 
     def __init__(
@@ -78,7 +80,7 @@ class HyperEfficientNet(hypermodel.HyperModel):
         ):
             raise ValueError(
                 "Keyword augmentation_model should be "
-                "a HyperModel, a Keras Model or empty. "
+                "a `HyperModel`, a Keras `Model` or empty. "
                 "Received {}.".format(augmentation_model)
             )
 

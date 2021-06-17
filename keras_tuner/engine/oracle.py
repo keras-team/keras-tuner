@@ -45,7 +45,7 @@ class Oracle(stateful.Stateful):
             to test at most. Note that the oracle may interrupt the search
             before `max_trial` models have been tested if the search space has
             been exhausted.
-        hyperparameters: Optional HyperParameters instance. Can be used to
+        hyperparameters: Optional `HyperParameters` instance. Can be used to
             override (or register in advance) hyperparameters in the search
             space.
         tune_new_entries: Boolean, whether hyperparameter entries that are
@@ -238,8 +238,9 @@ class Oracle(stateful.Stateful):
 
         Args:
             trial_id: A string, the unique ID for this trial.
-            status: A string, one of "COMPLETED", "INVALID". A status of
-                "INVALID" means a trial has crashed or been deemed infeasible.
+            status: A string, one of `"COMPLETED"`, `"INVALID"`. A status of
+                `"INVALID"` means a trial has crashed or been deemed
+                infeasible.
         """
         trial = None
         for tuner_id, ongoing_trial in self.ongoing_trials.items():
@@ -267,7 +268,7 @@ class Oracle(stateful.Stateful):
         Already recorded parameters get ignored.
 
         Args:
-            hyperparameters: An updated HyperParameters object.
+            hyperparameters: An updated `HyperParameters` object.
         """
         hps = hyperparameters.space
         new_hps = []

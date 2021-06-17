@@ -139,7 +139,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         beta: Float, the balancing factor of exploration and exploitation. The
             larger it is, the more explorative it is. Defaults to 2.6.
         seed: Optional integer, the random seed.
-        hyperparameters: Optional HyperParameters instance. Can be used to
+        hyperparameters: Optional `HyperParameters` instance. Can be used to
             override (or register in advance) hyperparameters in the search
             space.
         tune_new_entries: Boolean, whether hyperparameter entries that are
@@ -361,7 +361,7 @@ class BayesianOptimization(multi_execution_tuner.MultiExecutionTuner):
         beta: Float, the balancing factor of exploration and exploitation. The
             larger it is, the more explorative it is. Defaults to 2.6.
         seed: Optional integer, the random seed.
-        hyperparameters: Optional HyperParameters instance. Can be used to
+        hyperparameters: Optional `HyperParameters` instance. Can be used to
             override (or register in advance) hyperparameters in the search
             space.
         tune_new_entries: Boolean, whether hyperparameter entries that are

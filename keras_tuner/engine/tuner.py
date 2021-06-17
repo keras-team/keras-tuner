@@ -31,7 +31,7 @@ from . import tuner_utils
 class Tuner(base_tuner.BaseTuner):
     """Tuner class for Keras models.
 
-    This is the base Tuner class for all tuners for Keras models. It manages
+    This is the base `Tuner` class for all tuners for Keras models. It manages
     the building, training, evaluation and saving of the Keras models. New
     tuners can be created by subclassing the class.
 
@@ -41,7 +41,7 @@ class Tuner(base_tuner.BaseTuner):
             hyperparameters and returns a Model instance).
         max_model_size: Integer, maximum number of scalars in the parameters of
             a model. Models larger than this are rejected.
-        optimizer: Optional Optimizer instance.  May be used to override the
+        optimizer: Optional `Optimizer` instance.  May be used to override the
             `optimizer` argument in the `compile` step for the models. If the
             hypermodel does not compile the models it generates, then this
             argument must be specified.
@@ -59,10 +59,10 @@ class Tuner(base_tuner.BaseTuner):
             supported.
         directory: A string, the relative path to the working directory.
         project_name: A string, the name to use as prefix for files saved by
-            this Tuner.
-        logger: Optional instance of Logger class, used for streaming data to
+            this `Tuner`.
+        logger: Optional instance of `Logger` class, used for streaming data to
             Cloud Service for monitoring.
-        tuner_id: Optional string, used as the ID of this Tuner.
+        tuner_id: Optional string, used as the ID of this `Tuner`.
         overwrite: Boolean, defaults to `False`. If `False`, reloads an
             existing project of the same name if one is found. Otherwise,
             overwrites the project.

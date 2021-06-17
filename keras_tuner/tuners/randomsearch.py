@@ -34,7 +34,7 @@ class RandomSearchOracle(oracle_module.Oracle):
             before `max_trial` models have been tested if the search space has
             been exhausted.
         seed: Optional integer, the random seed.
-        hyperparameters: Optional HyperParameters instance. Can be used to
+        hyperparameters: Optional `HyperParameters` instance. Can be used to
             override (or register in advance) hyperparameters in the search
             space.
         tune_new_entries: Boolean, whether hyperparameter entries that are
@@ -96,7 +96,7 @@ class RandomSearch(multi_execution_tuner.MultiExecutionTuner):
             before `max_trial` models have been tested if the search space has
             been exhausted.
         seed: Optional integer, the random seed.
-        hyperparameters: Optional HyperParameters instance. Can be used to
+        hyperparameters: Optional `HyperParameters` instance. Can be used to
             override (or register in advance) hyperparameters in the search
             space.
         tune_new_entries: Boolean, whether hyperparameter entries that are

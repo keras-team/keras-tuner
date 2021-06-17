@@ -35,9 +35,9 @@ from . import tuner_utils
 class BaseTuner(stateful.Stateful):
     """Tuner base class.
 
-    BaseTuner is the base class for all Tuners, which manages the search loop,
-    Oracle, logging, saving, etc. Tuners for non-Keras models can be created
-    by subclassing BaseTuner.
+    `BaseTuner` is the base class for all Tuners, which manages the search
+    loop, Oracle, logging, saving, etc. Tuners for non-Keras models can be
+    created by subclassing `BaseTuner`.
 
     Args:
         oracle: Instance of Oracle class.
@@ -47,7 +47,7 @@ class BaseTuner(stateful.Stateful):
         directory: A string, the relative path to the working directory.
         project_name: A string, the name to use as prefix for files saved by
             this Tuner.
-        logger: Optional instance of Logger class, used for streaming data to
+        logger: Optional instance of `Logger` class, used for streaming data to
             Cloud Service for monitoring.
         overwrite: Boolean, defaults to `False`. If `False`, reloads an
             existing project of the same name if one is found. Otherwise,

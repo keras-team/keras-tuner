@@ -68,7 +68,7 @@ def _check_int(val, arg):
 
 
 class HyperParameter(object):
-    """HyperParameter base class.
+    """Hyperparameter base class.
 
     Args:
         name: A string. the name of parameter. Must be unique for each
@@ -580,8 +580,8 @@ class HyperParameters(object):
         Note that any Python code under this scope will execute regardless of
         whether the condition is met.
 
-        This feature is for the Tuner to collect more information of the search
-        space and the current trial.  It is especially useful for model
+        This feature is for the `Tuner` to collect more information of the
+        search space and the current trial.  It is especially useful for model
         selection. If the parent `HyperParameter` is for model selection, the
         `HyperParameter`s in a model should only be active when the model
         selected, which can be implemented using `conditional_scope`.
@@ -1114,7 +1114,7 @@ def cumulative_prob_to_value(prob, hp):
             return int(value)
         return value
     else:
-        raise ValueError("Unrecognized HyperParameter type: {}".format(hp))
+        raise ValueError("Unrecognized `HyperParameter` type: {}".format(hp))
 
 
 def value_to_cumulative_prob(value, hp):
@@ -1146,7 +1146,7 @@ def value_to_cumulative_prob(value, hp):
         else:
             raise ValueError("Unrecognized sampling value: {}".format(sampling))
     else:
-        raise ValueError("Unrecognized HyperParameter type: {}".format(hp))
+        raise ValueError("Unrecognized `HyperParameter` type: {}".format(hp))
 
 
 def _sampling_from_proto(sampling):

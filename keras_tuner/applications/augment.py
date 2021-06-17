@@ -36,9 +36,9 @@ TRANSFORMS = {
 
 
 class HyperImageAugment(hypermodel.HyperModel):
-    """A image augmentation HyperModel.
+    """A image augmentation hypermodel.
 
-    The HyperImageAugment class searches for the best combination of image
+    The `HyperImageAugment` class searches for the best combination of image
     augmentation operations in Keras preprocessing layers. The input shape of
     the model should be (height, width, channels). The output of the model is
     of the same shape as the input.
@@ -88,7 +88,7 @@ class HyperImageAugment(hypermodel.HyperModel):
             determines number of layers of augment transforms are applied,
             each randomly picked from all available transform types with equal
             probability on each sample.
-        **kwargs: Additional keyword arguments that apply to all HyperModels.
+        **kwargs: Additional keyword arguments that apply to all hypermodels.
             See `keras_tuner.HyperModel`.
 
     Example:

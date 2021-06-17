@@ -31,15 +31,15 @@ from . import tuner_utils
 
 
 class MultiExecutionTuner(tuner_module.Tuner):
-    """A Tuner class that averages multiple runs of the process.
+    """A `Tuner` class that averages multiple runs of the process.
 
     Args:
         oracle: An Oracle instance.
         hypermodel: A `HyperModel` instance (or callable that takes
-            hyperparameters and returns a Model instance).
+            hyperparameters and returns a `Model` instance).
         executions_per_trial: Integer, the number of executions (training a
             model from scratch, starting from a new initialization) to run per
-            trial (model configuration).  Model metrics may vary greatly
+            trial (model configuration). Model metrics may vary greatly
             depending on random initialization, hence it is often a good idea
             to run several executions per trial in order to evaluate the
             performance of a given set of hyperparameter values.
