@@ -47,8 +47,8 @@ class BaseTuner(stateful.Stateful):
         directory: A string, the relative path to the working directory.
         project_name: A string, the name to use as prefix for files saved by
             this Tuner.
-        logger: Optional instance of `Logger` class, used for streaming data to
-            Cloud Service for monitoring.
+        logger: Optional instance of `kerastuner.Logger` class for
+            streaming logs for monitoring.
         overwrite: Boolean, defaults to `False`. If `False`, reloads an
             existing project of the same name if one is found. Otherwise,
             overwrites the project.
