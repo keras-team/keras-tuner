@@ -2,6 +2,7 @@
 .idea
 *.pyc
 .pytest_cache
+*.egg-info
 
 #VS Code files and container
 .vscode/
