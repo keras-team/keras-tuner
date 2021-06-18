@@ -24,37 +24,33 @@ Before you submit a pull request, check that it meets these guidelines:
 
 3. For the case of bug fixes, add new test cases which would fail before your bug fix.
 
-## Code Style Guide
-This project tries to closely follow the official Python Style Guide detailed in [PEP8](https://www.python.org/dev/peps/pep-0008/). We use [Flake8](http://flake8.pycqa.org/en/latest/) to enforce it.
-The docstrings follow the [Google Python Style Guide](https://github.com/google/styleguide/blob/gh-pages/pyguide.md#381-docstrings).
 
-## Testing Guide
-[Pytest](https://docs.pytest.org/en/latest/) is used to write the unit tests.
-You should test your code by writing unit testing code in `tests` directory.
-The testing file name should be the `.py` file with a prefix of `test_` in the corresponding directory,
-e.g., the name should be `test_layers.py` if the code of which is to test `layer.py`.
+## Setup Environment
+We introduce 2 different options: **GitHub Codespaces**, **VS Code & Remote-Containers**.
+You may also use any other environment as long as you install the dependencies in `setup.py`.
 
-## Pre-commit hook
+### Option 1: GitHub Codespaces
+You can simply open the repository in GitHub Codespaces.
+The environment is already setup there.
 
-You can make git run `flake8` before every commit automatically. It will make you go faster by
-avoiding pushing commit which are not passing the flake8 tests. To do this, 
-open `.git/hooks/pre-commit` with a text editor and write `flake8` inside. If the `flake8` test doesn't
-pass, the commit will be aborted.
+### Option 2: VS Code & Remote-Containers
+Open VS Code.
+Install the `Remote-Containers` extension.
+Press `F1` key. Enter `Remote-Containers: Open Folder in Container` to open the repository root folder.
+The environment is already setup there.
 
-## Code reviews
+## Run Tests
+You can simply open any `*_test.py` file under the `tests` directory,
+and wait a few seconds, you will see the test tab on the left of the window.
+We use PyTest for the tests, you may also use the `pytest` command to run the tests.
 
-All submissions, including submissions by project members, require review. We
-use GitHub pull requests for this purpose. Consult
-[GitHub Help](https://help.github.com/articles/about-pull-requests/) for more
-information on using pull requests.
+## Code Style
+We use `flake8`, `black` and `isort` for linting.
+You can run the following manually every time you want to format your code.
+1. Run `shell/format.sh` to format your code.
+2. Run `shell/lint.sh` to check.
 
-## Community Guidelines
-
-This project follows [Google's Open Source Community
-Guidelines](https://opensource.google.com/conduct/).
-
-
-# Rebuilding Protos
+## Rebuilding Protos
 If you make changes to any `.proto` file, you'll have to rebuild the generated
 `*_pb2.py` files. To do this, run these commands from the root directory of this
 project:
@@ -64,3 +60,8 @@ pip install grpcio-tools
 python -m grpc_tools.protoc --python_out=. --grpc_python_out=. --proto_path=. keras_tuner/protos/keras_tuner.proto
 python -m grpc_tools.protoc --python_out=. --grpc_python_out=. --proto_path=. keras_tuner/protos/service.proto
 ```
+
+## Community Guidelines
+
+This project follows [Google's Open Source Community
+Guidelines](https://opensource.google.com/conduct/).
