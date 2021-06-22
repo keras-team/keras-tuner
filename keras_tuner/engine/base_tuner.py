@@ -239,7 +239,7 @@ class BaseTuner(stateful.Stateful):
     def get_best_models(self, num_models=1):
         """Returns the best model(s), as determined by the objective.
 
-        This method is for querying the the models trained during the search.
+        This method is for querying the models trained during the search.
         For best performance, it is recommended to retrain your Model on the
         full dataset using the best hyperparameters found during `search`,
         which can be obtained using `tuner.get_best_hyperparameters()`.

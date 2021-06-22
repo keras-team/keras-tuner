@@ -134,7 +134,7 @@ class HyperImageAugment(hypermodel.HyperModel):
 
         if input_shape is None and input_tensor is None:
             raise ValueError(
-                "You must specify either `input_shape` or " "`intput_tensor`."
+                "You must specify either `input_shape` or `input_tensor`."
             )
 
         self.transforms = []

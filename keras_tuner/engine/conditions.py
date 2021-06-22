@@ -58,7 +58,7 @@ class Condition(object):
 
     @classmethod
     def from_config(cls, config):
-        return cls(**config)
+        return cls(**config)  # pytype: disable=not-instantiable
 
     @classmethod
     def from_proto(self, proto):

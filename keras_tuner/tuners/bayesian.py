@@ -175,7 +175,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         self.num_initial_points = num_initial_points
         self.alpha = alpha
         self.beta = beta
-        self.seed = seed or random.randint(1, 1e4)
+        self.seed = seed or random.randint(1, int(1e4))
         self._seed_state = self.seed
         self._tried_so_far = set()
         self._max_collisions = 20
@@ -261,7 +261,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
     def _vectorize_trials(self):
         x = []
         y = []
-        ongoing_trials = {t for t in self.ongoing_trials.values()}
+        ongoing_trials = set(self.ongoing_trials.values())
         for trial in self.trials.values():
             # Create a vector representation of each Trial's hyperparameters.
             trial_hps = trial.hyperparameters
