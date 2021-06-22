@@ -145,7 +145,7 @@ class KerasHyperModel(HyperModel):
             # Check model size.
             size = maybe_compute_model_size(model)
             if self.max_model_size and size > self.max_model_size:
-                print("Oversized model: %s parameters -- skipping" % (size))
+                print("Oversized model: {} parameters -- skipping".format(size))
                 if i == self._max_fail_streak:
                     raise RuntimeError("Too many consecutive oversized models.")
                 continue

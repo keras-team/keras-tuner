@@ -152,7 +152,7 @@ class HyperEfficientNet(hypermodel.HyperModel):
     def _compile(self, model, hp):
         """Compile model using hyperparameters in hp.
 
-        When subclassing the hypermodel, this may be overriden to change
+        When subclassing the hypermodel, this may be overridden to change
         behavior of compiling.
         """
         learning_rate = hp.Choice("learning_rate", [0.1, 0.01, 0.001], default=0.01)

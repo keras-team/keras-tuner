@@ -126,7 +126,7 @@ class Trial(stateful.Stateful):
 
 
 def generate_trial_id():
-    s = str(time.time()) + str(random.randint(1, 1e7))
+    s = str(time.time()) + str(random.randint(1, int(1e7)))
     return hashlib.sha256(s.encode("utf-8")).hexdigest()[:32]
 
 

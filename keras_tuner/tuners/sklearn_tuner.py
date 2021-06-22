@@ -21,7 +21,7 @@ import numpy as np
 import tensorflow as tf
 
 try:
-    import sklearn
+    import sklearn  # pytype: disable=import-error
 except ImportError:
     sklearn = None
 

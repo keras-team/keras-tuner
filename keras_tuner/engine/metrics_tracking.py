@@ -258,7 +258,7 @@ class MetricsTracker(object):
             raise ValueError("Unknown metric: %s" % (name,))
 
 
-_MAX_METRICS = {
+_MAX_METRICS = (
     "Accuracy",
     "BinaryAccuracy",
     "CategoricalAccuracy",
@@ -272,14 +272,14 @@ _MAX_METRICS = {
     "AUC",
     "SensitivityAtSpecificity",
     "SpecificityAtSensitivity",
-}
+)
 
-_MAX_METRIC_FNS = {
+_MAX_METRIC_FNS = (
     "accuracy",
     "categorical_accuracy",
     "binary_accuracy",
     "sparse_categorical_accuracy",
-}
+)
 
 
 def infer_metric_direction(metric):
