@@ -269,7 +269,10 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             for hp in self._nonfixed_space():
                 # For hyperparameters not present in the trial (either added after
                 # the trial or inactive in the trial), set to default value.
-                if trial_hps.is_active(hp):
+                if (
+                    trial_hps.is_active(hp)  # inactive
+                    and hp.name in trial_hps.values  # added after the trial
+                ):
                     trial_value = trial_hps.values[hp.name]
                 else:
                     trial_value = hp.default

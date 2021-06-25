@@ -229,7 +229,7 @@ def test_hyperparameters_added(tmp_dir):
         trial.status = "COMPLETED"
         oracle.trials[trial.trial_id] = trial
 
-    # Update the space.
+    # A new trial discovered a new hp and synced to oracle.hyperparameters.
     new_hps = hp_module.HyperParameters()
     new_hps.Float("b", 3.2, 6.4, step=0.2, default=3.6)
     new_hps.Boolean("c", default=True)
