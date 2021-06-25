@@ -629,18 +629,28 @@ class HyperParameters(object):
     def is_active(self, hyperparameter):
         """Checks if a hyperparameter is currently active for a `Trial`.
 
+        A hyperparameter is considered active if and only if all its parent
+        conditions are active, and not affected by whether the hyperparameter
+        is used while building the model. The function is usually called by the
+        `Oracle` for populating new hyperparamter values and updating the trial
+        after receiving the evaluation results.
+
         Args:
             hp: A string or `HyperParameter` instance. If string, checks if any
                 `HyperParameter` with that name is active. If `HyperParameter`,
                 checks that this object is active.
+
         Returns:
             A boolean, whether the hyperparameter is active.
         """
         hp = hyperparameter
-        if isinstance(hp, six.string_types):
-            hp = str(hp)
-            return hp in self.values
-        return hp.name in self.values and self._conditions_are_active(hp.conditions)
+        if isinstance(hp, HyperParameter):
+            return self._conditions_are_active(hp.conditions)
+        hp_name = str(hp)
+        for temp_hp in self._hps[hp_name]:
+            if self._conditions_are_active(temp_hp.conditions):
+                return True
+        return False
 
     def _conditions_are_active(self, conditions=None):
         if conditions is None:
@@ -664,7 +674,15 @@ class HyperParameters(object):
         return False
 
     def _retrieve(self, hp):
-        """Gets or creates a `HyperParameter`."""
+        """Gets or creates a `HyperParameter`.
+
+        Args:
+            hp: A `HyperParameter` instance.
+
+        Returns:
+            The value of the hyperparameter, or None if the hyperparameter is
+            not active.
+        """
         if self._exists(hp.name, hp.conditions):
             if self._conditions_are_active(hp.conditions):
                 return self.values[hp.name]
@@ -672,18 +690,27 @@ class HyperParameters(object):
         return self._register(hp)
 
     def _register(self, hyperparameter, overwrite=False):
-        """Registers a `HyperParameter` into this container."""
+        """Registers a `HyperParameter` into this container.
+
+        Args:
+            hp: A `HyperParameter` instance.
+            overwrite: Boolean, whether to overwrite the existing value with
+                the default hyperparameter value.
+
+        Returns:
+            The value of the hyperparameter, or None if the hyperparameter is
+            not active.
+        """
         hp = hyperparameter
         # Copy to ensure this param can be serialized.
         hp = hp.__class__.from_config(hp.get_config())
         self._hps[hp.name].append(hp)
         self._space.append(hp)
-        value = hp.default
         # Only add active values to `self.values`.
         if self._conditions_are_active(hp.conditions):
             # Use the default value only if not populated.
             if overwrite or hp.name not in self.values:
-                self.values[hp.name] = value
+                self.values[hp.name] = hp.default
             return self.values[hp.name]
         return None  # Ensures inactive values are not relied on by user.
 
@@ -738,7 +765,8 @@ class HyperParameters(object):
                 current `HyperParameter`.
 
         Returns:
-            The current value of this hyperparameter.
+            The value of the hyperparameter, or None if the hyperparameter is
+            not active.
         """
         with self._maybe_conditional_scope(parent_name, parent_values):
             hp = Choice(
@@ -787,7 +815,8 @@ class HyperParameters(object):
                 current `HyperParameter`.
 
         Returns:
-            The current value of this hyperparameter.
+            The value of the hyperparameter, or None if the hyperparameter is
+            not active.
         """
         with self._maybe_conditional_scope(parent_name, parent_values):
             hp = Int(
@@ -837,7 +866,8 @@ class HyperParameters(object):
                 current `HyperParameter`.
 
         Returns:
-            The current value of this hyperparameter.
+            The value of the hyperparameter, or None if the hyperparameter is
+            not active.
         """
         with self._maybe_conditional_scope(parent_name, parent_values):
             hp = Float(
@@ -867,7 +897,8 @@ class HyperParameters(object):
                 current `HyperParameter`.
 
         Returns:
-            The current value of this hyperparameter.
+            The value of the hyperparameter, or None if the hyperparameter is
+            not active.
         """
         with self._maybe_conditional_scope(parent_name, parent_values):
             hp = Boolean(
@@ -892,7 +923,8 @@ class HyperParameters(object):
                 current `HyperParameter`.
 
         Returns:
-            The current value of this hyperparameter.
+            The value of the hyperparameter, or None if the hyperparameter is
+            not active.
         """
         with self._maybe_conditional_scope(parent_name, parent_values):
             hp = Fixed(
@@ -934,7 +966,7 @@ class HyperParameters(object):
         Args:
             hps: A `HyperParameters` object or list of `HyperParameter`
                 objects.
-            overwrite: bool. Whether existing `HyperParameter`s should be
+            overwrite: Boolean, whether existing `HyperParameter`s should be
                 overridden by those in `hps` with the same name and conditions.
         """
         if isinstance(hps, HyperParameters):

@@ -100,6 +100,24 @@ def test_conditional_scope():
     assert child2 == 7
 
 
+def test_is_active_with_hp_name_and_hp():
+    hp = hp_module.HyperParameters()
+    hp.Choice("choice", [1, 2, 3], default=3)
+    with hp.conditional_scope("choice", [1, 3]):
+        hp.Choice("child_choice", [4, 5, 6])
+    with hp.conditional_scope("choice", 2):
+        hp.Choice("child_choice2", [7, 8, 9])
+
+    # Custom oracle populates value for an inactive hp.
+    hp.values["child_choice2"] = 7
+
+    assert hp.is_active("child_choice")
+    assert hp.is_active(hp._hps["child_choice"][0])
+
+    assert not hp.is_active("child_choice2")
+    assert not hp.is_active(hp._hps["child_choice2"][0])
+
+
 def test_build_with_conditional_scope():
     def build_model(hp):
         model = hp.Choice("model", ["v1", "v2"])
