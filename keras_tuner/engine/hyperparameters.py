@@ -632,13 +632,13 @@ class HyperParameters(object):
         A hyperparameter is considered active if and only if all its parent
         conditions are active, and not affected by whether the hyperparameter
         is used while building the model. The function is usually called by the
-        `Oracle` for populating new hyperparamter values and updating the trial
+        `Oracle` for populating new hyperparameter values and updating the trial
         after receiving the evaluation results.
 
         Args:
-            hp: A string or `HyperParameter` instance. If string, checks if any
-                `HyperParameter` with that name is active. If `HyperParameter`,
-                checks that this object is active.
+            hp: A string or `HyperParameter` instance. If string, checks whether
+                any hyperparameter with that name is active. If `HyperParameter`
+                instance, checks whether the object is active.
 
         Returns:
             A boolean, whether the hyperparameter is active.
@@ -662,7 +662,7 @@ class HyperParameters(object):
         return True
 
     def _exists(self, name, conditions=None):
-        """Checks for a `HyperParameter` with the same name and conditions."""
+        """Checks for a hyperparameter with the same name and conditions."""
         if conditions is None:
             conditions = self._conditions
 
@@ -674,7 +674,7 @@ class HyperParameters(object):
         return False
 
     def _retrieve(self, hp):
-        """Gets or creates a `HyperParameter`.
+        """Gets or creates a hyperparameter.
 
         Args:
             hp: A `HyperParameter` instance.
@@ -690,7 +690,7 @@ class HyperParameters(object):
         return self._register(hp)
 
     def _register(self, hyperparameter, overwrite=False):
-        """Registers a `HyperParameter` into this container.
+        """Registers a hyperparameter in this container.
 
         Args:
             hp: A `HyperParameter` instance.
