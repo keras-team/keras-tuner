@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import numpy as np
+import pandas as pd
 import pytest
 from sklearn import datasets
 from sklearn import decomposition
@@ -71,7 +72,7 @@ def tmp_dir(tmpdir_factory):
     return tmpdir_factory.mktemp("hyperband_test", numbered=True)
 
 
-def test_sklearn_tuner_simple(tmp_dir):
+def test_sklearn_tuner_simple_with_np(tmp_dir):
     tuner = kt.SklearnTuner(
         oracle=kt.oracles.BayesianOptimization(
             objective=kt.Objective("score", "max"), max_trials=10
@@ -95,6 +96,23 @@ def test_sklearn_tuner_simple(tmp_dir):
     # Make sure best model can be reloaded.
     best_model = tuner.get_best_models()[0]
     best_model.score(x, y)
+
+
+@pytest.mark.filterwarnings("ignore:.*column-vector")
+def test_sklearn_tuner_with_df(tmp_dir):
+    tuner = kt.SklearnTuner(
+        oracle=kt.oracles.BayesianOptimization(
+            objective=kt.Objective("score", "max"), max_trials=10
+        ),
+        hypermodel=build_model,
+        directory=tmp_dir,
+    )
+
+    x = pd.DataFrame(np.random.uniform(size=(50, 10)))
+    y = pd.DataFrame(np.random.randint(0, 2, size=(50,)))
+    tuner.search(x, y)
+
+    assert len(tuner.oracle.trials) == 10
 
 
 def test_sklearn_custom_scoring_and_cv(tmp_dir):

@@ -18,6 +18,7 @@ import pickle
 import warnings
 
 import numpy as np
+import pandas as pd
 import tensorflow as tf
 
 try:
@@ -26,6 +27,15 @@ except ImportError:
     sklearn = None
 
 from ..engine import base_tuner
+
+
+def split_data(data, indices):
+    if isinstance(data, np.ndarray):
+        return data[indices]
+    elif isinstance(data, pd.DataFrame):
+        return data.iloc[indices]
+    else:
+        raise TypeError()
 
 
 class SklearnTuner(base_tuner.BaseTuner):
@@ -140,8 +150,11 @@ class SklearnTuner(base_tuner.BaseTuner):
         # For cross-validation methods that expect a `groups` argument.
         cv_kwargs = {"groups": groups} if groups is not None else {}
         for train_indices, test_indices in self.cv.split(X, y, **cv_kwargs):
-            X_train = X[train_indices]
-            y_train = y[train_indices]
+            X_train = split_data(X, train_indices)
+            y_train = split_data(y, train_indices)
+            X_test = split_data(X, test_indices)
+            y_test = split_data(y, test_indices)
+
             sample_weight_train = (
                 sample_weight[train_indices] if sample_weight is not None else None
             )
@@ -152,8 +165,6 @@ class SklearnTuner(base_tuner.BaseTuner):
             else:
                 model.fit(X_train, y_train, sample_weight=sample_weight_train)
 
-            X_test = X[test_indices]
-            y_test = y[test_indices]
             sample_weight_test = (
                 sample_weight[test_indices] if sample_weight is not None else None
             )
