@@ -47,6 +47,7 @@ setup(
             "flake8",
             "isort",
             "black",
+            "pandas",
             "portpicker",
             "pytest-xdist",
             "pytest-cov",
