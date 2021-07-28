@@ -21,7 +21,9 @@ from tensorflow.keras import layers
 from keras_tuner.engine import hypermodel
 
 try:
-    from tensorflow.keras.applications import efficientnet
+    from tensorflow.keras.applications import (  # isort:skip
+        efficientnet,
+    )  # pytype: disable=import-error
 except ImportError:
     efficientnet = None
 
