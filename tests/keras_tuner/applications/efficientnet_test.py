@@ -16,12 +16,18 @@
 import numpy as np
 import pytest
 import tensorflow as tf
+from packaging.version import parse
 
 from keras_tuner.applications import efficientnet
 from keras_tuner.engine import hypermodel as hm_module
 from keras_tuner.engine import hyperparameters as hp_module
 
 
+@pytest.mark.skipif(
+    parse(tf.__version__) < parse("2.3.0"),
+    reason="Preprocessing layers and "
+    "applications.efficientnet only exist in TF2.3+.",
+)
 @pytest.mark.parametrize("version", ["B0", "B1"])
 def test_model_construction(version):
     hp = hp_module.HyperParameters()
@@ -47,6 +53,11 @@ def test_tf_version_too_low_error():
     efficientnet.preprocessing = pp_module
 
 
+@pytest.mark.skipif(
+    parse(tf.__version__) < parse("2.3.0"),
+    reason="Preprocessing layers and "
+    "applications.efficientnet only exist in TF2.3+.",
+)
 def test_hyperparameter_existence_and_defaults():
     hp = hp_module.HyperParameters()
     hypermodel = efficientnet.HyperEfficientNet(
@@ -59,6 +70,11 @@ def test_hyperparameter_existence_and_defaults():
     assert hp.get("pooling") == "avg"
 
 
+@pytest.mark.skipif(
+    parse(tf.__version__) < parse("2.3.0"),
+    reason="Preprocessing layers and "
+    "applications.efficientnet only exist in TF2.3+.",
+)
 def test_hyperparameter_override():
     hp = hp_module.HyperParameters()
     hp.Choice("version", ["B1"])
@@ -71,6 +87,11 @@ def test_hyperparameter_override():
     assert hp.get("top_dropout_rate") == 0.5
 
 
+@pytest.mark.skipif(
+    parse(tf.__version__) < parse("2.3.0"),
+    reason="Preprocessing layers and "
+    "applications.efficientnet only exist in TF2.3+.",
+)
 def test_input_tensor():
     hp = hp_module.HyperParameters()
     inputs = tf.keras.Input(shape=(256, 256, 3))
@@ -79,6 +100,11 @@ def test_input_tensor():
     assert model.inputs == [inputs]
 
 
+@pytest.mark.skipif(
+    parse(tf.__version__) < parse("2.3.0"),
+    reason="Preprocessing layers and "
+    "applications.efficientnet only exist in TF2.3+.",
+)
 def test_override_compiling_phase():
     class MyHyperEfficientNet(efficientnet.HyperEfficientNet):
         def _compile(self, model, hp):
@@ -103,6 +129,11 @@ def test_override_compiling_phase():
     assert hp.values["optimizer"] == "adam"
 
 
+@pytest.mark.skipif(
+    parse(tf.__version__) < parse("2.3.0"),
+    reason="Preprocessing layers and "
+    "applications.efficientnet only exist in TF2.3+.",
+)
 def test_augmentation_param_invalid_input():
     with pytest.raises(ValueError):
         efficientnet.HyperEfficientNet(
@@ -110,6 +141,11 @@ def test_augmentation_param_invalid_input():
         )
 
 
+@pytest.mark.skipif(
+    parse(tf.__version__) < parse("2.3.0"),
+    reason="Preprocessing layers and "
+    "applications.efficientnet only exist in TF2.3+.",
+)
 def test_augmentation_param_fixed_model():
     hp = hp_module.HyperParameters()
     aug_model = tf.keras.Sequential(name="aug")
@@ -120,6 +156,11 @@ def test_augmentation_param_fixed_model():
     assert model.layers[1].name == "aug"
 
 
+@pytest.mark.skipif(
+    parse(tf.__version__) < parse("2.3.0"),
+    reason="Preprocessing layers and "
+    "applications.efficientnet only exist in TF2.3+.",
+)
 def test_augmentation_param_hyper_model():
     class HyperAug(hm_module.HyperModel):
         def build(self, hp):

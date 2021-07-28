@@ -197,7 +197,7 @@ def test_checkpoint_removal(tmp_dir):
 
 @pytest.mark.skipif(
     parse(tf.__version__) < parse("2.3.0"),
-    reason="TPUStrategy doesn't exist in TF2.",
+    reason="TPUStrategy only exists in TF2.3+.",
 )
 def test_checkpoint_fname_tpu(tmp_dir):
     def build_model(hp):
