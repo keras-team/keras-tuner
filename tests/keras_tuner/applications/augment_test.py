@@ -44,6 +44,16 @@ def test_transforms_search_space():
     ]
 
 
+def test_tf_version_too_low_error():
+    pp_module = aug_module.preprocessing
+    aug_module.preprocessing = None
+
+    with pytest.raises(ImportError, match="HyperImageAugment requires"):
+        aug_module.HyperImageAugment()
+
+    aug_module.preprocessing = pp_module
+
+
 def test_input_requirement():
     hp = hp_module.HyperParameters()
     with pytest.raises(ValueError, match=r".*must specify.*"):

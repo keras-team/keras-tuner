@@ -18,9 +18,15 @@ import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras import layers
 from tensorflow.keras.applications import efficientnet
-from tensorflow.keras.layers.experimental import preprocessing
 
 from keras_tuner.engine import hypermodel
+
+try:
+    from tensorflow.keras.layers.experimental import (  # isort:skip
+        preprocessing,
+    )  # pytype: disable=import-error
+except ImportError:
+    preprocessing = None
 
 EFFICIENTNET_MODELS = {
     "B0": efficientnet.EfficientNetB0,
@@ -73,8 +79,13 @@ class HyperEfficientNet(hypermodel.HyperModel):
         input_tensor=None,
         classes=None,
         augmentation_model=None,
-        **kwargs
+        **kwargs,
     ):
+        if preprocessing is None:
+            raise ImportError(
+                "HyperEfficientNet requires tensorflow>=2.3.0, "
+                f"but the current version is {tf.__version__}."
+            )
         if not isinstance(
             augmentation_model, (hypermodel.HyperModel, keras.Model, type(None))
         ):

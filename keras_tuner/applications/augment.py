@@ -20,19 +20,26 @@ from __future__ import print_function
 import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras import layers
-from tensorflow.keras.layers.experimental import preprocessing
+
+try:
+    from tensorflow.keras.layers.experimental import (  # isort:skip
+        preprocessing,
+    )  # pytype: disable=import-error
+except ImportError:
+    preprocessing = None
 
 from keras_tuner.engine import hypermodel
 
 # dict of functions that create layers for transforms.
 # Each function takes a factor (0 to 1) for the strength
 # of the transform.
-TRANSFORMS = {
-    "translate_x": lambda x: preprocessing.RandomTranslation(x, 0),
-    "translate_y": lambda y: preprocessing.RandomTranslation(0, y),
-    "rotate": preprocessing.RandomRotation,
-    "contrast": preprocessing.RandomContrast,
-}
+if preprocessing is not None:
+    TRANSFORMS = {
+        "translate_x": lambda x: preprocessing.RandomTranslation(x, 0),
+        "translate_y": lambda y: preprocessing.RandomTranslation(0, y),
+        "rotate": preprocessing.RandomRotation,
+        "contrast": preprocessing.RandomContrast,
+    }
 
 
 class HyperImageAugment(hypermodel.HyperModel):
@@ -131,6 +138,11 @@ class HyperImageAugment(hypermodel.HyperModel):
         augment_layers=3,
         **kwargs,
     ):
+        if preprocessing is None:
+            raise ImportError(
+                "HyperImageAugment requires tensorflow>=2.3.0, "
+                f"but the current version is {tf.__version__}."
+            )
 
         if input_shape is None and input_tensor is None:
             raise ValueError(

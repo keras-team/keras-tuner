@@ -37,6 +37,16 @@ def test_model_construction(version):
     assert out.shape == (1, 10)
 
 
+def test_tf_version_too_low_error():
+    pp_module = efficientnet.preprocessing
+    efficientnet.preprocessing = None
+
+    with pytest.raises(ImportError, match="HyperEfficientNet requires"):
+        efficientnet.HyperEfficientNet()
+
+    efficientnet.preprocessing = pp_module
+
+
 def test_hyperparameter_existence_and_defaults():
     hp = hp_module.HyperParameters()
     hypermodel = efficientnet.HyperEfficientNet(
