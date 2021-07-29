@@ -17,6 +17,7 @@ from unittest import mock
 import numpy as np
 import pytest
 import tensorflow as tf
+from packaging.version import parse
 from tensorflow import keras
 
 import keras_tuner
@@ -194,6 +195,10 @@ def test_checkpoint_removal(tmp_dir):
     assert not tf.io.gfile.exists(tuner._get_checkpoint_fname(trial_id, 10))
 
 
+@pytest.mark.skipif(
+    parse(tf.__version__) < parse("2.3.0"),
+    reason="TPUStrategy only exists in TF2.3+.",
+)
 def test_checkpoint_fname_tpu(tmp_dir):
     def build_model(hp):
         model = keras.Sequential(

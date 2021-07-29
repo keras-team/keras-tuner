@@ -12,6 +12,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-18.04]
+        tf: [tensorflow==2.0.0, tensorflow]
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python 3.6
@@ -32,8 +33,7 @@ jobs:
             ${{ runner.os }}-pip-
       - name: Install dependencies
         run: |
-          pip install tensorflow keras_autodoc
-          pip install Sphinx==3.0.4
+          pip install ${{ matrix.tf }}
           pip install -e ".[tests]" --progress-bar off --upgrade
       - name: Test with pytest
         run: |
@@ -66,8 +66,7 @@ jobs:
             ${{ runner.os }}-pip-
       - name: Install dependencies
         run: |
-          pip install tensorflow keras_autodoc
-          pip install Sphinx==3.0.4
+          pip install tensorflow
           pip install -e ".[tests]" --progress-bar off --upgrade
       - name: Lint
         run: bash shell/lint.sh

@@ -17,21 +17,34 @@
 import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras import layers
-from tensorflow.keras.applications import efficientnet
-from tensorflow.keras.layers.experimental import preprocessing
 
 from keras_tuner.engine import hypermodel
 
-EFFICIENTNET_MODELS = {
-    "B0": efficientnet.EfficientNetB0,
-    "B1": efficientnet.EfficientNetB1,
-    "B2": efficientnet.EfficientNetB2,
-    "B3": efficientnet.EfficientNetB3,
-    "B4": efficientnet.EfficientNetB4,
-    "B5": efficientnet.EfficientNetB5,
-    "B6": efficientnet.EfficientNetB6,
-    "B7": efficientnet.EfficientNetB7,
-}
+try:
+    from tensorflow.keras.applications import (  # isort:skip
+        efficientnet,
+    )  # pytype: disable=import-error
+except ImportError:
+    efficientnet = None
+
+try:
+    from tensorflow.keras.layers.experimental import (  # isort:skip
+        preprocessing,
+    )  # pytype: disable=import-error
+except ImportError:
+    preprocessing = None
+
+if efficientnet is not None:
+    EFFICIENTNET_MODELS = {
+        "B0": efficientnet.EfficientNetB0,
+        "B1": efficientnet.EfficientNetB1,
+        "B2": efficientnet.EfficientNetB2,
+        "B3": efficientnet.EfficientNetB3,
+        "B4": efficientnet.EfficientNetB4,
+        "B5": efficientnet.EfficientNetB5,
+        "B6": efficientnet.EfficientNetB6,
+        "B7": efficientnet.EfficientNetB7,
+    }
 
 EFFICIENTNET_IMG_SIZE = {
     "B0": 224,
@@ -73,8 +86,13 @@ class HyperEfficientNet(hypermodel.HyperModel):
         input_tensor=None,
         classes=None,
         augmentation_model=None,
-        **kwargs
+        **kwargs,
     ):
+        if preprocessing is None:
+            raise ImportError(
+                "HyperEfficientNet requires tensorflow>=2.3.0, "
+                f"but the current version is {tf.__version__}."
+            )
         if not isinstance(
             augmentation_model, (hypermodel.HyperModel, keras.Model, type(None))
         ):

@@ -112,7 +112,9 @@ class Tuner(base_tuner.BaseTuner):
 
         # Support multi-worker distribution strategies w/ distributed tuning.
         # Only the chief worker in each cluster should report results.
-        if self.distribution_strategy is not None:
+        if self.distribution_strategy is not None and hasattr(
+            self.distribution_strategy.extended, "_in_multi_worker_mode"
+        ):
             self.oracle.multi_worker = (
                 self.distribution_strategy.extended._in_multi_worker_mode()
             )
@@ -323,9 +325,11 @@ class Tuner(base_tuner.BaseTuner):
             self._get_checkpoint_dir(trial_id, epoch),
             "checkpoint",
         )
-        if isinstance(
-            self.distribution_strategy, tf.distribute.TPUStrategy
-        ) and not self.project_dir.startswith("gs://"):
+        if (
+            hasattr(tf.distribute, "TPUStrategy")
+            and isinstance(self.distribution_strategy, tf.distribute.TPUStrategy)
+            and not self.project_dir.startswith("gs://")
+        ):
             # TPU strategy only support saving h5 format on local path
             return checkpoint_fname + ".h5"
         return checkpoint_fname

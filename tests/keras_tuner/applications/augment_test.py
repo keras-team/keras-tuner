@@ -17,6 +17,8 @@ import os
 
 import numpy as np
 import pytest
+import tensorflow as tf
+from packaging.version import parse
 from tensorflow import keras
 
 from keras_tuner.applications import augment as aug_module
@@ -24,6 +26,10 @@ from keras_tuner.engine import hyperparameters as hp_module
 
 
 @pytest.mark.skipif("TRAVIS" in os.environ, reason="Causes CI to stall")
+@pytest.mark.skipif(
+    parse(tf.__version__) < parse("2.3.0"),
+    reason="Preprocessing layers only exist in TF2.3+.",
+)
 def test_transforms_search_space():
     hm = aug_module.HyperImageAugment(input_shape=(32, 32, 3))
     # Default choice
@@ -44,6 +50,20 @@ def test_transforms_search_space():
     ]
 
 
+def test_tf_version_too_low_error():
+    pp_module = aug_module.preprocessing
+    aug_module.preprocessing = None
+
+    with pytest.raises(ImportError, match="HyperImageAugment requires"):
+        aug_module.HyperImageAugment()
+
+    aug_module.preprocessing = pp_module
+
+
+@pytest.mark.skipif(
+    parse(tf.__version__) < parse("2.3.0"),
+    reason="Preprocessing layers only exist in TF2.3+.",
+)
 def test_input_requirement():
     hp = hp_module.HyperParameters()
     with pytest.raises(ValueError, match=r".*must specify.*"):
@@ -58,6 +78,10 @@ def test_input_requirement():
     assert model.built
 
 
+@pytest.mark.skipif(
+    parse(tf.__version__) < parse("2.3.0"),
+    reason="Preprocessing layers only exist in TF2.3+.",
+)
 def test_model_construction_factor_zero():
     hp = hp_module.HyperParameters()
     hm = aug_module.HyperImageAugment(input_shape=(None, None, 3))
@@ -72,6 +96,10 @@ def test_model_construction_factor_zero():
     assert len(model.layers) == 1
 
 
+@pytest.mark.skipif(
+    parse(tf.__version__) < parse("2.3.0"),
+    reason="Preprocessing layers only exist in TF2.3+.",
+)
 def test_model_construction_fixed_aug():
     hp = hp_module.HyperParameters()
     hm = aug_module.HyperImageAugment(
@@ -89,6 +117,10 @@ def test_model_construction_fixed_aug():
     assert (out != 1).sum() == 0
 
 
+@pytest.mark.skipif(
+    parse(tf.__version__) < parse("2.3.0"),
+    reason="Preprocessing layers only exist in TF2.3+.",
+)
 def test_model_construction_rand_aug():
     hp = hp_module.HyperParameters()
     hm = aug_module.HyperImageAugment(input_shape=(None, None, 3), rotate=[0.2, 0.5])
@@ -104,6 +136,10 @@ def test_model_construction_rand_aug():
     assert (out != 1).sum() == 0
 
 
+@pytest.mark.skipif(
+    parse(tf.__version__) < parse("2.3.0"),
+    reason="Preprocessing layers only exist in TF2.3+.",
+)
 def test_hyperparameter_selection_and_hp_defaults_fixed_aug():
     hp = hp_module.HyperParameters()
     hm = aug_module.HyperImageAugment(
@@ -120,6 +156,10 @@ def test_hyperparameter_selection_and_hp_defaults_fixed_aug():
     assert "factor_contrast" not in hp.values
 
 
+@pytest.mark.skipif(
+    parse(tf.__version__) < parse("2.3.0"),
+    reason="Preprocessing layers only exist in TF2.3+.",
+)
 def test_hyperparameter_existence_and_hp_defaults_rand_aug():
     hp = hp_module.HyperParameters()
     hm = aug_module.HyperImageAugment(
@@ -129,6 +169,10 @@ def test_hyperparameter_existence_and_hp_defaults_rand_aug():
     assert hp.get("augment_layers") == 2
 
 
+@pytest.mark.skipif(
+    parse(tf.__version__) < parse("2.3.0"),
+    reason="Preprocessing layers only exist in TF2.3+.",
+)
 def test_hyperparameter_override_fixed_aug():
     hp = hp_module.HyperParameters()
     hp.Fixed("factor_rotate", 0.9)
@@ -141,6 +185,10 @@ def test_hyperparameter_override_fixed_aug():
     assert hp.get("factor_contrast") == 0.0
 
 
+@pytest.mark.skipif(
+    parse(tf.__version__) < parse("2.3.0"),
+    reason="Preprocessing layers only exist in TF2.3+.",
+)
 def test_hyperparameter_override_rand_aug():
     hp = hp_module.HyperParameters()
     hp.Fixed("randaug_mag", 1.0)
