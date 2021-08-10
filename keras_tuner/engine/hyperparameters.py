@@ -563,8 +563,11 @@ class HyperParameters(object):
         # Active values for this `Trial`.
         self.values = {}
 
-        self._unexplored_conditions = []
-        self._explored_conditions = []
+        # Lists of stacks of conditions used during `explore_space()`.
+        self._scopes_never_active = []
+        self._scopes_once_active = []
+
+        # Flag of whether `explore_space()` is running.
         self._exploring_space = False
 
     @contextlib.contextmanager
@@ -576,29 +579,40 @@ class HyperParameters(object):
             self._name_scopes.pop()
 
     def explore_space(self, hypermodel):
-        """Generate hp values to activate conditions to fetch all hps."""
+        """Build hypermodel multiple times to find all conditional hps.
+
+        This function is called by the `Tuner` during initialization.  It
+        generates hp values based on the not activated `conditional_scopes`
+        found during previous builds.
+        """
         self._exploring_space = True
         hypermodel.build(self)
-        while self._unexplored_conditions:
-            # for i in range(8):
-            conditions = self._unexplored_conditions[0]
+        while self._scopes_never_active:
+            conditions = self._scopes_never_active[0]
             for condition in conditions:
                 self.values[condition.name] = condition.values[0]
             hypermodel.build(self)
         self._exploring_space = False
 
     def _update_explore_conditions(self, condition):
+        """Update the conditions when exploring search space.
+
+        Maintain `self._scopes_once_active` (`conditional_scope`s activated
+        before) and `self._scopes_never_active` (`conditional_scope`s not
+        activated before) during `explore_space()`.
+        """
+
         if (
             not condition.is_active(self.values)
-            and self._conditions not in self._explored_conditions
+            and self._conditions not in self._scopes_once_active
         ):
-            self._unexplored_conditions.append(copy.deepcopy(self._conditions))
+            self._scopes_never_active.append(copy.deepcopy(self._conditions))
 
         if condition.is_active(self.values):
-            if self._conditions not in self._explored_conditions:
-                self._explored_conditions.append(copy.deepcopy(self._conditions))
-            if self._conditions in self._unexplored_conditions:
-                self._unexplored_conditions.remove(self._conditions)
+            if self._conditions not in self._scopes_once_active:
+                self._scopes_once_active.append(copy.deepcopy(self._conditions))
+            if self._conditions in self._scopes_never_active:
+                self._scopes_never_active.remove(self._conditions)
 
     @contextlib.contextmanager
     def conditional_scope(self, parent_name, parent_values):

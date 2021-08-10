@@ -406,23 +406,20 @@ def test_init_build_all_hps_in_all_conditions(tmp_dir):
     class ConditionalHyperModel(MockHyperModel):
         def build(self, hp):
             model_type = hp.Choice("model_type", ["cnn", "mlp"])
-            with hp.conditional_scope("model_type", ["cnn"]):
+            with hp.conditional_scope("model_type", [model_type]):
                 if model_type == "cnn":
                     sub_cnn = hp.Choice("sub_cnn", ["a", "b"])
-                    with hp.conditional_scope("sub_cnn", ["a"]):
+                    with hp.conditional_scope("sub_cnn", [sub_cnn]):
                         if sub_cnn == "a":
                             hp.Int("n_filters_a", 2, 4)
-                    with hp.conditional_scope("sub_cnn", ["b"]):
-                        if sub_cnn == "b":
+                        else:
                             hp.Int("n_filters_b", 6, 8)
-            with hp.conditional_scope("model_type", ["mlp"]):
-                if model_type == "mlp":
+                else:
                     sub_mlp = hp.Choice("sub_mlp", ["a", "b"])
-                    with hp.conditional_scope("sub_mlp", ["a"]):
+                    with hp.conditional_scope("sub_mlp", [sub_mlp]):
                         if sub_mlp == "a":
                             hp.Int("n_units_a", 2, 4)
-                    with hp.conditional_scope("sub_mlp", ["b"]):
-                        if sub_mlp == "b":
+                        else:
                             hp.Int("n_units_b", 6, 8)
             more_block = hp.Boolean("more_block", default=False)
             with hp.conditional_scope("more_block", [True]):
@@ -430,45 +427,22 @@ def test_init_build_all_hps_in_all_conditions(tmp_dir):
                     hp.Int("new_block_hp", 1, 3)
             return super().build(hp)
 
+    def name_in_hp(name, hp):
+        return any(["model_type" == single_hp.name for single_hp in hp.space])
+
     class MyTuner(tuner_module.Tuner):
         def _populate_initial_space(self):
             super()._populate_initial_space()
-            assert any(
-                ["model_type" == hp.name for hp in self.oracle.hyperparameters.space]
-            )
-            assert any(
-                ["sub_cnn" == hp.name for hp in self.oracle.hyperparameters.space]
-            )
-            assert any(
-                [
-                    "n_filters_a" == hp.name
-                    for hp in self.oracle.hyperparameters.space
-                ]
-            )
-            assert any(
-                [
-                    "n_filters_b" == hp.name
-                    for hp in self.oracle.hyperparameters.space
-                ]
-            )
-            assert any(
-                ["sub_mlp" == hp.name for hp in self.oracle.hyperparameters.space]
-            )
-            assert any(
-                ["n_units_a" == hp.name for hp in self.oracle.hyperparameters.space]
-            )
-            assert any(
-                ["n_units_a" == hp.name for hp in self.oracle.hyperparameters.space]
-            )
-            assert any(
-                ["more_block" == hp.name for hp in self.oracle.hyperparameters.space]
-            )
-            assert any(
-                [
-                    "new_block_hp" == hp.name
-                    for hp in self.oracle.hyperparameters.space
-                ]
-            )
+            hp = self.oracle.hyperparameters
+            assert name_in_hp("model_type", hp)
+            assert name_in_hp("sub_cnn", hp)
+            assert name_in_hp("n_filters_a", hp)
+            assert name_in_hp("n_filters_b", hp)
+            assert name_in_hp("sub_mlp", hp)
+            assert name_in_hp("n_units_a", hp)
+            assert name_in_hp("n_units_b", hp)
+            assert name_in_hp("more_block", hp)
+            assert name_in_hp("new_block_hp", hp)
 
     MyTuner(
         oracle=keras_tuner.tuners.randomsearch.RandomSearchOracle(
