@@ -400,3 +400,30 @@ def test_save_model_delete_called(tmp_dir):
     tuner = save_model_setup_tuner(tmp_dir)
     tuner.save_model("a", None, step=16)
     assert tuner.was_called
+
+
+def test_init_build_all_hps_in_all_conditions(tmp_dir):
+    class ConditionalHyperModel(MockHyperModel):
+        def build(self, hp):
+            model_type = hp.Choice("model_type", ["cnn", "mlp"])
+            if model_type == "cnn":
+                with hp.conditional_scope("model_type", "cnn"):
+                    hp.Int("n_filter", 5, 10)
+            else:
+                with hp.conditional_scope("model_type", "mlp"):
+                    hp.Int("n_units", 2, 4)
+            return super().build(hp)
+
+    class MyTuner(tuner_module.Tuner):
+        def _populate_initial_space(self):
+            super()._populate_initial_space()
+            assert "n_filters" in self.oracle.hyperparameters.values
+            assert "n_units" in self.oracle.hyperparameters.values
+
+    MyTuner(
+        oracle=keras_tuner.tuners.randomsearch.RandomSearchOracle(
+            objective="loss", max_trials=2, seed=1337
+        ),
+        hypermodel=ConditionalHyperModel(),
+        directory=tmp_dir,
+    )
