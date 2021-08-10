@@ -19,6 +19,7 @@ from __future__ import print_function
 
 import collections
 import contextlib
+import copy
 import math
 import random
 
@@ -69,6 +70,11 @@ def _check_int(val, arg):
 
 class HyperParameter(object):
     """Hyperparameter base class.
+
+    A `HyperParameter` instance is uniquely identified by its `name` and
+    `conditions` attributes. `HyperParameter`s with the same `name` but with
+    different `conditions` are considered as different `HyperParameter`s by
+    the `HyperParameters` instance.
 
     Args:
         name: A string. the name of parameter. Must be unique for each
@@ -557,6 +563,10 @@ class HyperParameters(object):
         # Active values for this `Trial`.
         self.values = {}
 
+        self._unexplored_conditions = []
+        self._explored_conditions = []
+        self._exploring_space = False
+
     @contextlib.contextmanager
     def name_scope(self, name):
         self._name_scopes.append(name)
@@ -564,6 +574,31 @@ class HyperParameters(object):
             yield
         finally:
             self._name_scopes.pop()
+
+    def explore_space(self, hypermodel):
+        """Generate hp values to activate conditions to fetch all hps."""
+        self._exploring_space = True
+        hypermodel.build(self)
+        while self._unexplored_conditions:
+            # for i in range(8):
+            conditions = self._unexplored_conditions[0]
+            for condition in conditions:
+                self.values[condition.name] = condition.values[0]
+            hypermodel.build(self)
+        self._exploring_space = False
+
+    def _update_explore_conditions(self, condition):
+        if (
+            not condition.is_active(self.values)
+            and self._conditions not in self._explored_conditions
+        ):
+            self._unexplored_conditions.append(copy.deepcopy(self._conditions))
+
+        if condition.is_active(self.values):
+            if self._conditions not in self._explored_conditions:
+                self._explored_conditions.append(copy.deepcopy(self._conditions))
+            if self._conditions in self._unexplored_conditions:
+                self._unexplored_conditions.remove(self._conditions)
 
     @contextlib.contextmanager
     def conditional_scope(self, parent_name, parent_values):
@@ -620,7 +655,12 @@ class HyperParameters(object):
                 "`HyperParameter` named: " + parent_name + " " "not defined."
             )
 
-        self._conditions.append(conditions_mod.Parent(parent_name, parent_values))
+        condition = conditions_mod.Parent(parent_name, parent_values)
+        self._conditions.append(condition)
+
+        if self._exploring_space:
+            self._update_explore_conditions(condition)
+
         try:
             yield
         finally:

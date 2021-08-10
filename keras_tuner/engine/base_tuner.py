@@ -115,7 +115,7 @@ class BaseTuner(stateful.Stateful):
         training data.
         """
         hp = self.oracle.get_space()
-        self.hypermodel.build(hp)
+        hp.explore_space(self.hypermodel)
         self.oracle.update_space(hp)
 
     def search(self, *fit_args, **fit_kwargs):
