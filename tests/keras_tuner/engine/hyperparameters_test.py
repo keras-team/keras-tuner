@@ -304,6 +304,16 @@ def test_sampling_arg():
         hp_module.Int("k", 1, 0, sampling="linear")
 
 
+def test_sampling_zero_length_intervals():
+    f = hp_module.Float("f", 2, 2)
+    rand_sample = f.random_sample()
+    assert rand_sample == 2
+
+    val = 2
+    prob = hp_module.value_to_cumulative_prob(val, f)
+    assert prob == 1
+
+
 def test_log_sampling_random_state():
     f = hp_module.Float("f", 1e-3, 1e3, sampling="log")
     rand_sample = f.random_sample()
