@@ -1164,6 +1164,8 @@ def value_to_cumulative_prob(value, hp):
         # Center the value in its probability bucket.
         return (index + 0.5) * ele_prob
     elif isinstance(hp, (Int, Float)):
+        if hp.max_value == hp.min_value:
+            return 1.0
         sampling = hp.sampling or "linear"
         if sampling == "linear":
             return (value - hp.min_value) / (hp.max_value - hp.min_value)
