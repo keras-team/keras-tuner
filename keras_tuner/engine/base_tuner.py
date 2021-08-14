@@ -17,6 +17,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import copy
 import os
 
 import tensorflow as tf
@@ -110,12 +111,43 @@ class BaseTuner(stateful.Stateful):
     def _populate_initial_space(self):
         """Populate initial search space for oracle.
 
-        Keep this function as a subroutine for AutoKeras to override. The space may
-        not be ready at the initialization of the tuner, but after seeing the
-        training data.
+        Keep this function as a subroutine for AutoKeras to override. The space
+        may not be ready at the initialization of the tuner, but after seeing
+        the training data.
+
+        Build hypermodel multiple times to find all conditional hps. It
+        generates hp values based on the not activated `conditional_scopes`
+        found in the builds.
         """
         hp = self.oracle.get_space()
-        hp.explore_space(self.hypermodel)
+
+        # Lists of stacks of conditions used during `explore_space()`.
+        scopes_never_active = []
+        scopes_once_active = []
+
+        while True:
+            self.hypermodel.build(hp)
+
+            # Update the recored scopes.
+            for conditions in hp.active_scopes:
+                if conditions not in scopes_once_active:
+                    scopes_once_active.append(copy.deepcopy(conditions))
+                if conditions in scopes_never_active:
+                    scopes_never_active.remove(conditions)
+
+            for conditions in hp.inactive_scopes:
+                if conditions not in scopes_once_active:
+                    scopes_never_active.append(copy.deepcopy(conditions))
+
+            # All conditional scopes are activated.
+            if len(scopes_never_active) == 0:
+                break
+
+            # Generate new values to activate new conditions.
+            conditions = scopes_never_active[0]
+            for condition in conditions:
+                hp.values[condition.name] = condition.values[0]
+
         self.oracle.update_space(hp)
 
     def search(self, *fit_args, **fit_kwargs):
