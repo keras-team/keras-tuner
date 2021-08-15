@@ -35,4 +35,4 @@ from .utils import check_tf_version
 
 check_tf_version()
 
-__version__ = "1.0.4"
+__version__ = "1.0.4rc0"
