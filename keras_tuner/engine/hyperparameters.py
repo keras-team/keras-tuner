@@ -19,6 +19,7 @@ from __future__ import print_function
 
 import collections
 import contextlib
+import copy
 import math
 import random
 
@@ -69,6 +70,11 @@ def _check_int(val, arg):
 
 class HyperParameter(object):
     """Hyperparameter base class.
+
+    A `HyperParameter` instance is uniquely identified by its `name` and
+    `conditions` attributes. `HyperParameter`s with the same `name` but with
+    different `conditions` are considered as different `HyperParameter`s by
+    the `HyperParameters` instance.
 
     Args:
         name: A string. the name of parameter. Must be unique for each
@@ -557,6 +563,12 @@ class HyperParameters(object):
         # Active values for this `Trial`.
         self.values = {}
 
+        # A list of active `conditional_scope`s in a build,
+        # each of which is a list of condtions.
+        self.active_scopes = []
+        # Similar for inactive `conditional_scope`s.
+        self.inactive_scopes = []
+
     @contextlib.contextmanager
     def name_scope(self, name):
         self._name_scopes.append(name)
@@ -594,12 +606,12 @@ class HyperParameters(object):
                 model = Sequential()
                 model.add(Input(shape=(32, 32, 3)))
                 model_type = hp.Choice("model_type", ["mlp", "cnn"])
-                if model_type == "mlp":
-                    with hp.conditional_scope("model_type", ["mlp"]):
+                with hp.conditional_scope("model_type", ["mlp"]):
+                    if model_type == "mlp":
                         model.add(Flatten())
                         model.add(Dense(32, activation='relu'))
-                if model_type == "cnn":
-                    with hp.conditional_scope("model_type", ["cnn"]):
+                with hp.conditional_scope("model_type", ["cnn"]):
+                    if model_type == "cnn":
                         model.add(Conv2D(64, 3, activation='relu'))
                         model.add(GlobalAveragePooling2D())
                 model.add(Dense(10, activation='softmax'))
@@ -620,7 +632,14 @@ class HyperParameters(object):
                 "`HyperParameter` named: " + parent_name + " " "not defined."
             )
 
-        self._conditions.append(conditions_mod.Parent(parent_name, parent_values))
+        condition = conditions_mod.Parent(parent_name, parent_values)
+        self._conditions.append(condition)
+
+        if condition.is_active(self.values):
+            self.active_scopes.append(copy.deepcopy(self._conditions))
+        else:
+            self.inactive_scopes.append(copy.deepcopy(self._conditions))
+
         try:
             yield
         finally:
