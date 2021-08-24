@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import unittest
-from unittest import mock
 
 import numpy as np
 import pytest
@@ -199,8 +198,6 @@ def test_checkpoint_removal(tmp_dir):
     parse(tf.__version__) < parse("2.3.0"),
     reason="TPUStrategy only exists in TF2.3+.",
 )
-
-
 def test_metric_direction_inferred_from_objective(tmp_dir):
     oracle = keras_tuner.tuners.randomsearch.RandomSearchOracle(
         objective=keras_tuner.Objective("a", "max"), max_trials=1
