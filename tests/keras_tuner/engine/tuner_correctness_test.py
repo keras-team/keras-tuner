@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import unittest
-from unittest import mock
 
 import numpy as np
 import pytest
@@ -199,45 +198,6 @@ def test_checkpoint_removal(tmp_dir):
     parse(tf.__version__) < parse("2.3.0"),
     reason="TPUStrategy only exists in TF2.3+.",
 )
-def test_checkpoint_fname_tpu(tmp_dir):
-    def build_model(hp):
-        model = keras.Sequential(
-            [keras.layers.Dense(hp.Int("size", 5, 10)), keras.layers.Dense(1)]
-        )
-        model.compile("sgd", "mse", metrics=["accuracy"])
-        return model
-
-    strategy = mock.MagicMock(spec=tf.distribute.TPUStrategy)
-
-    tuner = keras_tuner.Tuner(
-        oracle=keras_tuner.tuners.randomsearch.RandomSearchOracle(
-            objective="val_accuracy", max_trials=1, seed=1337
-        ),
-        hypermodel=build_model,
-        directory=tmp_dir,
-        distribution_strategy=strategy,
-    )
-    assert tuner._get_checkpoint_fname(trial_id=0, epoch=20).endswith(".h5")
-
-
-def test_checkpoint_fname_no_tpu(tmp_dir):
-    def build_model(hp):
-        model = keras.Sequential(
-            [keras.layers.Dense(hp.Int("size", 5, 10)), keras.layers.Dense(1)]
-        )
-        model.compile("sgd", "mse", metrics=["accuracy"])
-        return model
-
-    tuner = keras_tuner.Tuner(
-        oracle=keras_tuner.tuners.randomsearch.RandomSearchOracle(
-            objective="val_accuracy", max_trials=1, seed=1337
-        ),
-        hypermodel=build_model,
-        directory=tmp_dir,
-    )
-    assert not tuner._get_checkpoint_fname(trial_id=0, epoch=20).endswith(".h5")
-
-
 def test_metric_direction_inferred_from_objective(tmp_dir):
     oracle = keras_tuner.tuners.randomsearch.RandomSearchOracle(
         objective=keras_tuner.Objective("a", "max"), max_trials=1
