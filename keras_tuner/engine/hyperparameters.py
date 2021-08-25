@@ -22,6 +22,7 @@ import contextlib
 import copy
 import math
 import random
+from typing import Union
 
 import numpy as np
 import six
@@ -1124,8 +1125,11 @@ def deserialize(config):
     )
 
 
-def serialize(obj):
-    return {"class_name": obj.__class__.__name__, "config": obj.get_config()}
+def serialize(obj: Union[HyperParameter, conditions_mod.Condition]):
+    if isinstance(obj, (HyperParameter, conditions_mod.Condition)):
+        return {"class_name": obj.__class__.__name__, "config": obj.get_config()}
+    else:
+        return obj
 
 
 def cumulative_prob_to_value(prob, hp):
