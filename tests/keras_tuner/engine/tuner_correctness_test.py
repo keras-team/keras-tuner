@@ -21,6 +21,7 @@ from tensorflow import keras
 
 import keras_tuner
 from keras_tuner.engine import tuner as tuner_module
+from keras_tuner.engine import tuner_utils
 
 INPUT_DIM = 2
 NUM_CLASSES = 3
@@ -238,6 +239,28 @@ def test_overwrite_true(tmp_dir):
         overwrite=True,
     )
     assert len(new_tuner.oracle.trials) == 0
+    
+def test_correct_display_trial_number(tmp_dir):
+    tuner = keras_tuner.tuners.RandomSearch(
+        hypermodel=build_model,
+        objective="val_accuracy",
+        max_trials=2,
+        directory=tmp_dir,
+    )
+    tuner.search(
+        TRAIN_INPUTS, TRAIN_TARGETS, validation_data=(VAL_INPUTS, VAL_TARGETS)
+    )
+    new_tuner = keras_tuner.tuners.RandomSearch(
+        hypermodel=build_model,
+        objective="val_accuracy",
+        max_trials=6,
+        directory=tmp_dir,
+        overwrite=False,
+    )
+    new_tuner.search(
+        TRAIN_INPUTS, TRAIN_TARGETS, validation_data=(VAL_INPUTS, VAL_TARGETS)
+    )
+    assert len(new_tuner.oracle.trials) == new_tuner._display.trial_number
 
 
 def test_error_on_unknown_objective_direction(tmp_dir):
