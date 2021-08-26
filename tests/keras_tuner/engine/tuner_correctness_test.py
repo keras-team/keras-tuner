@@ -21,7 +21,6 @@ from tensorflow import keras
 
 import keras_tuner
 from keras_tuner.engine import tuner as tuner_module
-from keras_tuner.engine import tuner_utils
 
 INPUT_DIM = 2
 NUM_CLASSES = 3
@@ -239,7 +238,8 @@ def test_overwrite_true(tmp_dir):
         overwrite=True,
     )
     assert len(new_tuner.oracle.trials) == 0
-    
+
+
 def test_correct_display_trial_number(tmp_dir):
     tuner = keras_tuner.tuners.RandomSearch(
         hypermodel=build_model,
