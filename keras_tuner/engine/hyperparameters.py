@@ -1114,6 +1114,10 @@ def deserialize(config):
         HyperParameters,
         conditions_mod.Condition,
         conditions_mod.Parent,
+        int,
+        float,
+        str,
+        bool,
     ]
     for obj in objects:
         if isinstance(config, obj):
@@ -1127,7 +1131,7 @@ def deserialize(config):
 def serialize(obj):
     if isinstance(obj, (int, float, str, bool)):
         return obj
-    return {"class_name": obj.__class__.__name__, "config": obj.get_config()}
+    return keras.utils.serialize_keras_object(obj)
 
 
 def cumulative_prob_to_value(prob, hp):
