@@ -22,7 +22,6 @@ import contextlib
 import copy
 import math
 import random
-from typing import Union
 
 import numpy as np
 import six
