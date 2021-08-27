@@ -97,7 +97,7 @@ class Display(object):
     def __init__(self, oracle, verbose=1):
         self.verbose = verbose
         self.oracle = oracle
-        self.trial_number = 0
+        self.trial_number = len(self.oracle.trials)
         self.col_width = 18
 
         # Start time for the overall search
