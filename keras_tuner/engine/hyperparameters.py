@@ -1125,11 +1125,10 @@ def deserialize(config):
     )
 
 
-def serialize(obj: Union[HyperParameter, conditions_mod.Condition]):
-    if isinstance(obj, (HyperParameter, conditions_mod.Condition)):
-        return {"class_name": obj.__class__.__name__, "config": obj.get_config()}
-    else:
+def serialize(obj):
+    if isinstance(obj, (int, float, str, bool)):
         return obj
+    return {"class_name": obj.__class__.__name__, "config": obj.get_config()}
 
 
 def cumulative_prob_to_value(prob, hp):
