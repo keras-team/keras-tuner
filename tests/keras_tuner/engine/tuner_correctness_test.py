@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import unittest
+from collections import namedtuple
 
 import numpy as np
 import pytest
@@ -91,6 +91,14 @@ class MockModel(keras.Model):
                 self.on_batch_begin(epoch, batch)
                 self.on_batch_end(epoch, batch)
             self.on_epoch_end(epoch)
+        History = namedtuple("History", "history")
+        return History(
+            {
+                "loss": [
+                    np.average(epoch_values) for epoch_values in self.full_history
+                ]
+            }
+        )
 
     def save_weights(self, fname, **kwargs):
         pass
@@ -169,29 +177,6 @@ def test_tuner_errors(tmp_dir):
             TRAIN_INPUTS, TRAIN_TARGETS, validation_data=(VAL_INPUTS, VAL_TARGETS)
         )
     # TODO: test no optimizer
-
-
-def test_checkpoint_removal(tmp_dir):
-    def build_model(hp):
-        model = keras.Sequential(
-            [keras.layers.Dense(hp.Int("size", 5, 10)), keras.layers.Dense(1)]
-        )
-        model.compile("sgd", "mse", metrics=["accuracy"])
-        return model
-
-    tuner = keras_tuner.Tuner(
-        oracle=keras_tuner.tuners.randomsearch.RandomSearchOracle(
-            objective="val_accuracy", max_trials=1, seed=1337
-        ),
-        hypermodel=build_model,
-        directory=tmp_dir,
-    )
-    x, y = np.ones((1, 5)), np.ones((1, 1))
-    tuner.search(x, y, validation_data=(x, y), epochs=21)
-    trial = list(tuner.oracle.trials.values())[0]
-    trial_id = trial.trial_id
-    assert tf.io.gfile.exists(tuner._get_checkpoint_fname(trial_id, 20))
-    assert not tf.io.gfile.exists(tuner._get_checkpoint_fname(trial_id, 10))
 
 
 @pytest.mark.skipif(
@@ -344,44 +329,6 @@ def test_build_and_fit_model_in_tuner(tmp_dir):
         validation_data=(VAL_INPUTS, VAL_TARGETS),
     )
 
-    assert tuner.was_called
-
-
-def save_model_setup_tuner(tmp_dir):
-    class MyTuner(tuner_module.Tuner):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.was_called = False
-
-        def _delete_checkpoint(self, trial_id, epoch):
-            self.was_called = True
-
-        def _checkpoint_model(self, model, trial_id, epoch):
-            pass
-
-    class MyOracle(keras_tuner.engine.oracle.Oracle):
-        def get_trial(self, trial_id):
-            trial = unittest.mock.Mock()
-            trial.metrics = unittest.mock.Mock()
-            trial.metrics.get_best_step.return_value = 5
-            return trial
-
-    return MyTuner(
-        oracle=MyOracle(objective="val_accuracy"),
-        hypermodel=build_model,
-        directory=tmp_dir,
-    )
-
-
-def test_save_model_delete_not_called(tmp_dir):
-    tuner = save_model_setup_tuner(tmp_dir)
-    tuner.save_model("a", None, step=15)
-    assert not tuner.was_called
-
-
-def test_save_model_delete_called(tmp_dir):
-    tuner = save_model_setup_tuner(tmp_dir)
-    tuner.save_model("a", None, step=16)
     assert tuner.was_called
 
 
