@@ -24,6 +24,17 @@ from ..protos import keras_tuner_pb2
 
 
 class MetricObservation(object):
+    """Record of a single step of multiple executions of a single metric.
+
+    In the case of training a Keras model, if the model is trained multiple
+    times, it records a list of values of the same metric at the same epoch.
+    Each value corresponds to one execution.
+
+    Args:
+        value: Float or a list of floats. The evaluated metric values.
+        step: Int. The step of the evaluation, for example, the epoch number.
+    """
+
     def __init__(self, value, step):
         if not isinstance(value, list):
             value = [value]
@@ -62,6 +73,15 @@ class MetricObservation(object):
 
 
 class MetricHistory(object):
+    """Record of multiple executions of a single metric.
+
+    It contains a collection of `MetricObservations`.
+
+    Args:
+        direction: String. The direction of the metric to optimize. The value
+            should be "min" or "max".
+    """
+
     def __init__(self, direction="min"):
         if direction not in {"min", "max"}:
             raise ValueError(
@@ -69,6 +89,7 @@ class MetricHistory(object):
                 '{"min", "max"}, but got: %s' % (direction,)
             )
         self.direction = direction
+        # Mapping step to `MetricObservation`.
         self._observations = {}
 
     def update(self, value, step):
@@ -153,6 +174,14 @@ class MetricHistory(object):
 
 
 class MetricsTracker(object):
+    """Record of the values of multiple executions of all metrics.
+
+    It contains `MetricHistory`s for the metrics.
+
+    Args:
+        metrics: a list of strings of the names of the metrics.
+    """
+
     def __init__(self, metrics=None):
         # str -> MetricHistory
         self.metrics = {}
