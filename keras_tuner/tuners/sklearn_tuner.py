@@ -23,6 +23,8 @@ import tensorflow as tf
 
 try:
     import sklearn  # pytype: disable=import-error
+    import sklearn.model_selection
+    import sklearn.pipeline
 except ImportError:
     sklearn = None
 
