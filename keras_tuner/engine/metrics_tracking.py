@@ -24,11 +24,13 @@ from ..protos import keras_tuner_pb2
 
 
 class MetricObservation(object):
-    """Record of a single step of multiple executions of a single metric.
+    """Metric value at a given step of training across multiple executions.
 
-    In the case of training a Keras model, if the model is trained multiple
-    times, it records a list of values of the same metric at the same epoch.
-    Each value corresponds to one execution.
+    If the model is trained multiple
+    times (multiple executions), KerasTuner records the value of each
+    metric at each training step. These values are aggregated
+    over multiple executions into a list where each value corresponds
+    to one execution.
 
     Args:
         value: Float or a list of floats. The evaluated metric values.
@@ -75,7 +77,7 @@ class MetricObservation(object):
 class MetricHistory(object):
     """Record of multiple executions of a single metric.
 
-    It contains a collection of `MetricObservations`.
+    It contains a collection of `MetricObservation` instances.
 
     Args:
         direction: String. The direction of the metric to optimize. The value
@@ -176,10 +178,10 @@ class MetricHistory(object):
 class MetricsTracker(object):
     """Record of the values of multiple executions of all metrics.
 
-    It contains `MetricHistory`s for the metrics.
+    It contains `MetricHistory` instances for the metrics.
 
     Args:
-        metrics: a list of strings of the names of the metrics.
+        metrics: List of strings of the names of the metrics.
     """
 
     def __init__(self, metrics=None):
