@@ -18,9 +18,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from ..engine import multi_execution_tuner
-from ..engine import oracle as oracle_module
-from ..engine import trial as trial_lib
+from keras_tuner.engine import oracle as oracle_module
+from keras_tuner.engine import trial as trial_module
+from keras_tuner.engine import tuner as tuner_module
 
 
 class RandomSearchOracle(oracle_module.Oracle):
@@ -79,11 +79,11 @@ class RandomSearchOracle(oracle_module.Oracle):
         """
         values = self._random_values()
         if values is None:
-            return {"status": trial_lib.TrialStatus.STOPPED, "values": None}
-        return {"status": trial_lib.TrialStatus.RUNNING, "values": values}
+            return {"status": trial_module.TrialStatus.STOPPED, "values": None}
+        return {"status": trial_module.TrialStatus.RUNNING, "values": values}
 
 
-class RandomSearch(multi_execution_tuner.MultiExecutionTuner):
+class RandomSearch(tuner_module.Tuner):
     """Random search tuner.
 
     Args:

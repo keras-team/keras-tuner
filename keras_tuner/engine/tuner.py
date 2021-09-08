@@ -17,15 +17,18 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import collections
 import copy
 import os
 
+import numpy as np
 import tensorflow as tf
 from tensorboard.plugins.hparams import api as hparams_api
+from tensorflow import keras
 
-from . import base_tuner
-from . import hypermodel as hm_module
-from . import tuner_utils
+from keras_tuner.engine import base_tuner
+from keras_tuner.engine import hypermodel as hm_module
+from keras_tuner.engine import tuner_utils
 
 
 class Tuner(base_tuner.BaseTuner):
@@ -66,6 +69,12 @@ class Tuner(base_tuner.BaseTuner):
         overwrite: Boolean, defaults to `False`. If `False`, reloads an
             existing project of the same name if one is found. Otherwise,
             overwrites the project.
+        executions_per_trial: Integer, the number of executions (training a
+            model from scratch, starting from a new initialization) to run per
+            trial (model configuration). Model metrics may vary greatly
+            depending on random initialization, hence it is often a good idea
+            to run several executions per trial in order to evaluate the
+            performance of a given set of hyperparameter values.
 
     Attributes:
         remaining_trials: Number of trials remaining, `None` if `max_trials` is
@@ -86,6 +95,7 @@ class Tuner(base_tuner.BaseTuner):
         logger=None,
         tuner_id=None,
         overwrite=False,
+        executions_per_trial=1,
     ):
 
         # Subclasses of `KerasHyperModel` are not automatically wrapped.
@@ -108,6 +118,13 @@ class Tuner(base_tuner.BaseTuner):
             overwrite=overwrite,
         )
 
+        if isinstance(oracle.objective, list):
+            raise ValueError(
+                "Multi-objective is not supported, found: {}".format(
+                    oracle.objective
+                )
+            )
+
         self.distribution_strategy = distribution_strategy
 
         # Support multi-worker distribution strategies w/ distributed tuning.
@@ -126,6 +143,12 @@ class Tuner(base_tuner.BaseTuner):
         self._save_n_checkpoints = 10
 
         self.tuner_id = tuner_id or self.tuner_id
+
+        self.executions_per_trial = executions_per_trial
+        # This is the `step` that will be reported to the Oracle at the end
+        # of the Trial. Since intermediate results are not used, this is set
+        # to 0.
+        self._reported_step = 0
 
     def _build_and_fit_model(self, trial, fit_args, fit_kwargs):
         """For AutoKeras to override.
@@ -149,55 +172,41 @@ class Tuner(base_tuner.BaseTuner):
         return model.fit(*fit_args, **fit_kwargs)
 
     def run_trial(self, trial, *fit_args, **fit_kwargs):
-        """Evaluates a set of hyperparameter values.
+        model_checkpoint = keras.callbacks.ModelCheckpoint(
+            filepath=self._get_checkpoint_fname(trial.trial_id, self._reported_step),
+            monitor=self.oracle.objective.name,
+            mode=self.oracle.objective.direction,
+            save_best_only=True,
+            save_weights_only=True,
+        )
+        original_callbacks = fit_kwargs.pop("callbacks", [])
 
-        This method is called multiple times during `search` to build and
-        evaluate the models with different hyperparameters.
+        # Run the training process multiple times.
+        metrics = collections.defaultdict(list)
+        for execution in range(self.executions_per_trial):
+            copied_fit_kwargs = copy.copy(fit_kwargs)
+            callbacks = self._deepcopy_callbacks(original_callbacks)
+            self._configure_tensorboard_dir(callbacks, trial, execution)
+            callbacks.append(tuner_utils.TunerCallback(self, trial))
+            # Only checkpoint the best epoch across all executions.
+            callbacks.append(model_checkpoint)
+            copied_fit_kwargs["callbacks"] = callbacks
 
-        The method is responsible for reporting metrics related to the `Trial`
-        to the `Oracle` via `self.oracle.update_trial`.
+            history = self._build_and_fit_model(trial, fit_args, copied_fit_kwargs)
+            for metric, epoch_values in history.history.items():
+                if self.oracle.objective.direction == "min":
+                    best_value = np.min(epoch_values)
+                else:
+                    best_value = np.max(epoch_values)
+                metrics[metric].append(best_value)
 
-        Args:
-            trial: A `Trial` instance that contains the information needed to
-                run this trial. `Hyperparameters` can be accessed via
-                `trial.hyperparameters`.
-            *fit_args: Positional arguments passed by `search`.
-            **fit_kwargs: Keyword arguments passed by `search`.
-        """
-        # Handle any callbacks passed to `fit`.
-        copied_fit_kwargs = copy.copy(fit_kwargs)
-        callbacks = fit_kwargs.pop("callbacks", [])
-        callbacks = self._deepcopy_callbacks(callbacks)
-        self._configure_tensorboard_dir(callbacks, trial)
-        # `TunerCallback` calls:
-        # - `Tuner.on_epoch_begin`
-        # - `Tuner.on_batch_begin`
-        # - `Tuner.on_batch_end`
-        # - `Tuner.on_epoch_end`
-        # These methods report results to the `Oracle` and save the trained Model. If
-        # you are subclassing `Tuner` to write a custom training loop, you should
-        # make calls to these methods within `run_trial`.
-        callbacks.append(tuner_utils.TunerCallback(self, trial))
-        copied_fit_kwargs["callbacks"] = callbacks
-
-        self._build_and_fit_model(trial, fit_args, copied_fit_kwargs)
-
-    def save_model(self, trial_id, model, step=0):
-        epoch = step
-        self._checkpoint_model(model, trial_id, epoch)
-        # TODO: save the top epoch checkpoints instead of last ones.
-        epoch_to_delete = epoch - self._save_n_checkpoints
-        best_epoch = 0
-        if epoch > 0:
-            # TODO: `get_best_models` would load the `best_step` checkpoint after
-            # training. It would break if oracle picks a different `best_step` than
-            # `metrics.get_best_step` since it might be deleted due to it was
-            # not the `best_epoch` during the training.
-            best_epoch = self.oracle.get_trial(trial_id).metrics.get_best_step(
-                self.oracle.objective.name
-            )
-        if epoch > self._save_n_checkpoints and epoch_to_delete != best_epoch:
-            self._delete_checkpoint(trial_id, epoch_to_delete)
+        # Average the results across executions and send to the Oracle.
+        averaged_metrics = {}
+        for metric, execution_values in metrics.items():
+            averaged_metrics[metric] = np.mean(execution_values)
+        self.oracle.update_trial(
+            trial.trial_id, metrics=averaged_metrics, step=self._reported_step
+        )
 
     def load_model(self, trial):
         model = self.hypermodel.build(trial.hyperparameters)
@@ -245,21 +254,9 @@ class Tuner(base_tuner.BaseTuner):
         pass
 
     def on_epoch_end(self, trial, model, epoch, logs=None):
-        """Called at the end of an epoch.
-
-        Args:
-            trial: A `Trial` instance.
-            model: A Keras `Model`.
-            epoch: The current epoch number.
-            logs: Dict. Metrics for this epoch. This should include
-              the value of the objective for this epoch.
-        """
-        self.save_model(trial.trial_id, model, step=epoch)
-        # Report intermediate metrics to the `Oracle`.
-        status = self.oracle.update_trial(trial.trial_id, metrics=logs, step=epoch)
-        trial.status = status
-        if trial.status == "STOPPED":
-            model.stop_training = True
+        # Intermediate results are not passed to the Oracle, and
+        # checkpointing is handled via a `ModelCheckpoint` callback.
+        pass
 
     def get_best_models(self, num_models=1):
         """Returns the best model(s), as determined by the tuner's objective.
@@ -294,11 +291,13 @@ class Tuner(base_tuner.BaseTuner):
             )
         return callbacks
 
-    def _configure_tensorboard_dir(self, callbacks, trial):
+    def _configure_tensorboard_dir(self, callbacks, trial, execution=0):
         for callback in callbacks:
             if callback.__class__.__name__ == "TensorBoard":
                 # Patch TensorBoard log_dir and add HParams KerasCallback
-                logdir = self._get_tensorboard_dir(callback.log_dir, trial.trial_id)
+                logdir = self._get_tensorboard_dir(
+                    callback.log_dir, trial.trial_id, execution
+                )
                 callback.log_dir = logdir
                 hparams = tuner_utils.convert_hyperparams_to_hparams(
                     trial.hyperparameters
@@ -309,8 +308,10 @@ class Tuner(base_tuner.BaseTuner):
                     )
                 )
 
-    def _get_tensorboard_dir(self, logdir, trial_id):
-        return os.path.join(str(logdir), str(trial_id))
+    def _get_tensorboard_dir(self, logdir, trial_id, execution):
+        return os.path.join(
+            str(logdir), str(trial_id), "execution{}".format(execution)
+        )
 
     def _get_checkpoint_dir(self, trial_id, epoch):
         return os.path.join(

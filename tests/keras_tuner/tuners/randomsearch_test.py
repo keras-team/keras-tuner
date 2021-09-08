@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 import tensorflow as tf
 
-from keras_tuner.engine import multi_execution_tuner
+from keras_tuner.engine import tuner as tuner_module
 from keras_tuner.tuners import randomsearch
 
 
@@ -47,7 +47,7 @@ def test_update_space(tmp_dir):
                 result["values"]["layers"] = 2
             return result
 
-    tuner = multi_execution_tuner.MultiExecutionTuner(
+    tuner = tuner_module.Tuner(
         oracle=MyRandomSearch(objective="accuracy", max_trials=1),
         hypermodel=build_model,
         directory=tmp_dir,
