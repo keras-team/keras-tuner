@@ -18,8 +18,12 @@ import pickle
 import warnings
 
 import numpy as np
-import pandas as pd
 import tensorflow as tf
+
+try:
+    import pandas as pd  # pytype: disable=import-error
+except ImportError:
+    pd = None
 
 try:
     import sklearn  # pytype: disable=import-error
@@ -34,7 +38,7 @@ from ..engine import base_tuner
 def split_data(data, indices):
     if isinstance(data, np.ndarray):
         return data[indices]
-    elif isinstance(data, pd.DataFrame):
+    elif pd is not None and isinstance(data, pd.DataFrame):
         return data.iloc[indices]
     else:
         raise TypeError()
