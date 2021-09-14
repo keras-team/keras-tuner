@@ -40,7 +40,6 @@ setup(
         "tensorboard",
         "ipython",
         "kt-legacy",
-        "pandas"
     ],
     extras_require={
         "tests": [
