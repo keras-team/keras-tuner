@@ -554,6 +554,37 @@ def test_subclass_model_loading(tmp_dir):
     assert best_model_score == best_trial_score
 
 
+def test_update_trial(tmp_dir):
+    class MyOracle(keras_tuner.Oracle):
+        def populate_space(self, _):
+            values = {p.name: p.random_sample() for p in self.hyperparameters.space}
+            return {"values": values, "status": "RUNNING"}
+
+        def update_trial(self, trial_id, metrics, step=0):
+            if step == 3:
+                trial = self.trials[trial_id]
+                trial.status = "STOPPED"
+                return trial.status
+            return super(MyOracle, self).update_trial(trial_id, metrics, step)
+
+    my_oracle = MyOracle(objective="val_accuracy", max_trials=2)
+    tuner = keras_tuner.Tuner(
+        oracle=my_oracle, hypermodel=build_model, directory=tmp_dir
+    )
+    tuner.search(
+        x=TRAIN_INPUTS,
+        y=TRAIN_TARGETS,
+        epochs=5,
+        validation_data=(VAL_INPUTS, VAL_TARGETS),
+    )
+
+    assert len(my_oracle.trials) == 2
+
+    for trial in my_oracle.trials.values():
+        # Test that early stopping worked.
+        assert len(trial.metrics.get_history("val_accuracy")) == 1
+
+
 def test_objective_formats():
     obj = keras_tuner.engine.oracle._format_objective("accuracy")
     assert obj == keras_tuner.Objective("accuracy", "max")
