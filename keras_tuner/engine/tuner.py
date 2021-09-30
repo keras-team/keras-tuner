@@ -118,6 +118,9 @@ class Tuner(base_tuner.BaseTuner):
             overwrite=overwrite,
         )
 
+        if isinstance(oracle.objective, list) and len(oracle.objective) == 1:
+            oracle.objective = oracle.objective[0]
+
         if isinstance(oracle.objective, list):
             raise ValueError(
                 "Multi-objective is not supported, found: {}".format(
