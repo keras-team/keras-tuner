@@ -1,4 +1,4 @@
-# Copyright 2019 The Keras Tuner Authors
+# Copyright 2019 The KerasTuner Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ setup(
     version=version,
     description="Hypertuner for Keras",
     url="https://github.com/keras-team/keras-tuner",
-    author="The Keras Tuner authors",
+    author="The KerasTuner authors",
     author_email="kerastuner@google.com",
     license="Apache License 2.0",
     # tensorflow isn't a dependency because it would force the
