@@ -118,10 +118,7 @@ class Tuner(base_tuner.BaseTuner):
             overwrite=overwrite,
         )
 
-        if isinstance(oracle.objective, list) and len(oracle.objective) == 1:
-            oracle.objective = oracle.objective[0]
-
-        if isinstance(oracle.objective, list):
+        if isinstance(oracle.objective, list) and len(oracle.objective) > 1:
             raise ValueError(
                 "Multi-objective is not supported, found: {}".format(
                     oracle.objective
@@ -312,9 +309,7 @@ class Tuner(base_tuner.BaseTuner):
                 )
 
     def _get_tensorboard_dir(self, logdir, trial_id, execution):
-        return os.path.join(
-            str(logdir), str(trial_id), "execution{}".format(execution)
-        )
+        return os.path.join(str(logdir), str(trial_id), "execution" + str(execution))
 
     def _get_checkpoint_dir(self, trial_id, epoch):
         return os.path.join(

@@ -17,11 +17,11 @@ import os
 
 from tensorboard.plugins.hparams import api as hparams_api
 
-from keras_tuner.engine import tuner as tuner_module
+from keras_tuner.engine import tuner
 from keras_tuner.engine import tuner_utils
 
 
-class SingleExecutionTuner(tuner_module.Tuner):
+class SingleExecutionTuner(tuner.Tuner):
     """A `Tuner` class running each model once and reporting every epoch.
 
     Args:

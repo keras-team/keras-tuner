@@ -20,7 +20,7 @@ import numpy as np
 import six
 from tensorflow import keras
 
-from ..protos import keras_tuner_pb2
+from keras_tuner.protos import keras_tuner_pb2
 
 
 class MetricObservation(object):
