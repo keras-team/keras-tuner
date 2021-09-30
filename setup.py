@@ -14,15 +14,11 @@
 
 """Setup script."""
 
-
 from setuptools import find_packages
 from setuptools import setup
 
-version = "1.0.4"
-
 setup(
     name="keras-tuner",
-    version=version,
     description="Hypertuner for Keras",
     url="https://github.com/keras-team/keras-tuner",
     author="The KerasTuner authors",
