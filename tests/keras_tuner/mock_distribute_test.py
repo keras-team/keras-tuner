@@ -20,7 +20,7 @@ import time
 import pytest
 import tensorflow as tf
 
-from . import mock_distribute
+from tests.keras_tuner import mock_distribute
 
 
 @pytest.fixture(scope="module")

@@ -32,7 +32,7 @@ try:
 except ImportError:
     sklearn = None
 
-from ..engine import base_tuner
+from keras_tuner.engine import base_tuner
 
 
 def split_data(data, indices):

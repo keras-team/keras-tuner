@@ -17,10 +17,10 @@ import os
 
 import grpc
 
-from ..engine import hyperparameters as hp_module
-from ..engine import trial as trial_module
-from ..protos import service_pb2
-from ..protos import service_pb2_grpc
+from keras_tuner.engine import hyperparameters as hp_module
+from keras_tuner.engine import trial as trial_module
+from keras_tuner.protos import service_pb2
+from keras_tuner.protos import service_pb2_grpc
 
 
 class OracleClient(object):

@@ -13,9 +13,6 @@
 # limitations under the License.
 """Utilities for Tuner class."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import math
 import time
@@ -26,8 +23,8 @@ import tensorflow as tf
 from tensorboard.plugins.hparams import api as hparams_api
 from tensorflow import keras
 
-from .. import utils
-from . import hyperparameters as hp_module
+from keras_tuner import utils
+from keras_tuner.engine import hyperparameters as hp_module
 
 
 class TunerStats(object):
