@@ -14,9 +14,6 @@
 
 "Basic random search tuner."
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 from keras_tuner.engine import oracle as oracle_module
 from keras_tuner.engine import trial as trial_module

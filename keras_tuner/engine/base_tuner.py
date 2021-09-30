@@ -13,24 +13,21 @@
 # limitations under the License.
 "Tuner base class."
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import copy
 import os
 
 import tensorflow as tf
 
-from .. import utils
-from ..distribute import oracle_chief
-from ..distribute import oracle_client
-from ..distribute import utils as dist_utils
-from . import hypermodel as hm_module
-from . import oracle as oracle_module
-from . import stateful
-from . import trial as trial_module
-from . import tuner_utils
+from keras_tuner import utils
+from keras_tuner.distribute import oracle_chief
+from keras_tuner.distribute import oracle_client
+from keras_tuner.distribute import utils as dist_utils
+from keras_tuner.engine import hypermodel as hm_module
+from keras_tuner.engine import oracle as oracle_module
+from keras_tuner.engine import stateful
+from keras_tuner.engine import trial as trial_module
+from keras_tuner.engine import tuner_utils
 
 
 class BaseTuner(stateful.Stateful):

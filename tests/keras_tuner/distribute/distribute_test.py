@@ -26,8 +26,7 @@ from tensorflow import keras
 
 import keras_tuner as kt
 from keras_tuner.distribute import utils as dist_utils
-
-from .. import mock_distribute
+from tests.keras_tuner import mock_distribute
 
 
 @pytest.fixture(scope="function")

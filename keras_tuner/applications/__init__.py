@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
 
-from .augment import HyperImageAugment
-from .efficientnet import HyperEfficientNet
-from .resnet import HyperResNet
-from .xception import HyperXception
+from keras_tuner.applications.augment import HyperImageAugment
+from keras_tuner.applications.efficientnet import HyperEfficientNet
+from keras_tuner.applications.resnet import HyperResNet
+from keras_tuner.applications.xception import HyperXception

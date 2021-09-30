@@ -12,26 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
-from . import applications
-from . import oracles
-from . import tuners
-from .engine.hypermodel import HyperModel
-from .engine.hyperparameters import HyperParameter
-from .engine.hyperparameters import HyperParameters
-from .engine.logger import CloudLogger
-from .engine.logger import Logger
-from .engine.oracle import Objective
-from .engine.oracle import Oracle
-from .engine.tuner import Tuner
-from .tuners import BayesianOptimization
-from .tuners import Hyperband
-from .tuners import RandomSearch
-from .tuners import SklearnTuner
-from .utils import check_tf_version
+from keras_tuner import applications
+from keras_tuner import oracles
+from keras_tuner import tuners
+from keras_tuner.engine.hypermodel import HyperModel
+from keras_tuner.engine.hyperparameters import HyperParameter
+from keras_tuner.engine.hyperparameters import HyperParameters
+from keras_tuner.engine.logger import CloudLogger
+from keras_tuner.engine.logger import Logger
+from keras_tuner.engine.oracle import Objective
+from keras_tuner.engine.oracle import Oracle
+from keras_tuner.engine.tuner import Tuner
+from keras_tuner.tuners import BayesianOptimization
+from keras_tuner.tuners import Hyperband
+from keras_tuner.tuners import RandomSearch
+from keras_tuner.tuners import SklearnTuner
+from keras_tuner.utils import check_tf_version
 
 check_tf_version()
 
