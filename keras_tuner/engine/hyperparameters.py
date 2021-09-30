@@ -1104,7 +1104,7 @@ class HyperParameters(object):
 def deserialize(config):
     # Autograph messes with globals(), so in order to support HPs inside `call` we
     # have to enumerate them manually here.
-    objects = [
+    objects = (
         HyperParameter,
         Fixed,
         Float,
@@ -1118,10 +1118,9 @@ def deserialize(config):
         float,
         str,
         bool,
-    ]
-    for obj in objects:
-        if isinstance(config, obj):
-            return config  # Already deserialized.
+    )
+    if isinstance(config, objects):
+        return config  # Already deserialized.
     module_objects = {cls.__name__: cls for cls in objects}
     return keras.utils.deserialize_keras_object(
         config, module_objects=module_objects

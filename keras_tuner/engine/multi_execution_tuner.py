@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from keras_tuner.engine import tuner as tuner_module
+from keras_tuner.engine import tuner
 
 
-class MultiExecutionTuner(tuner_module.Tuner):
+class MultiExecutionTuner(tuner.Tuner):
     """Keep this class for backward compatibility.
 
     Currently, the Tuner class behavoir is the same as the old
