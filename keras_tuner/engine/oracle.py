@@ -1,4 +1,4 @@
-# Copyright 2019 The Keras Tuner Authors
+# Copyright 2019 The KerasTuner Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,9 +13,6 @@
 # limitations under the License.
 "Oracle base class."
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import collections
 import hashlib
@@ -26,11 +23,11 @@ import warnings
 
 import tensorflow as tf
 
-from .. import utils
-from . import hyperparameters as hp_module
-from . import metrics_tracking
-from . import stateful
-from . import trial as trial_lib
+from keras_tuner import utils
+from keras_tuner.engine import hyperparameters as hp_module
+from keras_tuner.engine import metrics_tracking
+from keras_tuner.engine import stateful
+from keras_tuner.engine import trial as trial_lib
 
 Objective = collections.namedtuple("Objective", "name direction")
 

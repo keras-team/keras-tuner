@@ -1,4 +1,4 @@
-# Copyright 2019 The Keras Tuner Authors
+# Copyright 2019 The KerasTuner Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,8 +23,7 @@ from keras_tuner.distribute import oracle_chief
 from keras_tuner.distribute import oracle_client
 from keras_tuner.engine import metrics_tracking
 from keras_tuner.tuners import randomsearch
-
-from .. import mock_distribute
+from tests.keras_tuner import mock_distribute
 
 
 @pytest.fixture(scope="function")

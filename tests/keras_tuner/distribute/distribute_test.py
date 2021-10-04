@@ -1,4 +1,4 @@
-# Copyright 2019 The Keras Tuner Authors
+# Copyright 2019 The KerasTuner Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,8 +26,7 @@ from tensorflow import keras
 
 import keras_tuner as kt
 from keras_tuner.distribute import utils as dist_utils
-
-from .. import mock_distribute
+from tests.keras_tuner import mock_distribute
 
 
 @pytest.fixture(scope="function")

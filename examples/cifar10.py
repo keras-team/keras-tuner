@@ -1,4 +1,4 @@
-"""Keras Tuner CIFAR10 example for the TensorFlow blog post."""
+"""KerasTuner CIFAR10 example for the TensorFlow blog post."""
 
 import tensorflow as tf
 import tensorflow_datasets as tfds

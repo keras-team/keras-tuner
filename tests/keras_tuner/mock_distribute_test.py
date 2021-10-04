@@ -1,4 +1,4 @@
-# Copyright 2019 The Keras Tuner Authors
+# Copyright 2019 The KerasTuner Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import time
 import pytest
 import tensorflow as tf
 
-from . import mock_distribute
+from tests.keras_tuner import mock_distribute
 
 
 @pytest.fixture(scope="module")

@@ -1,4 +1,4 @@
-# Copyright 2019 The Keras Tuner Authors
+# Copyright 2019 The KerasTuner Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,9 +13,6 @@
 # limitations under the License.
 "HyperParameters logic."
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import collections
 import contextlib
@@ -27,8 +24,8 @@ import numpy as np
 import six
 from tensorflow import keras
 
-from ..protos import keras_tuner_pb2
-from . import conditions as conditions_mod
+from keras_tuner.engine import conditions as conditions_mod
+from keras_tuner.protos import keras_tuner_pb2
 
 
 def _check_sampling_arg(sampling, step, min_value, max_value, hp_type="int"):
@@ -1104,7 +1101,7 @@ class HyperParameters(object):
 def deserialize(config):
     # Autograph messes with globals(), so in order to support HPs inside `call` we
     # have to enumerate them manually here.
-    objects = [
+    objects = (
         HyperParameter,
         Fixed,
         Float,
@@ -1114,10 +1111,13 @@ def deserialize(config):
         HyperParameters,
         conditions_mod.Condition,
         conditions_mod.Parent,
-    ]
-    for obj in objects:
-        if isinstance(config, obj):
-            return config  # Already deserialized.
+        int,
+        float,
+        str,
+        bool,
+    )
+    if isinstance(config, objects):
+        return config  # Already deserialized.
     module_objects = {cls.__name__: cls for cls in objects}
     return keras.utils.deserialize_keras_object(
         config, module_objects=module_objects
@@ -1125,7 +1125,9 @@ def deserialize(config):
 
 
 def serialize(obj):
-    return {"class_name": obj.__class__.__name__, "config": obj.get_config()}
+    if isinstance(obj, (int, float, str, bool)):
+        return obj
+    return keras.utils.serialize_keras_object(obj)
 
 
 def cumulative_prob_to_value(prob, hp):

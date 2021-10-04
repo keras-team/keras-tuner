@@ -1,4 +1,4 @@
-# Copyright 2019 The Keras Tuner Authors
+# Copyright 2019 The KerasTuner Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,8 +14,8 @@
 import math
 import random
 
-from ..engine import multi_execution_tuner
-from ..engine import oracle as oracle_module
+from keras_tuner.engine import oracle as oracle_module
+from keras_tuner.engine import tuner as tuner_module
 
 
 class HyperbandOracle(oracle_module.Oracle):
@@ -290,7 +290,7 @@ class HyperbandOracle(oracle_module.Oracle):
         self._current_iteration = state["current_iteration"]
 
 
-class Hyperband(multi_execution_tuner.MultiExecutionTuner):
+class Hyperband(tuner_module.Tuner):
     """Variation of HyperBand algorithm.
 
     Reference:

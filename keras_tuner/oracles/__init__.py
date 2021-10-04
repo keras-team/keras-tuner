@@ -1,4 +1,4 @@
-# Copyright 2019 The Keras Tuner Authors
+# Copyright 2019 The KerasTuner Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,9 +14,12 @@
 
 # Keep the name of `BayesianOptimization`, `Hyperband` and `RandomSearch`
 # for backward compatibility for 1.0.2 or earlier.
-from ..tuners.bayesian import BayesianOptimizationOracle
-from ..tuners.bayesian import BayesianOptimizationOracle as BayesianOptimization
-from ..tuners.hyperband import HyperbandOracle
-from ..tuners.hyperband import HyperbandOracle as Hyperband
-from ..tuners.randomsearch import RandomSearchOracle
-from ..tuners.randomsearch import RandomSearchOracle as RandomSearch
+from keras_tuner.tuners.bayesian import BayesianOptimizationOracle
+from keras_tuner.tuners.hyperband import HyperbandOracle
+from keras_tuner.tuners.hyperband import HyperbandOracle as Hyperband
+from keras_tuner.tuners.randomsearch import RandomSearchOracle
+from keras_tuner.tuners.randomsearch import RandomSearchOracle as RandomSearch
+
+from keras_tuner.tuners.bayesian import (  # isort:skip
+    BayesianOptimizationOracle as BayesianOptimization,
+)

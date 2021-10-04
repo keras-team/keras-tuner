@@ -1,4 +1,4 @@
-# Copyright 2019 The Keras Tuner Authors
+# Copyright 2019 The KerasTuner Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -582,7 +582,7 @@ def test_update_trial(tmp_dir):
 
     for trial in my_oracle.trials.values():
         # Test that early stopping worked.
-        assert len(trial.metrics.get_history("val_accuracy")) == 3
+        assert len(trial.metrics.get_history("val_accuracy")) == 1
 
 
 def test_objective_formats():

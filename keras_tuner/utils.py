@@ -1,4 +1,4 @@
-# Copyright 2019 The Keras Tuner Authors
+# Copyright 2019 The KerasTuner Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Keras Tuner utilities."""
+"""KerasTuner utilities."""
+
+import warnings
 
 import IPython
 import tensorflow as tf
@@ -54,11 +56,12 @@ def create_directory(path, remove_existing=False):
 
 def check_tf_version():
     if parse(tf.__version__) < parse("2.0.0"):
-        raise ImportError(
+        warnings.warn(
             "The Tensorflow package version needs to be at least 2.0.0 \n"
             "for AutoKeras to run. Currently, your TensorFlow version is \n"
-            "{version}. Please upgrade with \n"
+            f"{tf.__version__}. Please upgrade with \n"
             "`$ pip install --upgrade tensorflow`. \n"
             "You can use `pip freeze` to check afterwards that everything is "
-            "ok.".format(version=tf.__version__)
+            "ok.",
+            ImportWarning,
         )

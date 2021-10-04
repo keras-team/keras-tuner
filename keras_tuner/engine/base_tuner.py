@@ -1,4 +1,4 @@
-# Copyright 2019 The Keras Tuner Authors
+# Copyright 2019 The KerasTuner Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,14 +13,12 @@
 # limitations under the License.
 "Tuner base class."
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import copy
 import os
 import time
 import tensorflow as tf
+
 import numpy as np
 from .. import utils
 from ..distribute import oracle_chief
@@ -31,6 +29,7 @@ from . import oracle as oracle_module
 from . import stateful
 from . import trial as trial_module
 from . import tuner_utils
+
 
 
 class BaseTuner(stateful.Stateful):

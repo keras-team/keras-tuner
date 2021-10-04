@@ -1,4 +1,4 @@
-# Copyright 2019 The Keras Tuner Authors
+# Copyright 2019 The KerasTuner Authors
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -12,18 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 
 import numpy as np
 import six
 from tensorflow import keras
 
-from ..protos import keras_tuner_pb2
+from keras_tuner.protos import keras_tuner_pb2
 
 
 class MetricObservation(object):
+    """Metric value at a given step of training across multiple executions.
+
+    If the model is trained multiple
+    times (multiple executions), KerasTuner records the value of each
+    metric at each training step. These values are aggregated
+    over multiple executions into a list where each value corresponds
+    to one execution.
+
+    Args:
+        value: Float or a list of floats. The evaluated metric values.
+        step: Int. The step of the evaluation, for example, the epoch number.
+    """
+
     def __init__(self, value, step):
         if not isinstance(value, list):
             value = [value]
@@ -62,6 +72,15 @@ class MetricObservation(object):
 
 
 class MetricHistory(object):
+    """Record of multiple executions of a single metric.
+
+    It contains a collection of `MetricObservation` instances.
+
+    Args:
+        direction: String. The direction of the metric to optimize. The value
+            should be "min" or "max".
+    """
+
     def __init__(self, direction="min"):
         if direction not in {"min", "max"}:
             raise ValueError(
@@ -69,6 +88,7 @@ class MetricHistory(object):
                 '{"min", "max"}, but got: %s' % (direction,)
             )
         self.direction = direction
+        # Mapping step to `MetricObservation`.
         self._observations = {}
 
     def update(self, value, step):
@@ -153,6 +173,14 @@ class MetricHistory(object):
 
 
 class MetricsTracker(object):
+    """Record of the values of multiple executions of all metrics.
+
+    It contains `MetricHistory` instances for the metrics.
+
+    Args:
+        metrics: List of strings of the names of the metrics.
+    """
+
     def __init__(self, metrics=None):
         # str -> MetricHistory
         self.metrics = {}

@@ -1,4 +1,4 @@
-# Copyright 2019 The Keras Tuner Authors
+# Copyright 2019 The KerasTuner Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
 
-from .augment import HyperImageAugment
-from .efficientnet import HyperEfficientNet
-from .resnet import HyperResNet
-from .xception import HyperXception
+from keras_tuner.applications.augment import HyperImageAugment
+from keras_tuner.applications.efficientnet import HyperEfficientNet
+from keras_tuner.applications.resnet import HyperResNet
+from keras_tuner.applications.xception import HyperXception

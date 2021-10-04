@@ -1,4 +1,4 @@
-# Copyright 2019 The Keras Tuner Authors
+# Copyright 2019 The KerasTuner Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
 
-from .bayesian import BayesianOptimization
-from .hyperband import Hyperband
-from .randomsearch import RandomSearch
-from .sklearn_tuner import Sklearn
-from .sklearn_tuner import SklearnTuner
+from keras_tuner.tuners.bayesian import BayesianOptimization
+from keras_tuner.tuners.hyperband import Hyperband
+from keras_tuner.tuners.randomsearch import RandomSearch
+from keras_tuner.tuners.sklearn_tuner import Sklearn
+from keras_tuner.tuners.sklearn_tuner import SklearnTuner

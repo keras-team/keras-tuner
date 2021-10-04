@@ -1,4 +1,4 @@
-# Copyright 2019 The Keras Tuner Authors
+# Copyright 2019 The KerasTuner Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,19 +14,14 @@
 
 """Setup script."""
 
-from __future__ import absolute_import
-
 from setuptools import find_packages
 from setuptools import setup
 
-version = "1.0.3"
-
 setup(
     name="keras-tuner",
-    version=version,
     description="Hypertuner for Keras",
     url="https://github.com/keras-team/keras-tuner",
-    author="The Keras Tuner authors",
+    author="The KerasTuner authors",
     author_email="kerastuner@google.com",
     license="Apache License 2.0",
     # tensorflow isn't a dependency because it would force the
@@ -56,7 +51,7 @@ setup(
     },
     classifiers=[
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Operating System :: Unix",
         "Operating System :: Microsoft :: Windows",
         "Operating System :: MacOS",

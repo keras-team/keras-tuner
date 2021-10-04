@@ -5,10 +5,10 @@ import numpy as np
 import tensorflow as tf
 from scipy import optimize as scipy_optimize
 
-from ..engine import hyperparameters as hp_module
-from ..engine import multi_execution_tuner
-from ..engine import oracle as oracle_module
-from ..engine import trial as trial_lib
+from keras_tuner.engine import hyperparameters as hp_module
+from keras_tuner.engine import oracle as oracle_module
+from keras_tuner.engine import trial as trial_module
+from keras_tuner.engine import tuner as tuner_module
 
 
 def cdist(x, y=None):
@@ -232,13 +232,13 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                 optimal_x = result.x
 
         values = self._vector_to_values(optimal_x)
-        return {"status": trial_lib.TrialStatus.RUNNING, "values": values}
+        return {"status": trial_module.TrialStatus.RUNNING, "values": values}
 
     def _random_populate_space(self):
         values = self._random_values()
         if values is None:
-            return {"status": trial_lib.TrialStatus.STOPPED, "values": None}
-        return {"status": trial_lib.TrialStatus.RUNNING, "values": values}
+            return {"status": trial_module.TrialStatus.STOPPED, "values": None}
+        return {"status": trial_module.TrialStatus.RUNNING, "values": values}
 
     def get_state(self):
         state = super(BayesianOptimizationOracle, self).get_state()
@@ -342,7 +342,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         return np.array(bounds)
 
 
-class BayesianOptimization(multi_execution_tuner.MultiExecutionTuner):
+class BayesianOptimization(tuner_module.Tuner):
     """BayesianOptimization tuning with Gaussian process.
 
     Args:

@@ -1,4 +1,4 @@
-# Copyright 2019 The Keras Tuner Authors
+# Copyright 2019 The KerasTuner Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,10 +17,10 @@ import os
 
 import grpc
 
-from ..engine import hyperparameters as hp_module
-from ..engine import trial as trial_module
-from ..protos import service_pb2
-from ..protos import service_pb2_grpc
+from keras_tuner.engine import hyperparameters as hp_module
+from keras_tuner.engine import trial as trial_module
+from keras_tuner.protos import service_pb2
+from keras_tuner.protos import service_pb2_grpc
 
 
 class OracleClient(object):
@@ -46,6 +46,7 @@ class OracleClient(object):
             "max_trials",
             "allow_new_entries",
             "tune_new_entries",
+            "trials",
         }
         if name in whitelisted_attrs:
             return getattr(self._oracle, name)

@@ -1,4 +1,4 @@
-# Copyright 2019 The Keras Tuner Authors
+# Copyright 2019 The KerasTuner Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,21 +18,27 @@ import pickle
 import warnings
 
 import numpy as np
-import pandas as pd
 import tensorflow as tf
 
 try:
+    import pandas as pd  # pytype: disable=import-error
+except ImportError:
+    pd = None
+
+try:
     import sklearn  # pytype: disable=import-error
+    import sklearn.model_selection
+    import sklearn.pipeline
 except ImportError:
     sklearn = None
 
-from ..engine import base_tuner
+from keras_tuner.engine import base_tuner
 
 
 def split_data(data, indices):
     if isinstance(data, np.ndarray):
         return data[indices]
-    elif isinstance(data, pd.DataFrame):
+    elif pd is not None and isinstance(data, pd.DataFrame):
         return data.iloc[indices]
     else:
         raise TypeError()
