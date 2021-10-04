@@ -19,9 +19,9 @@ from __future__ import print_function
 
 import copy
 import os
-
+import time
 import tensorflow as tf
-
+import numpy as np
 from .. import utils
 from ..distribute import oracle_chief
 from ..distribute import oracle_client
@@ -150,7 +150,7 @@ class BaseTuner(stateful.Stateful):
 
         self.oracle.update_space(hp)
 
-    def search(self, *fit_args, **fit_kwargs):
+    def search(self,training_time = None ,*fit_args, **fit_kwargs):
         """Performs a search for best hyperparameter configuations.
 
         Args:
@@ -163,6 +163,7 @@ class BaseTuner(stateful.Stateful):
             self._display.verbose = fit_kwargs.get("verbose")
         self.on_search_begin()
         while True:
+            trial_start = time.time()
             trial = self.oracle.create_trial(self.tuner_id)
             if trial.status == trial_module.TrialStatus.STOPPED:
                 # Oracle triggered exit.
@@ -175,6 +176,9 @@ class BaseTuner(stateful.Stateful):
             self.on_trial_begin(trial)
             self.run_trial(trial, *fit_args, **fit_kwargs)
             self.on_trial_end(trial)
+            trial.update('elapsed', time.time() - trial_start)
+            if training_time != None and np.sum(trial.metrics.get_history('elapsed')) > training_time:
+                break
         self.on_search_end()
 
     def run_trial(self, trial, *fit_args, **fit_kwargs):
