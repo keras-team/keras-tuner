@@ -15,17 +15,22 @@
 
 
 import collections
+import contextlib
 import copy
+import gc
 import os
+import traceback
 
 import numpy as np
 import tensorflow as tf
 from tensorboard.plugins.hparams import api as hparams_api
 from tensorflow import keras
 
+from keras_tuner import config as config_module
 from keras_tuner.engine import base_tuner
-from keras_tuner.engine import hypermodel as hm_module
 from keras_tuner.engine import tuner_utils
+
+MAX_FAIL_STREAK = 5
 
 
 class Tuner(base_tuner.BaseTuner):
@@ -94,18 +99,6 @@ class Tuner(base_tuner.BaseTuner):
         overwrite=False,
         executions_per_trial=1,
     ):
-
-        # Subclasses of `KerasHyperModel` are not automatically wrapped.
-        if not isinstance(hypermodel, hm_module.KerasHyperModel):
-            hypermodel = hm_module.KerasHyperModel(
-                hypermodel,
-                max_model_size=max_model_size,
-                optimizer=optimizer,
-                loss=loss,
-                metrics=metrics,
-                distribution_strategy=distribution_strategy,
-            )
-
         super(Tuner, self).__init__(
             oracle=oracle,
             hypermodel=hypermodel,
@@ -122,6 +115,10 @@ class Tuner(base_tuner.BaseTuner):
                 )
             )
 
+        self.max_model_size = max_model_size
+        self.optimizer = optimizer
+        self.loss = loss
+        self.metrics = metrics
         self.distribution_strategy = distribution_strategy
 
         # Support multi-worker distribution strategies w/ distributed tuning.
@@ -147,6 +144,62 @@ class Tuner(base_tuner.BaseTuner):
         # to 0.
         self._reported_step = 0
 
+    def _build_hypermodel(self, hp):
+        with maybe_distribute(self.distribution_strategy):
+            return self.hypermodel.build(hp)
+
+    def _try_build(self, hp):
+        for i in range(MAX_FAIL_STREAK + 1):
+            # clean-up TF graph from previously stored (defunct) graph
+            keras.backend.clear_session()
+            gc.collect()
+
+            # Build a model, allowing max_fail_streak failed attempts.
+            try:
+                model = self._build_hypermodel(hp)
+            except:
+                if config_module.DEBUG:
+                    traceback.print_exc()
+
+                print("Invalid model %s/%s" % (i, MAX_FAIL_STREAK))
+
+                if i == MAX_FAIL_STREAK:
+                    raise RuntimeError("Too many failed attempts to build model.")
+                continue
+
+            # Stop if `build()` does not return a valid model.
+            if not isinstance(model, keras.models.Model):
+                raise RuntimeError(
+                    "Model-building function did not return "
+                    "a valid Keras Model instance, found {}".format(model)
+                )
+
+            # Check model size.
+            size = maybe_compute_model_size(model)
+            if self.max_model_size and size > self.max_model_size:
+                print("Oversized model: {} parameters -- skipping".format(size))
+                if i == MAX_FAIL_STREAK:
+                    raise RuntimeError("Too many consecutive oversized models.")
+                continue
+            break
+        return model
+
+    def _override_compile_args(self, model):
+        with maybe_distribute(self.distribution_strategy):
+            if self.optimizer or self.loss or self.metrics:
+                compile_kwargs = {
+                    "optimizer": model.optimizer,
+                    "loss": model.loss,
+                    "metrics": model.metrics,
+                }
+                if self.loss:
+                    compile_kwargs["loss"] = self.loss
+                if self.optimizer:
+                    compile_kwargs["optimizer"] = self.optimizer
+                if self.metrics:
+                    compile_kwargs["metrics"] = self.metrics
+                model.compile(**compile_kwargs)
+
     def _build_and_fit_model(self, trial, fit_args, fit_kwargs):
         """For AutoKeras to override.
 
@@ -166,7 +219,8 @@ class Tuner(base_tuner.BaseTuner):
             The fit history.
         """
         hp = trial.hyperparameters
-        model = self.hypermodel.build(hp)
+        model = self._try_build(hp)
+        self._override_compile_args(model)
         return self.hypermodel.fit(hp, model, *fit_args, **fit_kwargs)
 
     def run_trial(self, trial, *fit_args, **fit_kwargs):
@@ -207,12 +261,12 @@ class Tuner(base_tuner.BaseTuner):
         )
 
     def load_model(self, trial):
-        model = self.hypermodel.build(trial.hyperparameters)
+        model = self._build_hypermodel(trial.hyperparameters)
         # Reload best checkpoint. The Oracle scores the Trial and also
         # indicates at what epoch the best value of the objective was
         # obtained.
         best_epoch = trial.best_step
-        with hm_module.maybe_distribute(self.distribution_strategy):
+        with maybe_distribute(self.distribution_strategy):
             model.load_weights(
                 self._get_checkpoint_fname(trial.trial_id, best_epoch)
             )
@@ -329,3 +383,21 @@ class Tuner(base_tuner.BaseTuner):
 
     def _delete_checkpoint(self, trial_id, epoch):
         tf.io.gfile.rmtree(self._get_checkpoint_dir(trial_id, epoch))
+
+
+def maybe_compute_model_size(model):
+    """Compute the size of a given model, if it has been built."""
+    if model.built:
+        params = [keras.backend.count_params(p) for p in model.trainable_weights]
+        return int(np.sum(params))
+    return 0
+
+
+@contextlib.contextmanager
+def maybe_distribute(distribution_strategy):
+    """Distributes if distribution_strategy is set."""
+    if distribution_strategy is None:
+        yield
+    else:
+        with distribution_strategy.scope():
+            yield
