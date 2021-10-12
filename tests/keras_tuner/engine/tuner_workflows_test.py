@@ -105,6 +105,9 @@ class ExampleHyperModel(keras_tuner.HyperModel):
         )
         return model
 
+    def fit(self, hp, model, *args, **kwargs):
+        return model.fit(*args, shuffle=hp.Boolean("shuffle"), **kwargs)
+
 
 def test_basic_tuner_attributes(tmp_dir):
     tuner = keras_tuner.tuners.RandomSearch(
@@ -199,6 +202,7 @@ def test_hypermodel_with_dynamic_space(tmp_dir):
     tuner.results_summary()
 
     assert len(tuner.oracle.trials) == 2
+    tuner.oracle.hyperparameters.get("shuffle")
 
 
 def test_override_compile(tmp_dir):

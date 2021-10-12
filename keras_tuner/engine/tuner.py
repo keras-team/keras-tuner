@@ -165,8 +165,9 @@ class Tuner(base_tuner.BaseTuner):
         Returns:
             The fit history.
         """
-        model = self.hypermodel.build(trial.hyperparameters)
-        return model.fit(*fit_args, **fit_kwargs)
+        hp = trial.hyperparameters
+        model = self.hypermodel.build(hp)
+        return self.hypermodel.fit(hp, model, *fit_args, **fit_kwargs)
 
     def run_trial(self, trial, *fit_args, **fit_kwargs):
         model_checkpoint = keras.callbacks.ModelCheckpoint(
