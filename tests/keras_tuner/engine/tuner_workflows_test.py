@@ -122,8 +122,7 @@ def test_basic_tuner_attributes(tmp_dir):
     assert tuner.oracle.max_trials == 2
     assert tuner.executions_per_trial == 3
     assert tuner.directory == tmp_dir
-    assert tuner.hypermodel.__class__.__name__ == "KerasHyperModel"
-    assert tuner.hypermodel.hypermodel.__class__.__name__ == "DefaultHyperModel"
+    assert tuner.hypermodel.__class__.__name__ == "DefaultHyperModel"
     assert len(tuner.oracle.hyperparameters.space) == 3  # default search space
     assert len(tuner.oracle.hyperparameters.values) == 3  # default search space
 
@@ -187,8 +186,7 @@ def test_hypermodel_with_dynamic_space(tmp_dir):
         directory=tmp_dir,
     )
 
-    # tuner.hypermodel is a KerasModelWrapper
-    assert tuner.hypermodel.hypermodel == hypermodel
+    assert tuner.hypermodel == hypermodel
 
     tuner.search_space_summary()
 
@@ -206,8 +204,18 @@ def test_hypermodel_with_dynamic_space(tmp_dir):
 
 
 def test_override_compile(tmp_dir):
+    class MyHyperModel(ExampleHyperModel):
+        def fit(self, hp, model, *args, **kwargs):
+            history = super().fit(hp, model, *args, **kwargs)
+            assert model.optimizer.__class__.__name__ == "RMSprop"
+            assert model.loss == "sparse_categorical_crossentropy"
+            assert len(model.metrics) >= 2
+            assert model.metrics[-2]._fn.__name__ == "mean_squared_error"
+            assert model.metrics[-1]._fn.__name__ == "sparse_categorical_accuracy"
+            return history
+
     tuner = keras_tuner.tuners.RandomSearch(
-        build_model,
+        MyHyperModel(),
         objective="val_mse",
         max_trials=2,
         executions_per_trial=1,
@@ -218,37 +226,19 @@ def test_override_compile(tmp_dir):
     )
 
     assert tuner.oracle.objective.name == "val_mse"
-    assert tuner.hypermodel.optimizer == "rmsprop"
-    assert tuner.hypermodel.loss == "sparse_categorical_crossentropy"
-    assert tuner.hypermodel.metrics == ["mse", "accuracy"]
+    assert tuner.optimizer == "rmsprop"
+    assert tuner.loss == "sparse_categorical_crossentropy"
+    assert tuner.metrics == ["mse", "accuracy"]
 
     tuner.search_space_summary()
-    model = tuner.hypermodel.build(tuner.oracle.hyperparameters)
-
     tuner.search(
         x=TRAIN_INPUTS,
         y=TRAIN_TARGETS,
         epochs=2,
         validation_data=(VAL_INPUTS, VAL_TARGETS),
     )
-    model = tuner.hypermodel.build(tuner.oracle.hyperparameters)
-
     tuner.results_summary()
-
-    model = tuner.hypermodel.build(tuner.oracle.hyperparameters)
-    model.fit(
-        np.random.rand(2, INPUT_DIM),
-        np.random.rand(
-            2,
-        ),
-        verbose=False,
-    )
-
-    assert model.optimizer.__class__.__name__ == "RMSprop"
-    assert model.loss == "sparse_categorical_crossentropy"
-    assert len(model.metrics) >= 2
-    assert model.metrics[-2]._fn.__name__ == "mean_squared_error"
-    assert model.metrics[-1]._fn.__name__ == "sparse_categorical_accuracy"
+    tuner.hypermodel.build(tuner.oracle.hyperparameters)
 
 
 def test_static_space(tmp_dir):
