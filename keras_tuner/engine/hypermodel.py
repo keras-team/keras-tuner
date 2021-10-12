@@ -80,6 +80,22 @@ class HyperModel(object):
             hp = hp.copy()
         return self._build(hp, *args, **kwargs)
 
+    def fit(self, hp, model, *args, **kwargs):
+        """Train the model.
+
+        Args:
+            hp: HyperParameters.
+            model: `keras.Model` built in the `build()` function.
+            **kwargs: Anything the user defines. They are passed from
+                `Tuner.search()`. if contains `callbacks`, a list of prebuild
+                Keras callbacks for model checkpointing and tensorboard
+                configuration will be added to callbacks provided by the user.
+
+        Returns:
+            A `History` object, a similar dictionary, or a single value.
+        """
+        return model.fit(*args, **kwargs)
+
 
 class DefaultHyperModel(HyperModel):
     """Produces HyperModel from a model building function."""
@@ -166,6 +182,9 @@ class KerasHyperModel(HyperModel):
                     compile_kwargs["metrics"] = self.metrics
                 model.compile(**compile_kwargs)
             return model
+
+    def fit(self, hp, model, *args, **kwargs):
+        return self.hypermodel.fit(hp, model, *args, **kwargs)
 
 
 def maybe_compute_model_size(model):
