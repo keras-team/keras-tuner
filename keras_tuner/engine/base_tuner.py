@@ -16,6 +16,7 @@
 
 import copy
 import os
+import warnings
 
 import tensorflow as tf
 
@@ -170,38 +171,29 @@ class BaseTuner(stateful.Stateful):
                 continue
 
             self.on_trial_begin(trial)
-            self.run_trial(trial, *fit_args, **fit_kwargs)
+            results = self.run_trial(trial, *fit_args, **fit_kwargs)
+            # `results` is None indicates user updated oracle in `run_trial()`.
+            if results is None:
+                warnings.warn(
+                    "`Tuner.run_trial()` returned None. It should return one of "
+                    "float, dict, keras.callbacks.History, or a list of one "
+                    "of these types. The use case of calling "
+                    "`Tuner.oracle.update_trial()` in `Tuner.run_trial()` is "
+                    "deprecated, which will be removed in the future.",
+                    DeprecationWarning,
+                )
+            else:
+                self.oracle.update_trial(
+                    trial.trial_id,
+                    tuner_utils.convert_to_metrics_dict(
+                        results, self.oracle.objective
+                    ),
+                )
             self.on_trial_end(trial)
         self.on_search_end()
 
     def run_trial(self, trial, *fit_args, **fit_kwargs):
-        """Evaluates a set of hyperparameter values.
-
-        This method is called multiple times during `search` to build and
-        evaluate the models with different hyperparameters.
-
-        The method is responsible for reporting metrics related to the `Trial`
-        to the `Oracle` via `self.oracle.update_trial`.
-
-        Example:
-
-        ```python
-        def run_trial(self, trial, x, y, val_x, val_y):
-            model = self.hypermodel.build(trial.hyperparameters)
-            model.fit(x, y)
-            loss = model.evaluate(val_x, val_y)
-            self.oracle.update_trial(
-              trial.trial_id, {'loss': loss})
-            self.save_model(trial.trial_id, model)
-        ```
-
-        Args:
-            trial: A `Trial` instance that contains the information needed to
-                run this trial. Hyperparameters can be accessed via
-                `trial.hyperparameters`.
-            *fit_args: Positional arguments passed by `search`.
-            **fit_kwargs: Keyword arguments passed by `search`.
-        """
+        """Evaluates a set of hyperparameter values."""
         raise NotImplementedError
 
     def save_model(self, trial_id, model, step=0):

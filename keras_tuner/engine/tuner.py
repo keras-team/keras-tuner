@@ -14,7 +14,6 @@
 "The Tuner class."
 
 
-import collections
 import contextlib
 import copy
 import gc
@@ -200,7 +199,7 @@ class Tuner(base_tuner.BaseTuner):
                     compile_kwargs["metrics"] = self.metrics
                 model.compile(**compile_kwargs)
 
-    def _build_and_fit_model(self, trial, fit_args, fit_kwargs):
+    def _build_and_fit_model(self, trial, *args, **kwargs):
         """For AutoKeras to override.
 
         DO NOT REMOVE this function. AutoKeras overrides the function to tune
@@ -212,8 +211,8 @@ class Tuner(base_tuner.BaseTuner):
             trial: A `Trial` instance that contains the information needed to
                 run this trial. `Hyperparameters` can be accessed via
                 `trial.hyperparameters`.
-            fit_args: Positional arguments passed by `search`.
-            fit_kwargs: Keyword arguments passed by `search`.
+            *args: Positional arguments passed by `search`.
+            **kwargs: Keyword arguments passed by `search`.
 
         Returns:
             The fit history.
@@ -221,9 +220,57 @@ class Tuner(base_tuner.BaseTuner):
         hp = trial.hyperparameters
         model = self._try_build(hp)
         self._override_compile_args(model)
-        return self.hypermodel.fit(hp, model, *fit_args, **fit_kwargs)
+        return self.hypermodel.fit(hp, model, *args, **kwargs)
 
-    def run_trial(self, trial, *fit_args, **fit_kwargs):
+    def run_trial(self, trial, *args, **kwargs):
+        """Evaluates a set of hyperparameter values.
+
+        This method is called multiple times during `search` to build and
+        evaluate the models with different hyperparameters and return the
+        objective value.
+
+        Example:
+
+        You can use it with `self.hypermodel` to build and fit the model.
+
+        ```python
+        def run_trial(self, trial, *args, **kwargs):
+            hp = trial.hyperparameters
+            model = self.hypermodel.build(hp)
+            return self.hypermodel.fit(hp, model, *args, **kwargs)
+        ```
+
+        You can also use it as a black-box optimizer for anything.
+
+        ```python
+        def run_trial(self, trial, *args, **kwargs):
+            hp = trial.hyperparameters
+            x = hp.Float("x", -2.0, 2.0)
+            y = x * x + 2 * x + 1
+            return y
+        ```
+
+        Args:
+            trial: A `Trial` instance that contains the information needed to
+                run this trial. Hyperparameters can be accessed via
+                `trial.hyperparameters`.
+            *args: Positional arguments passed by `search`.
+            **kwargs: Keyword arguments passed by `search`.
+
+        Returns:
+            A `History` object, which is the return value of `model.fit()`, a
+            dictionary, a float, or a list of one of these types.
+
+            If return a dictionary, it should be a dictionary of the metrics to
+            track. The keys are the metric names, which contains the
+            `objective` name. The values should be the metric values.
+
+            If return a float, it should be the `objective` value.
+
+            If evaluating the model for multiple times, you may return a list
+            of results of any of the types above. The final objective value is
+            the average of the results in the list.
+        """
         model_checkpoint = keras.callbacks.ModelCheckpoint(
             filepath=self._get_checkpoint_fname(trial.trial_id, self._reported_step),
             monitor=self.oracle.objective.name,
@@ -231,34 +278,22 @@ class Tuner(base_tuner.BaseTuner):
             save_best_only=True,
             save_weights_only=True,
         )
-        original_callbacks = fit_kwargs.pop("callbacks", [])
+        original_callbacks = kwargs.pop("callbacks", [])
 
         # Run the training process multiple times.
-        metrics = collections.defaultdict(list)
+        histories = []
         for execution in range(self.executions_per_trial):
-            copied_fit_kwargs = copy.copy(fit_kwargs)
+            copied_kwargs = copy.copy(kwargs)
             callbacks = self._deepcopy_callbacks(original_callbacks)
             self._configure_tensorboard_dir(callbacks, trial, execution)
             callbacks.append(tuner_utils.TunerCallback(self, trial))
             # Only checkpoint the best epoch across all executions.
             callbacks.append(model_checkpoint)
-            copied_fit_kwargs["callbacks"] = callbacks
-
-            history = self._build_and_fit_model(trial, fit_args, copied_fit_kwargs)
-            for metric, epoch_values in history.history.items():
-                if self.oracle.objective.direction == "min":
-                    best_value = np.min(epoch_values)
-                else:
-                    best_value = np.max(epoch_values)
-                metrics[metric].append(best_value)
-
-        # Average the results across executions and send to the Oracle.
-        averaged_metrics = {}
-        for metric, execution_values in metrics.items():
-            averaged_metrics[metric] = np.mean(execution_values)
-        self.oracle.update_trial(
-            trial.trial_id, metrics=averaged_metrics, step=self._reported_step
-        )
+            copied_kwargs["callbacks"] = callbacks
+            histories.append(
+                self._build_and_fit_model(trial, *args, **copied_kwargs)
+            )
+        return histories
 
     def load_model(self, trial):
         model = self._build_hypermodel(trial.hyperparameters)

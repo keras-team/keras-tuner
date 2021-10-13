@@ -367,7 +367,7 @@ class Hyperband(tuner_module.Tuner):
         if "tuner/epochs" in hp.values:
             fit_kwargs["epochs"] = hp.values["tuner/epochs"]
             fit_kwargs["initial_epoch"] = hp.values["tuner/initial_epoch"]
-        super(Hyperband, self).run_trial(trial, *fit_args, **fit_kwargs)
+        return super(Hyperband, self).run_trial(trial, *fit_args, **fit_kwargs)
 
     def _build_model(self, hp):
         model = super(Hyperband, self)._build_model(hp)
