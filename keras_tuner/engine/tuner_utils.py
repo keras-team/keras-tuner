@@ -14,11 +14,11 @@
 """Utilities for Tuner class."""
 
 
+import collections
 import math
 import time
 
 import numpy as np
-import six
 import tensorflow as tf
 from tensorboard.plugins.hparams import api as hparams_api
 from tensorflow import keras
@@ -178,20 +178,44 @@ class Display(object):
         return time.strftime("%Hh %Mm %Ss", time.gmtime(t))
 
 
-def average_histories(histories):
-    """Averages the per-epoch metrics from multiple executions."""
-    averaged = {}
-    metrics = histories[0].keys()
-    for metric in metrics:
-        values = []
-        for epoch_values in six.moves.zip_longest(
-            *[h[metric] for h in histories], fillvalue=np.nan
-        ):
-            values.append(np.nanmean(epoch_values))
-        averaged[metric] = values
-    # Convert {str: [float]} to [{str: float}]
-    averaged = [dict(zip(metrics, vals)) for vals in zip(*averaged.values())]
-    return averaged
+def average_metrics_dicts(metrics_dicts):
+    """Averages the metrics dictionaries to one metrics dictionary."""
+    metrics = collections.defaultdict(list)
+    for metrics_dict in metrics_dicts:
+        for metric_name, metric_value in metrics_dict.items():
+            metrics[metric_name].append(metric_value)
+    averaged_metrics = {}
+    for metric_name, metric_values in metrics.items():
+        averaged_metrics[metric_name] = np.mean(metric_values)
+    return averaged_metrics
+
+
+def convert_to_metrics_dict(results, objective):
+    """Convert any supported results type to a metrics dictionary."""
+    # Single value.
+    if isinstance(results, (int, float)):
+        return {objective.name: results}
+
+    # A dictionary.
+    if isinstance(results, dict):
+        return results
+
+    # A History.
+    if isinstance(results, keras.callbacks.History):
+        metrics = {}
+        for metric, epoch_values in results.history.items():
+            if objective.direction == "min":
+                best_value = np.min(epoch_values)
+            else:
+                best_value = np.max(epoch_values)
+            metrics[metric] = best_value
+        return metrics
+
+    # List to be averaged.
+    if isinstance(results, list):
+        return average_metrics_dicts(
+            [convert_to_metrics_dict(elem, objective) for elem in results]
+        )
 
 
 def convert_hyperparams_to_hparams(hyperparams):
