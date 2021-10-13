@@ -165,7 +165,7 @@ def test_callbacks_in_fit_kwargs(tmp_dir):
         assert len(tuner.oracle.trials) == 2
         callback_class_names = [
             x.__class__.__name__
-            for x in mock_build_and_fit_model.call_args[0][-1]["callbacks"]
+            for x in mock_build_and_fit_model.call_args[1]["callbacks"]
         ]
         assert callback_class_names == [
             "EarlyStopping",

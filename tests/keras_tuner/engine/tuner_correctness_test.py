@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from collections import namedtuple
 
 import numpy as np
 import pytest
@@ -91,14 +90,11 @@ class MockModel(keras.Model):
                 self.on_batch_begin(epoch, batch)
                 self.on_batch_end(epoch, batch)
             self.on_epoch_end(epoch)
-        History = namedtuple("History", "history")
-        return History(
-            {
-                "loss": [
-                    np.average(epoch_values) for epoch_values in self.full_history
-                ]
-            }
-        )
+        history = keras.callbacks.History()
+        history.history = {
+            "loss": [np.average(epoch_values) for epoch_values in self.full_history]
+        }
+        return history
 
     def save_weights(self, fname, **kwargs):
         pass
@@ -144,6 +140,108 @@ def test_tuning_correctness(tmp_dir):
     assert first_trial.score == min(m0_epochs)
     assert second_trial.score == min(m1_epochs)
     assert tuner.oracle.get_best_trials(1)[0].trial_id == first_trial.trial_id
+
+
+def assert_found_best_score(tmp_dir, hypermodel, tuner_class=keras_tuner.Tuner):
+    tuner = tuner_class(
+        oracle=keras_tuner.tuners.randomsearch.RandomSearchOracle(
+            objective="loss", max_trials=2, seed=1337
+        ),
+        hypermodel=hypermodel,
+        directory=tmp_dir,
+    )
+    tuner.search(callbacks=[])
+    assert tuner.oracle.get_best_trials(1)[0].score == 3.0
+
+
+def test_hypermodel_fit_return_a_dict(tmp_dir):
+    class MyHyperModel(MockHyperModel):
+        def fit(self, hp, model, *args, **kwargs):
+            history = super().fit(hp, model, *args, **kwargs)
+            return {
+                "loss": min(history.history["loss"]),
+                "other_metric": np.random.rand(),
+            }
+
+    assert_found_best_score(tmp_dir, MyHyperModel())
+
+
+def test_hypermodel_fit_return_a_float(tmp_dir):
+    class MyHyperModel(MockHyperModel):
+        def fit(self, hp, model, *args, **kwargs):
+            history = super().fit(hp, model, *args, **kwargs)
+            return min(history.history["loss"])
+
+    assert_found_best_score(tmp_dir, MyHyperModel())
+
+
+def test_hypermodel_fit_return_an_int(tmp_dir):
+    class MyHyperModel(MockHyperModel):
+        def fit(self, hp, model, *args, **kwargs):
+            history = super().fit(hp, model, *args, **kwargs)
+            return int(min(history.history["loss"]))
+
+    assert_found_best_score(tmp_dir, MyHyperModel())
+
+
+def test_run_trial_return_none(tmp_dir):
+    class MyTuner(keras_tuner.Tuner):
+        def run_trial(self, trial, *fit_args, **fit_kwargs):
+            history = self.hypermodel.build(trial.hyperparameters).fit(
+                *fit_args, **fit_kwargs
+            )
+            self.oracle.update_trial(
+                trial.trial_id, {"loss": min(history.history["loss"])}
+            )
+
+    with pytest.deprecated_call(match="float, dict, keras.callbacks.History"):
+        assert_found_best_score(tmp_dir, MockHyperModel(), MyTuner)
+
+
+def test_run_trial_return_history(tmp_dir):
+    class MyTuner(keras_tuner.Tuner):
+        def run_trial(self, trial, *fit_args, **fit_kwargs):
+            return self.hypermodel.build(trial.hyperparameters).fit(
+                *fit_args, **fit_kwargs
+            )
+
+    assert_found_best_score(tmp_dir, MockHyperModel(), MyTuner)
+
+
+def test_run_trial_return_a_dict(tmp_dir):
+    class MyTuner(keras_tuner.Tuner):
+        def run_trial(self, trial, *fit_args, **fit_kwargs):
+            history = self.hypermodel.build(trial.hyperparameters).fit(
+                *fit_args, **fit_kwargs
+            )
+            return {"loss": min(history.history["loss"])}
+
+    assert_found_best_score(tmp_dir, MockHyperModel(), MyTuner)
+
+
+def test_run_trial_return_a_float(tmp_dir):
+    class MyTuner(keras_tuner.Tuner):
+        def run_trial(self, trial, *fit_args, **fit_kwargs):
+            history = self.hypermodel.build(trial.hyperparameters).fit(
+                *fit_args, **fit_kwargs
+            )
+            return min(history.history["loss"])
+
+    assert_found_best_score(tmp_dir, MockHyperModel(), MyTuner)
+
+
+def test_run_trial_return_float_list(tmp_dir):
+    class MyTuner(keras_tuner.Tuner):
+        def run_trial(self, trial, *fit_args, **fit_kwargs):
+            ret = []
+            for i in range(3):
+                history = self.hypermodel.build(trial.hyperparameters).fit(
+                    *fit_args, **fit_kwargs
+                )
+                ret.append(min(history.history["loss"]))
+            return ret
+
+    assert_found_best_score(tmp_dir, MockHyperModel(), MyTuner)
 
 
 def test_tuner_errors(tmp_dir):
@@ -283,11 +381,11 @@ def test_callbacks_run_each_execution(tmp_dir):
     assert len(callback_instances) == 6
 
 
-def test_build_and_fit_model_in_multi_execution_tuner(tmp_dir):
+def test_build_and_fit_model(tmp_dir):
     class MyTuner(keras_tuner.tuners.RandomSearch):
-        def _build_and_fit_model(self, trial, fit_args, fit_kwargs):
+        def _build_and_fit_model(self, trial, *args, **kwargs):
             self.was_called = True
-            return super()._build_and_fit_model(trial, fit_args, fit_kwargs)
+            return super()._build_and_fit_model(trial, *args, **kwargs)
 
     tuner = MyTuner(
         hypermodel=build_model,
@@ -309,9 +407,9 @@ def test_build_and_fit_model_in_multi_execution_tuner(tmp_dir):
 
 def test_build_and_fit_model_in_tuner(tmp_dir):
     class MyTuner(tuner_module.Tuner):
-        def _build_and_fit_model(self, trial, fit_args, fit_kwargs):
+        def _build_and_fit_model(self, trial, *args, **kwargs):
             self.was_called = True
-            return super()._build_and_fit_model(trial, fit_args, fit_kwargs)
+            return super()._build_and_fit_model(trial, *args, **kwargs)
 
     tuner = MyTuner(
         oracle=keras_tuner.tuners.randomsearch.RandomSearchOracle(
