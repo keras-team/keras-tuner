@@ -31,9 +31,13 @@ class HyperModel(object):
     one of the models from the space using the given `HyperParameters` object.
 
     Users should subclass the `HyperModel` class to define their search spaces
-    by overriding the `.build(...)` function.
+    by overriding `build()`, which creates and returns the Keras model.
+    Optionally, you may also override `fit()` to customize the training process
+    of the model.
 
     Examples:
+
+    In `build()`, you can create the model using the hyperparameters.
 
     ```python
     class MyHyperModel(kt.HyperModel):
@@ -45,6 +49,42 @@ class HyperModel(object):
             model.add(keras.layers.Dense(1, activation='relu'))
             model.compile(loss='mse')
             return model
+    ```
+
+    When overriding `HyperModel.fit()`, if you use `model.fit()` to train your
+    model, which returns the training history, you can return it directly. You
+    may use `hp` to specify any hyperparameters to tune.
+
+    ```python
+    class MyHyperModel(kt.HyperModel):
+        def build(self, hp):
+            ...
+
+        def fit(self, hp, model, *args, **kwargs):
+            return model.fit(
+                *args,
+                epochs=hp.Int("epochs", 5, 20)
+                **kwargs)
+    ```
+
+    If you have a customized training process, you can return the objective
+    value as a float.
+
+    If you want to keep track of more metrics, you can return a dictionary of
+    the metrics to track.
+
+    ```python
+    class MyHyperModel(kt.HyperModel):
+        def build(self, hp):
+            ...
+
+        def fit(self, hp, model, *args, **kwargs):
+            ...
+            return {
+                "loss": loss,
+                "val_loss": val_loss,
+                "val_accuracy": val_accuracy
+            }
     ```
 
     Args:
@@ -86,13 +126,23 @@ class HyperModel(object):
         Args:
             hp: HyperParameters.
             model: `keras.Model` built in the `build()` function.
-            **kwargs: Anything the user defines. They are passed from
-                `Tuner.search()`. if contains `callbacks`, a list of prebuild
-                Keras callbacks for model checkpointing and tensorboard
-                configuration will be added to callbacks provided by the user.
+            **kwargs: All arguments passed to `Tuner.search()` are in the
+                `kwargs` here. It always contains a `callbacks` argument, which
+                is a list of default Keras callback functions for model
+                checkpointing, tensorboard configuration, and other tuning
+                utilities. If `callbacks` is passed by the user from
+                `Tuner.search()`, these default callbacks will be appended to
+                the user provided list.
 
         Returns:
-            A `History` object, a similar dictionary, or a single value.
+            A `History` object, which is the return value of `model.fit()`, a
+            dictionary, or a float.
+
+            If return a dictionary, it should be a dictionary of the metrics to
+            track. The keys are the metric names, which contains the
+            `objective` name. The values should be the metric values.
+
+            If return a float, it should be the `objective` value.
         """
         return model.fit(*args, **kwargs)
 
