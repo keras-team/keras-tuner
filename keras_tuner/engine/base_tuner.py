@@ -179,8 +179,9 @@ class BaseTuner(stateful.Stateful):
                     "float, dict, keras.callbacks.History, or a list of one "
                     "of these types. The use case of calling "
                     "`Tuner.oracle.update_trial()` in `Tuner.run_trial()` is "
-                    "deprecated, which will be removed in the future.",
+                    "deprecated, and will be removed in the future.",
                     DeprecationWarning,
+                    stacklevel=2,
                 )
             else:
                 self.oracle.update_trial(
