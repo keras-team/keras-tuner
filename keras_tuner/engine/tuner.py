@@ -40,9 +40,11 @@ class Tuner(base_tuner.BaseTuner):
     tuners can be created by subclassing the class.
 
     Args:
-        oracle: Instance of Oracle class.
-        hypermodel: Instance of HyperModel class (or callable that takes
-            hyperparameters and returns a Model instance).
+        oracle: Instance of `Oracle` class.
+        hypermodel: Instance of `HyperModel` class (or callable that takes
+            hyperparameters and returns a `Model` instance). It is optional
+            when `Tuner.run_trial()` is overriden and does not use
+            `self.hypermodel`.
         max_model_size: Integer, maximum number of scalars in the parameters of
             a model. Models larger than this are rejected.
         optimizer: Optional `Optimizer` instance.  May be used to override the
@@ -85,7 +87,7 @@ class Tuner(base_tuner.BaseTuner):
     def __init__(
         self,
         oracle,
-        hypermodel,
+        hypermodel=None,
         max_model_size=None,
         optimizer=None,
         loss=None,
@@ -98,6 +100,14 @@ class Tuner(base_tuner.BaseTuner):
         overwrite=False,
         executions_per_trial=1,
     ):
+        if hypermodel is None and self.__class__.run_trial is Tuner.run_trial:
+            raise ValueError(
+                "Received `hypermodel=None`. We only allow not specifying "
+                "`hypermodel` if the user defines the search space in "
+                "`Tuner.run_trial()` by subclassing a `Tuner` class without "
+                "using a `HyperModel` instance."
+            )
+
         super(Tuner, self).__init__(
             oracle=oracle,
             hypermodel=hypermodel,
@@ -290,9 +300,22 @@ class Tuner(base_tuner.BaseTuner):
             # Only checkpoint the best epoch across all executions.
             callbacks.append(model_checkpoint)
             copied_kwargs["callbacks"] = callbacks
-            histories.append(
-                self._build_and_fit_model(trial, *args, **copied_kwargs)
-            )
+            obj_value = self._build_and_fit_model(trial, *args, **copied_kwargs)
+
+            # objective left unspecified,
+            # and objective value is not a single float.
+            if (
+                not isinstance(obj_value, (int, float))
+                and self.oracle.objective.name == "default_objective"
+            ):
+                raise TypeError(
+                    "Expect the return value of `Tuner.run_trial()` or "
+                    "`HyperModel.fit()` to be a single float when "
+                    "`objective` is left unspecified. Recevied return value: "
+                    f"{obj_value}."
+                )
+
+            histories.append(obj_value)
         return histories
 
     def load_model(self, trial):

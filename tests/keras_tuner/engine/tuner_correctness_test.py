@@ -247,7 +247,7 @@ def test_run_trial_return_float_list(tmp_dir):
 def test_tuner_errors(tmp_dir):
     # invalid oracle
     with pytest.raises(
-        ValueError, match="Expected oracle to be an instance of Oracle"
+        ValueError, match="Expected `oracle` argument to be an instance of `Oracle`"
     ):
         tuner_module.Tuner(
             oracle="invalid", hypermodel=build_model, directory=tmp_dir

@@ -59,11 +59,13 @@ class HyperbandOracle(oracle_module.Oracle):
     Args:
         objective: A string or `keras_tuner.Objective` instance. If a string,
             the direction of the optimization (min or max) will be inferred.
+            It is optional when `Tuner.run_trial()` or `HyperModel.fit()`
+            returns a single float as the objective to minimize.
         max_epochs: Integer, the maximum number of epochs to train one model.
             It is recommended to set this to a value slightly higher than the
             expected epochs to convergence for your largest Model, and to use
             early stopping during training (for example, via
-            `tf.keras.callbacks.EarlyStopping`).
+            `tf.keras.callbacks.EarlyStopping`). Defaults to 100.
         factor: Integer, the reduction factor for the number of epochs
             and number of models for each bracket. Defaults to 3.
         hyperband_iterations: Integer, at least 1, the number of times to
@@ -88,8 +90,8 @@ class HyperbandOracle(oracle_module.Oracle):
 
     def __init__(
         self,
-        objective,
-        max_epochs,
+        objective=None,
+        max_epochs=100,
         factor=3,
         hyperband_iterations=1,
         seed=None,
@@ -302,15 +304,19 @@ class Hyperband(tuner_module.Tuner):
 
 
     Args:
-        hypermodel: A `HyperModel` instance (or callable that takes
-            hyperparameters and returns a Model instance).
+        hypermodel: Instance of `HyperModel` class (or callable that takes
+            hyperparameters and returns a `Model` instance). It is optional
+            when `Tuner.run_trial()` is overriden and does not use
+            `self.hypermodel`.
         objective: A string or `keras_tuner.Objective` instance. If a string,
             the direction of the optimization (min or max) will be inferred.
+            It is optional when `Tuner.run_trial()` or `HyperModel.fit()`
+            returns a single float as the objective to minimize.
         max_epochs: Integer, the maximum number of epochs to train one model.
             It is recommended to set this to a value slightly higher than the
             expected epochs to convergence for your largest Model, and to use
             early stopping during training (for example, via
-            `tf.keras.callbacks.EarlyStopping`).
+            `tf.keras.callbacks.EarlyStopping`). Defaults to 100.
         factor: Integer, the reduction factor for the number of epochs
             and number of models for each bracket. Defaults to 3.
         hyperband_iterations: Integer, at least 1, the number of times to
@@ -337,9 +343,9 @@ class Hyperband(tuner_module.Tuner):
 
     def __init__(
         self,
-        hypermodel,
-        objective,
-        max_epochs,
+        hypermodel=None,
+        objective=None,
+        max_epochs=100,
         factor=3,
         hyperband_iterations=1,
         seed=None,
