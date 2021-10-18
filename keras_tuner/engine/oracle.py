@@ -38,6 +38,8 @@ class Oracle(stateful.Stateful):
     Args:
         objective: A string or `keras_tuner.Objective` instance. If a string,
             the direction of the optimization (min or max) will be inferred.
+            It is optional when `Tuner.run_trial()` or `HyperModel.fit()`
+            returns a single float as the objective to minimize.
         max_trials: Integer, the total number of trials (model configurations)
             to test at most. Note that the oracle may interrupt the search
             before `max_trial` models have been tested if the search space has
@@ -58,7 +60,7 @@ class Oracle(stateful.Stateful):
 
     def __init__(
         self,
-        objective,
+        objective=None,
         max_trials=None,
         hyperparameters=None,
         allow_new_entries=True,
@@ -445,6 +447,8 @@ class Oracle(stateful.Stateful):
 
 
 def _format_objective(objective):
+    if objective is None:
+        return Objective("default_objective", "min")
     if isinstance(objective, list):
         return [_format_objective(obj) for obj in objective]
     if isinstance(objective, Objective):

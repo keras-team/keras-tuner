@@ -26,10 +26,12 @@ class RandomSearchOracle(oracle_module.Oracle):
     Args:
         objective: A string or `keras_tuner.Objective` instance. If a string,
             the direction of the optimization (min or max) will be inferred.
+            It is optional when `Tuner.run_trial()` or `HyperModel.fit()`
+            returns a single float as the objective to minimize.
         max_trials: Integer, the total number of trials (model configurations)
             to test at most. Note that the oracle may interrupt the search
             before `max_trial` models have been tested if the search space has
-            been exhausted.
+            been exhausted. Defaults to 10.
         seed: Optional integer, the random seed.
         hyperparameters: Optional `HyperParameters` instance. Can be used to
             override (or register in advance) hyperparameters in the search
@@ -46,8 +48,8 @@ class RandomSearchOracle(oracle_module.Oracle):
 
     def __init__(
         self,
-        objective,
-        max_trials,
+        objective=None,
+        max_trials=10,
         seed=None,
         hyperparameters=None,
         allow_new_entries=True,
@@ -84,14 +86,18 @@ class RandomSearch(tuner_module.Tuner):
     """Random search tuner.
 
     Args:
-        hypermodel: A `HyperModel` instance (or callable that takes
-            hyperparameters and returns a Model instance).
+        hypermodel: Instance of `HyperModel` class (or callable that takes
+            hyperparameters and returns a Model instance). It is optional when
+            `Tuner.run_trial()` is overriden and does not use
+            `self.hypermodel`.
         objective: A string or `keras_tuner.Objective` instance. If a string,
             the direction of the optimization (min or max) will be inferred.
+            It is optional when `Tuner.run_trial()` or `HyperModel.fit()`
+            returns a single float as the objective to minimize.
         max_trials: Integer, the total number of trials (model configurations)
             to test at most. Note that the oracle may interrupt the search
             before `max_trial` models have been tested if the search space has
-            been exhausted.
+            been exhausted. Defaults to 10.
         seed: Optional integer, the random seed.
         hyperparameters: Optional `HyperParameters` instance. Can be used to
             override (or register in advance) hyperparameters in the search
@@ -110,9 +116,9 @@ class RandomSearch(tuner_module.Tuner):
 
     def __init__(
         self,
-        hypermodel,
-        objective,
-        max_trials,
+        hypermodel=None,
+        objective=None,
+        max_trials=10,
         seed=None,
         hyperparameters=None,
         tune_new_entries=True,

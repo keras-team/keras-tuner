@@ -40,9 +40,10 @@ class BaseTuner(stateful.Stateful):
 
     Args:
         oracle: Instance of Oracle class.
-        hypermodel: Instance of HyperModel class
-            (or callable that takes hyperparameters
-            and returns a Model instance).
+        hypermodel: Instance of `HyperModel` class (or callable that takes
+            hyperparameters and returns a `Model` instance). It is optional
+            when `Tuner.run_trial()` is overriden and does not use
+            `self.hypermodel`.
         directory: A string, the relative path to the working directory.
         project_name: A string, the name to use as prefix for files saved by
             this Tuner.
@@ -60,7 +61,7 @@ class BaseTuner(stateful.Stateful):
     def __init__(
         self,
         oracle,
-        hypermodel,
+        hypermodel=None,
         directory=None,
         project_name=None,
         logger=None,
@@ -74,7 +75,8 @@ class BaseTuner(stateful.Stateful):
 
         if not isinstance(oracle, oracle_module.Oracle):
             raise ValueError(
-                "Expected oracle to be " "an instance of Oracle, got: %s" % (oracle,)
+                "Expected `oracle` argument to be an instance of `Oracle`. "
+                f"Received: oracle={oracle} (of type ({type(oracle)})."
             )
         self.oracle = oracle
         self.oracle._set_project_dir(
@@ -117,6 +119,9 @@ class BaseTuner(stateful.Stateful):
         generates hp values based on the not activated `conditional_scopes`
         found in the builds.
         """
+        if self.hypermodel is None:
+            return
+
         hp = self.oracle.get_space()
 
         # Lists of stacks of conditions used during `explore_space()`.

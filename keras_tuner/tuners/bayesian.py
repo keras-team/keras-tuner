@@ -125,10 +125,12 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
     Args:
         objective: A string or `keras_tuner.Objective` instance. If a string,
             the direction of the optimization (min or max) will be inferred.
+            It is optional when `Tuner.run_trial()` or `HyperModel.fit()`
+            returns a single float as the objective to minimize.
         max_trials: Integer, the total number of trials (model configurations)
             to test at most. Note that the oracle may interrupt the search
             before `max_trial` models have been tested if the search space has
-            been exhausted.
+            been exhausted. Defaults to 10.
         num_initial_points: Optional number of randomly generated samples as
             initial training data for Bayesian optimization. If left
             unspecified, a value of 3 times the dimensionality of the
@@ -154,8 +156,8 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
 
     def __init__(
         self,
-        objective,
-        max_trials,
+        objective=None,
+        max_trials=10,
         num_initial_points=None,
         alpha=1e-4,
         beta=2.6,
@@ -346,14 +348,18 @@ class BayesianOptimization(tuner_module.Tuner):
     """BayesianOptimization tuning with Gaussian process.
 
     Args:
-        hypermodel: A `HyperModel` instance (or callable that takes
-            hyperparameters and returns a Model instance).
+        hypermodel: Instance of `HyperModel` class (or callable that takes
+            hyperparameters and returns a `Model` instance). It is optional
+            when `Tuner.run_trial()` is overriden and does not use
+            `self.hypermodel`.
         objective: A string or `keras_tuner.Objective` instance. If a string,
             the direction of the optimization (min or max) will be inferred.
+            It is optional when `Tuner.run_trial()` or `HyperModel.fit()`
+            returns a single float as the objective to minimize.
         max_trials: Integer, the total number of trials (model configurations)
             to test at most. Note that the oracle may interrupt the search
             before `max_trial` models have been tested if the search space has
-            been exhausted.
+            been exhausted. Defaults to 10.
         num_initial_points: Optional number of randomly generated samples as
             initial training data for Bayesian optimization. If left
             unspecified, a value of 3 times the dimensionality of the
@@ -381,9 +387,9 @@ class BayesianOptimization(tuner_module.Tuner):
 
     def __init__(
         self,
-        hypermodel,
-        objective,
-        max_trials,
+        hypermodel=None,
+        objective=None,
+        max_trials=10,
         num_initial_points=2,
         alpha=1e-4,
         beta=2.6,

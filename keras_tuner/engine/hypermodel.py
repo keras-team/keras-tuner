@@ -147,13 +147,16 @@ class DefaultHyperModel(HyperModel):
 
 def get_hypermodel(hypermodel):
     """Gets a HyperModel from a HyperModel or callable."""
+    if hypermodel is None:
+        return None
+
     if isinstance(hypermodel, HyperModel):
         return hypermodel
-    else:
-        if not callable(hypermodel):
-            raise ValueError(
-                "The `hypermodel` argument should be either "
-                "a callable with signature `build(hp)` returning a model, "
-                "or an instance of `HyperModel`."
-            )
-        return DefaultHyperModel(hypermodel)
+
+    if not callable(hypermodel):
+        raise ValueError(
+            "The `hypermodel` argument should be either "
+            "a callable with signature `build(hp)` returning a model, "
+            "or an instance of `HyperModel`."
+        )
+    return DefaultHyperModel(hypermodel)

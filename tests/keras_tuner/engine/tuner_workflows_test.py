@@ -141,6 +141,79 @@ def test_basic_tuner_attributes(tmp_dir):
     assert os.path.exists(os.path.join(str(tmp_dir), "untitled_project"))
 
 
+def test_no_hypermodel_with_objective(tmp_dir):
+    class MyTuner(keras_tuner.tuners.RandomSearch):
+        def run_trial(self, trial, *args, **kwargs):
+            hp = trial.hyperparameters
+            return {"val_loss": hp.Float("value", 0, 10)}
+
+    tuner = MyTuner(
+        objective="val_loss",
+        max_trials=2,
+        directory=tmp_dir,
+    )
+    tuner.search()
+
+    assert len(tuner.oracle.trials) == 2
+
+
+def test_no_objective_with_hypermodel(tmp_dir):
+    class MyHyperModel(ExampleHyperModel):
+        def fit(self, hp, model, *args, **kwargs):
+            return hp.Float("value", 0, 10)
+
+    tuner = keras_tuner.tuners.RandomSearch(
+        hypermodel=MyHyperModel(),
+        max_trials=2,
+        executions_per_trial=3,
+        directory=tmp_dir,
+    )
+    tuner.search()
+
+    assert len(tuner.oracle.trials) == 2
+
+
+def test_no_hypermodel_no_objective(tmp_dir):
+    class MyTuner(keras_tuner.tuners.RandomSearch):
+        def run_trial(self, trial, *args, **kwargs):
+            hp = trial.hyperparameters
+            return hp.Float("value", 0, 10)
+
+    tuner = MyTuner(
+        objective="val_loss",
+        max_trials=2,
+        directory=tmp_dir,
+    )
+    tuner.search()
+
+    assert len(tuner.oracle.trials) == 2
+
+
+def test_no_hypermodel_without_override_run_trial_error(tmp_dir):
+    with pytest.raises(ValueError, match="Received `hypermodel=None`"):
+        keras_tuner.tuners.RandomSearch(
+            max_trials=2,
+            executions_per_trial=3,
+            directory=tmp_dir,
+        )
+
+
+def test_no_objective_return_not_single_value_error(tmp_dir):
+    class MyHyperModel(ExampleHyperModel):
+        def fit(self, hp, model, *args, **kwargs):
+            return {"val_loss": hp.Float("value", 0, 10)}
+
+    tuner = keras_tuner.tuners.RandomSearch(
+        hypermodel=MyHyperModel(),
+        max_trials=2,
+        executions_per_trial=3,
+        directory=tmp_dir,
+    )
+
+    with pytest.raises(TypeError, match="to be a single float"):
+        tuner.search()
+
+
 def test_callbacks_in_fit_kwargs(tmp_dir):
     tuner = keras_tuner.tuners.RandomSearch(
         build_model,
