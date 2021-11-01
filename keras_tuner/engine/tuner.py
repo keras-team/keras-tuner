@@ -155,7 +155,9 @@ class Tuner(base_tuner.BaseTuner):
 
     def _build_hypermodel(self, hp):
         with maybe_distribute(self.distribution_strategy):
-            return self.hypermodel.build(hp)
+            model = self.hypermodel.build(hp)
+            self._override_compile_args(model)
+            return model
 
     def _try_build(self, hp):
         for i in range(MAX_FAIL_STREAK + 1):
@@ -229,7 +231,6 @@ class Tuner(base_tuner.BaseTuner):
         """
         hp = trial.hyperparameters
         model = self._try_build(hp)
-        self._override_compile_args(model)
         return self.hypermodel.fit(hp, model, *args, **kwargs)
 
     def run_trial(self, trial, *args, **kwargs):
@@ -319,7 +320,7 @@ class Tuner(base_tuner.BaseTuner):
         return histories
 
     def load_model(self, trial):
-        model = self._build_hypermodel(trial.hyperparameters)
+        model = self._try_build(trial.hyperparameters)
         # Reload best checkpoint. The Oracle scores the Trial and also
         # indicates at what epoch the best value of the objective was
         # obtained.

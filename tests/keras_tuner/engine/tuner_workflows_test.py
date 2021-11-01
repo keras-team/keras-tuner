@@ -281,7 +281,7 @@ def test_override_compile(tmp_dir):
         def fit(self, hp, model, *args, **kwargs):
             history = super().fit(hp, model, *args, **kwargs)
             assert model.optimizer.__class__.__name__ == "RMSprop"
-            assert model.loss == "sparse_categorical_crossentropy"
+            assert model.loss == "mse"
             assert len(model.metrics) >= 2
             assert model.metrics[-2]._fn.__name__ == "mean_squared_error"
             assert model.metrics[-1]._fn.__name__ == "sparse_categorical_accuracy"
@@ -293,14 +293,14 @@ def test_override_compile(tmp_dir):
         max_trials=2,
         executions_per_trial=1,
         metrics=["mse", "accuracy"],
-        loss="sparse_categorical_crossentropy",
+        loss="mse",
         optimizer="rmsprop",
         directory=tmp_dir,
     )
 
     assert tuner.oracle.objective.name == "val_mse"
     assert tuner.optimizer == "rmsprop"
-    assert tuner.loss == "sparse_categorical_crossentropy"
+    assert tuner.loss == "mse"
     assert tuner.metrics == ["mse", "accuracy"]
 
     tuner.search_space_summary()
@@ -311,7 +311,8 @@ def test_override_compile(tmp_dir):
         validation_data=(VAL_INPUTS, VAL_TARGETS),
     )
     tuner.results_summary()
-    tuner.hypermodel.build(tuner.oracle.hyperparameters)
+    model = tuner.get_best_models()[0]
+    assert model.loss == "mse"
 
 
 def test_static_space(tmp_dir):
