@@ -23,7 +23,7 @@ from keras_tuner.distribute import oracle_chief
 from keras_tuner.distribute import oracle_client
 from keras_tuner.engine import metrics_tracking
 from keras_tuner.tuners import randomsearch
-from tests.keras_tuner import mock_distribute
+from tests.unit_tests import mock_distribute
 
 
 @pytest.fixture(scope="function")
