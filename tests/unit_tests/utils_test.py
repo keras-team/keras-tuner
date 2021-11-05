@@ -12,20 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import random
-
-import numpy as np
 import pytest
-import tensorflow as tf
+
+from keras_tuner import utils
 
 
-@pytest.fixture(autouse=True)
-def set_seeds_before_tests():
-    """Test wrapper to set the seed before each test.
+def test_check_tf_version_error():
+    utils.tf.__version__ = "1.15.0"
 
-    This wrapper runs for all the tests in the test suite.
-    """
-    random.seed(0)
-    np.random.seed(0)
-    tf.random.set_seed(0)
-    yield
+    with pytest.warns(ImportWarning) as record:
+        utils.check_tf_version()
+    assert len(record) == 1
+    assert (
+        "Tensorflow package version needs to be at least 2.0.0"
+        in record[0].message.args[0]
+    )
