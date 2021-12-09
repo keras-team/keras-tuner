@@ -141,6 +141,29 @@ def test_basic_tuner_attributes(tmp_dir):
     assert os.path.exists(os.path.join(str(tmp_dir), "untitled_project"))
 
 
+def test_multi_objective(tmp_dir):
+    tuner = keras_tuner.tuners.RandomSearch(
+        build_model,
+        objective=["val_accuracy", "val_loss"],
+        max_trials=2,
+        executions_per_trial=3,
+        directory=tmp_dir,
+    )
+
+    assert tuner.oracle.objective.name == "multi_objective"
+
+    tuner.search_space_summary()
+
+    tuner.search(
+        x=TRAIN_INPUTS,
+        y=TRAIN_TARGETS,
+        epochs=2,
+        validation_data=(VAL_INPUTS, VAL_TARGETS),
+    )
+
+    tuner.results_summary()
+
+
 def test_no_hypermodel_with_objective(tmp_dir):
     class MyTuner(keras_tuner.tuners.RandomSearch):
         def run_trial(self, trial, *args, **kwargs):
@@ -245,7 +268,7 @@ def test_callbacks_in_fit_kwargs(tmp_dir):
             "TensorBoard",
             "Callback",
             "TunerCallback",
-            "ModelCheckpoint",
+            "SaveBestEpoch",
         ]
 
 
@@ -651,30 +674,6 @@ def test_update_trial(tmp_dir):
     for trial in my_oracle.trials.values():
         # Test that early stopping worked.
         assert len(trial.metrics.get_history("val_accuracy")) == 1
-
-
-def test_objective_formats():
-    obj = keras_tuner.engine.oracle._format_objective("accuracy")
-    assert obj == keras_tuner.Objective("accuracy", "max")
-
-    obj = keras_tuner.engine.oracle._format_objective(
-        keras_tuner.Objective("score", "min")
-    )
-    assert obj == keras_tuner.Objective("score", "min")
-
-    obj = keras_tuner.engine.oracle._format_objective(
-        [keras_tuner.Objective("score", "max"), keras_tuner.Objective("loss", "min")]
-    )
-    assert obj == [
-        keras_tuner.Objective("score", "max"),
-        keras_tuner.Objective("loss", "min"),
-    ]
-
-    obj = keras_tuner.engine.oracle._format_objective(["accuracy", "loss"])
-    assert obj == [
-        keras_tuner.Objective("accuracy", "max"),
-        keras_tuner.Objective("loss", "min"),
-    ]
 
 
 def test_tunable_false_hypermodel(tmp_dir):

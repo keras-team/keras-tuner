@@ -14,7 +14,6 @@
 "Oracle base class."
 
 
-import collections
 import hashlib
 import json
 import os
@@ -25,21 +24,23 @@ import tensorflow as tf
 
 from keras_tuner import utils
 from keras_tuner.engine import hyperparameters as hp_module
-from keras_tuner.engine import metrics_tracking
+from keras_tuner.engine import objective as obj_module
 from keras_tuner.engine import stateful
 from keras_tuner.engine import trial as trial_lib
-
-Objective = collections.namedtuple("Objective", "name direction")
 
 
 class Oracle(stateful.Stateful):
     """Implements a hyperparameter optimization algorithm.
 
     Args:
-        objective: A string or `keras_tuner.Objective` instance. If a string,
-            the direction of the optimization (min or max) will be inferred.
-            It is optional when `Tuner.run_trial()` or `HyperModel.fit()`
-            returns a single float as the objective to minimize.
+        objective: A string, `keras_tuner.Objective` instance, or a list of
+            `keras_tuner.Objective`s and strings. If a string, the direction of
+            the optimization (min or max) will be inferred. If a list of
+            `keras_tuner.Objective`, we will minimize the sum of all the
+            objectives to minimize subtracting the sum of all the objectives to
+            maximize. The `objective` argument is optional when
+            `Tuner.run_trial()` or `HyperModel.fit()` returns a single float as
+            the objective to minimize.
         max_trials: Integer, the total number of trials (model configurations)
             to test at most. Note that the oracle may interrupt the search
             before `max_trial` models have been tested if the search space has
@@ -67,7 +68,7 @@ class Oracle(stateful.Stateful):
         tune_new_entries=True,
         seed=None,
     ):
-        self.objective = _format_objective(objective)
+        self.objective = obj_module.create_objective(objective)
         self.max_trials = max_trials
         if not hyperparameters:
             if not tune_new_entries:
@@ -157,7 +158,6 @@ class Oracle(stateful.Stateful):
         Args:
             trial: A completed `Trial` object.
         """
-        # Assumes single objective, subclasses can override.
         trial.score = trial.metrics.get_best_value(self.objective.name)
         trial.best_step = trial.metrics.get_best_step(self.objective.name)
 
@@ -300,7 +300,6 @@ class Oracle(stateful.Stateful):
         sorted_trials = sorted(
             trials,
             key=lambda trial: trial.score,
-            # Assumes single objective, subclasses can override.
             reverse=self.objective.direction == "max",
         )
         return sorted_trials[:num_trials]
@@ -392,7 +391,7 @@ class Oracle(stateful.Stateful):
         return hashlib.sha256(s.encode("utf-8")).hexdigest()[:32]
 
     def _check_objective_found(self, metrics):
-        if isinstance(self.objective, Objective):
+        if isinstance(self.objective, obj_module.Objective):
             objective_names = [self.objective.name]
         else:
             objective_names = [obj.name for obj in self.objective]
@@ -446,34 +445,8 @@ class Oracle(stateful.Stateful):
         return values
 
 
-def _format_objective(objective):
-    if objective is None:
-        return Objective("default_objective", "min")
-    if isinstance(objective, list):
-        return [_format_objective(obj) for obj in objective]
-    if isinstance(objective, Objective):
-        return objective
-    if isinstance(objective, str):
-        direction = metrics_tracking.infer_metric_direction(objective)
-        if direction is None:
-            error_msg = (
-                'Could not infer optimization direction ("min" or "max") '
-                'for unknown metric "{obj}". Please specify the objective  as'
-                "a `keras_tuner.Objective`, for example `keras_tuner.Objective("
-                '"{obj}", direction="min")`.'
-            )
-            error_msg = error_msg.format(obj=objective)
-            raise ValueError(error_msg)
-        return Objective(name=objective, direction=direction)
-    else:
-        raise ValueError(
-            "`objective` not understood, expected str or "
-            "`Objective` object, found: {}".format(objective)
-        )
-
-
 def _maybe_infer_direction_from_objective(objective, metric_name):
-    if isinstance(objective, Objective):
+    if isinstance(objective, obj_module.Objective):
         objective = [objective]
     for obj in objective:
         if obj.name == metric_name:

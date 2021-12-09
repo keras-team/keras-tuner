@@ -35,7 +35,7 @@ def test_kerastuner_same_as_keras_tuner():
         from kerastuner.engine.metrics_tracking import (  # noqa: F401
             MetricObservation,
         )
-        from kerastuner.engine.oracle import Objective  # noqa: F401
+        from kerastuner import Objective  # noqa: F401
         from kerastuner.engine.oracle import Oracle  # noqa: F401
         from kerastuner.engine.tuner import Tuner  # noqa: F401
         from kerastuner.engine.stateful import Stateful  # noqa: F401

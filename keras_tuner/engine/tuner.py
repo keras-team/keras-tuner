@@ -21,7 +21,6 @@ import os
 import traceback
 
 import numpy as np
-import tensorflow as tf
 from tensorboard.plugins.hparams import api as hparams_api
 from tensorflow import keras
 
@@ -117,13 +116,6 @@ class Tuner(base_tuner.BaseTuner):
             overwrite=overwrite,
         )
 
-        if isinstance(oracle.objective, list) and len(oracle.objective) > 1:
-            raise ValueError(
-                "Multi-objective is not supported, found: {}".format(
-                    oracle.objective
-                )
-            )
-
         self.max_model_size = max_model_size
         self.optimizer = optimizer
         self.loss = loss
@@ -148,10 +140,6 @@ class Tuner(base_tuner.BaseTuner):
         self.tuner_id = tuner_id or self.tuner_id
 
         self.executions_per_trial = executions_per_trial
-        # This is the `step` that will be reported to the Oracle at the end
-        # of the Trial. Since intermediate results are not used, this is set
-        # to 0.
-        self._reported_step = 0
 
     def _build_hypermodel(self, hp):
         with maybe_distribute(self.distribution_strategy):
@@ -282,12 +270,11 @@ class Tuner(base_tuner.BaseTuner):
             of results of any of the types above. The final objective value is
             the average of the results in the list.
         """
-        model_checkpoint = keras.callbacks.ModelCheckpoint(
-            filepath=self._get_checkpoint_fname(trial.trial_id, self._reported_step),
-            monitor=self.oracle.objective.name,
-            mode=self.oracle.objective.direction,
-            save_best_only=True,
-            save_weights_only=True,
+        # Not using `ModelCheckpoint` to support MultiObjective.
+        # It can only track one of the metrics to save the best model.
+        model_checkpoint = tuner_utils.SaveBestEpoch(
+            objective=self.oracle.objective,
+            filepath=self._get_checkpoint_fname(trial.trial_id),
         )
         original_callbacks = kwargs.pop("callbacks", [])
 
@@ -321,14 +308,10 @@ class Tuner(base_tuner.BaseTuner):
 
     def load_model(self, trial):
         model = self._try_build(trial.hyperparameters)
-        # Reload best checkpoint. The Oracle scores the Trial and also
-        # indicates at what epoch the best value of the objective was
-        # obtained.
-        best_epoch = trial.best_step
+        # Reload best checkpoint.
+        # Only load weights to avoid loading `custom_objects`.
         with maybe_distribute(self.distribution_strategy):
-            model.load_weights(
-                self._get_checkpoint_fname(trial.trial_id, best_epoch)
-            )
+            model.load_weights(self._get_checkpoint_fname(trial.trial_id))
         return model
 
     def on_batch_begin(self, trial, model, batch, logs):
@@ -366,7 +349,7 @@ class Tuner(base_tuner.BaseTuner):
 
     def on_epoch_end(self, trial, model, epoch, logs=None):
         # Intermediate results are not passed to the Oracle, and
-        # checkpointing is handled via a `ModelCheckpoint` callback.
+        # checkpointing is handled via a `SaveBestEpoch` callback.
         pass
 
     def get_best_models(self, num_models=1):
@@ -422,26 +405,12 @@ class Tuner(base_tuner.BaseTuner):
     def _get_tensorboard_dir(self, logdir, trial_id, execution):
         return os.path.join(str(logdir), str(trial_id), "execution" + str(execution))
 
-    def _get_checkpoint_dir(self, trial_id, epoch):
-        return os.path.join(
-            self.get_trial_dir(trial_id), "checkpoints", "epoch_" + str(epoch)
-        )
-
-    def _get_checkpoint_fname(self, trial_id, epoch):
+    def _get_checkpoint_fname(self, trial_id):
         return os.path.join(
             # Each checkpoint is saved in its own directory.
-            self._get_checkpoint_dir(trial_id, epoch),
+            self.get_trial_dir(trial_id),
             "checkpoint",
         )
-
-    def _checkpoint_model(self, model, trial_id, epoch):
-        fname = self._get_checkpoint_fname(trial_id, epoch)
-        # Save in TF format.
-        model.save_weights(fname)
-        return fname
-
-    def _delete_checkpoint(self, trial_id, epoch):
-        tf.io.gfile.rmtree(self._get_checkpoint_dir(trial_id, epoch))
 
 
 def maybe_compute_model_size(model):
