@@ -178,6 +178,30 @@ class Display(object):
         return time.strftime("%Hh %Mm %Ss", time.gmtime(t))
 
 
+class SaveBestEpoch(keras.callbacks.Callback):
+    """A Keras callback to save the model weights at the best epoch.
+
+    Args:
+        objective: An `Objective` instance.
+        filepath: String. The file path to save the model weights.
+    """
+
+    def __init__(self, objective, filepath):
+        super().__init__()
+        self.objective = objective
+        self.filepath = filepath
+        if self.objective.direction == "max":
+            self.best_value = float("-inf")
+        else:
+            self.best_value = float("inf")
+
+    def on_epoch_end(self, epoch, logs=None):
+        current_value = self.objective.get_value(logs)
+        if self.objective.better_than(current_value, self.best_value):
+            self.best_value = current_value
+            self.model.save_weights(self.filepath)
+
+
 def average_metrics_dicts(metrics_dicts):
     """Averages the metrics dictionaries to one metrics dictionary."""
     metrics = collections.defaultdict(list)
@@ -202,14 +226,22 @@ def convert_to_metrics_dict(results, objective):
 
     # A History.
     if isinstance(results, keras.callbacks.History):
-        metrics = {}
-        for metric, epoch_values in results.history.items():
-            if objective.direction == "min":
-                best_value = np.min(epoch_values)
-            else:
-                best_value = np.max(epoch_values)
-            metrics[metric] = best_value
-        return metrics
+        # A dictionary to record the metric values through epochs.
+        # Usage: epoch_metric[epoch_number][metric_name] == metric_value
+        epoch_metrics = collections.defaultdict(dict)
+        for metric_name, epoch_values in results.history.items():
+            for epoch, value in enumerate(epoch_values):
+                epoch_metrics[epoch][metric_name] = value
+        best_epoch = 0
+        for epoch, metrics in epoch_metrics.items():
+            objective_value = objective.get_value(metrics)
+            # Support multi-objective.
+            if objective.name not in metrics:
+                metrics[objective.name] = objective_value
+            best_value = epoch_metrics[best_epoch][objective.name]
+            if objective.better_than(objective_value, best_value):
+                best_epoch = epoch
+        return epoch_metrics[best_epoch]
 
     # List to be averaged.
     if isinstance(results, list):
