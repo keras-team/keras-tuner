@@ -15,18 +15,12 @@
 import math
 
 import numpy as np
-import pytest
 import tensorflow as tf
 
 import keras_tuner as kt
 from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine import trial as trial_module
 from keras_tuner.tuners import bayesian as bo_module
-
-
-@pytest.fixture(scope="function")
-def tmp_dir(tmpdir_factory):
-    return tmpdir_factory.mktemp("bayesian_test", numbered=True)
 
 
 def build_model(hp):
@@ -63,7 +57,7 @@ def test_gpr_mse_is_small():
     assert y_predict_std.shape == (1000,)
 
 
-def test_bayesian_oracle(tmp_dir):
+def test_bayesian_oracle(tmp_path):
     hps = hp_module.HyperParameters()
     hps.Choice("a", [1, 2], default=1)
     hps.Int("b", 3, 10, default=3)
@@ -76,14 +70,14 @@ def test_bayesian_oracle(tmp_dir):
         num_initial_points=2,
         hyperparameters=hps,
     )
-    oracle._set_project_dir(tmp_dir, "untitled")
+    oracle._set_project_dir(tmp_path, "untitled")
     for i in range(5):
         trial = oracle.create_trial(str(i))
         oracle.update_trial(trial.trial_id, {"score": i})
         oracle.end_trial(trial.trial_id, "COMPLETED")
 
 
-def test_bayesian_oracle_with_zero_y(tmp_dir):
+def test_bayesian_oracle_with_zero_y(tmp_path):
     hps = hp_module.HyperParameters()
     hps.Choice("a", [1, 2], default=1)
     hps.Int("b", 3, 10, default=3)
@@ -96,20 +90,20 @@ def test_bayesian_oracle_with_zero_y(tmp_dir):
         num_initial_points=2,
         hyperparameters=hps,
     )
-    oracle._set_project_dir(tmp_dir, "untitled")
+    oracle._set_project_dir(tmp_path, "untitled")
     for i in range(5):
         trial = oracle.create_trial(str(i))
         oracle.update_trial(trial.trial_id, {"score": 0})
         oracle.end_trial(trial.trial_id, "COMPLETED")
 
 
-def test_bayesian_dynamic_space(tmp_dir):
+def test_bayesian_dynamic_space(tmp_path):
     hps = hp_module.HyperParameters()
     hps.Choice("a", [1, 2], default=1)
     oracle = bo_module.BayesianOptimizationOracle(
         objective="val_acc", max_trials=20, num_initial_points=10
     )
-    oracle._set_project_dir(tmp_dir, "untitled")
+    oracle._set_project_dir(tmp_path, "untitled")
     oracle.hyperparameters = hps
     for i in range(10):
         oracle.populate_space(str(i))
@@ -123,7 +117,7 @@ def test_bayesian_dynamic_space(tmp_dir):
     assert "e" in oracle.populate_space("1_3")["values"]
 
 
-def test_bayesian_save_reload(tmp_dir):
+def test_bayesian_save_reload(tmp_path):
     hps = hp_module.HyperParameters()
     hps.Choice("a", [1, 2], default=1)
     hps.Choice("b", [3, 4], default=3)
@@ -133,7 +127,7 @@ def test_bayesian_save_reload(tmp_dir):
     oracle = bo_module.BayesianOptimizationOracle(
         objective=kt.Objective("score", "max"), max_trials=20, hyperparameters=hps
     )
-    oracle._set_project_dir(tmp_dir, "untitled")
+    oracle._set_project_dir(tmp_path, "untitled")
 
     for _ in range(3):
         trial = oracle.create_trial("tuner_id")
@@ -144,7 +138,7 @@ def test_bayesian_save_reload(tmp_dir):
     oracle = bo_module.BayesianOptimizationOracle(
         objective=kt.Objective("score", "max"), max_trials=20, hyperparameters=hps
     )
-    oracle._set_project_dir(tmp_dir, "untitled")
+    oracle._set_project_dir(tmp_path, "untitled")
     oracle.reload()
 
     for trial_id in range(3):
@@ -155,26 +149,26 @@ def test_bayesian_save_reload(tmp_dir):
     assert len(oracle.trials) == 6
 
 
-def test_bayesian_optimization_tuner(tmp_dir):
+def test_bayesian_optimization_tuner(tmp_path):
     tuner = bo_module.BayesianOptimization(
-        build_model, objective="val_accuracy", max_trials=15, directory=tmp_dir
+        build_model, objective="val_accuracy", max_trials=15, directory=tmp_path
     )
     assert isinstance(tuner.oracle, bo_module.BayesianOptimizationOracle)
 
 
-def test_bayesian_optimization_tuner_set_alpha_beta(tmp_dir):
+def test_bayesian_optimization_tuner_set_alpha_beta(tmp_path):
     tuner = bo_module.BayesianOptimization(
         build_model,
         alpha=1e-4,
         beta=2.6,
         objective="val_accuracy",
         max_trials=15,
-        directory=tmp_dir,
+        directory=tmp_path,
     )
     assert isinstance(tuner.oracle, bo_module.BayesianOptimizationOracle)
 
 
-def test_save_before_result(tmp_dir):
+def test_save_before_result(tmp_path):
     hps = hp_module.HyperParameters()
     hps.Choice("a", [1, 2], default=1)
     hps.Int("b", 3, 10, default=3)
@@ -184,12 +178,12 @@ def test_save_before_result(tmp_dir):
     oracle = bo_module.BayesianOptimizationOracle(
         objective=kt.Objective("score", "max"), max_trials=10, hyperparameters=hps
     )
-    oracle._set_project_dir(tmp_dir, "untitled")
+    oracle._set_project_dir(tmp_path, "untitled")
     oracle.populate_space(str(1))
     oracle.save()
 
 
-def test_bayesian_oracle_maximize(tmp_dir):
+def test_bayesian_oracle_maximize(tmp_path):
     hps = hp_module.HyperParameters()
     hps.Int("a", -100, 100)
 
@@ -199,7 +193,7 @@ def test_bayesian_oracle_maximize(tmp_dir):
         hyperparameters=hps,
         num_initial_points=2,
     )
-    oracle._set_project_dir(tmp_dir, "untitled")
+    oracle._set_project_dir(tmp_path, "untitled")
 
     # Make examples with high 'a' and high score.
     for i in range(5):
@@ -223,7 +217,7 @@ def test_bayesian_oracle_maximize(tmp_dir):
     assert trial.hyperparameters.get("a") > 0
 
 
-def test_hyperparameters_added(tmp_dir):
+def test_hyperparameters_added(tmp_path):
     hps = hp_module.HyperParameters()
     hps.Int("a", -100, 100)
 
@@ -233,7 +227,7 @@ def test_hyperparameters_added(tmp_dir):
         hyperparameters=hps,
         num_initial_points=2,
     )
-    oracle._set_project_dir(tmp_dir, "untitled")
+    oracle._set_project_dir(tmp_path, "untitled")
 
     # Populate initial trials.
     for i in range(10):
@@ -256,7 +250,7 @@ def test_hyperparameters_added(tmp_dir):
     assert "c" in trial.hyperparameters.values
 
 
-def test_step_respected(tmp_dir):
+def test_step_respected(tmp_path):
     hps = hp_module.HyperParameters()
     hps.Float("c", 0, 10, step=3)
     oracle = bo_module.BayesianOptimizationOracle(
@@ -265,7 +259,7 @@ def test_step_respected(tmp_dir):
         hyperparameters=hps,
         num_initial_points=2,
     )
-    oracle._set_project_dir(tmp_dir, "untitled")
+    oracle._set_project_dir(tmp_path, "untitled")
 
     # Populate initial trials.
     for i in range(10):
@@ -280,7 +274,7 @@ def test_step_respected(tmp_dir):
     assert trial.hyperparameters.get("c") in {0, 3, 6, 9}
 
 
-def test_float_optimization(tmp_dir):
+def test_float_optimization(tmp_path):
     def build_model(hp):
         # Maximum at a=-1, b=1, c=1, d=0 with score=3
         return -1 * hp["a"] ** 3 + hp["b"] ** 3 + hp["c"] - abs(hp["d"])
@@ -304,7 +298,7 @@ def test_float_optimization(tmp_dir):
             hyperparameters=hps,
             max_trials=50,
         ),
-        directory=tmp_dir,
+        directory=tmp_path,
     )
 
     tuner.search()
@@ -320,7 +314,7 @@ def test_float_optimization(tmp_dir):
     assert np.isclose(best_hps["d"], 0, atol=atol, rtol=rtol)
 
 
-def test_distributed_optimization(tmp_dir):
+def test_distributed_optimization(tmp_path):
 
     hps = hp_module.HyperParameters()
     hps.Int("a", 0, 10)
@@ -334,7 +328,7 @@ def test_distributed_optimization(tmp_dir):
     oracle = bo_module.BayesianOptimizationOracle(
         objective=kt.Objective("score", "min"), hyperparameters=hps, max_trials=60
     )
-    oracle._set_project_dir(tmp_dir, "untitled")
+    oracle._set_project_dir(tmp_path, "untitled")
 
     tuners = 4
 

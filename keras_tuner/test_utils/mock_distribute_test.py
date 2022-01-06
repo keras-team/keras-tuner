@@ -20,16 +20,11 @@ import time
 import pytest
 import tensorflow as tf
 
-from tests.unit_tests import mock_distribute
-
-
-@pytest.fixture(scope="module")
-def tmp_dir(tmpdir_factory):
-    return tmpdir_factory.mktemp("integration_test")
+from keras_tuner.test_utils import mock_distribute
 
 
 @pytest.mark.skipif(sys.version_info < (3, 0), reason="TODO: Enable test for Py2")
-def test_mock_distribute(tmp_dir):
+def test_mock_distribute(tmp_path):
     def process_fn():
         assert "KERASTUNER_ORACLE_IP" in os.environ
         # Wait, to test that other threads aren't overriding env vars.
@@ -41,14 +36,14 @@ def test_mock_distribute(tmp_dir):
             # as we do not join on the chief since it will run
             # a server.
             time.sleep(2)
-        fname = os.path.join(str(tmp_dir), tuner_id)
+        fname = os.path.join(str(tmp_path), tuner_id)
         with tf.io.gfile.GFile(fname, "w") as f:
             f.write(tuner_id)
 
     mock_distribute.mock_distribute(process_fn, num_workers=3)
 
     for tuner_id in {"chief", "worker0", "worker1", "worker2"}:
-        fname = os.path.join(str(tmp_dir), tuner_id)
+        fname = os.path.join(str(tmp_path), tuner_id)
         with tf.io.gfile.GFile(fname, "r") as f:
             assert f.read() == tuner_id
 
