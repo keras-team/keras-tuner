@@ -15,7 +15,6 @@
 from unittest.mock import patch
 
 import numpy as np
-import pytest
 from tensorflow import keras
 
 import keras_tuner
@@ -45,11 +44,6 @@ VAL_INPUTS = np.random.random(size=(NUM_SAMPLES, INPUT_DIM))
 VAL_TARGETS = np.random.randint(0, NUM_CLASSES, size=(NUM_SAMPLES, 1))
 
 
-@pytest.fixture(scope="function")
-def tmp_dir(tmpdir_factory):
-    return tmpdir_factory.mktemp("integration_test", numbered=True)
-
-
 def build_model(hp):
     inputs = keras.Input(shape=(INPUT_DIM,))
     x = inputs
@@ -70,14 +64,14 @@ def build_model(hp):
 
 
 @patch("requests.post", MOCK_POST)
-def test_cloud_logger(tmp_dir):
+def test_cloud_logger(tmp_path):
     cloud_logger = keras_tuner.engine.logger.CloudLogger("123")
 
     tuner = keras_tuner.tuners.RandomSearch(
         build_model,
         objective="val_accuracy",
         max_trials=6,
-        directory=tmp_dir,
+        directory=tmp_path,
         logger=cloud_logger,
     )
 

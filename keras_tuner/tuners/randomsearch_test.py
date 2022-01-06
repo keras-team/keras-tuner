@@ -13,19 +13,13 @@
 # limitations under the License.
 
 import numpy as np
-import pytest
 import tensorflow as tf
 
 from keras_tuner.engine import tuner as tuner_module
 from keras_tuner.tuners import randomsearch
 
 
-@pytest.fixture(scope="function")
-def tmp_dir(tmpdir_factory):
-    return tmpdir_factory.mktemp("randomsearch_test", numbered=True)
-
-
-def test_update_space(tmp_dir):
+def test_update_space(tmp_path):
     # Tests that HyperParameters added after the first call to `build_model`
     # are sent to the Oracle via oracle.update_space.
     def build_model(hp):
@@ -50,7 +44,7 @@ def test_update_space(tmp_dir):
     tuner = tuner_module.Tuner(
         oracle=MyRandomSearch(objective="accuracy", max_trials=1),
         hypermodel=build_model,
-        directory=tmp_dir,
+        directory=tmp_path,
     )
 
     assert {hp.name for hp in tuner.oracle.get_space().space} == {"layers"}

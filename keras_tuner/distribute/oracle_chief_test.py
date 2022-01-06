@@ -22,16 +22,11 @@ import keras_tuner as kt
 from keras_tuner.distribute import oracle_chief
 from keras_tuner.distribute import oracle_client
 from keras_tuner.engine import metrics_tracking
+from keras_tuner.test_utils import mock_distribute
 from keras_tuner.tuners import randomsearch
-from tests.unit_tests import mock_distribute
 
 
-@pytest.fixture(scope="function")
-def tmp_dir(tmpdir_factory):
-    return tmpdir_factory.mktemp("integration_test", numbered=True)
-
-
-def test_get_space(tmp_dir):
+def test_get_space(tmp_path):
     def _test_get_space():
         hps = kt.HyperParameters()
         hps.Int("a", 0, 10, default=3)
@@ -40,7 +35,7 @@ def test_get_space(tmp_dir):
             max_trials=10,
             hyperparameters=hps,
         )
-        oracle._set_project_dir(tmp_dir, "untitled")
+        oracle._set_project_dir(tmp_path, "untitled")
         tuner_id = os.environ["KERASTUNER_TUNER_ID"]
         if "chief" in tuner_id:
             oracle_chief.start_server(oracle)
@@ -53,12 +48,12 @@ def test_get_space(tmp_dir):
     mock_distribute.mock_distribute(_test_get_space)
 
 
-def test_update_space(tmp_dir):
+def test_update_space(tmp_path):
     def _test_update_space():
         oracle = randomsearch.RandomSearchOracle(
             objective=kt.Objective("score", "max"), max_trials=10
         )
-        oracle._set_project_dir(tmp_dir, "untitled")
+        oracle._set_project_dir(tmp_path, "untitled")
         tuner_id = os.environ["KERASTUNER_TUNER_ID"]
         if "chief" in tuner_id:
             oracle_chief.start_server(oracle)
@@ -78,7 +73,7 @@ def test_update_space(tmp_dir):
     mock_distribute.mock_distribute(_test_update_space)
 
 
-def test_create_trial(tmp_dir):
+def test_create_trial(tmp_path):
     def _test_create_trial():
         hps = kt.HyperParameters()
         hps.Int("a", 0, 10, default=5)
@@ -88,7 +83,7 @@ def test_create_trial(tmp_dir):
             max_trials=10,
             hyperparameters=hps,
         )
-        oracle._set_project_dir(tmp_dir, "untitled")
+        oracle._set_project_dir(tmp_path, "untitled")
         tuner_id = os.environ["KERASTUNER_TUNER_ID"]
         if "chief" in tuner_id:
             oracle_chief.start_server(oracle)
@@ -105,7 +100,7 @@ def test_create_trial(tmp_dir):
 
 
 @pytest.mark.skipif(sys.version_info < (3, 0), reason="TODO: Enable test for Py2")
-def test_update_trial(tmp_dir):
+def test_update_trial(tmp_path):
     def _test_update_trial():
         hps = kt.HyperParameters()
         hps.Int("a", 0, 10, default=5)
@@ -114,7 +109,7 @@ def test_update_trial(tmp_dir):
             max_trials=10,
             hyperparameters=hps,
         )
-        oracle._set_project_dir(tmp_dir, "untitled")
+        oracle._set_project_dir(tmp_path, "untitled")
         tuner_id = os.environ["KERASTUNER_TUNER_ID"]
         if "chief" in tuner_id:
             oracle_chief.start_server(oracle)
@@ -133,7 +128,7 @@ def test_update_trial(tmp_dir):
 
 
 @pytest.mark.skipif(sys.version_info < (3, 0), reason="TODO: Enable test for Py2")
-def test_end_trial(tmp_dir):
+def test_end_trial(tmp_path):
     def _test_end_trial():
         hps = kt.HyperParameters()
         hps.Int("a", 0, 10, default=5)
@@ -142,7 +137,7 @@ def test_end_trial(tmp_dir):
             max_trials=10,
             hyperparameters=hps,
         )
-        oracle._set_project_dir(tmp_dir, "untitled")
+        oracle._set_project_dir(tmp_path, "untitled")
         tuner_id = os.environ["KERASTUNER_TUNER_ID"]
         if "chief" in tuner_id:
             oracle_chief.start_server(oracle)
@@ -158,7 +153,7 @@ def test_end_trial(tmp_dir):
     mock_distribute.mock_distribute(_test_end_trial)
 
 
-def test_get_best_trials(tmp_dir):
+def test_get_best_trials(tmp_path):
     def _test_get_best_trials():
         hps = kt.HyperParameters()
         hps.Int("a", 0, 100, default=5)
@@ -168,7 +163,7 @@ def test_get_best_trials(tmp_dir):
             max_trials=10,
             hyperparameters=hps,
         )
-        oracle._set_project_dir(tmp_dir, "untitled")
+        oracle._set_project_dir(tmp_path, "untitled")
         tuner_id = os.environ["KERASTUNER_TUNER_ID"]
         if "chief" in tuner_id:
             oracle_chief.start_server(oracle)

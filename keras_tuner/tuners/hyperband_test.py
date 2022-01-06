@@ -23,11 +23,6 @@ import keras_tuner as kt
 from keras_tuner.tuners import hyperband as hyperband_module
 
 
-@pytest.fixture(scope="function")
-def tmp_dir(tmpdir_factory):
-    return tmpdir_factory.mktemp("hyperband_test", numbered=True)
-
-
 def build_model(hp):
     model = tf.keras.Sequential()
     for i in range(hp.Int("layers", 1, 3)):
@@ -42,14 +37,14 @@ def build_model(hp):
     return model
 
 
-def test_hyperband_oracle_bracket_configs(tmp_dir):
+def test_hyperband_oracle_bracket_configs(tmp_path):
     oracle = hyperband_module.HyperbandOracle(
         objective=kt.Objective("score", "max"),
         hyperband_iterations=1,
         max_epochs=8,
         factor=2,
     )
-    oracle._set_project_dir(tmp_dir, "untitled")
+    oracle._set_project_dir(tmp_path, "untitled")
 
     # 8, 4, 2, 1 starting epochs.
     assert oracle._get_num_brackets() == 4
@@ -66,7 +61,7 @@ def test_hyperband_oracle_bracket_configs(tmp_dir):
 
 
 @pytest.mark.skipif(sys.version_info < (3, 0), reason="TODO: Enable test for Py2")
-def test_hyperband_oracle_one_sweep_single_thread(tmp_dir):
+def test_hyperband_oracle_one_sweep_single_thread(tmp_path):
     hp = kt.HyperParameters()
     hp.Float("a", -100, 100)
     hp.Float("b", -100, 100)
@@ -77,7 +72,7 @@ def test_hyperband_oracle_one_sweep_single_thread(tmp_dir):
         max_epochs=9,
         factor=3,
     )
-    oracle._set_project_dir(tmp_dir, "untitled")
+    oracle._set_project_dir(tmp_path, "untitled")
 
     score = 0
     for bracket_num in reversed(range(oracle._get_num_brackets())):
@@ -105,7 +100,7 @@ def test_hyperband_oracle_one_sweep_single_thread(tmp_dir):
     assert best_trial.score == score
 
 
-def test_hyperband_oracle_one_sweep_parallel(tmp_dir):
+def test_hyperband_oracle_one_sweep_parallel(tmp_path):
     hp = kt.HyperParameters()
     hp.Float("a", -100, 100)
     hp.Float("b", -100, 100)
@@ -116,7 +111,7 @@ def test_hyperband_oracle_one_sweep_parallel(tmp_dir):
         max_epochs=4,
         factor=2,
     )
-    oracle._set_project_dir(tmp_dir, "untitled")
+    oracle._set_project_dir(tmp_path, "untitled")
 
     # All round 0 trials from different brackets can be run
     # in parallel.
@@ -172,14 +167,14 @@ def test_hyperband_oracle_one_sweep_parallel(tmp_dir):
 
 
 @pytest.mark.skipif(sys.version_info < (3, 0), reason="TODO: Enable test for Py2")
-def test_hyperband_integration(tmp_dir):
+def test_hyperband_integration(tmp_path):
     tuner = hyperband_module.Hyperband(
         objective="val_loss",
         hypermodel=build_model,
         hyperband_iterations=2,
         max_epochs=6,
         factor=3,
-        directory=tmp_dir,
+        directory=tmp_path,
     )
 
     x, y = np.ones((2, 5)), np.ones((2, 1))
@@ -198,14 +193,14 @@ def test_hyperband_integration(tmp_dir):
 
 
 @pytest.mark.skipif(sys.version_info < (3, 0), reason="TODO: Enable test for Py2")
-def test_hyperband_save_and_restore(tmp_dir):
+def test_hyperband_save_and_restore(tmp_path):
     tuner = hyperband_module.Hyperband(
         objective="val_loss",
         hypermodel=build_model,
         hyperband_iterations=1,
         max_epochs=7,
         factor=2,
-        directory=tmp_dir,
+        directory=tmp_path,
     )
 
     x, y = np.ones((2, 5)), np.ones((2, 1))

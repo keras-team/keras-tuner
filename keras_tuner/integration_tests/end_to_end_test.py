@@ -20,11 +20,6 @@ from tensorflow import keras
 import keras_tuner
 
 
-@pytest.fixture(scope="function")
-def tmp_dir(tmpdir_factory):
-    return tmpdir_factory.mktemp("integration_test", numbered=True)
-
-
 def get_data():
     """Create random but repetitive dummy MNIST data."""
     x = np.random.randint(0, 255, size=(1000, 28, 28))
@@ -67,7 +62,7 @@ def build_model(hp):
 @pytest.mark.parametrize(
     "distribution_strategy", [tf.distribute.OneDeviceStrategy("/cpu:0"), None]
 )
-def test_end_to_end_workflow(tmp_dir, distribution_strategy):
+def test_end_to_end_workflow(tmp_path, distribution_strategy):
     tf.get_logger().setLevel("ERROR")
     (x, y), (val_x, val_y) = get_data()
     x = x.astype("float32") / 255.0
@@ -78,7 +73,7 @@ def test_end_to_end_workflow(tmp_dir, distribution_strategy):
         objective="val_accuracy",
         max_trials=20,
         distribution_strategy=distribution_strategy,
-        directory=tmp_dir,
+        directory=tmp_path,
     )
 
     tuner.search_space_summary()

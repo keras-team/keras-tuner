@@ -69,7 +69,7 @@ jobs:
           pip install -e ".[tests]" --progress-bar off --upgrade
       - name: Test with pytest
         run: |
-          pytest tests/unit_tests/legacy_import_test.py
+          pytest keras_tuner/integration_tests/legacy_import_test.py
   format:
     name: Check the code format
     runs-on: ubuntu-latest

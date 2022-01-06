@@ -67,18 +67,13 @@ def build_pipeline(hp):
     return skpipeline
 
 
-@pytest.fixture(scope="function")
-def tmp_dir(tmpdir_factory):
-    return tmpdir_factory.mktemp("hyperband_test", numbered=True)
-
-
-def test_sklearn_tuner_simple_with_np(tmp_dir):
+def test_sklearn_tuner_simple_with_np(tmp_path):
     tuner = kt.SklearnTuner(
         oracle=kt.oracles.BayesianOptimization(
             objective=kt.Objective("score", "max"), max_trials=10
         ),
         hypermodel=build_model,
-        directory=tmp_dir,
+        directory=tmp_path,
     )
 
     x = np.random.uniform(size=(50, 10))
@@ -99,13 +94,13 @@ def test_sklearn_tuner_simple_with_np(tmp_dir):
 
 
 @pytest.mark.filterwarnings("ignore:.*column-vector")
-def test_sklearn_tuner_with_df(tmp_dir):
+def test_sklearn_tuner_with_df(tmp_path):
     tuner = kt.SklearnTuner(
         oracle=kt.oracles.BayesianOptimization(
             objective=kt.Objective("score", "max"), max_trials=10
         ),
         hypermodel=build_model,
-        directory=tmp_dir,
+        directory=tmp_path,
     )
 
     x = pd.DataFrame(np.random.uniform(size=(50, 10)))
@@ -115,7 +110,7 @@ def test_sklearn_tuner_with_df(tmp_dir):
     assert len(tuner.oracle.trials) == 10
 
 
-def test_sklearn_custom_scoring_and_cv(tmp_dir):
+def test_sklearn_custom_scoring_and_cv(tmp_path):
     tuner = kt.SklearnTuner(
         oracle=kt.oracles.BayesianOptimization(
             objective=kt.Objective("score", "max"), max_trials=10
@@ -123,7 +118,7 @@ def test_sklearn_custom_scoring_and_cv(tmp_dir):
         hypermodel=build_model,
         scoring=metrics.make_scorer(metrics.balanced_accuracy_score),
         cv=model_selection.StratifiedKFold(5),
-        directory=tmp_dir,
+        directory=tmp_path,
     )
 
     x = np.random.uniform(size=(50, 10))
@@ -143,14 +138,14 @@ def test_sklearn_custom_scoring_and_cv(tmp_dir):
     best_model.score(x, y)
 
 
-def test_sklearn_additional_metrics(tmp_dir):
+def test_sklearn_additional_metrics(tmp_path):
     tuner = kt.SklearnTuner(
         oracle=kt.oracles.BayesianOptimization(
             objective=kt.Objective("score", "max"), max_trials=10
         ),
         hypermodel=build_model,
         metrics=[metrics.balanced_accuracy_score, metrics.recall_score],
-        directory=tmp_dir,
+        directory=tmp_path,
     )
 
     x = np.random.uniform(size=(50, 10))
@@ -172,13 +167,13 @@ def test_sklearn_additional_metrics(tmp_dir):
     best_model.score(x, y)
 
 
-def test_sklearn_sample_weight(tmp_dir):
+def test_sklearn_sample_weight(tmp_path):
     tuner = kt.SklearnTuner(
         oracle=kt.oracles.BayesianOptimization(
             objective=kt.Objective("score", "max"), max_trials=10
         ),
         hypermodel=build_model,
-        directory=tmp_dir,
+        directory=tmp_path,
     )
 
     x = np.random.uniform(size=(50, 10))
@@ -199,13 +194,13 @@ def test_sklearn_sample_weight(tmp_dir):
     best_model.score(x, y)
 
 
-def test_sklearn_pipeline(tmp_dir):
+def test_sklearn_pipeline(tmp_path):
     tuner = kt.SklearnTuner(
         oracle=kt.oracles.BayesianOptimization(
             objective=kt.Objective("score", "max"), max_trials=10
         ),
         hypermodel=build_pipeline,
-        directory=tmp_dir,
+        directory=tmp_path,
     )
 
     x = np.random.uniform(size=(50, 10))
@@ -226,14 +221,14 @@ def test_sklearn_pipeline(tmp_dir):
     best_pipeline.score(x, y)
 
 
-def test_sklearn_cv_with_groups(tmp_dir):
+def test_sklearn_cv_with_groups(tmp_path):
     tuner = kt.SklearnTuner(
         oracle=kt.oracles.BayesianOptimization(
             objective=kt.Objective("score", "max"), max_trials=10
         ),
         hypermodel=build_model,
         cv=model_selection.GroupKFold(5),
-        directory=tmp_dir,
+        directory=tmp_path,
     )
 
     x = np.random.uniform(size=(50, 10))
@@ -254,7 +249,7 @@ def test_sklearn_cv_with_groups(tmp_dir):
     best_model.score(x, y)
 
 
-def test_sklearn_real_data(tmp_dir):
+def test_sklearn_real_data(tmp_path):
     tuner = kt.SklearnTuner(
         oracle=kt.oracles.BayesianOptimization(
             objective=kt.Objective("score", "max"), max_trials=10
@@ -262,7 +257,7 @@ def test_sklearn_real_data(tmp_dir):
         hypermodel=build_model,
         scoring=metrics.make_scorer(metrics.accuracy_score),
         cv=model_selection.StratifiedKFold(5),
-        directory=tmp_dir,
+        directory=tmp_path,
     )
 
     x, y = datasets.load_iris(return_X_y=True)
@@ -282,7 +277,7 @@ def test_sklearn_real_data(tmp_dir):
     assert best_model_score >= worst_model_score
 
 
-def test_sklearn_not_install_error(tmp_dir):
+def test_sklearn_not_install_error(tmp_path):
     sklearn_module = kt.tuners.sklearn_tuner.sklearn
     kt.tuners.sklearn_tuner.sklearn = None
 
@@ -292,18 +287,18 @@ def test_sklearn_not_install_error(tmp_dir):
                 objective=kt.Objective("score", "max"), max_trials=10
             ),
             hypermodel=build_model,
-            directory=tmp_dir,
+            directory=tmp_path,
         )
 
     kt.tuners.sklearn_tuner.sklearn = sklearn_module
 
 
-def test_sklearn_deprecation_warning(tmp_dir):
+def test_sklearn_deprecation_warning(tmp_path):
     with pytest.deprecated_call():
         kt.tuners.Sklearn(
             oracle=kt.oracles.BayesianOptimization(
                 objective=kt.Objective("score", "max"), max_trials=10
             ),
             hypermodel=build_model,
-            directory=tmp_dir,
+            directory=tmp_path,
         )

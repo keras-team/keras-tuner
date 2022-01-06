@@ -26,12 +26,7 @@ from tensorflow import keras
 
 import keras_tuner as kt
 from keras_tuner.distribute import utils as dist_utils
-from tests.unit_tests import mock_distribute
-
-
-@pytest.fixture(scope="function")
-def tmp_dir(tmpdir_factory):
-    return tmpdir_factory.mktemp("integration_test", numbered=True)
+from keras_tuner.test_utils import mock_distribute
 
 
 class SimpleTuner(kt.engine.base_tuner.BaseTuner):
@@ -53,7 +48,7 @@ class SimpleTuner(kt.engine.base_tuner.BaseTuner):
 
 
 @pytest.mark.skipif(sys.version_info < (3, 0), reason="no Barrier in 2.7")
-def test_base_tuner_distribution(tmp_dir):
+def test_base_tuner_distribution(tmp_path):
     num_workers = 3
     barrier = threading.Barrier(num_workers)
 
@@ -66,7 +61,7 @@ def test_base_tuner_distribution(tmp_dir):
                 objective=kt.Objective("score", "max"), max_trials=10
             ),
             hypermodel=build_model,
-            directory=tmp_dir,
+            directory=tmp_path,
         )
         tuner.search()
 
@@ -85,7 +80,7 @@ def test_base_tuner_distribution(tmp_dir):
     mock_distribute.mock_distribute(_test_base_tuner, num_workers=num_workers)
 
 
-def test_random_search(tmp_dir):
+def test_random_search(tmp_path):
     # TensorFlow model building and execution is not thread-safe.
     num_workers = 1
 
@@ -110,7 +105,7 @@ def test_random_search(tmp_dir):
             hypermodel=build_model,
             objective="val_loss",
             max_trials=10,
-            directory=tmp_dir,
+            directory=tmp_path,
         )
 
         # Only worker makes it to this point, server runs until thread stops.
