@@ -1,4 +1,4 @@
-# Copyright 2019 The KerasTuner Authors
+# Copyright 2022 The KerasTuner Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,13 +16,13 @@ from keras_tuner.engine import metrics_tracking
 from keras_tuner.engine import objective as obj_module
 
 
-class Objective(object):
+class Objective:
     """The objective for optimization during tuning.
 
     Args:
         name: String. The name of the objective.
-        direction: String. The value should be "min" or "max" indicating the
-            objective value should be minimized or maximized.
+        direction: String. The value should be "min" or "max" indicating
+            whether the objective value should be minimized or maximized.
     """
 
     def __init__(self, name, direction):
@@ -34,7 +34,7 @@ class Objective(object):
 
         Args:
             logs: A dictionary with the metric names as the keys and the metric
-                values as the values, which is the same format as the `logs`
+                values as the values, which is in the same format as the `logs`
                 argument for `Callback.on_epoch_end()`.
 
         Returns:

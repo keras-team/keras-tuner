@@ -57,10 +57,14 @@ class HyperbandOracle(oracle_module.Oracle):
     ```
 
     Args:
-        objective: A string or `keras_tuner.Objective` instance. If a string,
-            the direction of the optimization (min or max) will be inferred.
-            It is optional when `Tuner.run_trial()` or `HyperModel.fit()`
-            returns a single float as the objective to minimize.
+        objective: A string, `keras_tuner.Objective` instance, or a list of
+            `keras_tuner.Objective`s and strings. If a string, the direction of
+            the optimization (min or max) will be inferred. If a list of
+            `keras_tuner.Objective`, we will minimize the sum of all the
+            objectives to minimize subtracting the sum of all the objectives to
+            maximize. The `objective` argument is optional when
+            `Tuner.run_trial()` or `HyperModel.fit()` returns a single float as
+            the objective to minimize.
         max_epochs: Integer, the maximum number of epochs to train one model.
             It is recommended to set this to a value slightly higher than the
             expected epochs to convergence for your largest Model, and to use
@@ -308,10 +312,14 @@ class Hyperband(tuner_module.Tuner):
             hyperparameters and returns a `Model` instance). It is optional
             when `Tuner.run_trial()` is overriden and does not use
             `self.hypermodel`.
-        objective: A string or `keras_tuner.Objective` instance. If a string,
-            the direction of the optimization (min or max) will be inferred.
-            It is optional when `Tuner.run_trial()` or `HyperModel.fit()`
-            returns a single float as the objective to minimize.
+        objective: A string, `keras_tuner.Objective` instance, or a list of
+            `keras_tuner.Objective`s and strings. If a string, the direction of
+            the optimization (min or max) will be inferred. If a list of
+            `keras_tuner.Objective`, we will minimize the sum of all the
+            objectives to minimize subtracting the sum of all the objectives to
+            maximize. The `objective` argument is optional when
+            `Tuner.run_trial()` or `HyperModel.fit()` returns a single float as
+            the objective to minimize.
         max_epochs: Integer, the maximum number of epochs to train one model.
             It is recommended to set this to a value slightly higher than the
             expected epochs to convergence for your largest Model, and to use
