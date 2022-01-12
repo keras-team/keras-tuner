@@ -57,6 +57,9 @@ class Objective:
             a < b and self.direction == "min"
         )
 
+    def __eq__(self, obj):
+        return self.name == obj.name and self.direction == obj.direction
+
 
 class MultiObjective(Objective):
     """A container for a list of objectives.
@@ -82,6 +85,13 @@ class MultiObjective(Objective):
             else:
                 obj_value -= metric_value
         return obj_value
+
+    def __eq__(self, obj):
+        if self.name_to_direction.keys() != obj.name_to_direction.keys():
+            return False
+        return sorted(self.objectives, key=lambda x: x.name) == sorted(
+            obj.objectives, key=lambda x: x.name
+        )
 
 
 def create_objective(objective):

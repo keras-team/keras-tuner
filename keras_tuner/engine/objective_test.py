@@ -67,3 +67,33 @@ def test_objective_get_value():
 def test_multi_objective_get_value():
     obj = objective.create_objective(["accuracy", "loss"])
     assert obj.get_value({"accuracy": 3.0, "loss": 2.0}) == -1.0
+
+
+def test_objective_equal():
+    obj1 = objective.Objective(name="accuracy", direction="max")
+    obj2 = objective.Objective(name="accuracy", direction="max")
+    assert obj1 == obj2
+
+
+def test_objective_not_equal_with_diff_name():
+    obj1 = objective.Objective(name="accuracy1", direction="max")
+    obj2 = objective.Objective(name="accuracy", direction="max")
+    assert obj1 != obj2
+
+
+def test_objective_not_equal_with_diff_dir():
+    obj1 = objective.Objective(name="accuracy", direction="min")
+    obj2 = objective.Objective(name="accuracy", direction="max")
+    assert obj1 != obj2
+
+
+def test_multi_objective_equal():
+    obj1 = objective.create_objective(["accuracy", "loss"])
+    obj2 = objective.create_objective(["loss", "accuracy"])
+    assert obj1 == obj2
+
+
+def test_multi_objective_not_equal():
+    obj1 = objective.create_objective(["loss", "loss"])
+    obj2 = objective.create_objective(["loss", "accuracy"])
+    assert obj1 != obj2
