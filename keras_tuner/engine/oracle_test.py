@@ -14,6 +14,7 @@
 
 import pytest
 
+import keras_tuner as kt
 from keras_tuner.engine import oracle as oracle_module
 
 
@@ -40,3 +41,10 @@ def test_private_score_trial_deprecated_and_call_public():
     with pytest.deprecated_call():
         oracle._score_trial("trial")
     assert oracle.score_trial_called
+
+
+def test_import_objective_from_oracle():
+    # This test is for backward compatibility.
+    from keras_tuner.engine.oracle import Objective
+
+    assert Objective is kt.Objective
