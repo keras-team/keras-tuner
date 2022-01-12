@@ -28,6 +28,9 @@ from keras_tuner.engine import objective as obj_module
 from keras_tuner.engine import stateful
 from keras_tuner.engine import trial as trial_lib
 
+# For backward compatibility.
+Objective = obj_module.Objective
+
 
 class Oracle(stateful.Stateful):
     """Implements a hyperparameter optimization algorithm.
