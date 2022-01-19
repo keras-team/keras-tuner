@@ -25,6 +25,7 @@ from tensorflow import keras
 
 from keras_tuner import utils
 from keras_tuner.engine import hyperparameters as hp_module
+from keras_tuner.engine import objective as obj_module
 
 
 class TunerStats(object):
@@ -214,14 +215,39 @@ def average_metrics_dicts(metrics_dicts):
     return averaged_metrics
 
 
-def convert_to_metrics_dict(results, objective):
+def convert_to_metrics_dict(results, objective, func_name):
     """Convert any supported results type to a metrics dictionary."""
+    # List of multiple exectuion results to be averaged.
+    # Check this case first to deal each case individually to check for errors.
+    if isinstance(results, list):
+        return average_metrics_dicts(
+            [convert_to_metrics_dict(elem, objective, func_name) for elem in results]
+        )
+
     # Single value.
-    if isinstance(results, (int, float)):
-        return {objective.name: results}
+    if isinstance(results, (int, float, np.floating)):
+        return {objective.name: float(results)}
+
+    # objective left unspecified,
+    # and objective value is not a single float.
+    if isinstance(objective, obj_module.DefaultObjective) and not (
+        isinstance(results, dict) and objective.name in results
+    ):
+        raise TypeError(
+            f"Expected the return value of {func_name} to be "
+            "a single float when `objective` is left unspecified. "
+            f"Recevied return value: {results} of type {type(results)}."
+        )
 
     # A dictionary.
     if isinstance(results, dict):
+        if objective.name not in results:
+            raise ValueError(
+                f"Expected the returned dictionary from {func_name} to have "
+                f"the specified objective, {objective.name}, "
+                "as one of the keys. "
+                f"Received: {results}."
+            )
         return results
 
     # A History.
@@ -242,12 +268,12 @@ def convert_to_metrics_dict(results, objective):
             if objective.better_than(objective_value, best_value):
                 best_epoch = epoch
         return epoch_metrics[best_epoch]
-
-    # List to be averaged.
-    if isinstance(results, list):
-        return average_metrics_dicts(
-            [convert_to_metrics_dict(elem, objective) for elem in results]
-        )
+    raise TypeError(
+        f"Expected the return value of {func_name} to be "
+        "one of float, dict, keras.callbacks.History, "
+        "or a list of one of these types. "
+        f"Recevied return value: {results} of type {type(results)}."
+    )
 
 
 def convert_hyperparams_to_hparams(hyperparams):

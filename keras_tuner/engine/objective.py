@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from keras_tuner.engine import metrics_tracking
-from keras_tuner.engine import objective as obj_module
 
 
 class Objective:
@@ -61,6 +60,13 @@ class Objective:
         return self.name == obj.name and self.direction == obj.direction
 
 
+class DefaultObjective(Objective):
+    """Default objective to minimize if not provide by the user."""
+
+    def __init__(self):
+        super().__init__(name="default_objective", direction="min")
+
+
 class MultiObjective(Objective):
     """A container for a list of objectives.
 
@@ -96,10 +102,10 @@ class MultiObjective(Objective):
 
 def create_objective(objective):
     if objective is None:
-        return obj_module.Objective("default_objective", "min")
+        return DefaultObjective()
     if isinstance(objective, list):
         return MultiObjective([create_objective(obj) for obj in objective])
-    if isinstance(objective, obj_module.Objective):
+    if isinstance(objective, Objective):
         return objective
     if isinstance(objective, str):
         direction = metrics_tracking.infer_metric_direction(objective)
@@ -112,7 +118,7 @@ def create_objective(objective):
             )
             error_msg = error_msg.format(obj=objective)
             raise ValueError(error_msg)
-        return obj_module.Objective(name=objective, direction=direction)
+        return Objective(name=objective, direction=direction)
     else:
         raise ValueError(
             "`objective` not understood, expected str or "

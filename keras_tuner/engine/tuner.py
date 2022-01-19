@@ -219,7 +219,10 @@ class Tuner(base_tuner.BaseTuner):
         """
         hp = trial.hyperparameters
         model = self._try_build(hp)
-        return self.hypermodel.fit(hp, model, *args, **kwargs)
+        results = self.hypermodel.fit(hp, model, *args, **kwargs)
+        return tuner_utils.convert_to_metrics_dict(
+            results, self.oracle.objective, "HyperModel.fit()"
+        )
 
     def run_trial(self, trial, *args, **kwargs):
         """Evaluates a set of hyperparameter values.
@@ -289,19 +292,6 @@ class Tuner(base_tuner.BaseTuner):
             callbacks.append(model_checkpoint)
             copied_kwargs["callbacks"] = callbacks
             obj_value = self._build_and_fit_model(trial, *args, **copied_kwargs)
-
-            # objective left unspecified,
-            # and objective value is not a single float.
-            if (
-                not isinstance(obj_value, (int, float))
-                and self.oracle.objective.name == "default_objective"
-            ):
-                raise TypeError(
-                    "Expect the return value of `Tuner.run_trial()` or "
-                    "`HyperModel.fit()` to be a single float when "
-                    "`objective` is left unspecified. Recevied return value: "
-                    f"{obj_value}."
-                )
 
             histories.append(obj_value)
         return histories

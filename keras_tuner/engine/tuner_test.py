@@ -287,7 +287,40 @@ def test_no_hypermodel_without_override_run_trial_error(tmp_path):
         )
 
 
-def test_no_objective_return_not_single_value_error(tmp_path):
+def test_fit_return_string(tmp_path):
+    class MyHyperModel(ExampleHyperModel):
+        def fit(self, hp, model, *args, **kwargs):
+            return hp.Choice("value", ["a", "b"])
+
+    tuner = keras_tuner.tuners.RandomSearch(
+        objective="val_loss",
+        hypermodel=MyHyperModel(),
+        max_trials=2,
+        executions_per_trial=3,
+        directory=tmp_path,
+    )
+
+    with pytest.raises(TypeError, match="HyperModel\.fit\(\) to be one of"):
+        tuner.search()
+
+
+def test_run_trial_return_string(tmp_path):
+    class MyTuner(keras_tuner.tuners.RandomSearch):
+        def run_trial(self, trial, **kwargs):
+            return trial.hyperparameters.Choice("value", ["a", "b"])
+
+    tuner = MyTuner(
+        objective="val_loss",
+        max_trials=2,
+        executions_per_trial=3,
+        directory=tmp_path,
+    )
+
+    with pytest.raises(TypeError, match="Tuner\.run_trial\(\) to be one of"):
+        tuner.search()
+
+
+def test_no_objective_fit_return_not_float(tmp_path):
     class MyHyperModel(ExampleHyperModel):
         def fit(self, hp, model, *args, **kwargs):
             return {"val_loss": hp.Float("value", 0, 10)}
@@ -299,7 +332,22 @@ def test_no_objective_return_not_single_value_error(tmp_path):
         directory=tmp_path,
     )
 
-    with pytest.raises(TypeError, match="to be a single float"):
+    with pytest.raises(TypeError, match="HyperModel\.fit\(\) to be a single float"):
+        tuner.search()
+
+
+def test_no_objective_run_trial_return_not_float(tmp_path):
+    class MyTuner(keras_tuner.tuners.RandomSearch):
+        def run_trial(self, trial, **kwargs):
+            return {"val_loss": trial.hyperparameters.Float("value", 0, 10)}
+
+    tuner = MyTuner(
+        max_trials=2,
+        executions_per_trial=3,
+        directory=tmp_path,
+    )
+
+    with pytest.raises(TypeError, match="Tuner\.run_trial\(\) to be a single float"):
         tuner.search()
 
 
