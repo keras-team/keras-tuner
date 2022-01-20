@@ -61,7 +61,7 @@ class Objective:
 
 
 class DefaultObjective(Objective):
-    """Default objective to minimize if not provide by the user."""
+    """Default objective to minimize if not provided by the user."""
 
     def __init__(self):
         super().__init__(name="default_objective", direction="min")
