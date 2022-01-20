@@ -194,7 +194,7 @@ class BaseTuner(stateful.Stateful):
                     # Convert to dictionary before calling `update_trial()`
                     # to pass it from gRPC.
                     tuner_utils.convert_to_metrics_dict(
-                        results, self.oracle.objective
+                        results, self.oracle.objective, "Tuner.run_trial()"
                     ),
                 )
             self.on_trial_end(trial)

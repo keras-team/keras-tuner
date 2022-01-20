@@ -15,6 +15,7 @@
 import os
 
 import numpy as np
+import pytest
 from tensorflow import keras
 
 from keras_tuner.engine import objective as obj_module
@@ -79,24 +80,36 @@ def test_convert_to_metrics_with_history():
     )
 
     results = tuner_utils.convert_to_metrics_dict(
-        history, obj_module.Objective("val_loss", "min")
+        history, obj_module.Objective("val_loss", "min"), "func_name"
     )
     assert all([key in results for key in ["loss", "val_loss", "mae", "val_mae"]])
 
 
 def test_convert_to_metrics_with_float():
     assert tuner_utils.convert_to_metrics_dict(
-        0.1, obj_module.Objective("val_loss", "min")
+        0.1, obj_module.Objective("val_loss", "min"), "func_name"
     ) == {"val_loss": 0.1}
 
 
 def test_convert_to_metrics_with_dict():
-    assert tuner_utils.convert_to_metrics_dict(
-        {"loss": 0.2, "val_loss": 0.1}, obj_module.Objective("val_loss", "min")
-    ) == {"loss": 0.2, "val_loss": 0.1}
+    assert (
+        tuner_utils.convert_to_metrics_dict(
+            {"loss": 0.2, "val_loss": 0.1},
+            obj_module.Objective("val_loss", "min"),
+            "func_name",
+        )
+        == {"loss": 0.2, "val_loss": 0.1}
+    )
 
 
 def test_convert_to_metrics_with_list_of_floats():
     assert tuner_utils.convert_to_metrics_dict(
-        [0.1, 0.2], obj_module.Objective("val_loss", "min")
+        [0.1, 0.2], obj_module.Objective("val_loss", "min"), "func_name"
     ) == {"val_loss": (0.1 + 0.2) / 2}
+
+
+def test_convert_to_metrics_with_dict_without_obj_key():
+    with pytest.raises(ValueError, match="the specified objective"):
+        tuner_utils.convert_to_metrics_dict(
+            {"loss": 0.1}, obj_module.Objective("val_loss", "min"), "func_name"
+        )
