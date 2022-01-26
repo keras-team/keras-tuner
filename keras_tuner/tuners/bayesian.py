@@ -301,13 +301,19 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                 prob = hp_module.value_to_cumulative_prob(trial_value, hp)
                 vector.append(prob)
 
-            if trial in ongoing_trials:
-                # "Hallucinate" the results of ongoing trials. This ensures that
+            if trial in ongoing_trials and hasattr(self.gpr, '_x_train'):
+                # Check if self.gpr has had a .fit called at least once and then
+                # "hallucinate" the results of ongoing trials. This ensures that
                 # repeat trials are not selected when running distributed.
                 x_h = np.array(vector).reshape((1, -1))
                 y_h_mean, y_h_std = self.gpr.predict(x_h)
                 # Give a pessimistic estimate of the ongoing trial.
-                score = y_h_mean[0] + y_h_std[0]
+                if self.objective.direction == "max":
+                    # Be pessimistic in the correct direction and frame the problem
+                    # as a minimization for scipy.minimize
+                    score = -1 * y_h_mean[0] + y_h_std[0]
+                else:
+                    score = y_h_mean[0] + y_h_std[0]
             elif trial.status == "COMPLETED":
                 score = trial.score
                 # Always frame the optimization as a minimization for scipy.minimize.
