@@ -167,8 +167,8 @@ class SklearnTuner(base_tuner.BaseTuner):
             )
 
             model = self.hypermodel.build(trial.hyperparameters)
-            
-            supports_sw = 'sample_weight' in inspect.getfullargspec(model.fit).args
+
+            supports_sw = "sample_weight" in inspect.getfullargspec(model.fit).args
             if isinstance(model, sklearn.pipeline.Pipeline) or not supports_sw:
                 model.fit(X_train, y_train)
             else:

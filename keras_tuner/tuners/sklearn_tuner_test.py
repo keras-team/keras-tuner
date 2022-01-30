@@ -45,7 +45,9 @@ def build_model(hp):
             k = hp.Int("n_neighbors", 1, 30, default=5)
             model = neighbors.KNeighborsClassifier(
                 n_neighbors=k,
-                weights=hp.Choice("weights", ["uniform", "distance"], default="uniform")
+                weights=hp.Choice(
+                    "weights", ["uniform", "distance"], default="uniform"
+                ),
             )
     else:
         raise ValueError("Unrecognized model_type")
@@ -73,7 +75,9 @@ def build_pipeline(hp):
             k = hp.Int("n_neighbors", 1, 30, default=5)
             model = neighbors.KNeighborsClassifier(
                 n_neighbors=k,
-                weights=hp.Choice("weights", ["uniform", "distance"], default="uniform")
+                weights=hp.Choice(
+                    "weights", ["uniform", "distance"], default="uniform"
+                ),
             )
     else:
         raise ValueError("Unrecognized model_type")
