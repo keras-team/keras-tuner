@@ -183,7 +183,9 @@ class Oracle(stateful.Stateful):
         if tuner_id in self.ongoing_trials:
             return self.ongoing_trials[tuner_id]
 
-        trial_id = trial_lib.generate_trial_id()
+        # Make the trial_id the current number of trial, pre-padded with 0s
+        trial_id = "{{:0{}d}}".format(len(str(self.max_trials)))
+        trial_id = trial_id.format(len(self.trials))
 
         if self.max_trials and len(self.trials) >= self.max_trials:
             status = trial_lib.TrialStatus.STOPPED

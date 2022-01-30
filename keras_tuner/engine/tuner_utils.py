@@ -95,7 +95,6 @@ class Display(object):
     def __init__(self, oracle, verbose=1):
         self.verbose = verbose
         self.oracle = oracle
-        self.trial_number = len(self.oracle.trials)
         self.col_width = 18
 
         # Start time for the overall search
@@ -107,7 +106,7 @@ class Display(object):
     def on_trial_begin(self, trial):
         if self.verbose >= 1:
 
-            self.trial_number += 1
+            self.trial_number = int(trial.trial_id) + 1
             print()
             print("Search: Running Trial #{}".format(self.trial_number))
             print()
