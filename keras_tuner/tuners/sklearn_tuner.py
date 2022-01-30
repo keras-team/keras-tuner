@@ -16,6 +16,7 @@ import collections
 import os
 import pickle
 import warnings
+import inspect
 
 import numpy as np
 import tensorflow as tf
@@ -166,7 +167,9 @@ class SklearnTuner(base_tuner.BaseTuner):
             )
 
             model = self.hypermodel.build(trial.hyperparameters)
-            if isinstance(model, sklearn.pipeline.Pipeline):
+            
+            supports_sw = 'sample_weight' in inspect.getfullargspec(model.fit).args
+            if isinstance(model, sklearn.pipeline.Pipeline) or not supports_sw:
                 model.fit(X_train, y_train)
             else:
                 model.fit(X_train, y_train, sample_weight=sample_weight_train)
