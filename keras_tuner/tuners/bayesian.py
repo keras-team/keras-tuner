@@ -50,7 +50,7 @@ def matern_kernel(x, y=None):
     # nu = 2.5
     dists = cdist(x, y)
     dists *= math.sqrt(5)
-    kernel_matrix = (1.0 + dists + dists ** 2 / 3.0) * np.exp(-dists)
+    kernel_matrix = (1.0 + dists + dists**2 / 3.0) * np.exp(-dists)
     return kernel_matrix
 
 
@@ -122,7 +122,7 @@ class GaussianProcessRegressor(object):
         y_var[y_var < 0] = 0.0
 
         # Undo normalize y.
-        y_var *= self._y_train_std ** 2
+        y_var *= self._y_train_std**2
         y_mean = self._y_train_std * y_mean + self._y_train_mean
 
         return y_mean.flatten(), np.sqrt(y_var)
