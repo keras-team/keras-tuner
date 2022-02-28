@@ -196,6 +196,10 @@ class SaveBestEpoch(keras.callbacks.Callback):
             self.best_value = float("inf")
 
     def on_epoch_end(self, epoch, logs=None):
+        if isinstance(self.objective, obj_module.DefaultObjective):
+            # Save on every epoch if no objective is specified.
+            self.model.save_weights(self.filepath)
+            return
         current_value = self.objective.get_value(logs)
         if self.objective.better_than(current_value, self.best_value):
             self.best_value = current_value

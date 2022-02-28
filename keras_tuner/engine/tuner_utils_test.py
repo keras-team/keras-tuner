@@ -68,6 +68,28 @@ def test_save_best_epoch_with_multi_objective(tmp_path):
     )
 
 
+def test_save_best_epoch_with_default_objective(tmp_path):
+    objective = obj_module.create_objective(None)
+    filepath = os.path.join(tmp_path, "saved_weights")
+    callback = tuner_utils.SaveBestEpoch(objective, filepath)
+
+    model = keras.Sequential([keras.layers.Dense(1)])
+    model.compile(loss="mse")
+    val_x = np.random.rand(10, 10)
+    val_y = np.random.rand(10, 10)
+    history = model.fit(
+        x=np.random.rand(10, 10),
+        y=np.random.rand(10, 1),
+        validation_data=(val_x, val_y),
+        epochs=10,
+        callbacks=[callback],
+    )
+
+    model.load_weights(filepath)
+
+    assert history.history["val_loss"][-1] == model.evaluate(val_x, val_y)
+
+
 def test_convert_to_metrics_with_history():
     model = keras.Sequential([keras.layers.Dense(1)])
     model.compile(loss="mse", metrics=["mae"])
