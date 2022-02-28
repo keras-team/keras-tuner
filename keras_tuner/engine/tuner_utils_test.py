@@ -92,14 +92,11 @@ def test_convert_to_metrics_with_float():
 
 
 def test_convert_to_metrics_with_dict():
-    assert (
-        tuner_utils.convert_to_metrics_dict(
-            {"loss": 0.2, "val_loss": 0.1},
-            obj_module.Objective("val_loss", "min"),
-            "func_name",
-        )
-        == {"loss": 0.2, "val_loss": 0.1}
-    )
+    assert tuner_utils.convert_to_metrics_dict(
+        {"loss": 0.2, "val_loss": 0.1},
+        obj_module.Objective("val_loss", "min"),
+        "func_name",
+    ) == {"loss": 0.2, "val_loss": 0.1}
 
 
 def test_convert_to_metrics_with_list_of_floats():
