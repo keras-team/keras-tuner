@@ -13,10 +13,10 @@
 # limitations under the License.
 """Tuner for Scikit-learn Models."""
 import collections
+import inspect
 import os
 import pickle
 import warnings
-import inspect
 
 import numpy as np
 import tensorflow as tf

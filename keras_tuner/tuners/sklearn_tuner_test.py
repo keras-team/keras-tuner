@@ -21,8 +21,8 @@ from sklearn import ensemble
 from sklearn import linear_model
 from sklearn import metrics
 from sklearn import model_selection
-from sklearn import pipeline
 from sklearn import neighbors
+from sklearn import pipeline
 
 import keras_tuner as kt
 
