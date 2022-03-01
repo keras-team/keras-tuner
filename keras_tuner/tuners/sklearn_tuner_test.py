@@ -21,13 +21,14 @@ from sklearn import ensemble
 from sklearn import linear_model
 from sklearn import metrics
 from sklearn import model_selection
+from sklearn import neighbors
 from sklearn import pipeline
 
 import keras_tuner as kt
 
 
 def build_model(hp):
-    model_type = hp.Choice("model_type", ["random_forest", "ridge"])
+    model_type = hp.Choice("model_type", ["random_forest", "ridge", "knn"])
     if model_type == "random_forest":
         with hp.conditional_scope("model_type", "random_forest"):
             model = ensemble.RandomForestClassifier(
@@ -38,6 +39,15 @@ def build_model(hp):
         with hp.conditional_scope("model_type", "ridge"):
             model = linear_model.RidgeClassifier(
                 alpha=hp.Float("alpha", 1e-3, 1, sampling="log")
+            )
+    elif model_type == "knn":
+        with hp.conditional_scope("model_type", "knn"):
+            k = hp.Int("n_neighbors", 1, 30, default=5)
+            model = neighbors.KNeighborsClassifier(
+                n_neighbors=k,
+                weights=hp.Choice(
+                    "weights", ["uniform", "distance"], default="uniform"
+                ),
             )
     else:
         raise ValueError("Unrecognized model_type")
@@ -48,7 +58,7 @@ def build_pipeline(hp):
     n_components = hp.Choice("n_components", [2, 5, 10], default=5)
     pca = decomposition.PCA(n_components=n_components)
 
-    model_type = hp.Choice("model_type", ["random_forest", "ridge"])
+    model_type = hp.Choice("model_type", ["random_forest", "ridge", "knn"])
     if model_type == "random_forest":
         with hp.conditional_scope("model_type", "random_forest"):
             model = ensemble.RandomForestClassifier(
@@ -59,6 +69,15 @@ def build_pipeline(hp):
         with hp.conditional_scope("model_type", "ridge"):
             model = linear_model.RidgeClassifier(
                 alpha=hp.Float("alpha", 1e-3, 1, sampling="log")
+            )
+    elif model_type == "knn":
+        with hp.conditional_scope("model_type", "knn"):
+            k = hp.Int("n_neighbors", 1, 30, default=5)
+            model = neighbors.KNeighborsClassifier(
+                n_neighbors=k,
+                weights=hp.Choice(
+                    "weights", ["uniform", "distance"], default="uniform"
+                ),
             )
     else:
         raise ValueError("Unrecognized model_type")
