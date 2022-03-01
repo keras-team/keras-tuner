@@ -50,7 +50,7 @@ def matern_kernel(x, y=None):
     # nu = 2.5
     dists = cdist(x, y)
     dists *= math.sqrt(5)
-    kernel_matrix = (1.0 + dists + dists ** 2 / 3.0) * np.exp(-dists)
+    kernel_matrix = (1.0 + dists + dists**2 / 3.0) * np.exp(-dists)
     return kernel_matrix
 
 
@@ -122,7 +122,7 @@ class GaussianProcessRegressor(object):
         y_var[y_var < 0] = 0.0
 
         # Undo normalize y.
-        y_var *= self._y_train_std ** 2
+        y_var *= self._y_train_std**2
         y_mean = self._y_train_std * y_mean + self._y_train_mean
 
         return y_mean.flatten(), np.sqrt(y_var)
@@ -301,8 +301,9 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                 prob = hp_module.value_to_cumulative_prob(trial_value, hp)
                 vector.append(prob)
 
-            if trial in ongoing_trials:
-                # "Hallucinate" the results of ongoing trials. This ensures that
+            if trial in ongoing_trials and hasattr(self.gpr, "_x_train"):
+                # Check if self.gpr has had a .fit called at least once and then
+                # "hallucinate" the results of ongoing trials. This ensures that
                 # repeat trials are not selected when running distributed.
                 x_h = np.array(vector).reshape((1, -1))
                 y_h_mean, y_h_std = self.gpr.predict(x_h)

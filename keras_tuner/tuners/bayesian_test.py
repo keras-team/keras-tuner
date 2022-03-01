@@ -356,3 +356,62 @@ def test_distributed_optimization(tmp_path):
     # For log-scale param, just check that the order of magnitude is correct.
     log_best_c = math.log(best_hps["c"], 10)
     assert log_best_c > -4 and log_best_c < -2
+
+
+def test_interleaved_distributed_optimization(tmp_path):
+    hps = hp_module.HyperParameters()
+    hps.Float("a", -1, 1)
+    hps.Float("b", -1, 1)
+    hps.Float("c", -1, 1)
+    hps.Float("d", -1, 1)
+
+    def evaluate(hp):
+        # Minimum at a=4, b=1, c=1e-3 with score=-1
+        return -1 * hp["a"] ** 3 + hp["b"] ** 3 + hp["c"] - abs(hp["d"])
+
+    oracle = bo_module.BayesianOptimizationOracle(
+        objective=kt.Objective("score", "min"),
+        hyperparameters=hps,
+        max_trials=60,
+        num_initial_points=2,
+    )
+    oracle._set_project_dir(tmp_path, "untitled")
+
+    # Run 4 trials on 2 tuners
+
+    # Start both tuners at the same time
+    trial_1 = oracle.create_trial("tuner_0")
+    trial_2 = oracle.create_trial("tuner_1")
+
+    # tuner_0 finishes trial_1 before tuner_1 finishes
+    oracle.update_trial(
+        trial_1.trial_id, {"score": evaluate(trial_1.hyperparameters)}
+    )
+    oracle.end_trial(trial_1.trial_id, "COMPLETED")
+
+    # tuner_0 request a new trial (trial_3)
+    trial_3 = oracle.create_trial("tuner_0")
+
+    # tuner_1 finishes trial_2
+    oracle.update_trial(
+        trial_2.trial_id, {"score": evaluate(trial_2.hyperparameters)}
+    )
+    oracle.end_trial(trial_2.trial_id, "COMPLETED")
+
+    # tuner_1 requests the final new trial (trial_4)
+    # the Bayesian optimizer will use ongoing trial_3 to hallucinate
+    trial_4 = oracle.create_trial("tuner_1")
+
+    # tuner_0 finishes trial_3
+    oracle.update_trial(
+        trial_3.trial_id, {"score": evaluate(trial_3.hyperparameters)}
+    )
+    oracle.end_trial(trial_3.trial_id, "COMPLETED")
+
+    # tuner_1 finishes trial_4
+    oracle.update_trial(
+        trial_4.trial_id, {"score": evaluate(trial_4.hyperparameters)}
+    )
+    oracle.end_trial(trial_4.trial_id, "COMPLETED")
+
+    assert True
