@@ -247,8 +247,9 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             result = scipy_optimize.minimize(
                 _upper_confidence_bound, x0=x_try, bounds=bounds, method="L-BFGS-B"
             )
-            if result.fun[0] < optimal_val:
-                optimal_val = result.fun[0]
+            result_fun = result.fun if np.isscalar(result.fun) else result.fun[0]
+            if result_fun < optimal_val:
+                optimal_val = result_fun
                 optimal_x = result.x
 
         values = self._vector_to_values(optimal_x)
