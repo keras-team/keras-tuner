@@ -127,6 +127,24 @@ class GaussianProcessRegressor(object):
 
         return y_mean.flatten(), np.sqrt(y_var)
 
+    def can_predict(self) -> bool:
+        """Checks if predict can be called without raising exceptions.
+
+        Returns:
+            A bool indicates whether all required attributes are present.
+        """
+        for attribute in [
+            "_x_train",
+            "_alpha_vector",
+            "_l_matrix",
+            "_y_train_std",
+            "_y_train_mean",
+        ]:
+            if not hasattr(self, attribute):
+                return False
+
+        return True
+
 
 class BayesianOptimizationOracle(oracle_module.Oracle):
     """Bayesian optimization oracle.
@@ -302,8 +320,8 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                 prob = hp_module.value_to_cumulative_prob(trial_value, hp)
                 vector.append(prob)
 
-            if trial in ongoing_trials and hasattr(self.gpr, "_x_train"):
-                # Check if self.gpr has had a .fit called at least once and then
+            if trial in ongoing_trials and self.gpr.can_predict():
+                # Check if self.gpr.predict can be called and then
                 # "hallucinate" the results of ongoing trials. This ensures that
                 # repeat trials are not selected when running distributed.
                 x_h = np.array(vector).reshape((1, -1))
