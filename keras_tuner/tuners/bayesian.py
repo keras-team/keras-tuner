@@ -17,7 +17,11 @@ import random
 
 import numpy as np
 import tensorflow as tf
-from scipy import optimize as scipy_optimize
+
+try:
+    import scipy
+except ImportError:
+    scipy = None
 
 from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine import oracle as oracle_module
@@ -262,7 +266,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         )
         for x_try in x_seeds:
             # Sign of score is flipped when maximizing.
-            result = scipy_optimize.minimize(
+            result = scipy.optimize.minimize(
                 _upper_confidence_bound, x0=x_try, bounds=bounds, method="L-BFGS-B"
             )
             result_fun = result.fun if np.isscalar(result.fun) else result.fun[0]
@@ -456,3 +460,7 @@ class BayesianOptimization(tuner_module.Tuner):
             BayesianOptimization,
             self,
         ).__init__(oracle=oracle, hypermodel=hypermodel, **kwargs)
+        if scipy is None:
+            raise ImportError(
+                "Please install scipy before using the `BayesianOptimization`."
+            )
