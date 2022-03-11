@@ -15,6 +15,7 @@
 import math
 
 import numpy as np
+import pytest
 import tensorflow as tf
 
 import keras_tuner as kt
@@ -41,6 +42,19 @@ def build_model(hp):
         metrics=["accuracy"],
     )
     return model
+
+
+def test_scipy_not_install_error(tmp_path):
+    scipy_module = kt.tuners.bayesian.scipy
+    kt.tuners.bayesian.scipy = None
+
+    with pytest.raises(ImportError, match="Please install scipy"):
+        kt.BayesianOptimization(
+            hypermodel=build_model,
+            directory=tmp_path,
+        )
+
+    kt.tuners.bayesian.scipy = scipy_module
 
 
 def test_gpr_mse_is_small():
