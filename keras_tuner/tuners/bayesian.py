@@ -20,6 +20,7 @@ import tensorflow as tf
 
 try:
     import scipy
+    import scipy.optimize
 except ImportError:
     scipy = None
 
