@@ -59,6 +59,12 @@ def test_objective_better_than_min():
     assert not obj.better_than(0, 0)
 
 
+def test_objective_has_value():
+    obj = objective.create_objective("loss")
+    assert obj.has_value({"loss": 3.0})
+    assert not obj.has_value({"accuracy": 3.0})
+
+
 def test_objective_get_value():
     obj = objective.create_objective("loss")
     assert obj.get_value({"accuracy": 3.0, "loss": 2.0}) == 2.0
@@ -97,3 +103,9 @@ def test_multi_objective_not_equal():
     obj1 = objective.create_objective(["loss", "loss"])
     obj2 = objective.create_objective(["loss", "accuracy"])
     assert obj1 != obj2
+
+
+def test_multi_objective_has_value():
+    obj = objective.create_objective(["loss", "accuracy"])
+    assert obj.has_value({"loss": 1.0, "accuracy": 1.0, "mse": 2.0})
+    assert not obj.has_value({"accuracy": 1.0, "mse": 2.0})

@@ -28,6 +28,19 @@ class Objective:
         self.name = name
         self.direction = direction
 
+    def has_value(self, logs):
+        """Check if objective value exists in logs.
+
+        Args:
+            logs: A dictionary with the metric names as the keys and the metric
+                values as the values, which is in the same format as the `logs`
+                argument for `Callback.on_epoch_end()`.
+
+        Returns:
+            Boolean, whether we can compute objective value from the logs.
+        """
+        return self.name in logs
+
     def get_value(self, logs):
         """Get the objective value from the metrics logs.
 
@@ -80,6 +93,9 @@ class MultiObjective(Objective):
         self.name_to_direction = {
             objective.name: objective.direction for objective in self.objectives
         }
+
+    def has_value(self, logs):
+        return all([key in logs for key in self.name_to_direction])
 
     def get_value(self, logs):
         obj_value = 0
