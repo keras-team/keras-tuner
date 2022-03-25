@@ -196,8 +196,10 @@ class SaveBestEpoch(keras.callbacks.Callback):
             self.best_value = float("inf")
 
     def on_epoch_end(self, epoch, logs=None):
-        if isinstance(self.objective, obj_module.DefaultObjective):
-            # Save on every epoch if no objective is specified.
+        if not self.objective.has_value(logs):
+            # Save on every epoch if metric value is not in the logs. Either no
+            # objective is specified, or objective is computed and returned
+            # after `fit()`.
             self.model.save_weights(self.filepath)
             return
         current_value = self.objective.get_value(logs)
