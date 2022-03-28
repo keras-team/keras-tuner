@@ -199,10 +199,10 @@ class MetricsTracker(object):
             raise ValueError("Metric already exists: %s" % (name,))
         if direction is None:
             direction = infer_metric_direction(name)
-            if direction is None:
-                # Objective direction is handled separately, but
-                # non-objective direction defaults to min.
-                direction = "min"
+        if direction is None:
+            # Objective direction is handled separately, but
+            # non-objective direction defaults to min.
+            direction = "min"
         self.metrics[name] = MetricHistory(direction)
 
     def update(self, name, value, step=0):
