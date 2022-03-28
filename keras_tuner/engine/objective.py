@@ -123,20 +123,20 @@ def create_objective(objective):
         return MultiObjective([create_objective(obj) for obj in objective])
     if isinstance(objective, Objective):
         return objective
-    if isinstance(objective, str):
-        direction = metrics_tracking.infer_metric_direction(objective)
-        if direction is None:
-            error_msg = (
-                'Could not infer optimization direction ("min" or "max") '
-                'for unknown metric "{obj}". Please specify the objective  as'
-                "a `keras_tuner.Objective`, for example `keras_tuner.Objective("
-                '"{obj}", direction="min")`.'
-            )
-            error_msg = error_msg.format(obj=objective)
-            raise ValueError(error_msg)
-        return Objective(name=objective, direction=direction)
-    else:
+    if not isinstance(objective, str):
         raise ValueError(
             "`objective` not understood, expected str or "
             "`Objective` object, found: {}".format(objective)
         )
+
+    direction = metrics_tracking.infer_metric_direction(objective)
+    if direction is None:
+        error_msg = (
+            'Could not infer optimization direction ("min" or "max") '
+            'for unknown metric "{obj}". Please specify the objective  as'
+            "a `keras_tuner.Objective`, for example `keras_tuner.Objective("
+            '"{obj}", direction="min")`.'
+        )
+        error_msg = error_msg.format(obj=objective)
+        raise ValueError(error_msg)
+    return Objective(name=objective, direction=direction)

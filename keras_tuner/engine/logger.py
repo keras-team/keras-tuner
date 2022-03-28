@@ -51,22 +51,20 @@ def url_join(*parts):
 def send_to_backend(url, data, key):
     response = requests.post(url, headers={"X-AUTH": key}, json=data)
 
-    if not response.ok:
-        try:
-            response_json = response.json()
-        except json.decoder.JSONDecodeError:
-            print("Cloud service down -- data not uploaded: %s" % response.text)
-            return CONNECT_ERROR
-
-        if response_json["status"] == "Unauthorized":
-            print("Invalid backend API key.")
-            return AUTH_ERROR
-        else:
-            print("Warning! Cloud service upload failed: %s" % response.text)
-            return UPLOAD_ERROR
-        return ERROR
-    else:
+    if response.ok:
         return OK
+    try:
+        response_json = response.json()
+    except json.decoder.JSONDecodeError:
+        print("Cloud service down -- data not uploaded: %s" % response.text)
+        return CONNECT_ERROR
+
+    if response_json["status"] == "Unauthorized":
+        print("Invalid backend API key.")
+        return AUTH_ERROR
+    else:
+        print("Warning! Cloud service upload failed: %s" % response.text)
+        return UPLOAD_ERROR
 
 
 class CloudLogger(Logger):

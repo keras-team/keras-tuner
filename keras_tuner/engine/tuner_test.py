@@ -1145,7 +1145,7 @@ def test_run_trial_return_float_list(tmp_path):
     class MyTuner(keras_tuner.Tuner):
         def run_trial(self, trial, *fit_args, **fit_kwargs):
             ret = []
-            for i in range(3):
+            for _ in range(3):
                 history = self.hypermodel.build(trial.hyperparameters).fit(
                     *fit_args, **fit_kwargs
                 )

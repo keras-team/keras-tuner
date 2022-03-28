@@ -104,7 +104,7 @@ def test_convert_to_metrics_with_history():
     results = tuner_utils.convert_to_metrics_dict(
         history, obj_module.Objective("val_loss", "min"), "func_name"
     )
-    assert all([key in results for key in ["loss", "val_loss", "mae", "val_mae"]])
+    assert all(key in results for key in ["loss", "val_loss", "mae", "val_mae"])
 
 
 def test_convert_to_metrics_with_float():
