@@ -24,6 +24,7 @@ from tensorboard.plugins.hparams import api as hparams_api
 from tensorflow import keras
 
 from keras_tuner import utils
+from keras_tuner.distribute import utils as ds_utils
 from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine import objective as obj_module
 
@@ -191,6 +192,10 @@ class SaveBestEpoch(keras.callbacks.Callback):
             self.best_value = float("inf")
 
     def on_epoch_end(self, epoch, logs=None):
+        # Create temporary saved model directories on non-chief workers, to 
+        # avoid file contention.
+        self.filepath = ds_utils.write_filepath(self.filepath,
+                                                self.model.distribute_strategy)
         if not self.objective.has_value(logs):
             # Save on every epoch if metric value is not in the logs. Either no
             # objective is specified, or objective is computed and returned
@@ -201,6 +206,10 @@ class SaveBestEpoch(keras.callbacks.Callback):
         if self.objective.better_than(current_value, self.best_value):
             self.best_value = current_value
             self.model.save_weights(self.filepath)
+            # Remove temporary saved model files from non-chief workers.
+            ds_utils.remove_temp_dir_with_filepath(
+                self.filepath, self.model.distribute_strategy
+            )
 
 
 def average_metrics_dicts(metrics_dicts):
