@@ -235,7 +235,6 @@ class Oracle(stateful.Stateful):
             trial.metrics.update(metric_name, metric_value, step=step)
         if self.should_report:
             self._save_trial(trial)
-        self._save_trial(trial)
         # To signal early stopping, set Trial.status to "STOPPED".
         return trial.status
 

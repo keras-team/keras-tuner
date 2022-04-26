@@ -13,8 +13,9 @@
 # limitations under the License.
 """Distribution utilities."""
 
-
 import os
+
+import tensorflow as tf
 
 
 def has_chief_oracle():
@@ -83,9 +84,10 @@ remove_temp_dirpath(self.log_dir, get_distribution_strategy())
 Experimental. API is subject to change.
 """
 
+
 def _get_base_dirpath(strategy):
-    task_id = strategy.extended._task_id    # pylint: disable=protected-access
-    return 'workertemp_' + str(task_id)
+    task_id = strategy.extended._task_id  # pylint: disable=protected-access
+    return "workertemp_" + str(task_id)
 
 
 def _is_temp_dir(dirpath, strategy):
@@ -120,7 +122,9 @@ def write_dirpath(dirpath, strategy):
         # If strategy is still not available, this is not in distributed training.
         # Fallback to original dirpath.
         return dirpath
-    if not strategy.extended._in_multi_worker_mode():    # pylint: disable=protected-access
+    if (
+        not strategy.extended._in_multi_worker_mode()
+    ):  # pylint: disable=protected-access
         return dirpath
     if strategy.extended.should_checkpoint:
         return dirpath
@@ -133,7 +137,8 @@ def remove_temp_dirpath(dirpath, strategy):
     """Removes the temp path after writing is finished.
 
     Args:
-        dirpath: Original dirpath that would be used without distribution.
+        dirpath: Original dirpath that would be used without distribution, or
+            the temporary dirpath used with distribution.
         strategy: The tf.distribute strategy object currently used.
     """
     if strategy is None:
@@ -145,8 +150,10 @@ def remove_temp_dirpath(dirpath, strategy):
         return
     # TODO(anjalisridhar): Consider removing the check for multi worker mode since
     # it is redundant when used with the should_checkpoint property.
-    if (strategy.extended._in_multi_worker_mode() and    # pylint: disable=protected-access
-            not strategy.extended.should_checkpoint):
+    if (
+        strategy.extended._in_multi_worker_mode()
+        and not strategy.extended.should_checkpoint
+    ):
         # If this worker is not chief and hence should not save file, remove
         # the temporary directory.
         tf.io.gfile.rmtree(_get_temp_dir(dirpath, strategy))
@@ -173,7 +180,8 @@ def remove_temp_dir_with_filepath(filepath, strategy):
     """Removes the temp path for file after writing is finished.
 
     Args:
-        filepath: Original filepath that would be used without distribution.
+        filepath: Original filepath that would be used without distribution, or
+            the temporary filepath used with distribution.
         strategy: The tf.distribute strategy object currently used.
     """
     remove_temp_dirpath(os.path.dirname(filepath), strategy)
