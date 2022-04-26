@@ -24,6 +24,7 @@ from tensorboard.plugins.hparams import api as hparams_api
 from tensorflow import keras
 
 from keras_tuner import utils
+from keras_tuner.distribute import utils as ds_utils
 from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine import objective as obj_module
 
@@ -195,12 +196,23 @@ class SaveBestEpoch(keras.callbacks.Callback):
             # Save on every epoch if metric value is not in the logs. Either no
             # objective is specified, or objective is computed and returned
             # after `fit()`.
-            self.model.save_weights(self.filepath)
+            self._save_model()
             return
         current_value = self.objective.get_value(logs)
         if self.objective.better_than(current_value, self.best_value):
             self.best_value = current_value
-            self.model.save_weights(self.filepath)
+            self._save_model()
+
+    def _save_model(self):
+        # Create temporary saved model files on non-chief workers.
+        write_filepath = ds_utils.write_filepath(
+            self.filepath, self.model.distribute_strategy
+        )
+        self.model.save_weights(write_filepath)
+        # Remove temporary saved model files on non-chief workers.
+        ds_utils.remove_temp_dir_with_filepath(
+            write_filepath, self.model.distribute_strategy
+        )
 
 
 def average_metrics_dicts(metrics_dicts):
