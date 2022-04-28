@@ -24,12 +24,12 @@ import pytest
 import tensorflow as tf
 from tensorflow import keras
 
-import keras_tuner as kt
+import keras_tuner
 from keras_tuner.distribute import utils as dist_utils
 from keras_tuner.test_utils import mock_distribute
 
 
-class SimpleTuner(kt.engine.base_tuner.BaseTuner):
+class SimpleTuner(keras_tuner.engine.base_tuner.BaseTuner):
     def run_trial(self, trial):
         score = self.hypermodel.build(trial.hyperparameters)
         self.oracle.update_trial(trial.trial_id, {"score": score})
@@ -57,8 +57,8 @@ def test_base_tuner_distribution(tmp_path):
             return hp.Int("a", 1, 100)
 
         tuner = SimpleTuner(
-            oracle=kt.oracles.RandomSearch(
-                objective=kt.Objective("score", "max"), max_trials=10
+            oracle=keras_tuner.oracles.RandomSearch(
+                objective=keras_tuner.Objective("score", "max"), max_trials=10
             ),
             hypermodel=build_model,
             directory=tmp_path,
@@ -68,7 +68,9 @@ def test_base_tuner_distribution(tmp_path):
         # Only worker makes it to this point, server runs until thread stops.
         assert dist_utils.has_chief_oracle()
         assert not dist_utils.is_chief_oracle()
-        assert isinstance(tuner.oracle, kt.distribute.oracle_client.OracleClient)
+        assert isinstance(
+            tuner.oracle, keras_tuner.distribute.oracle_client.OracleClient
+        )
 
         barrier.wait(60)
 
@@ -101,7 +103,7 @@ def test_random_search(tmp_path):
         x = np.random.uniform(-1, 1, size=(2, 5))
         y = np.ones((2, 1))
 
-        tuner = kt.tuners.RandomSearch(
+        tuner = keras_tuner.tuners.RandomSearch(
             hypermodel=build_model,
             objective="val_loss",
             max_trials=10,
@@ -111,7 +113,9 @@ def test_random_search(tmp_path):
         # Only worker makes it to this point, server runs until thread stops.
         assert dist_utils.has_chief_oracle()
         assert not dist_utils.is_chief_oracle()
-        assert isinstance(tuner.oracle, kt.distribute.oracle_client.OracleClient)
+        assert isinstance(
+            tuner.oracle, keras_tuner.distribute.oracle_client.OracleClient
+        )
 
         tuner.search(x, y, validation_data=(x, y), epochs=1, batch_size=2)
 

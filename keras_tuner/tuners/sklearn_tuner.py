@@ -53,7 +53,7 @@ class SklearnTuner(base_tuner.BaseTuner):
     Examples:
 
     ```python
-    import keras_tuner as kt
+    import keras_tuner
     from sklearn import ensemble
     from sklearn import datasets
     from sklearn import linear_model
@@ -71,9 +71,9 @@ class SklearnTuner(base_tuner.BaseTuner):
             alpha=hp.Float('alpha', 1e-3, 1, sampling='log'))
       return model
 
-    tuner = kt.tuners.SklearnTuner(
-        oracle=kt.oracles.BayesianOptimizationOracle(
-            objective=kt.Objective('score', 'max'),
+    tuner = keras_tuner.tuners.SklearnTuner(
+        oracle=keras_tuner.oracles.BayesianOptimizationOracle(
+            objective=keras_tuner.Objective('score', 'max'),
             max_trials=10),
         hypermodel=build_model,
         scoring=metrics.make_scorer(metrics.accuracy_score),
