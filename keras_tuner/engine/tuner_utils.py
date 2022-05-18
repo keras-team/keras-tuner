@@ -16,7 +16,7 @@
 
 import collections
 import math
-import time
+from datetime import datetime
 
 import numpy as np
 import tensorflow as tf
@@ -112,9 +112,9 @@ class Display(object):
             print("Search: Running Trial #{}".format(self.trial_number))
             print()
 
-            self.trial_start = time.time()
+            self.trial_start = datetime.now()
             if self.search_start is None:
-                self.search_start = time.time()
+                self.search_start = self.trial_start
 
             self.show_hyperparameter_table(trial)
             print()
@@ -124,7 +124,7 @@ class Display(object):
             return
         utils.try_clear()
 
-        time_taken_str = self.format_time(time.time() - self.trial_start)
+        time_taken_str = self.format_duration(datetime.now() - self.trial_start)
         print("Trial {} Complete [{}]".format(self.trial_number, time_taken_str))
 
         if trial.score is not None:
@@ -135,7 +135,7 @@ class Display(object):
         best_score = best_trials[0].score if len(best_trials) > 0 else None
         print("Best {} So Far: {}".format(self.oracle.objective.name, best_score))
 
-        time_elapsed_str = self.format_time(time.time() - self.search_start)
+        time_elapsed_str = self.format_duration(datetime.now() - self.search_start)
         print("Total elapsed time: {}".format(time_elapsed_str))
 
     def show_hyperparameter_table(self, trial):
@@ -170,8 +170,18 @@ class Display(object):
             val_str = val_str[: self.col_width - 3] + "..."
         return val_str
 
-    def format_time(self, t):
-        return time.strftime("%Hh %Mm %Ss", time.gmtime(t))
+    def format_duration(self, d):
+        s = round(d.total_seconds())
+        d = s // 86400
+        s %= 86400
+        h = s // 3600
+        s %= 3600
+        m = s // 60
+        s %= 60
+
+        if d > 0:
+            return "{:d}d {:02d}h {:02d}m {:02d}s".format(d, h, m, s)
+        return "{:02d}h {:02d}m {:02d}s".format(h, m, s)
 
 
 class SaveBestEpoch(keras.callbacks.Callback):
