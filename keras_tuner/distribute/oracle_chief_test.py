@@ -18,7 +18,7 @@ import sys
 
 import pytest
 
-import keras_tuner as kt
+import keras_tuner
 from keras_tuner.distribute import oracle_chief
 from keras_tuner.distribute import oracle_client
 from keras_tuner.engine import metrics_tracking
@@ -28,10 +28,10 @@ from keras_tuner.tuners import randomsearch
 
 def test_get_space(tmp_path):
     def _test_get_space():
-        hps = kt.HyperParameters()
+        hps = keras_tuner.HyperParameters()
         hps.Int("a", 0, 10, default=3)
         oracle = randomsearch.RandomSearchOracle(
-            objective=kt.Objective("score", "max"),
+            objective=keras_tuner.Objective("score", "max"),
             max_trials=10,
             hyperparameters=hps,
         )
@@ -51,7 +51,7 @@ def test_get_space(tmp_path):
 def test_update_space(tmp_path):
     def _test_update_space():
         oracle = randomsearch.RandomSearchOracle(
-            objective=kt.Objective("score", "max"), max_trials=10
+            objective=keras_tuner.Objective("score", "max"), max_trials=10
         )
         oracle._set_project_dir(tmp_path, "untitled")
         tuner_id = os.environ["KERASTUNER_TUNER_ID"]
@@ -60,7 +60,7 @@ def test_update_space(tmp_path):
         else:
             client = oracle_client.OracleClient(oracle)
 
-            hps = kt.HyperParameters()
+            hps = keras_tuner.HyperParameters()
             hps.Int("a", 0, 10, default=5)
             hps.Choice("b", [1, 2, 3])
             client.update_space(hps)
@@ -75,11 +75,11 @@ def test_update_space(tmp_path):
 
 def test_create_trial(tmp_path):
     def _test_create_trial():
-        hps = kt.HyperParameters()
+        hps = keras_tuner.HyperParameters()
         hps.Int("a", 0, 10, default=5)
         hps.Choice("b", [1, 2, 3])
         oracle = randomsearch.RandomSearchOracle(
-            objective=kt.Objective("score", "max"),
+            objective=keras_tuner.Objective("score", "max"),
             max_trials=10,
             hyperparameters=hps,
         )
@@ -102,10 +102,10 @@ def test_create_trial(tmp_path):
 @pytest.mark.skipif(sys.version_info < (3, 0), reason="TODO: Enable test for Py2")
 def test_update_trial(tmp_path):
     def _test_update_trial():
-        hps = kt.HyperParameters()
+        hps = keras_tuner.HyperParameters()
         hps.Int("a", 0, 10, default=5)
         oracle = randomsearch.RandomSearchOracle(
-            objective=kt.Objective("score", "max"),
+            objective=keras_tuner.Objective("score", "max"),
             max_trials=10,
             hyperparameters=hps,
         )
@@ -130,10 +130,10 @@ def test_update_trial(tmp_path):
 @pytest.mark.skipif(sys.version_info < (3, 0), reason="TODO: Enable test for Py2")
 def test_end_trial(tmp_path):
     def _test_end_trial():
-        hps = kt.HyperParameters()
+        hps = keras_tuner.HyperParameters()
         hps.Int("a", 0, 10, default=5)
         oracle = randomsearch.RandomSearchOracle(
-            objective=kt.Objective("score", "max"),
+            objective=keras_tuner.Objective("score", "max"),
             max_trials=10,
             hyperparameters=hps,
         )
@@ -155,11 +155,11 @@ def test_end_trial(tmp_path):
 
 def test_get_best_trials(tmp_path):
     def _test_get_best_trials():
-        hps = kt.HyperParameters()
+        hps = keras_tuner.HyperParameters()
         hps.Int("a", 0, 100, default=5)
         hps.Int("b", 0, 100, default=6)
         oracle = randomsearch.RandomSearchOracle(
-            objective=kt.Objective("score", direction="max"),
+            objective=keras_tuner.Objective("score", direction="max"),
             max_trials=10,
             hyperparameters=hps,
         )

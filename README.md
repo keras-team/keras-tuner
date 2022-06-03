@@ -43,7 +43,7 @@ You can also check out other versions in our
 Import KerasTuner and TensorFlow:
 
 ```python
-import keras_tuner as kt
+import keras_tuner
 from tensorflow import keras
 ```
 
@@ -66,7 +66,7 @@ We use `objective` to specify the objective to select the best models,
 and we use `max_trials` to specify the number of different models to try.
 
 ```python
-tuner = kt.RandomSearch(
+tuner = keras_tuner.RandomSearch(
     build_model,
     objective='val_loss',
     max_trials=5)

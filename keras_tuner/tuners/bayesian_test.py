@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 import tensorflow as tf
 
-import keras_tuner as kt
+import keras_tuner
 from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine import trial as trial_module
 from keras_tuner.tuners import bayesian as bo_module
@@ -45,16 +45,16 @@ def build_model(hp):
 
 
 def test_scipy_not_install_error(tmp_path):
-    scipy_module = kt.tuners.bayesian.scipy
-    kt.tuners.bayesian.scipy = None
+    scipy_module = keras_tuner.tuners.bayesian.scipy
+    keras_tuner.tuners.bayesian.scipy = None
 
     with pytest.raises(ImportError, match="Please install scipy"):
-        kt.BayesianOptimization(
+        keras_tuner.BayesianOptimization(
             hypermodel=build_model,
             directory=tmp_path,
         )
 
-    kt.tuners.bayesian.scipy = scipy_module
+    keras_tuner.tuners.bayesian.scipy = scipy_module
 
 
 def test_gpr_mse_is_small():
@@ -79,7 +79,7 @@ def test_bayesian_oracle(tmp_path):
     hps.Fixed("d", 7)
     hps.Choice("e", [9, 0], default=9)
     oracle = bo_module.BayesianOptimizationOracle(
-        objective=kt.Objective("score", "max"),
+        objective=keras_tuner.Objective("score", "max"),
         max_trials=20,
         num_initial_points=2,
         hyperparameters=hps,
@@ -99,7 +99,7 @@ def test_bayesian_oracle_with_zero_y(tmp_path):
     hps.Fixed("d", 7)
     hps.Choice("e", [9, 0], default=9)
     oracle = bo_module.BayesianOptimizationOracle(
-        objective=kt.Objective("score", "max"),
+        objective=keras_tuner.Objective("score", "max"),
         max_trials=20,
         num_initial_points=2,
         hyperparameters=hps,
@@ -139,7 +139,9 @@ def test_bayesian_save_reload(tmp_path):
     hps.Choice("d", [7, 8], default=7)
     hps.Choice("e", [9, 0], default=9)
     oracle = bo_module.BayesianOptimizationOracle(
-        objective=kt.Objective("score", "max"), max_trials=20, hyperparameters=hps
+        objective=keras_tuner.Objective("score", "max"),
+        max_trials=20,
+        hyperparameters=hps,
     )
     oracle._set_project_dir(tmp_path, "untitled")
 
@@ -150,7 +152,9 @@ def test_bayesian_save_reload(tmp_path):
 
     oracle.save()
     oracle = bo_module.BayesianOptimizationOracle(
-        objective=kt.Objective("score", "max"), max_trials=20, hyperparameters=hps
+        objective=keras_tuner.Objective("score", "max"),
+        max_trials=20,
+        hyperparameters=hps,
     )
     oracle._set_project_dir(tmp_path, "untitled")
     oracle.reload()
@@ -190,7 +194,9 @@ def test_save_before_result(tmp_path):
     hps.Fixed("d", 7)
     hps.Choice("e", [9, 0], default=9)
     oracle = bo_module.BayesianOptimizationOracle(
-        objective=kt.Objective("score", "max"), max_trials=10, hyperparameters=hps
+        objective=keras_tuner.Objective("score", "max"),
+        max_trials=10,
+        hyperparameters=hps,
     )
     oracle._set_project_dir(tmp_path, "untitled")
     oracle.populate_space(str(1))
@@ -202,7 +208,7 @@ def test_bayesian_oracle_maximize(tmp_path):
     hps.Int("a", -100, 100)
 
     oracle = bo_module.BayesianOptimizationOracle(
-        objective=kt.Objective("score", direction="max"),
+        objective=keras_tuner.Objective("score", direction="max"),
         max_trials=20,
         hyperparameters=hps,
         num_initial_points=2,
@@ -236,7 +242,7 @@ def test_hyperparameters_added(tmp_path):
     hps.Int("a", -100, 100)
 
     oracle = bo_module.BayesianOptimizationOracle(
-        objective=kt.Objective("score", direction="max"),
+        objective=keras_tuner.Objective("score", direction="max"),
         max_trials=20,
         hyperparameters=hps,
         num_initial_points=2,
@@ -268,7 +274,7 @@ def test_step_respected(tmp_path):
     hps = hp_module.HyperParameters()
     hps.Float("c", 0, 10, step=3)
     oracle = bo_module.BayesianOptimizationOracle(
-        objective=kt.Objective("score", direction="max"),
+        objective=keras_tuner.Objective("score", direction="max"),
         max_trials=20,
         hyperparameters=hps,
         num_initial_points=2,
@@ -293,7 +299,7 @@ def test_float_optimization(tmp_path):
         # Maximum at a=-1, b=1, c=1, d=0 with score=3
         return -1 * hp["a"] ** 3 + hp["b"] ** 3 + hp["c"] - abs(hp["d"])
 
-    class PolynomialTuner(kt.engine.base_tuner.BaseTuner):
+    class PolynomialTuner(keras_tuner.engine.base_tuner.BaseTuner):
         def run_trial(self, trial):
             hps = trial.hyperparameters
             score = self.hypermodel.build(hps)
@@ -307,8 +313,8 @@ def test_float_optimization(tmp_path):
 
     tuner = PolynomialTuner(
         hypermodel=build_model,
-        oracle=kt.oracles.BayesianOptimization(
-            objective=kt.Objective("score", "max"),
+        oracle=keras_tuner.oracles.BayesianOptimization(
+            objective=keras_tuner.Objective("score", "max"),
             hyperparameters=hps,
             max_trials=50,
         ),
@@ -340,7 +346,9 @@ def test_distributed_optimization(tmp_path):
         return abs(hp["a"] - 4) - hp["b"] + 0.1 * abs(3 + math.log(hp["c"], 10))
 
     oracle = bo_module.BayesianOptimizationOracle(
-        objective=kt.Objective("score", "min"), hyperparameters=hps, max_trials=60
+        objective=keras_tuner.Objective("score", "min"),
+        hyperparameters=hps,
+        max_trials=60,
     )
     oracle._set_project_dir(tmp_path, "untitled")
 
@@ -384,7 +392,7 @@ def test_interleaved_distributed_optimization(tmp_path):
         return -1 * hp["a"] ** 3 + hp["b"] ** 3 + hp["c"] - abs(hp["d"])
 
     oracle = bo_module.BayesianOptimizationOracle(
-        objective=kt.Objective("score", "min"),
+        objective=keras_tuner.Objective("score", "min"),
         hyperparameters=hps,
         max_trials=60,
         num_initial_points=2,

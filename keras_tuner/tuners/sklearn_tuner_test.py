@@ -24,7 +24,7 @@ from sklearn import model_selection
 from sklearn import neighbors
 from sklearn import pipeline
 
-import keras_tuner as kt
+import keras_tuner
 
 
 def build_model(hp):
@@ -87,9 +87,9 @@ def build_pipeline(hp):
 
 
 def test_sklearn_tuner_simple_with_np(tmp_path):
-    tuner = kt.SklearnTuner(
-        oracle=kt.oracles.BayesianOptimization(
-            objective=kt.Objective("score", "max"), max_trials=10
+    tuner = keras_tuner.SklearnTuner(
+        oracle=keras_tuner.oracles.BayesianOptimization(
+            objective=keras_tuner.Objective("score", "max"), max_trials=10
         ),
         hypermodel=build_model,
         directory=tmp_path,
@@ -114,9 +114,9 @@ def test_sklearn_tuner_simple_with_np(tmp_path):
 
 @pytest.mark.filterwarnings("ignore:.*column-vector")
 def test_sklearn_tuner_with_df(tmp_path):
-    tuner = kt.SklearnTuner(
-        oracle=kt.oracles.BayesianOptimization(
-            objective=kt.Objective("score", "max"), max_trials=10
+    tuner = keras_tuner.SklearnTuner(
+        oracle=keras_tuner.oracles.BayesianOptimization(
+            objective=keras_tuner.Objective("score", "max"), max_trials=10
         ),
         hypermodel=build_model,
         directory=tmp_path,
@@ -130,9 +130,9 @@ def test_sklearn_tuner_with_df(tmp_path):
 
 
 def test_sklearn_custom_scoring_and_cv(tmp_path):
-    tuner = kt.SklearnTuner(
-        oracle=kt.oracles.BayesianOptimization(
-            objective=kt.Objective("score", "max"), max_trials=10
+    tuner = keras_tuner.SklearnTuner(
+        oracle=keras_tuner.oracles.BayesianOptimization(
+            objective=keras_tuner.Objective("score", "max"), max_trials=10
         ),
         hypermodel=build_model,
         scoring=metrics.make_scorer(metrics.balanced_accuracy_score),
@@ -158,9 +158,9 @@ def test_sklearn_custom_scoring_and_cv(tmp_path):
 
 
 def test_sklearn_additional_metrics(tmp_path):
-    tuner = kt.SklearnTuner(
-        oracle=kt.oracles.BayesianOptimization(
-            objective=kt.Objective("score", "max"), max_trials=10
+    tuner = keras_tuner.SklearnTuner(
+        oracle=keras_tuner.oracles.BayesianOptimization(
+            objective=keras_tuner.Objective("score", "max"), max_trials=10
         ),
         hypermodel=build_model,
         metrics=[metrics.balanced_accuracy_score, metrics.recall_score],
@@ -187,9 +187,9 @@ def test_sklearn_additional_metrics(tmp_path):
 
 
 def test_sklearn_sample_weight(tmp_path):
-    tuner = kt.SklearnTuner(
-        oracle=kt.oracles.BayesianOptimization(
-            objective=kt.Objective("score", "max"), max_trials=10
+    tuner = keras_tuner.SklearnTuner(
+        oracle=keras_tuner.oracles.BayesianOptimization(
+            objective=keras_tuner.Objective("score", "max"), max_trials=10
         ),
         hypermodel=build_model,
         directory=tmp_path,
@@ -214,9 +214,9 @@ def test_sklearn_sample_weight(tmp_path):
 
 
 def test_sklearn_pipeline(tmp_path):
-    tuner = kt.SklearnTuner(
-        oracle=kt.oracles.BayesianOptimization(
-            objective=kt.Objective("score", "max"), max_trials=10
+    tuner = keras_tuner.SklearnTuner(
+        oracle=keras_tuner.oracles.BayesianOptimization(
+            objective=keras_tuner.Objective("score", "max"), max_trials=10
         ),
         hypermodel=build_pipeline,
         directory=tmp_path,
@@ -241,9 +241,9 @@ def test_sklearn_pipeline(tmp_path):
 
 
 def test_sklearn_cv_with_groups(tmp_path):
-    tuner = kt.SklearnTuner(
-        oracle=kt.oracles.BayesianOptimization(
-            objective=kt.Objective("score", "max"), max_trials=10
+    tuner = keras_tuner.SklearnTuner(
+        oracle=keras_tuner.oracles.BayesianOptimization(
+            objective=keras_tuner.Objective("score", "max"), max_trials=10
         ),
         hypermodel=build_model,
         cv=model_selection.GroupKFold(5),
@@ -269,9 +269,9 @@ def test_sklearn_cv_with_groups(tmp_path):
 
 
 def test_sklearn_real_data(tmp_path):
-    tuner = kt.SklearnTuner(
-        oracle=kt.oracles.BayesianOptimization(
-            objective=kt.Objective("score", "max"), max_trials=10
+    tuner = keras_tuner.SklearnTuner(
+        oracle=keras_tuner.oracles.BayesianOptimization(
+            objective=keras_tuner.Objective("score", "max"), max_trials=10
         ),
         hypermodel=build_model,
         scoring=metrics.make_scorer(metrics.accuracy_score),
@@ -297,26 +297,26 @@ def test_sklearn_real_data(tmp_path):
 
 
 def test_sklearn_not_install_error(tmp_path):
-    sklearn_module = kt.tuners.sklearn_tuner.sklearn
-    kt.tuners.sklearn_tuner.sklearn = None
+    sklearn_module = keras_tuner.tuners.sklearn_tuner.sklearn
+    keras_tuner.tuners.sklearn_tuner.sklearn = None
 
     with pytest.raises(ImportError, match="Please install sklearn"):
-        kt.SklearnTuner(
-            oracle=kt.oracles.BayesianOptimization(
-                objective=kt.Objective("score", "max"), max_trials=10
+        keras_tuner.SklearnTuner(
+            oracle=keras_tuner.oracles.BayesianOptimization(
+                objective=keras_tuner.Objective("score", "max"), max_trials=10
             ),
             hypermodel=build_model,
             directory=tmp_path,
         )
 
-    kt.tuners.sklearn_tuner.sklearn = sklearn_module
+    keras_tuner.tuners.sklearn_tuner.sklearn = sklearn_module
 
 
 def test_sklearn_deprecation_warning(tmp_path):
     with pytest.deprecated_call():
-        kt.tuners.Sklearn(
-            oracle=kt.oracles.BayesianOptimization(
-                objective=kt.Objective("score", "max"), max_trials=10
+        keras_tuner.tuners.Sklearn(
+            oracle=keras_tuner.oracles.BayesianOptimization(
+                objective=keras_tuner.Objective("score", "max"), max_trials=10
             ),
             hypermodel=build_model,
             directory=tmp_path,

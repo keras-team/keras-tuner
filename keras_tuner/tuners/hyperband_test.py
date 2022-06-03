@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 import tensorflow as tf
 
-import keras_tuner as kt
+import keras_tuner
 from keras_tuner.tuners import hyperband as hyperband_module
 
 
@@ -39,7 +39,7 @@ def build_model(hp):
 
 def test_hyperband_oracle_bracket_configs(tmp_path):
     oracle = hyperband_module.HyperbandOracle(
-        objective=kt.Objective("score", "max"),
+        objective=keras_tuner.Objective("score", "max"),
         hyperband_iterations=1,
         max_epochs=8,
         factor=2,
@@ -62,12 +62,12 @@ def test_hyperband_oracle_bracket_configs(tmp_path):
 
 @pytest.mark.skipif(sys.version_info < (3, 0), reason="TODO: Enable test for Py2")
 def test_hyperband_oracle_one_sweep_single_thread(tmp_path):
-    hp = kt.HyperParameters()
+    hp = keras_tuner.HyperParameters()
     hp.Float("a", -100, 100)
     hp.Float("b", -100, 100)
     oracle = hyperband_module.HyperbandOracle(
         hyperparameters=hp,
-        objective=kt.Objective("score", "max"),
+        objective=keras_tuner.Objective("score", "max"),
         hyperband_iterations=1,
         max_epochs=9,
         factor=3,
@@ -101,12 +101,12 @@ def test_hyperband_oracle_one_sweep_single_thread(tmp_path):
 
 
 def test_hyperband_oracle_one_sweep_parallel(tmp_path):
-    hp = kt.HyperParameters()
+    hp = keras_tuner.HyperParameters()
     hp.Float("a", -100, 100)
     hp.Float("b", -100, 100)
     oracle = hyperband_module.HyperbandOracle(
         hyperparameters=hp,
-        objective=kt.Objective("score", "max"),
+        objective=keras_tuner.Objective("score", "max"),
         hyperband_iterations=1,
         max_epochs=4,
         factor=2,
