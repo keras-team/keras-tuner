@@ -124,32 +124,35 @@ class BaseTuner(stateful.Stateful):
 
         hp = self.oracle.get_space()
 
-        # Lists of stacks of conditions used during `explore_space()`.
-        scopes_never_active = []
-        scopes_once_active = []
+        try:
+            self.hypermodel.declare_hyperparameters(hp)
+        except NotImplementedError:
+            # Lists of stacks of conditions used during `explore_space()`.
+            scopes_never_active = []
+            scopes_once_active = []
 
-        while True:
-            self.hypermodel.build(hp)
+            while True:
+                self.hypermodel.build(hp)
 
-            # Update the recored scopes.
-            for conditions in hp.active_scopes:
-                if conditions not in scopes_once_active:
-                    scopes_once_active.append(copy.deepcopy(conditions))
-                if conditions in scopes_never_active:
-                    scopes_never_active.remove(conditions)
+                # Update the recored scopes.
+                for conditions in hp.active_scopes:
+                    if conditions not in scopes_once_active:
+                        scopes_once_active.append(copy.deepcopy(conditions))
+                    if conditions in scopes_never_active:
+                        scopes_never_active.remove(conditions)
 
-            for conditions in hp.inactive_scopes:
-                if conditions not in scopes_once_active:
-                    scopes_never_active.append(copy.deepcopy(conditions))
+                for conditions in hp.inactive_scopes:
+                    if conditions not in scopes_once_active:
+                        scopes_never_active.append(copy.deepcopy(conditions))
 
-            # All conditional scopes are activated.
-            if len(scopes_never_active) == 0:
-                break
+                # All conditional scopes are activated.
+                if len(scopes_never_active) == 0:
+                    break
 
-            # Generate new values to activate new conditions.
-            conditions = scopes_never_active[0]
-            for condition in conditions:
-                hp.values[condition.name] = condition.values[0]
+                # Generate new values to activate new conditions.
+                conditions = scopes_never_active[0]
+                for condition in conditions:
+                    hp.values[condition.name] = condition.values[0]
 
         self.oracle.update_space(hp)
 
