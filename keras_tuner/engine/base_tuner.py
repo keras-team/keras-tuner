@@ -166,6 +166,7 @@ class BaseTuner(stateful.Stateful):
             self._display.verbose = fit_kwargs.get("verbose")
         self.on_search_begin()
         while True:
+            self.pre_create_trial()
             trial = self.oracle.create_trial(self.tuner_id)
             if trial.status == trial_module.TrialStatus.STOPPED:
                 # Oracle triggered exit.
@@ -228,6 +229,9 @@ class BaseTuner(stateful.Stateful):
                 to load.
         """
         raise NotImplementedError
+
+    def pre_create_trial(self):
+        """Called before self.oracle.create_trial and before on_trial_begin."""
 
     def on_trial_begin(self, trial):
         """Called at the beginning of a trial.
