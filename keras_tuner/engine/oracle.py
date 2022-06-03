@@ -364,8 +364,9 @@ class Oracle(stateful.Stateful):
         return dirname
 
     def save(self):
-        # `self.trials` are saved in their own, Oracle-agnostic files.
-        super(Oracle, self).save(self._get_oracle_fname())
+        if self.should_report:
+            # `self.trials` are saved in their own, Oracle-agnostic files.
+            super(Oracle, self).save(self._get_oracle_fname())
 
     def reload(self):
         # Reload trials from their own files.
@@ -418,9 +419,10 @@ class Oracle(stateful.Stateful):
         return dirname
 
     def _save_trial(self, trial):
-        # Write trial status to trial directory
-        trial_id = trial.trial_id
-        trial.save(os.path.join(self._get_trial_dir(trial_id), "trial.json"))
+        if self.should_report:
+            # Write trial status to trial directory
+            trial_id = trial.trial_id
+            trial.save(os.path.join(self._get_trial_dir(trial_id), "trial.json"))
 
     def _random_values(self):
         """Fills the hyperparameter space with random values.
