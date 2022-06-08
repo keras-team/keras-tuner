@@ -32,7 +32,6 @@ jobs:
             ${{ runner.os }}-pip-
       - name: Install dependencies
         run: |
-          pip install protobuf==3.6.1
           pip install tensorflow
           pip install -e ".[tests]" --progress-bar off --upgrade
       - name: Test with pytest
@@ -66,6 +65,7 @@ jobs:
             ${{ runner.os }}-pip-
       - name: Install dependencies
         run: |
+          pip install protobuf==3.6.1
           pip install "tensorflow<2.1"
           pip install -e ".[tests]" --progress-bar off --upgrade
       - name: Test with pytest
