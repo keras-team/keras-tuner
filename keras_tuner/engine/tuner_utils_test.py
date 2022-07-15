@@ -102,14 +102,16 @@ def test_convert_to_metrics_with_history():
     )
 
     results = tuner_utils.convert_to_metrics_dict(
-        history, obj_module.Objective("val_loss", "min"), "func_name"
+        history,
+        obj_module.Objective("val_loss", "min"),
     )
     assert all(key in results for key in ["loss", "val_loss", "mae", "val_mae"])
 
 
 def test_convert_to_metrics_with_float():
     assert tuner_utils.convert_to_metrics_dict(
-        0.1, obj_module.Objective("val_loss", "min"), "func_name"
+        0.1,
+        obj_module.Objective("val_loss", "min"),
     ) == {"val_loss": 0.1}
 
 
@@ -117,18 +119,56 @@ def test_convert_to_metrics_with_dict():
     assert tuner_utils.convert_to_metrics_dict(
         {"loss": 0.2, "val_loss": 0.1},
         obj_module.Objective("val_loss", "min"),
-        "func_name",
     ) == {"loss": 0.2, "val_loss": 0.1}
 
 
 def test_convert_to_metrics_with_list_of_floats():
     assert tuner_utils.convert_to_metrics_dict(
-        [0.1, 0.2], obj_module.Objective("val_loss", "min"), "func_name"
+        [0.1, 0.2],
+        obj_module.Objective("val_loss", "min"),
     ) == {"val_loss": (0.1 + 0.2) / 2}
 
 
 def test_convert_to_metrics_with_dict_without_obj_key():
     with pytest.raises(ValueError, match="the specified objective"):
-        tuner_utils.convert_to_metrics_dict(
+        tuner_utils.validate_trial_results(
             {"loss": 0.1}, obj_module.Objective("val_loss", "min"), "func_name"
         )
+
+
+def test_get_best_step_return_zero():
+    assert (
+        tuner_utils.get_best_step(
+            [{"val_loss": 1}, {"val_loss": 2}],
+            obj_module.Objective("val_loss", "min"),
+        )
+        == 0
+    )
+
+
+def test_get_best_step_return_average_epoch():
+    class History(keras.callbacks.History):
+        def __init__(self, history):
+            self.history = history
+
+    results = [
+        History(
+            {
+                "val_loss": [5, 8, 3, 1, 2],
+                "val_accuracy": [5, 8, 3, 1, 2],
+            }
+        ),
+        History(
+            {
+                "val_loss": [5, 8, 3, 2, 1],
+                "val_accuracy": [5, 8, 3, 1, 2],
+            }
+        ),
+    ]
+    assert (
+        tuner_utils.get_best_step(
+            results,
+            obj_module.Objective("val_loss", "min"),
+        )
+        == 3
+    )

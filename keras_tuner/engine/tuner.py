@@ -220,9 +220,10 @@ class Tuner(base_tuner.BaseTuner):
         hp = trial.hyperparameters
         model = self._try_build(hp)
         results = self.hypermodel.fit(hp, model, *args, **kwargs)
-        return tuner_utils.convert_to_metrics_dict(
+        tuner_utils.validate_trial_results(
             results, self.oracle.objective, "HyperModel.fit()"
         )
+        return results
 
     def run_trial(self, trial, *args, **kwargs):
         """Evaluates a set of hyperparameter values.
@@ -338,6 +339,15 @@ class Tuner(base_tuner.BaseTuner):
         pass
 
     def on_epoch_end(self, trial, model, epoch, logs=None):
+        """Called at the end of an epoch.
+
+        Args:
+            trial: A `Trial` instance.
+            model: A Keras `Model`.
+            epoch: The current epoch number.
+            logs: Dict. Metrics for this epoch. This should include
+              the value of the objective for this epoch.
+        """
         # Intermediate results are not passed to the Oracle, and
         # checkpointing is handled via a `SaveBestEpoch` callback.
         pass

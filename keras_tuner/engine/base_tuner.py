@@ -193,13 +193,18 @@ class BaseTuner(stateful.Stateful):
                     stacklevel=2,
                 )
             else:
+                tuner_utils.validate_trial_results(
+                    results, self.oracle.objective, "Tuner.run_trial()"
+                ),
                 self.oracle.update_trial(
                     trial.trial_id,
                     # Convert to dictionary before calling `update_trial()`
                     # to pass it from gRPC.
                     tuner_utils.convert_to_metrics_dict(
-                        results, self.oracle.objective, "Tuner.run_trial()"
+                        results,
+                        self.oracle.objective,
                     ),
+                    step=tuner_utils.get_best_step(results, self.oracle.objective),
                 )
             self.on_trial_end(trial)
         self.on_search_end()
