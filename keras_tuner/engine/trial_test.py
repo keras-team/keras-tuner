@@ -34,7 +34,7 @@ def test_trial_proto():
     assert new_trial.hyperparameters.get("a") == 3
     assert new_trial.trial_id == "trial1"
     assert new_trial.score is None
-    assert new_trial.best_step is None
+    assert new_trial.best_step == 0
 
     trial.score = -10
     trial.best_step = 3

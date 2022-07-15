@@ -16,6 +16,7 @@
 
 import collections
 import math
+import statistics
 from datetime import datetime
 
 import numpy as np
@@ -237,18 +238,59 @@ def average_metrics_dicts(metrics_dicts):
     return averaged_metrics
 
 
-def convert_to_metrics_dict(results, objective, func_name):
+def _get_best_value_and_best_epoch_from_history(history, objective):
+    # A dictionary to record the metric values through epochs.
+    # Usage: epoch_metric[epoch_number][metric_name] == metric_value
+    epoch_metrics = collections.defaultdict(dict)
+    for metric_name, epoch_values in history.history.items():
+        for epoch, value in enumerate(epoch_values):
+            epoch_metrics[epoch][metric_name] = value
+    best_epoch = 0
+    for epoch, metrics in epoch_metrics.items():
+        objective_value = objective.get_value(metrics)
+        # Support multi-objective.
+        if objective.name not in metrics:
+            metrics[objective.name] = objective_value
+        best_value = epoch_metrics[best_epoch][objective.name]
+        if objective.better_than(objective_value, best_value):
+            best_epoch = epoch
+    return epoch_metrics[best_epoch], best_epoch
+
+
+def convert_to_metrics_dict(results, objective):
     """Convert any supported results type to a metrics dictionary."""
     # List of multiple exectuion results to be averaged.
     # Check this case first to deal each case individually to check for errors.
     if isinstance(results, list):
         return average_metrics_dicts(
-            [convert_to_metrics_dict(elem, objective, func_name) for elem in results]
+            [convert_to_metrics_dict(elem, objective) for elem in results]
         )
 
     # Single value.
     if isinstance(results, (int, float, np.floating)):
         return {objective.name: float(results)}
+
+    # A dictionary.
+    if isinstance(results, dict):
+        return results
+
+    # A History.
+    if isinstance(results, keras.callbacks.History):
+        best_value, _ = _get_best_value_and_best_epoch_from_history(
+            results, objective
+        )
+        return best_value
+
+
+def validate_trial_results(results, objective, func_name):
+    if isinstance(results, list):
+        for elem in results:
+            validate_trial_results(elem, objective, func_name)
+        return
+
+    # Single value.
+    if isinstance(results, (int, float, np.floating)):
+        return
 
     # objective left unspecified,
     # and objective value is not a single float.
@@ -270,32 +312,35 @@ def convert_to_metrics_dict(results, objective, func_name):
                 "as one of the keys. "
                 f"Received: {results}."
             )
-        return results
+        return
 
     # A History.
     if isinstance(results, keras.callbacks.History):
-        # A dictionary to record the metric values through epochs.
-        # Usage: epoch_metric[epoch_number][metric_name] == metric_value
-        epoch_metrics = collections.defaultdict(dict)
-        for metric_name, epoch_values in results.history.items():
-            for epoch, value in enumerate(epoch_values):
-                epoch_metrics[epoch][metric_name] = value
-        best_epoch = 0
-        for epoch, metrics in epoch_metrics.items():
-            objective_value = objective.get_value(metrics)
-            # Support multi-objective.
-            if objective.name not in metrics:
-                metrics[objective.name] = objective_value
-            best_value = epoch_metrics[best_epoch][objective.name]
-            if objective.better_than(objective_value, best_value):
-                best_epoch = epoch
-        return epoch_metrics[best_epoch]
+        return
+
     raise TypeError(
         f"Expected the return value of {func_name} to be "
         "one of float, dict, keras.callbacks.History, "
         "or a list of one of these types. "
         f"Recevied return value: {results} of type {type(results)}."
     )
+
+
+def get_best_step(results, objective):
+    # Average the best epochs if multiple executions.
+    if isinstance(results, list):
+        return int(
+            statistics.mean([get_best_step(elem, objective) for elem in results])
+        )
+
+    # A History.
+    if isinstance(results, keras.callbacks.History):
+        _, best_epoch = _get_best_value_and_best_epoch_from_history(
+            results, objective
+        )
+        return best_epoch
+
+    return 0
 
 
 def convert_hyperparams_to_hparams(hyperparams):
