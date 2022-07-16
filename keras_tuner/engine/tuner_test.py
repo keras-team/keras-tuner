@@ -760,17 +760,17 @@ def test_subclass_model_loading(tmp_path):
 
 
 def test_update_trial(tmp_path):
+    # Test stop the oracle in update_trial.
     class MyOracle(keras_tuner.Oracle):
         def populate_space(self, _):
             values = {p.name: p.random_sample() for p in self.hyperparameters.space}
             return {"values": values, "status": "RUNNING"}
 
         def update_trial(self, trial_id, metrics, step=0):
-            if step == 3:
-                trial = self.trials[trial_id]
-                trial.status = "STOPPED"
-                return trial.status
-            return super(MyOracle, self).update_trial(trial_id, metrics, step)
+            super().update_trial(trial_id, metrics, step)
+            trial = self.trials[trial_id]
+            trial.status = "STOPPED"
+            return trial.status
 
     my_oracle = MyOracle(objective="val_accuracy", max_trials=2)
     tuner = keras_tuner.Tuner(
