@@ -383,15 +383,13 @@ class Hyperband(tuner_module.Tuner):
             fit_kwargs["initial_epoch"] = hp.values["tuner/initial_epoch"]
         return super(Hyperband, self).run_trial(trial, *fit_args, **fit_kwargs)
 
-    def _build_model(self, hp):
-        model = super(Hyperband, self)._build_model(hp)
+    def _build_hypermodel(self, hp):
+        model = super(Hyperband, self)._build_hypermodel(hp)
         if "tuner/trial_id" in hp.values:
             trial_id = hp.values["tuner/trial_id"]
-            history_trial = self.oracle.get_trial(trial_id)
             # Load best checkpoint from this trial.
+            print("Load weights from saved model", trial_id)
             model.load_weights(
-                self._get_checkpoint_fname(
-                    history_trial.trial_id, history_trial.best_step
-                )
+                self._get_checkpoint_fname(trial_id)
             )
         return model
