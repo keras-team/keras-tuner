@@ -26,7 +26,9 @@ def test_that_exhaustive_space_is_explored(tmp_path):
     # Given
     want_units_1 = [2, 4]
     want_units_2 = [1, 3]
-    want_optimizers = ["adam", "sgd"]
+    want_optimizers = ["adam", "sgd", "rmsprop"]
+    want_loss = "binary_crossentropy"
+    want_dropouts = [True, False]
 
     def build_model(hp):
         model = tf.keras.Sequential()
@@ -35,6 +37,8 @@ def test_that_exhaustive_space_is_explored(tmp_path):
                 units=hp.Choice("units_1", values=want_units_1), activation="relu"
             )
         )
+        if hp.Boolean("dropout", default=want_dropouts[0]):
+            model.add(tf.keras.layers.Dropout(rate=0.25))
         model.add(
             tf.keras.layers.Dense(
                 units=hp.Choice("units_2", values=want_units_2), activation="relu"
@@ -43,7 +47,7 @@ def test_that_exhaustive_space_is_explored(tmp_path):
         model.add(tf.keras.layers.Dense(1, activation="sigmoid"))
         model.compile(
             hp.Choice("optmizer", values=want_optimizers),
-            loss="binary_crossentropy",
+            loss=hp.Fixed("loss", value=want_loss),
             metrics=["accuracy"],
         )
         return model
@@ -71,10 +75,12 @@ def test_that_exhaustive_space_is_explored(tmp_path):
         "units_1",
         "optmizer",
         "units_2",
+        "loss",
+        "dropout",
     }
 
-    # 2 units_1, 2 optimizers and 2 units_2
-    expected_hyperparameter_space = 8
+    # 2 units_1, 3 optimizers, 2 units_2, 2 dropout and 1 loss
+    expected_hyperparameter_space = 24
     assert tuner.oracle.populate_space_call_count == expected_hyperparameter_space
 
     trials = tuner.oracle.get_best_trials(num_trials=expected_hyperparameter_space)
@@ -82,8 +88,11 @@ def test_that_exhaustive_space_is_explored(tmp_path):
     for want_unit_1 in want_units_1:
         for want_unit_2 in want_units_2:
             for want_optimizer in want_optimizers:
-                assert {
-                    "units_1": want_unit_1,
-                    "units_2": want_unit_2,
-                    "optmizer": want_optimizer,
-                } in explored_space
+                for want_dropout in want_dropouts:
+                    assert {
+                        "units_1": want_unit_1,
+                        "units_2": want_unit_2,
+                        "optmizer": want_optimizer,
+                        "loss": want_loss,
+                        "dropout": want_dropout
+                    } in explored_space

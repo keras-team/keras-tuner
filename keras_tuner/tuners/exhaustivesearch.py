@@ -100,16 +100,29 @@ class ExhaustiveSearchOracle(oracle_module.Oracle):
         if tuner_id in self.ongoing_trials:
             return self.ongoing_trials[tuner_id]
 
+        # The hyperparameter types that allow an exhaustive search due to their
+        # finite sets.
+        allowed_types = {hp_module.Choice, hp_module.Boolean, hp_module.Fixed}
         # Calculates the size of the set of all possible choices.
         number_of_hp_choices = 1
         for hp in self.hyperparameters.space:
-            if type(hp) != hp_module.Choice:
+            if type(hp) not in allowed_types:
                 raise ValueError(
                     "ExhaustiveSearch tuner accepts hyperparameters of type "
-                    "Choice only as it needs to have a finite set of choices "
-                    f"to search, found: {hp}"
+                    "Choice, Boolean and Fixed as it needs to have a finite "
+                    f"set of choices to search, found: {hp}"
                 )
-            number_of_hp_choices = number_of_hp_choices * len(hp.values)
+            # Fixed have no "values" (it is actually 1) attribute as they do
+            # not dispose of possible choices, so we skip counting it.
+            # As its count is 1 it won't change the final product.
+            # Boolean has True and False, count as 2.
+            # Choice has values which gives its actual cardinality.
+            if type(hp) == hp_module.Fixed:
+                continue
+            elif type(hp) == hp_module.Boolean:
+                number_of_hp_choices = number_of_hp_choices * 2
+            else:
+                number_of_hp_choices = number_of_hp_choices * len(hp.values)
 
         self.max_trials = number_of_hp_choices
 
