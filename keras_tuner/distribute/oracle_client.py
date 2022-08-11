@@ -31,7 +31,7 @@ class OracleClient(object):
 
         ip_addr = os.environ["KERASTUNER_ORACLE_IP"]
         port = os.environ["KERASTUNER_ORACLE_PORT"]
-        channel = grpc.insecure_channel("{}:{}".format(ip_addr, port))
+        channel = grpc.insecure_channel(f"{ip_addr}:{port}")
         self.stub = service_pb2_grpc.OracleStub(channel)
         self.tuner_id = os.environ["KERASTUNER_TUNER_ID"]
 
@@ -50,9 +50,7 @@ class OracleClient(object):
         }
         if name in whitelisted_attrs:
             return getattr(self._oracle, name)
-        raise AttributeError(
-            '`OracleClient` object has no attribute "{}"'.format(name)
-        )
+        raise AttributeError(f'`OracleClient` object has no attribute "{name}"')
 
     def get_space(self):
         response = self.stub.GetSpace(

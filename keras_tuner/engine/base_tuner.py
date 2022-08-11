@@ -103,9 +103,7 @@ class BaseTuner(stateful.Stateful):
         self._populate_initial_space()
 
         if not overwrite and tf.io.gfile.exists(self._get_tuner_fname()):
-            tf.get_logger().info(
-                "Reloading Tuner from {}".format(self._get_tuner_fname())
-            )
+            tf.get_logger().info(f"Reloading Tuner from {self._get_tuner_fname()}")
             self.reload()
 
     def _populate_initial_space(self):
@@ -329,11 +327,11 @@ class BaseTuner(stateful.Stateful):
         """
         print("Search space summary")
         hp = self.oracle.get_space()
-        print("Default search space size: %d" % len(hp.space))
+        print(f"Default search space size: {len(hp.space)}")
         for p in hp.space:
             config = p.get_config()
             name = config.pop("name")
-            print("%s (%s)" % (name, p.__class__.__name__))
+            print(f"{name} ({p.__class__.__name__})")
             print(config)
 
     def results_summary(self, num_trials=10):
@@ -346,9 +344,9 @@ class BaseTuner(stateful.Stateful):
             num_trials: Optional number of trials to display. Defaults to 10.
         """
         print("Results summary")
-        print("Results in %s" % self.project_dir)
+        print(f"Results in {self.project_dir}")
         print("Showing %d best trials" % num_trials)
-        print("{}".format(self.oracle.objective))
+        print(f"{self.oracle.objective}")
 
         best_trials = self.oracle.get_best_trials(num_trials)
         for trial in best_trials:

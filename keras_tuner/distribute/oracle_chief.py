@@ -74,7 +74,7 @@ def start_server(oracle):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
     oracle_servicer = OracleServicer(oracle)
     service_pb2_grpc.add_OracleServicer_to_server(oracle_servicer, server)
-    server.add_insecure_port("{}:{}".format(ip_addr, port))
+    server.add_insecure_port(f"{ip_addr}:{port}")
     server.start()
     while True:
         # The server does not block otherwise.

@@ -184,7 +184,7 @@ class Oracle(stateful.Stateful):
             return self.ongoing_trials[tuner_id]
 
         # Make the trial_id the current number of trial, pre-padded with 0s
-        trial_id = "{{:0{}d}}".format(len(str(self.max_trials)))
+        trial_id = f"{{:0{len(str(self.max_trials))}d}}"
         trial_id = trial_id.format(len(self.trials))
 
         if self.max_trials and len(self.trials) >= self.max_trials:
@@ -254,7 +254,7 @@ class Oracle(stateful.Stateful):
                 break
 
         if not trial:
-            raise ValueError("Ongoing trial with id: {} not found.".format(trial_id))
+            raise ValueError(f"Ongoing trial with id: {trial_id} not found.")
 
         trial.status = status
         if status == trial_lib.TrialStatus.COMPLETED:
@@ -283,8 +283,7 @@ class Oracle(stateful.Stateful):
 
         if new_hps and not self.allow_new_entries:
             raise RuntimeError(
-                "`allow_new_entries` is `False`, but found "
-                "new entries {}".format(new_hps)
+                f"`allow_new_entries` is `False`, but found new entries {new_hps}"
             )
         if not self.tune_new_entries:
             # New entries should always use the default value.
@@ -351,9 +350,7 @@ class Oracle(stateful.Stateful):
         self._project_name = project_name
         if not overwrite and tf.io.gfile.exists(self._get_oracle_fname()):
             tf.get_logger().info(
-                "Reloading Oracle from existing project {}".format(
-                    self._get_oracle_fname()
-                )
+                f"Reloading Oracle from existing project {self._get_oracle_fname()}"
             )
             self.reload()
 

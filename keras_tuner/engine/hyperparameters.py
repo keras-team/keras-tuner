@@ -252,7 +252,7 @@ class Int(HyperParameter):
         step=1,
         sampling=None,
         default=None,
-        **kwargs
+        **kwargs,
     ):
         super(Int, self).__init__(name=name, default=default, **kwargs)
         self.max_value = _check_int(max_value, arg="max_value")
@@ -350,7 +350,7 @@ class Float(HyperParameter):
         step=None,
         sampling=None,
         default=None,
-        **kwargs
+        **kwargs,
     ):
         super(Float, self).__init__(name=name, default=default, **kwargs)
         self.max_value = float(max_value)
@@ -436,12 +436,11 @@ class Boolean(HyperParameter):
         super(Boolean, self).__init__(name=name, default=default, **kwargs)
         if default not in {True, False}:
             raise ValueError(
-                "`default` must be a Python boolean. "
-                "You passed: default=%s" % (default,)
+                f"`default` must be a Python boolean. You passed: default={default}"
             )
 
     def __repr__(self):
-        return 'Boolean(name: "{}", default: {})'.format(self.name, self.default)
+        return f'Boolean(name: "{self.name}", default: {self.default})'
 
     def random_sample(self, seed=None):
         random_state = random.Random(seed)
@@ -489,7 +488,7 @@ class Fixed(HyperParameter):
         self.value = value
 
     def __repr__(self):
-        return "Fixed(name: {}, value: {})".format(self.name, self.value)
+        return f"Fixed(name: {self.name}, value: {self.value})"
 
     def random_sample(self, seed=None):
         return self.value
@@ -736,9 +735,9 @@ class HyperParameters(object):
         if name in self.values:
             return self.values[name]  # Only active values are added here.
         elif name in self._hps:
-            raise ValueError("{} is currently inactive.".format(name))
+            raise ValueError(f"{name} is currently inactive.")
         else:
-            raise KeyError("{} does not exist.".format(name))
+            raise KeyError(f"{name} does not exist.")
 
     def __getitem__(self, name):
         return self.get(name)
@@ -1044,7 +1043,7 @@ class HyperParameters(object):
             elif isinstance(hp, Boolean):
                 boolean_space.append(hp.to_proto())
             else:
-                raise ValueError("Unrecognized HP type: {}".format(hp))
+                raise ValueError(f"Unrecognized HP type: {hp}")
 
         values = {}
         for name, value in self.values.items():
@@ -1057,7 +1056,7 @@ class HyperParameters(object):
             elif isinstance(value, bool):
                 val = keras_tuner_pb2.Value(boolean_value=value)
             else:
-                raise ValueError("Unrecognized value type: {}".format(value))
+                raise ValueError(f"Unrecognized value type: {value}")
             values[name] = val
 
         return keras_tuner_pb2.HyperParameters(
@@ -1156,7 +1155,7 @@ def cumulative_prob_to_value(prob, hp):
                 - hp.min_value * math.pow(hp.max_value / hp.min_value, 1 - prob)
             )
         else:
-            raise ValueError("Unrecognized sampling value: {}".format(sampling))
+            raise ValueError(f"Unrecognized sampling value: {sampling}")
 
         if hp.step is not None:
             values = np.arange(hp.min_value, hp.max_value + 1e-7, step=hp.step)
@@ -1167,7 +1166,7 @@ def cumulative_prob_to_value(prob, hp):
             return int(value)
         return value
     else:
-        raise ValueError("Unrecognized `HyperParameter` type: {}".format(hp))
+        raise ValueError(f"Unrecognized `HyperParameter` type: {hp}")
 
 
 def value_to_cumulative_prob(value, hp):
@@ -1199,9 +1198,9 @@ def value_to_cumulative_prob(value, hp):
                 (hp.max_value + hp.min_value - value) / hp.min_value
             ) / math.log(hp.max_value / hp.min_value)
         else:
-            raise ValueError("Unrecognized sampling value: {}".format(sampling))
+            raise ValueError(f"Unrecognized sampling value: {sampling}")
     else:
-        raise ValueError("Unrecognized `HyperParameter` type: {}".format(hp))
+        raise ValueError(f"Unrecognized `HyperParameter` type: {hp}")
 
 
 def _sampling_from_proto(sampling):
@@ -1213,7 +1212,7 @@ def _sampling_from_proto(sampling):
         return "log"
     if sampling == keras_tuner_pb2.Sampling.REVERSE_LOG:
         return "reverse_log"
-    raise ValueError("Unrecognized sampling: {}".format(sampling))
+    raise ValueError(f"Unrecognized sampling: {sampling}")
 
 
 def _sampling_to_proto(sampling):
@@ -1225,7 +1224,7 @@ def _sampling_to_proto(sampling):
         return keras_tuner_pb2.Sampling.LOG
     if sampling == "reverse_log":
         return keras_tuner_pb2.Sampling.REVERSE_LOG
-    raise ValueError("Unrecognized sampling: {}".format(sampling))
+    raise ValueError(f"Unrecognized sampling: {sampling}")
 
 
 def _to_list(values):

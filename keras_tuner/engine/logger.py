@@ -56,14 +56,14 @@ def send_to_backend(url, data, key):
     try:
         response_json = response.json()
     except json.decoder.JSONDecodeError:
-        print("Cloud service down -- data not uploaded: %s" % response.text)
+        print(f"Cloud service down -- data not uploaded: {response.text}")
         return CONNECT_ERROR
 
     if response_json["status"] == "Unauthorized":
         print("Invalid backend API key.")
         return AUTH_ERROR
     else:
-        print("Warning! Cloud service upload failed: %s" % response.text)
+        print(f"Warning! Cloud service upload failed: {response.text}")
         return UPLOAD_ERROR
 
 

@@ -135,9 +135,7 @@ class HyperEfficientNet(hypermodel.HyperModel):
             x = augmentation_model(x)
 
         # Select one of pre-trained EfficientNet as feature extractor
-        version = hp.Choice(
-            "version", ["B{}".format(i) for i in range(8)], default="B0"
-        )
+        version = hp.Choice("version", [f"B{i}" for i in range(8)], default="B0")
         img_size = EFFICIENTNET_IMG_SIZE[version]
 
         x = preprocessing.Resizing(img_size, img_size, interpolation="bilinear")(x)

@@ -66,7 +66,7 @@ class Condition(object):
             values = parent.values
             values = [getattr(v, v.WhichOneof("kind")) for v in values]
             return Parent(name=name, values=values)
-        raise ValueError("Unrecognized condition of type: {}".format(kind))
+        raise ValueError(f"Unrecognized condition of type: {kind}")
 
 
 class Parent(Condition):

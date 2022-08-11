@@ -110,7 +110,7 @@ class Display(object):
 
             self.trial_number = int(trial.trial_id) + 1
             print()
-            print("Search: Running Trial #{}".format(self.trial_number))
+            print(f"Search: Running Trial #{self.trial_number}")
             print()
 
             self.trial_start = datetime.now()
@@ -126,18 +126,18 @@ class Display(object):
         utils.try_clear()
 
         time_taken_str = self.format_duration(datetime.now() - self.trial_start)
-        print("Trial {} Complete [{}]".format(self.trial_number, time_taken_str))
+        print(f"Trial {self.trial_number} Complete [{time_taken_str}]")
 
         if trial.score is not None:
-            print("{}: {}".format(self.oracle.objective.name, trial.score))
+            print(f"{self.oracle.objective.name}: {trial.score}")
 
         print()
         best_trials = self.oracle.get_best_trials()
         best_score = best_trials[0].score if len(best_trials) > 0 else None
-        print("Best {} So Far: {}".format(self.oracle.objective.name, best_score))
+        print(f"Best {self.oracle.objective.name} So Far: {best_score}")
 
         time_elapsed_str = self.format_duration(datetime.now() - self.search_start)
-        print("Total elapsed time: {}".format(time_elapsed_str))
+        print(f"Total elapsed time: {time_elapsed_str}")
 
     def show_hyperparameter_table(self, trial):
         template = "{{0:{0}}}|{{1:{0}}}|{{2}}".format(self.col_width)
@@ -165,7 +165,7 @@ class Display(object):
 
     def format_value(self, val):
         if isinstance(val, (int, float)) and not isinstance(val, bool):
-            return "{:.5g}".format(val)
+            return f"{val:.5g}"
         val_str = str(val)
         if len(val_str) > self.col_width:
             val_str = val_str[: self.col_width - 3] + "..."
@@ -181,8 +181,8 @@ class Display(object):
         s %= 60
 
         if d > 0:
-            return "{:d}d {:02d}h {:02d}m {:02d}s".format(d, h, m, s)
-        return "{:02d}h {:02d}m {:02d}s".format(h, m, s)
+            return f"{d:d}d {h:02d}h {m:02d}m {s:02d}s"
+        return f"{h:02d}h {m:02d}m {s:02d}s"
 
 
 class SaveBestEpoch(keras.callbacks.Callback):
@@ -379,7 +379,7 @@ def convert_hyperparams_to_hparams(hyperparams):
         elif isinstance(hp, hp_module.Fixed):
             hparams_domain = hparams_api.Discrete([hp.value])
         else:
-            raise ValueError("`HyperParameter` type not recognized: {}".format(hp))
+            raise ValueError(f"`HyperParameter` type not recognized: {hp}")
 
         hparams_key = hparams_api.HParam(hp.name, hparams_domain)
         hparams[hparams_key] = hparams_value

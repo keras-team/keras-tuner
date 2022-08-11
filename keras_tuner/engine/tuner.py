@@ -160,7 +160,7 @@ class Tuner(base_tuner.BaseTuner):
                 if config_module.DEBUG:
                     traceback.print_exc()
 
-                print("Invalid model %s/%s" % (i, MAX_FAIL_STREAK))
+                print(f"Invalid model {i}/{MAX_FAIL_STREAK}")
 
                 if i == MAX_FAIL_STREAK:
                     raise RuntimeError("Too many failed attempts to build model.")
@@ -176,7 +176,7 @@ class Tuner(base_tuner.BaseTuner):
             # Check model size.
             size = maybe_compute_model_size(model)
             if self.max_model_size and size > self.max_model_size:
-                print("Oversized model: {} parameters -- skipping".format(size))
+                print(f"Oversized model: {size} parameters -- skipping")
                 if i == MAX_FAIL_STREAK:
                     raise RuntimeError("Too many consecutive oversized models.")
                 continue
