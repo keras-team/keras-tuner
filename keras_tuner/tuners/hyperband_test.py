@@ -20,6 +20,7 @@ import pytest
 import tensorflow as tf
 
 import keras_tuner
+from keras_tuner.engine import tuner_utils
 from keras_tuner.tuners import hyperband as hyperband_module
 
 
@@ -217,3 +218,57 @@ def test_hyperband_save_and_restore(tmp_path):
 
     assert len(tuner.oracle.trials) == num_trials
     assert tuner.oracle._current_iteration == 1
+
+
+def test_hyperband_load_weights(tmp_path):
+    tuner = hyperband_module.Hyperband(
+        objective="val_loss",
+        hypermodel=build_model,
+        hyperband_iterations=1,
+        max_epochs=2,
+        factor=2,
+        directory=tmp_path,
+    )
+    x, y = np.ones((2, 5)), np.ones((2, 1))
+    nb_brackets = tuner.oracle._get_num_brackets()
+    assert nb_brackets == 2
+    nb_models_round_0 = tuner.oracle._get_size(bracket_num=1, round_num=0)
+    assert nb_models_round_0 == 2
+    # run the trials for the round 0 (from scratch)
+    for _ in range(nb_models_round_0):
+        trial = tuner.oracle.create_trial("tuner0")
+        result = tuner.run_trial(trial, x, y, validation_data=(x, y))
+        tuner.oracle.update_trial(
+            trial.trial_id,
+            tuner_utils.convert_to_metrics_dict(result, tuner.oracle.objective),
+            tuner_utils.get_best_step(result, tuner.oracle.objective),
+        )
+        tuner.oracle.end_trial(trial.trial_id, "COMPLETED")
+
+    # ensure the model run in round 1 is loaded from the best model in round 0
+    trial = tuner.oracle.create_trial("tuner0")
+    hp = trial.hyperparameters
+    assert "tuner/trial_id" in hp
+    new_model = tuner._try_build(hp)
+    assert new_model.predict(x).shape == y.shape
+    # get new model weights
+    new_model_weights = new_model.weights.copy()
+    # get weights from the best model in round 0
+    best_trial_round_0_id = hp["tuner/trial_id"]
+    best_hp_round_0 = tuner.oracle.trials[best_trial_round_0_id].hyperparameters
+    best_model_round_0 = tuner._try_build(best_hp_round_0)
+    best_model_round_0.load_weights(
+        tuner._get_checkpoint_fname(best_trial_round_0_id)
+    )
+    assert best_model_round_0.predict(x).shape == y.shape
+    best_model_round_0_weights = best_model_round_0.weights.copy()
+    # compare the weights
+    assert len(new_model_weights) == len(best_model_round_0_weights)
+    assert all(
+        [
+            np.alltrue(new_weight == best_old_weight)
+            for new_weight, best_old_weight in zip(
+                new_model_weights, best_model_round_0_weights
+            )
+        ]
+    )
