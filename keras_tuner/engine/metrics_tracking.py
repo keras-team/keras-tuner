@@ -61,7 +61,7 @@ class MetricObservation(object):
         return other.value == self.value and other.step == self.step
 
     def __repr__(self):
-        return "MetricObservation(value={}, step={})".format(self.value, self.step)
+        return f"MetricObservation(value={self.value}, step={self.step})"
 
     def to_proto(self):
         return keras_tuner_pb2.MetricObservation(value=self.value, step=self.step)
@@ -196,7 +196,7 @@ class MetricsTracker(object):
 
     def register(self, name, direction=None):
         if self.exists(name):
-            raise ValueError("Metric already exists: %s" % (name,))
+            raise ValueError(f"Metric already exists: {name}")
         if direction is None:
             direction = infer_metric_direction(name)
         if direction is None:
@@ -283,7 +283,7 @@ class MetricsTracker(object):
 
     def _assert_exists(self, name):
         if name not in self.metrics:
-            raise ValueError("Unknown metric: %s" % (name,))
+            raise ValueError(f"Unknown metric: {name}")
 
 
 _MAX_METRICS = (

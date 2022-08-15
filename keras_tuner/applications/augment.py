@@ -259,9 +259,7 @@ class HyperImageAugment(hypermodel.HyperModel):
             transform_factor_max = transform_params[1]
             if len(transform_params) > 2:
                 raise ValueError(
-                    "Length of keyword argument {} must not exceed 2.".format(
-                        transform_name
-                    )
+                    f"Length of keyword argument {transform_name} must not exceed 2."
                 )
         except TypeError:
             transform_factor_min = 0

@@ -87,7 +87,7 @@ def mock_distribute(fn, num_workers=2):
                 os.environ["KERASTUNER_ORACLE_PORT"] = port
                 # Workers that are part of the same multi-worker
                 # DistributionStrategy should have the same TUNER_ID.
-                os.environ["KERASTUNER_TUNER_ID"] = "worker{}".format(i)
+                os.environ["KERASTUNER_TUNER_ID"] = f"worker{i}"
                 fn()
 
             worker_thread = ExceptionStoringThread(target=worker_fn)

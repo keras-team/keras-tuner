@@ -52,7 +52,7 @@ class Trial(stateful.Stateful):
         self.display_hyperparameters()
 
         if self.score is not None:
-            print("Score: {}".format(self.score))
+            print(f"Score: {self.score}")
 
     def display_hyperparameters(self):
         if self.hyperparameters.values:
@@ -142,7 +142,7 @@ def _convert_trial_status_to_proto(status):
     elif status == TrialStatus.COMPLETED:
         return ts.COMPLETED
     else:
-        raise ValueError("Unknown status {}".format(status))
+        raise ValueError(f"Unknown status {status}")
 
 
 def _convert_trial_status_to_str(status):
@@ -160,4 +160,4 @@ def _convert_trial_status_to_str(status):
     elif status == ts.COMPLETED:
         return TrialStatus.COMPLETED
     else:
-        raise ValueError("Unknown status {}".format(status))
+        raise ValueError(f"Unknown status {status}")
