@@ -8,6 +8,15 @@
     ],
     "editor.formatOnSave": true,
     "python.formatting.provider": "black",
+<<<<<<< Updated upstream
+=======
+<<<<<<< Updated upstream
+=======
+    "python.formatting.blackArgs": [
+        "--line-length",
+        "85"
+    ],
+>>>>>>> Stashed changes
     "python.sortImports.args": [
         "--profile",
         "black",
@@ -18,4 +27,9 @@
             "source.organizeImports": true
         }
     }
+<<<<<<< Updated upstream
 }
+=======
+>>>>>>> Stashed changes
+}
+>>>>>>> Stashed changes
