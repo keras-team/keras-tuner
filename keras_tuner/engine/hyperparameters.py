@@ -29,8 +29,7 @@ from keras_tuner.protos import keras_tuner_pb2
 
 
 def _check_sampling_arg(sampling, step, min_value, max_value, hp_type="int"):
-    if sampling is None:
-        return None
+    # TODO: check if min * max > 0 if use log or reverse log.
     if min_value > max_value:
         raise ValueError(
             "`sampling` `min_value` "
@@ -224,22 +223,65 @@ class Choice(HyperParameter):
 
 
 class Int(HyperParameter):
-    """Integer range.
+    """Integer hyperparameter.
 
     Note that unlike Python's `range` function, `max_value` is *included* in
     the possible values this parameter can take on.
+
+
+    Example #1:
+
+    ```py
+    hp.Int(
+        "n_layers",
+        min_value=6,
+        max_value=12)
+    ```
+
+    The possible values are [6, 7, 8, 9, 10, 11, 12].
+
+    Example #2:
+
+    ```py
+    hp.Int(
+        "n_layers",
+        min_value=6,
+        max_value=13,
+        step=3)
+    ```
+
+    `step` is the minimum distance between samples.
+    The possible values are [6, 9, 12].
+
+    Example #3:
+
+    ```py
+    hp.Int(
+        "batch_size",
+        min_value=2,
+        max_value=32,
+        step=2,
+        sampling="log")
+    ```
+
+    When `sampling="log"` the `step` is multiplied between samples.
+    The possible values are [2, 4, 8, 16, 32].
 
     Args:
         name: A string. the name of parameter. Must be unique for each
             `HyperParameter` instance in the search space.
         min_value: Integer, the lower limit of range, inclusive.
         max_value: Integer, the upper limit of range, inclusive.
-        step: Integer, the distance between two consecutive samples in the
-            range. Defaults to 1.
-        sampling: Optional string. One of "linear", "log", "reverse_log". Acts
-            as a hint for an initial prior probability distribution for how
-            this value should be sampled, e.g. "log" will assign equal
-            probabilities to each order of magnitude range.
+        step: Optional integer, the distance between two consecutive samples in the
+            range. If left unspecified, step is set to 1 when
+            `sampling="linear"` (default), or set to
+            `math.ceil((max_value / min_value) ** 0.1)` with
+            `sampling="log"` or `sampling="reverse_log"`.
+        sampling: String. One of "linear", "log", "reverse_log". Acts as a hint
+            for an initial prior probability distribution for how this value
+            should be sampled, e.g. "log" will assign equal probabilities to
+            each order of magnitude range. If set to "log" or "reverse_log",
+            require (min_value * max_value > 0). Defaults to "linear".
         default: Integer, default value to return for the parameter. If
             unspecified, the default value will be `min_value`.
     """
@@ -250,7 +292,7 @@ class Int(HyperParameter):
         min_value,
         max_value,
         step=1,
-        sampling=None,
+        sampling="linear",
         default=None,
         **kwargs,
     ):
@@ -323,7 +365,45 @@ class Int(HyperParameter):
 
 
 class Float(HyperParameter):
-    """Floating point range, can be evenly divided.
+    """Floating point value hyperparameter.
+
+    Example #1:
+
+    ```py
+    hp.Float(
+        "image_rotation_factor",
+        min_value=0,
+        max_value=1)
+    ```
+
+    All values in interval [0, 1] have equal probability of being sampled.
+
+    Example #2:
+
+    ```py
+    hp.Float(
+        "image_rotation_factor",
+        min_value=0,
+        max_value=1,
+        step=0.2)
+    ```
+
+    `step` is the minimum distance between samples.
+    The possible values are [0, 0.2, 0.4, 0.6, 0.8, 1.0].
+
+    Example #3:
+
+    ```py
+    hp.Float(
+        "learning_rate",
+        min_value=0.001,
+        max_value=10,
+        step=10,
+        sampling="log")
+    ```
+
+    When `sampling="log"`, the `step` is multiplied between samples.
+    The possible values are [0.001, 0.01, 0.1, 1, 10].
 
     Args:
         name: A string. the name of parameter. Must be unique for each
@@ -331,13 +411,15 @@ class Float(HyperParameter):
         min_value: Float, the lower bound of the range.
         max_value: Float, the upper bound of the range.
         step: Optional float, e.g. 0.1, the smallest meaningful distance
-            between two values. Whether step should be specified is Oracle
+            between two values. If left unspecified, it is close to a inifitely
+            small value. Whether `step` should be specified is Oracle
             dependent, since some Oracles can infer an optimal step
             automatically.
-        sampling: Optional string. One of "linear", "log", "reverse_log". Acts
-            as a hint for an initial prior probability distribution for how
-            this value should be sampled, e.g. "log" will assign equal
-            probabilities to each order of magnitude range.
+        sampling: String. One of "linear", "log", "reverse_log". Acts as a hint
+            for an initial prior probability distribution for how this value
+            should be sampled, e.g. "log" will assign equal probabilities to
+            each order of magnitude range. If set to "log" or "reverse_log",
+            require (min_value * max_value > 0). Defaults to "linear".
         default: Float, the default value to return for the parameter. If
             unspecified, the default value will be `min_value`.
     """
@@ -348,7 +430,7 @@ class Float(HyperParameter):
         min_value,
         max_value,
         step=None,
-        sampling=None,
+        sampling="linear",
         default=None,
         **kwargs,
     ):
@@ -799,27 +881,70 @@ class HyperParameters(object):
         min_value,
         max_value,
         step=1,
-        sampling=None,
+        sampling="linear",
         default=None,
         parent_name=None,
         parent_values=None,
     ):
-        """Integer range.
+        """Integer hyperparameter.
 
         Note that unlike Python's `range` function, `max_value` is *included* in
         the possible values this parameter can take on.
+
+
+        Example #1:
+
+        ```py
+        hp.Int(
+            "n_layers",
+            min_value=6,
+            max_value=12)
+        ```
+
+        The possible values are [6, 7, 8, 9, 10, 11, 12].
+
+        Example #2:
+
+        ```py
+        hp.Int(
+            "n_layers",
+            min_value=6,
+            max_value=13,
+            step=3)
+        ```
+
+        `step` is the minimum distance between samples.
+        The possible values are [6, 9, 12].
+
+        Example #3:
+
+        ```py
+        hp.Int(
+            "batch_size",
+            min_value=2,
+            max_value=32,
+            step=2,
+            sampling="log")
+        ```
+
+        When `sampling="log"` the `step` is multiplied between samples.
+        The possible values are [2, 4, 8, 16, 32].
 
         Args:
             name: A string. the name of parameter. Must be unique for each
                 `HyperParameter` instance in the search space.
             min_value: Integer, the lower limit of range, inclusive.
             max_value: Integer, the upper limit of range, inclusive.
-            step: Integer, the distance between two consecutive samples in the
-                range. Defaults to 1.
-            sampling: Optional string. One of "linear", "log", "reverse_log". Acts
-                as a hint for an initial prior probability distribution for how
-                this value should be sampled, e.g. "log" will assign equal
-                probabilities to each order of magnitude range.
+            step: Optional integer, the distance between two consecutive samples
+                in the range. If left unspecified, step is set to 1 when
+                `sampling="linear"` (default), or set to
+                `math.ceil((max_value / min_value) ** 0.1)` with
+                `sampling="log"` or `sampling="reverse_log"`.
+            sampling: String. One of "linear", "log", "reverse_log". Acts as a hint
+                for an initial prior probability distribution for how this value
+                should be sampled, e.g. "log" will assign equal probabilities to
+                each order of magnitude range. If set to "log" or "reverse_log",
+                require (min_value * max_value > 0). Defaults to "linear".
             default: Integer, default value to return for the parameter. If
                 unspecified, the default value will be `min_value`.
             parent_name: Optional string, specifying the name of the parent
@@ -851,12 +976,50 @@ class HyperParameters(object):
         min_value,
         max_value,
         step=None,
-        sampling=None,
+        sampling="linear",
         default=None,
         parent_name=None,
         parent_values=None,
     ):
-        """Floating point range, can be evenly divided.
+        """Floating point value hyperparameter.
+
+        Example #1:
+
+        ```py
+        hp.Float(
+            "image_rotation_factor",
+            min_value=0,
+            max_value=1)
+        ```
+
+        All values in interval [0, 1] have equal probability of being sampled.
+
+        Example #2:
+
+        ```py
+        hp.Float(
+            "image_rotation_factor",
+            min_value=0,
+            max_value=1,
+            step=0.2)
+        ```
+
+        `step` is the minimum distance between samples.
+        The possible values are [0, 0.2, 0.4, 0.6, 0.8, 1.0].
+
+        Example #3:
+
+        ```py
+        hp.Float(
+            "learning_rate",
+            min_value=0.001,
+            max_value=10,
+            step=10,
+            sampling="log")
+        ```
+
+        When `sampling="log"`, the `step` is multiplied between samples.
+        The possible values are [0.001, 0.01, 0.1, 1, 10].
 
         Args:
             name: A string. the name of parameter. Must be unique for each
@@ -864,13 +1027,15 @@ class HyperParameters(object):
             min_value: Float, the lower bound of the range.
             max_value: Float, the upper bound of the range.
             step: Optional float, e.g. 0.1, the smallest meaningful distance
-                between two values. Whether step should be specified is Oracle
+                between two values. If left unspecified, it is close to a inifitely
+                small value. Whether `step` should be specified is Oracle
                 dependent, since some Oracles can infer an optimal step
                 automatically.
-            sampling: Optional string. One of "linear", "log", "reverse_log". Acts
-                as a hint for an initial prior probability distribution for how
-                this value should be sampled, e.g. "log" will assign equal
-                probabilities to each order of magnitude range.
+            sampling: String. One of "linear", "log", "reverse_log". Acts as a hint
+                for an initial prior probability distribution for how this value
+                should be sampled, e.g. "log" will assign equal probabilities to
+                each order of magnitude range. If set to "log" or "reverse_log",
+                require (min_value * max_value > 0). Defaults to "linear".
             default: Float, the default value to return for the parameter. If
                 unspecified, the default value will be `min_value`.
             parent_name: Optional string, specifying the name of the parent
@@ -1143,7 +1308,7 @@ def cumulative_prob_to_value(prob, hp):
             index = index - 1
         return hp.values[index]
     elif isinstance(hp, (Int, Float)):
-        sampling = hp.sampling or "linear"
+        sampling = hp.sampling
         if sampling == "linear":
             value = prob * (hp.max_value - hp.min_value) + hp.min_value
         elif sampling == "log":
