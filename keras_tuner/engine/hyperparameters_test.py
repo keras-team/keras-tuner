@@ -293,13 +293,13 @@ def test_sampling_arg():
 
     with pytest.raises(
         ValueError,
-        match="`sampling` `min_value` 1 is greater than the `max_value` 0",
+        match="`min_value` 1 is greater than the `max_value` 0",
     ):
         hp_module.Int("k", 1, 0, sampling="linear")
 
     with pytest.raises(
         ValueError,
-        match="`sampling` `min_value` 1 is greater than the `max_value` 0",
+        match="`min_value` 1 is greater than the `max_value` 0",
     ):
         hp_module.Int("k", 1, 0, sampling="linear")
 
@@ -310,8 +310,8 @@ def test_sampling_zero_length_intervals():
     assert rand_sample == 2
 
     val = 2
-    prob = hp_module.value_to_cumulative_prob(val, f)
-    assert prob == 1
+    prob = f.value_to_prob(val)
+    assert prob == 0.5
 
 
 def test_log_sampling_random_state():
@@ -321,21 +321,21 @@ def test_log_sampling_random_state():
     assert rand_sample <= f.max_value
 
     val = 1e-3
-    prob = hp_module.value_to_cumulative_prob(val, f)
+    prob = f.value_to_prob(val)
     assert prob == 0
-    new_val = hp_module.cumulative_prob_to_value(prob, f)
+    new_val = f.prob_to_value(prob)
     assert np.isclose(val, new_val)
 
     val = 1
-    prob = hp_module.value_to_cumulative_prob(val, f)
+    prob = f.value_to_prob(val)
     assert prob == 0.5
-    new_val = hp_module.cumulative_prob_to_value(prob, f)
+    new_val = f.prob_to_value(prob)
     assert np.isclose(val, new_val)
 
     val = 1e3
-    prob = hp_module.value_to_cumulative_prob(val, f)
+    prob = f.value_to_prob(val)
     assert prob == 1
-    new_val = hp_module.cumulative_prob_to_value(prob, f)
+    new_val = f.prob_to_value(prob)
     assert np.isclose(val, new_val)
 
 
@@ -346,15 +346,15 @@ def test_reverse_log_sampling_random_state():
     assert rand_sample <= f.max_value
 
     val = 1e-3
-    prob = hp_module.value_to_cumulative_prob(val, f)
+    prob = f.value_to_prob(val)
     assert prob == 0
-    new_val = hp_module.cumulative_prob_to_value(prob, f)
+    new_val = f.prob_to_value(prob)
     assert np.isclose(val, new_val)
 
     val = 1
-    prob = hp_module.value_to_cumulative_prob(val, f)
+    prob = f.value_to_prob(val)
     assert prob > 0 and prob < 1
-    new_val = hp_module.cumulative_prob_to_value(prob, f)
+    new_val = f.prob_to_value(prob)
     assert np.isclose(val, new_val)
 
 
@@ -469,7 +469,7 @@ def test_int_proto():
     assert proto.sampling == keras_tuner_pb2.Sampling.LOG
     # Proto stores the implicit default.
     assert proto.default == 1
-    assert proto.step == 1
+    assert proto.step == 0
 
     new_hp = hp_module.Int.from_proto(proto)
     assert new_hp._default == 1
@@ -568,10 +568,10 @@ def test_dict_methods():
 def test_prob_one_choice():
     hp = hp_module.Choice("a", [0, 1, 2])
     # Check that boundaries are valid.
-    value = hp_module.cumulative_prob_to_value(1, hp)
+    value = hp.prob_to_value(1)
     assert value == 2
 
-    value = hp_module.cumulative_prob_to_value(0, hp)
+    value = hp.prob_to_value(0)
     assert value == 0
 
 

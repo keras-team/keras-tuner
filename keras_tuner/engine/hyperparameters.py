@@ -20,7 +20,6 @@ import copy
 import math
 import random
 
-import numpy as np
 import six
 from tensorflow import keras
 
@@ -28,31 +27,20 @@ from keras_tuner.engine import conditions as conditions_mod
 from keras_tuner.protos import keras_tuner_pb2
 
 
-def _check_sampling_arg(sampling, step, min_value, max_value, hp_type="int"):
-    # TODO: check if min * max > 0 if use log or reverse log.
+def _check_sampling_arg(sampling, min_value, max_value):
     if min_value > max_value:
         raise ValueError(
-            "`sampling` `min_value` "
-            + str(min_value)
-            + " is greater than the `max_value` "
-            + str(max_value)
+            f"`min_value` {str(min_value)} is greater than "
+            f"the `max_value` {str(max_value)}."
         )
-    if hp_type == "int" and step != 1:
-        raise ValueError("`sampling` can only be set on an `Int` when `step=1`.")
-    if hp_type != "int" and step is not None:
-        raise ValueError(
-            "`sampling` and `step` cannot both be set, found "
-            "`sampling`: " + str(sampling) + ", `step`: " + str(step)
-        )
-
-    _sampling_values = {"linear", "log", "reverse_log"}
+    sampling_values = {"linear", "log", "reverse_log"}
     sampling = sampling.lower()
-    if sampling not in _sampling_values:
-        raise ValueError("`sampling` must be one of " + str(_sampling_values))
+    if sampling not in sampling_values:
+        raise ValueError(f"`sampling` must be one of {str(sampling_values)}")
     if sampling in {"log", "reverse_log"} and min_value <= 0:
         raise ValueError(
-            '`sampling="' + str(sampling) + '" is not supported for '
-            "negative values, found `min_value`: " + str(min_value)
+            f"`sampling='{str(sampling)}' does not support "
+            f"negative values, found `min_value`: {str(min_value)}."
         )
     return sampling
 
@@ -96,6 +84,16 @@ class HyperParameter(object):
         return self._default
 
     def random_sample(self, seed=None):
+        random_state = random.Random(seed)
+        prob = float(random_state.random())
+        return self.prob_to_value(prob)
+
+    def prob_to_value(self, prob):
+        """Convert cumulative probability in range [0.0, 1.0) to hp value."""
+        raise NotImplementedError
+
+    def value_to_prob(self, value):
+        """Convert a hp value to cumulative probability in range [0.0, 1.0)."""
         raise NotImplementedError
 
     @classmethod
@@ -178,9 +176,11 @@ class Choice(HyperParameter):
             return self.values[0]
         return self._default
 
-    def random_sample(self, seed=None):
-        random_state = random.Random(seed)
-        return random_state.choice(self.values)
+    def prob_to_value(self, prob):
+        return self.values[_prob_to_index(prob, len(self.values))]
+
+    def value_to_prob(self, value):
+        return _index_to_prob(self.values.index(value), len(self.values))
 
     def get_config(self):
         config = super(Choice, self).get_config()
@@ -222,7 +222,95 @@ class Choice(HyperParameter):
         )
 
 
-class Int(HyperParameter):
+class Numerical(HyperParameter):
+    """Super class for all numerical type hyperparameters."""
+
+    def _sample_numerical_value(self, prob, max_value=None):
+        """Sample a value with the cumulative prob in the given range."""
+        if max_value is None:
+            max_value = self.max_value
+        if self.sampling == "linear":
+            return prob * (max_value - self.min_value) + self.min_value
+        elif self.sampling == "log":
+            return self.min_value * math.pow(max_value / self.min_value, prob)
+        elif self.sampling == "reverse_log":
+            return (
+                max_value
+                + self.min_value
+                - self.min_value * math.pow(max_value / self.min_value, 1 - prob)
+            )
+
+    def _numerical_to_prob(self, value, max_value=None):
+        """Convert a numerical value to range [0.0, 1.0)."""
+        if max_value is None:
+            max_value = self.max_value
+        if max_value == self.min_value:
+            # Center the prob
+            return 0.5
+        if self.sampling == "linear":
+            return (value - self.min_value) / (max_value - self.min_value)
+        if self.sampling == "log":
+            return math.log(value / self.min_value) / math.log(
+                max_value / self.min_value
+            )
+        if self.sampling == "reverse_log":
+            return 1.0 - math.log(
+                (max_value + self.min_value - value) / self.min_value
+            ) / math.log(max_value / self.min_value)
+
+    def _sample_with_step(self, prob):
+        """Sample a value with the cumulative prob in the given range.
+
+        The range is divided evenly by `step`. So only sampling from a finite set of
+        values. When calling the function, no need to use (max_value + 1) since the
+        function takes care of the inclusion of max_value.
+        """
+        if self.sampling == "linear":
+            # +1 so that max_value may be sampled.
+            n_values = (self.max_value - self.min_value) // self.step + 1
+            index = _prob_to_index(prob, n_values)
+            return self.min_value + index * self.step
+        if self.sampling == "log":
+            # +1 so that max_value may be sampled.
+            n_values = int(math.log(self.max_value / self.min_value, self.step)) + 1
+            index = _prob_to_index(prob, n_values)
+            return self.min_value * math.pow(self.step, index)
+        if self.sampling == "reverse_log":
+            # +1 so that max_value may be sampled.
+            n_values = int(math.log(self.max_value / self.min_value, self.step)) + 1
+            index = _prob_to_index(prob, n_values)
+            return (
+                self.max_value
+                + self.min_value
+                - self.min_value * math.pow(self.step, index)
+            )
+
+    def _to_prob_with_step(self, value):
+        """Convert to cumulative prob with step specified.
+
+        When calling the function, no need to use (max_value + 1) since the function
+        takes care of the inclusion of max_value.
+        """
+        if self.sampling == "linear":
+            index = (value - self.min_value) // self.step
+            # +1 so that max_value may be sampled.
+            n_values = (self.max_value - self.min_value) // self.step + 1
+            return _index_to_prob(index, n_values)
+        if self.sampling == "log":
+            index = math.log(value / self.min_value, self.step)
+            # +1 so that max_value may be sampled.
+            n_values = int(math.log(self.max_value / self.min_value, self.step)) + 1
+            return _index_to_prob(index, n_values)
+        if self.sampling == "reverse_log":
+            index = math.log(
+                (self.max_value - value + self.min_value) / self.min_value, self.step
+            )
+            # +1 so that max_value may be sampled.
+            n_values = int(math.log(self.max_value / self.min_value, self.step)) + 1
+            return _index_to_prob(index, n_values)
+
+
+class Int(Numerical):
     """Integer hyperparameter.
 
     Note that unlike Python's `range` function, `max_value` is *included* in
@@ -273,15 +361,18 @@ class Int(HyperParameter):
         min_value: Integer, the lower limit of range, inclusive.
         max_value: Integer, the upper limit of range, inclusive.
         step: Optional integer, the distance between two consecutive samples in the
-            range. If left unspecified, step is set to 1 when
-            `sampling="linear"` (default), or set to
-            `math.ceil((max_value / min_value) ** 0.1)` with
-            `sampling="log"` or `sampling="reverse_log"`.
-        sampling: String. One of "linear", "log", "reverse_log". Acts as a hint
-            for an initial prior probability distribution for how this value
-            should be sampled, e.g. "log" will assign equal probabilities to
-            each order of magnitude range. If set to "log" or "reverse_log",
-            require (min_value * max_value > 0). Defaults to "linear".
+            range. If left unspecified, it is possible to sample any integers in
+            the interval. If `sampling="linear"`, it will be the minimum additve
+            between two samples. If `sampling="log"`, it will be the minimum
+            multiplier between two samples.
+        sampling: String. One of "linear", "log", "reverse_log". Defaults to
+            "linear". When sampling value, it always start from a value in range
+            [0.0, 1.0). The `sampling` argument decides how the value is
+            projected into the range of [min_value, max_value].
+            "linear": min_value + value * (max_value - min_value)
+            "log": min_value * (max_value / min_value) ^ value
+            "reverse_log":
+                max_value - min_value * ((max_value / min_value) ^ (1 - value) - 1)
         default: Integer, default value to return for the parameter. If
             unspecified, the default value will be `min_value`.
     """
@@ -291,7 +382,7 @@ class Int(HyperParameter):
         name,
         min_value,
         max_value,
-        step=1,
+        step=None,
         sampling="linear",
         default=None,
         **kwargs,
@@ -299,10 +390,12 @@ class Int(HyperParameter):
         super(Int, self).__init__(name=name, default=default, **kwargs)
         self.max_value = _check_int(max_value, arg="max_value")
         self.min_value = _check_int(min_value, arg="min_value")
-        self.step = _check_int(step, arg="step")
-        self.sampling = _check_sampling_arg(
-            sampling, step, min_value, max_value, hp_type="int"
-        )
+        self.step = None
+        if step is not None:
+            self.step = _check_int(step, arg="step")
+        elif sampling == "linear":
+            self.step = 1
+        self.sampling = _check_sampling_arg(sampling, min_value, max_value)
 
     def __repr__(self):
         return (
@@ -317,10 +410,22 @@ class Int(HyperParameter):
             self.default,
         )
 
-    def random_sample(self, seed=None):
-        random_state = random.Random(seed)
-        prob = float(random_state.random())
-        return cumulative_prob_to_value(prob, self)
+    def prob_to_value(self, prob):
+        if self.step is None:
+            # prob is in range [0.0, 1.0), use max_value + 1 so that
+            # max_value may be sampled.
+            return int(self._sample_numerical_value(prob, self.max_value + 1))
+        return self._sample_with_step(prob)
+
+    def value_to_prob(self, value):
+        if self.step is None:
+            return self._numerical_to_prob(
+                # + 0.5 to center the prob
+                value + 0.5,
+                # + 1 to include the max_value
+                self.max_value + 1,
+            )
+        return self._to_prob_with_step(value)
 
     @property
     def default(self):
@@ -364,7 +469,7 @@ class Int(HyperParameter):
         )
 
 
-class Float(HyperParameter):
+class Float(Numerical):
     """Floating point value hyperparameter.
 
     Example #1:
@@ -410,16 +515,19 @@ class Float(HyperParameter):
             `HyperParameter` instance in the search space.
         min_value: Float, the lower bound of the range.
         max_value: Float, the upper bound of the range.
-        step: Optional float, e.g. 0.1, the smallest meaningful distance
-            between two values. If left unspecified, it is close to a inifitely
-            small value. Whether `step` should be specified is Oracle
-            dependent, since some Oracles can infer an optimal step
-            automatically.
-        sampling: String. One of "linear", "log", "reverse_log". Acts as a hint
-            for an initial prior probability distribution for how this value
-            should be sampled, e.g. "log" will assign equal probabilities to
-            each order of magnitude range. If set to "log" or "reverse_log",
-            require (min_value * max_value > 0). Defaults to "linear".
+        step: Optional float, the distance between two consecutive samples in the
+            range. If left unspecified, it is possible to sample any value in
+            the interval. If `sampling="linear"`, it will be the minimum additve
+            between two samples. If `sampling="log"`, it will be the minimum
+            multiplier between two samples.
+        sampling: String. One of "linear", "log", "reverse_log". Defaults to
+            "linear". When sampling value, it always start from a value in range
+            [0.0, 1.0). The `sampling` argument decides how the value is
+            projected into the range of [min_value, max_value].
+            "linear": min_value + value * (max_value - min_value)
+            "log": min_value * (max_value / min_value) ^ value
+            "reverse_log":
+                max_value - min_value * ((max_value / min_value) ^ (1 - value) - 1)
         default: Float, the default value to return for the parameter. If
             unspecified, the default value will be `min_value`.
     """
@@ -441,9 +549,7 @@ class Float(HyperParameter):
             self.step = float(step)
         else:
             self.step = None
-        self.sampling = _check_sampling_arg(
-            sampling, step, min_value, max_value, hp_type="float"
-        )
+        self.sampling = _check_sampling_arg(sampling, min_value, max_value)
 
     def __repr__(self):
         return (
@@ -464,10 +570,15 @@ class Float(HyperParameter):
             return self._default
         return self.min_value
 
-    def random_sample(self, seed=None):
-        random_state = random.Random(seed)
-        prob = float(random_state.random())
-        return cumulative_prob_to_value(prob, self)
+    def prob_to_value(self, prob):
+        if self.step is None:
+            return self._sample_numerical_value(prob)
+        return self._sample_with_step(prob)
+
+    def value_to_prob(self, value):
+        if self.step is None:
+            return self._numerical_to_prob(value)
+        return self._to_prob_with_step(value)
 
     def get_config(self):
         config = super(Float, self).get_config()
@@ -524,9 +635,14 @@ class Boolean(HyperParameter):
     def __repr__(self):
         return f'Boolean(name: "{self.name}", default: {self.default})'
 
-    def random_sample(self, seed=None):
-        random_state = random.Random(seed)
-        return random_state.choice((True, False))
+    def prob_to_value(self, prob):
+        return bool(prob >= 0.5)
+
+    def value_to_prob(self, value):
+        # Center the value in its probability bucket.
+        if value:
+            return 0.75
+        return 0.25
 
     @classmethod
     def from_proto(cls, proto):
@@ -572,8 +688,11 @@ class Fixed(HyperParameter):
     def __repr__(self):
         return f"Fixed(name: {self.name}, value: {self.value})"
 
-    def random_sample(self, seed=None):
+    def prob_to_value(self, prob):
         return self.value
+
+    def value_to_prob(self, value):
+        return 0.5
 
     @property
     def default(self):
@@ -936,15 +1055,19 @@ class HyperParameters(object):
             min_value: Integer, the lower limit of range, inclusive.
             max_value: Integer, the upper limit of range, inclusive.
             step: Optional integer, the distance between two consecutive samples
-                in the range. If left unspecified, step is set to 1 when
-                `sampling="linear"` (default), or set to
-                `math.ceil((max_value / min_value) ** 0.1)` with
-                `sampling="log"` or `sampling="reverse_log"`.
-            sampling: String. One of "linear", "log", "reverse_log". Acts as a hint
-                for an initial prior probability distribution for how this value
-                should be sampled, e.g. "log" will assign equal probabilities to
-                each order of magnitude range. If set to "log" or "reverse_log",
-                require (min_value * max_value > 0). Defaults to "linear".
+                in the range. If left unspecified, it is possible to sample any
+                integers in the interval. If `sampling="linear"`, it will be the
+                minimum additve between two samples. If `sampling="log"`, it
+                will be the minimum multiplier between two samples.
+            sampling: String. One of "linear", "log", "reverse_log". Defaults to
+                "linear". When sampling value, it always start from a value in
+                range [0.0, 1.0). The `sampling` argument decides how the value
+                is projected into the range of [min_value, max_value].
+                "linear": min_value + value * (max_value - min_value)
+                "log": min_value * (max_value / min_value) ^ value
+                "reverse_log":
+                    (max_value -
+                     min_value * ((max_value / min_value) ^ (1 - value) - 1))
             default: Integer, default value to return for the parameter. If
                 unspecified, the default value will be `min_value`.
             parent_name: Optional string, specifying the name of the parent
@@ -1026,16 +1149,20 @@ class HyperParameters(object):
                 `HyperParameter` instance in the search space.
             min_value: Float, the lower bound of the range.
             max_value: Float, the upper bound of the range.
-            step: Optional float, e.g. 0.1, the smallest meaningful distance
-                between two values. If left unspecified, it is close to a inifitely
-                small value. Whether `step` should be specified is Oracle
-                dependent, since some Oracles can infer an optimal step
-                automatically.
-            sampling: String. One of "linear", "log", "reverse_log". Acts as a hint
-                for an initial prior probability distribution for how this value
-                should be sampled, e.g. "log" will assign equal probabilities to
-                each order of magnitude range. If set to "log" or "reverse_log",
-                require (min_value * max_value > 0). Defaults to "linear".
+            step: Optional float, the distance between two consecutive samples
+                in the range. If left unspecified, it is possible to sample any
+                value in the interval. If `sampling="linear"`, it will be the
+                minimum additve between two samples. If `sampling="log"`, it
+                will be the minimum multiplier between two samples.
+            sampling: String. One of "linear", "log", "reverse_log". Defaults to
+                "linear". When sampling value, it always start from a value in
+                range [0.0, 1.0). The `sampling` argument decides how the value
+                is projected into the range of [min_value, max_value].
+                "linear": min_value + value * (max_value - min_value)
+                "log": min_value * (max_value / min_value) ^ value
+                "reverse_log":
+                    (max_value -
+                     min_value * ((max_value / min_value) ^ (1 - value) - 1))
             default: Float, the default value to return for the parameter. If
                 unspecified, the default value will be `min_value`.
             parent_name: Optional string, specifying the name of the parent
@@ -1294,78 +1421,21 @@ def serialize(obj):
     return keras.utils.serialize_keras_object(obj)
 
 
-def cumulative_prob_to_value(prob, hp):
-    """Convert a value from [0, 1] to a hyperparameter value."""
-    if isinstance(hp, Fixed):
-        return hp.value
-    elif isinstance(hp, Boolean):
-        return bool(prob >= 0.5)
-    elif isinstance(hp, Choice):
-        ele_prob = 1 / len(hp.values)
-        index = int(math.floor(prob / ele_prob))
-        # Can happen when `prob` is very close to 1.
-        if index == len(hp.values):
-            index = index - 1
-        return hp.values[index]
-    elif isinstance(hp, (Int, Float)):
-        sampling = hp.sampling
-        if sampling == "linear":
-            value = prob * (hp.max_value - hp.min_value) + hp.min_value
-        elif sampling == "log":
-            value = hp.min_value * math.pow(hp.max_value / hp.min_value, prob)
-        elif sampling == "reverse_log":
-            value = (
-                hp.max_value
-                + hp.min_value
-                - hp.min_value * math.pow(hp.max_value / hp.min_value, 1 - prob)
-            )
-        else:
-            raise ValueError(f"Unrecognized sampling value: {sampling}")
-
-        if hp.step is not None:
-            values = np.arange(hp.min_value, hp.max_value + 1e-7, step=hp.step)
-            closest_index = np.abs(values - value).argmin()
-            value = values[closest_index]
-
-        if isinstance(hp, Int):
-            return int(value)
-        return value
-    else:
-        raise ValueError(f"Unrecognized `HyperParameter` type: {hp}")
+def _prob_to_index(prob, n_index):
+    """Convert a cumulative probability to a 0-based index in the given range."""
+    ele_prob = 1 / n_index
+    index = int(math.floor(prob / ele_prob))
+    # Can happen when `prob` is very close to 1.
+    if index == n_index:
+        index = index - 1
+    return index
 
 
-def value_to_cumulative_prob(value, hp):
-    """Convert a hyperparameter value to [0, 1]."""
-    if isinstance(hp, Fixed):
-        return 0.5
-    if isinstance(hp, Boolean):
-        # Center the value in its probability bucket.
-        if value:
-            return 0.75
-        return 0.25
-    elif isinstance(hp, Choice):
-        ele_prob = 1 / len(hp.values)
-        index = hp.values.index(value)
-        # Center the value in its probability bucket.
-        return (index + 0.5) * ele_prob
-    elif isinstance(hp, (Int, Float)):
-        if hp.max_value == hp.min_value:
-            return 1.0
-        sampling = hp.sampling or "linear"
-        if sampling == "linear":
-            return (value - hp.min_value) / (hp.max_value - hp.min_value)
-        elif sampling == "log":
-            return math.log(value / hp.min_value) / math.log(
-                hp.max_value / hp.min_value
-            )
-        elif sampling == "reverse_log":
-            return 1.0 - math.log(
-                (hp.max_value + hp.min_value - value) / hp.min_value
-            ) / math.log(hp.max_value / hp.min_value)
-        else:
-            raise ValueError(f"Unrecognized sampling value: {sampling}")
-    else:
-        raise ValueError(f"Unrecognized `HyperParameter` type: {hp}")
+def _index_to_prob(index, n_index):
+    """Convert a 0-based index in the given range to cumulative probability."""
+    ele_prob = 1 / n_index
+    # Center the value in its probability bucket.
+    return (index + 0.5) * ele_prob
 
 
 def _sampling_from_proto(sampling):

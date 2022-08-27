@@ -322,7 +322,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                     trial_value = hp.default
 
                 # Embed an HP value into the continuous space [0, 1].
-                prob = hp_module.value_to_cumulative_prob(trial_value, hp)
+                prob = hp.value_to_prob(trial_value)
                 vector.append(prob)
 
             if trial in ongoing_trials and self.gpr.can_predict():
@@ -358,7 +358,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             else:
                 prob = vector[vector_index]
                 vector_index += 1
-                value = hp_module.cumulative_prob_to_value(prob, hp)
+                value = hp.prob_to_value(prob)
 
             if hps.is_active(hp):
                 hps.values[hp.name] = value
