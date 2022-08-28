@@ -415,7 +415,7 @@ class Int(Numerical):
             # prob is in range [0.0, 1.0), use max_value + 1 so that
             # max_value may be sampled.
             return int(self._sample_numerical_value(prob, self.max_value + 1))
-        return self._sample_with_step(prob)
+        return int(self._sample_with_step(prob))
 
     def value_to_prob(self, value):
         if self.step is None:

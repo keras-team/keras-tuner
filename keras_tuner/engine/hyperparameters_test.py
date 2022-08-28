@@ -279,6 +279,16 @@ def test_Float():
     assert linear.default == 0.5
 
 
+def test_float_log_with_step():
+    rg = hp_module.Float(
+        "rg", min_value=0.01, max_value=100, step=10, sampling="log"
+    )
+    for i in range(10):
+        assert rg.random_sample() in [0.01, 0.1, 1.0, 10.0, 100.0]
+    assert abs(rg.value_to_prob(0.1) - 0.3) < 1e-4
+    assert rg.prob_to_value(0.3) == 0.1
+
+
 def test_sampling_arg():
     f = hp_module.Float("f", 1e-20, 1e10, sampling="log")
     f = hp_module.Float.from_config(f.get_config())
@@ -368,6 +378,14 @@ def test_Int():
     # No default
     rg = hp_module.Int("rg", min_value=5, max_value=9, step=1)
     assert rg.default == 5
+
+
+def test_int_log_with_step():
+    rg = hp_module.Int("rg", min_value=2, max_value=32, step=2, sampling="log")
+    for i in range(10):
+        assert rg.random_sample() in [2, 4, 8, 16, 32]
+    assert abs(rg.value_to_prob(4) - 0.3) < 1e-4
+    assert rg.prob_to_value(0.3) == 4
 
 
 def test_Boolean():
