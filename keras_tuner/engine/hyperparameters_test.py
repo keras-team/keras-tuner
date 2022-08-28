@@ -217,6 +217,7 @@ def test_Choice():
     assert choice.default == 2
     assert choice.random_sample() in [1, 2, 3]
     assert choice.random_sample(123) == choice.random_sample(123)
+    assert abs(choice.value_to_prob(1) - 1.0 / 6) < 1e-4
     # No default
     choice = hp_module.Choice("choice", [1, 2, 3])
     assert choice.default == 1
@@ -279,6 +280,12 @@ def test_Float():
     assert linear.default == 0.5
 
 
+def test_float_linear_value_to_prob_no_step():
+    rg = hp_module.Float("rg", min_value=1.0, max_value=11.0)
+    assert abs(rg.value_to_prob(4.5) - 0.35) < 1e-4
+    assert rg.prob_to_value(0.35) == 4.5
+
+
 def test_float_log_with_step():
     rg = hp_module.Float(
         "rg", min_value=0.01, max_value=100, step=10, sampling="log"
@@ -287,6 +294,23 @@ def test_float_log_with_step():
         assert rg.random_sample() in [0.01, 0.1, 1.0, 10.0, 100.0]
     assert abs(rg.value_to_prob(0.1) - 0.3) < 1e-4
     assert rg.prob_to_value(0.3) == 0.1
+
+
+def test_float_reverse_log_with_step():
+    rg = hp_module.Float(
+        "rg", min_value=0.01, max_value=100, step=10, sampling="reverse_log"
+    )
+    for i in range(10):
+        # print(rg.random_sample())
+        # assert rg.random_sample() in [0.01, 0.1, 1.0, 10.0, 100.0]
+        # [0.09, 0.9, 9, 90]
+        # [90, 9, 0.9, 0.09]
+        sample = rg.random_sample()
+        assert any(
+            [abs(sample - x) < 1e-4 for x in [0.01, 90.01, 99.01, 99.91, 100.0]]
+        )
+    assert abs(rg.value_to_prob(99.91) - 0.3) < 1e-4
+    assert abs(rg.prob_to_value(0.3) - 99.91) < 1e-4
 
 
 def test_sampling_arg():
@@ -375,6 +399,7 @@ def test_Int():
     assert 5 <= rg.random_sample() <= 9
     assert isinstance(rg.random_sample(), int)
     assert rg.random_sample(123) == rg.random_sample(123)
+    assert abs(rg.value_to_prob(6) - 0.3) < 1e-4
     # No default
     rg = hp_module.Int("rg", min_value=5, max_value=9, step=1)
     assert rg.default == 5
@@ -386,6 +411,11 @@ def test_int_log_with_step():
         assert rg.random_sample() in [2, 4, 8, 16, 32]
     assert abs(rg.value_to_prob(4) - 0.3) < 1e-4
     assert rg.prob_to_value(0.3) == 4
+
+
+def test_int_log_without_step():
+    rg = hp_module.Int("rg", min_value=2, max_value=32, sampling="log")
+    assert rg.prob_to_value(rg.value_to_prob(4)) == 4
 
 
 def test_Boolean():
@@ -407,6 +437,10 @@ def test_Boolean():
     # Test random_sample
     assert boolean.random_sample() in {True, False}
     assert boolean.random_sample(123) == boolean.random_sample(123)
+    assert {boolean.value_to_prob(True), boolean.value_to_prob(False)} == {
+        0.25,
+        0.75,
+    }
 
 
 def test_Fixed():
@@ -431,6 +465,7 @@ def test_Fixed():
     fixed = hp_module.Fixed("fixed", 8.2)
     assert fixed.value == 8.2
     assert fixed.random_sample() == 8.2
+    assert fixed.value_to_prob(fixed.value) == 0.5
 
     with pytest.raises(ValueError, match="value must be an"):
         hp_module.Fixed("fixed", None)
