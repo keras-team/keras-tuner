@@ -34,6 +34,11 @@ class GridSearchOracle(oracle_module.Oracle):
             maximize. The `objective` argument is optional when
             `Tuner.run_trial()` or `HyperModel.fit()` returns a single float as
             the objective to minimize.
+        max_trials: Optional integer, the total number of trials (model
+            configurations) to test at most. Note that the oracle may interrupt
+            the search before `max_trial` models have been tested if the search
+            space has been exhausted. If left unspecified, it runs till the
+            search space is exhausted.
         seed: Optional integer, the random seed.
         hyperparameters: Optional `HyperParameters` instance. Can be used to
             override (or register in advance) hyperparameters in the search
@@ -51,6 +56,7 @@ class GridSearchOracle(oracle_module.Oracle):
     def __init__(
         self,
         objective=None,
+        max_trials=None,
         seed=None,
         hyperparameters=None,
         allow_new_entries=True,
@@ -58,6 +64,7 @@ class GridSearchOracle(oracle_module.Oracle):
     ):
         super(GridSearchOracle, self).__init__(
             objective=objective,
+            max_trials=max_trials,
             hyperparameters=hyperparameters,
             tune_new_entries=tune_new_entries,
             allow_new_entries=allow_new_entries,
@@ -112,11 +119,11 @@ class GridSearchOracle(oracle_module.Oracle):
                     "Choice, Boolean and Fixed as it needs to have a finite "
                     f"set of choices to search, found: {hp}"
                 )
-            # Fixed have no "values" (it is actually 1) attribute as they do
+            # Fixed has no "values" (it is actually 1) attribute as they do
             # not dispose of possible choices, so we skip counting it.
             # As its count is 1 it won't change the final product.
             # Boolean has True and False, count as 2.
-            # Choice has values which gives its actual cardinality.
+            # Choice has the values given by its cardinality.
             if type(hp) == hp_module.Fixed:
                 continue
             elif type(hp) == hp_module.Boolean:
@@ -124,7 +131,15 @@ class GridSearchOracle(oracle_module.Oracle):
             else:
                 number_of_hp_choices = number_of_hp_choices * len(hp.values)
 
-        self.max_trials = number_of_hp_choices
+        # If max_trials was not given, take the calculated number of hp choices to exhaustion.
+        # If max_trials was given, take the minimum value between it and the calculated number
+        # of hp choices to exhaustion. It implies that grid search will run trials up to the maximum
+        # amount of choices available in the grid, even if the given max_trials is a bigger value.
+        self.max_trials = min(
+            trial_count
+            for trial_count in [number_of_hp_choices, self.max_trials]
+            if trial_count is not None
+        )
 
         # Make the trial_id the current number of trial, pre-padded with 0s
         trial_id = "{{:0{}d}}".format(len(str(self.max_trials)))
@@ -179,21 +194,25 @@ class GridSearchOracle(oracle_module.Oracle):
 
 
 class GridSearch(tuner_module.Tuner):
-    """Grid search tuner. It will try all the possible hyperparameter
-    combinations up to exhaustion. As it needs a finite search space, it
-    supports only hp.Choice types. For example, if you set
+    """The Grid search tuner.
 
-    ```
-    model_name = hp.Choice("model_name", values=["sgd", "adam"])
+    It will try all the possible hyperparameter
+    combinations up to exhaustion.
+
+    For example:
+
+    ```py
+    optimizer = hp.Choice("model_name", values=["sgd", "adam"])
     lr = hp.Choice("lr", values=[0.01, 0.1])
     ```
+
     This tuner will fit models for: ["sgd", 0.01], ["sgd", 0.1], ["adam", 0.01]
     ["adam", 0.1].
 
     Args:
         hypermodel: Instance of `HyperModel` class (or callable that takes
             hyperparameters and returns a Model instance). It is optional when
-            `Tuner.run_trial()` is overriden and does not use
+            `Tuner.run_trial()` is overridden and does not use
             `self.hypermodel`.
         objective: A string, `keras_tuner.Objective` instance, or a list of
             `keras_tuner.Objective`s and strings. If a string, the direction of
@@ -203,6 +222,11 @@ class GridSearch(tuner_module.Tuner):
             maximize. The `objective` argument is optional when
             `Tuner.run_trial()` or `HyperModel.fit()` returns a single float as
             the objective to minimize.
+        max_trials: Optional integer, the total number of trials (model
+            configurations) to test at most. Note that the oracle may interrupt
+            the search before `max_trial` models have been tested if the search
+            space has been exhausted. If left unspecified, it runs till the
+            search space is exhausted.
         seed: Optional integer, the random seed.
         hyperparameters: Optional `HyperParameters` instance. Can be used to
             override (or register in advance) hyperparameters in the search
