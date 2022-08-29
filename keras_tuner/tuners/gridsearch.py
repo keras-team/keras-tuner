@@ -22,8 +22,8 @@ from keras_tuner.engine import trial as trial_module
 from keras_tuner.engine import tuner as tuner_module
 
 
-class ExhaustiveSearchOracle(oracle_module.Oracle):
-    """Exhaustive search oracle.
+class GridSearchOracle(oracle_module.Oracle):
+    """Grid search oracle.
 
     Args:
         objective: A string, `keras_tuner.Objective` instance, or a list of
@@ -56,7 +56,7 @@ class ExhaustiveSearchOracle(oracle_module.Oracle):
         allow_new_entries=True,
         tune_new_entries=True,
     ):
-        super(ExhaustiveSearchOracle, self).__init__(
+        super(GridSearchOracle, self).__init__(
             objective=objective,
             hyperparameters=hyperparameters,
             tune_new_entries=tune_new_entries,
@@ -178,8 +178,8 @@ class ExhaustiveSearchOracle(oracle_module.Oracle):
         return None
 
 
-class ExhaustiveSearch(tuner_module.Tuner):
-    """Exhaustive search tuner. It will try all the possible hyperparameter
+class GridSearch(tuner_module.Tuner):
+    """Grid search tuner. It will try all the possible hyperparameter
     combinations up to exhaustion. As it needs a finite search space, it
     supports only hp.Choice types. For example, if you set
 
@@ -230,11 +230,11 @@ class ExhaustiveSearch(tuner_module.Tuner):
         **kwargs,
     ):
         self.seed = seed
-        oracle = ExhaustiveSearchOracle(
+        oracle = GridSearchOracle(
             objective=objective,
             seed=seed,
             hyperparameters=hyperparameters,
             tune_new_entries=tune_new_entries,
             allow_new_entries=allow_new_entries,
         )
-        super(ExhaustiveSearch, self).__init__(oracle, hypermodel, **kwargs)
+        super(GridSearch, self).__init__(oracle, hypermodel, **kwargs)

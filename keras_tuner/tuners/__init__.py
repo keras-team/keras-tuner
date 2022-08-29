@@ -14,7 +14,7 @@
 
 
 from keras_tuner.tuners.bayesian import BayesianOptimization
-from keras_tuner.tuners.exhaustivesearch import ExhaustiveSearch
+from keras_tuner.tuners.gridsearch import GridSearch
 from keras_tuner.tuners.hyperband import Hyperband
 from keras_tuner.tuners.randomsearch import RandomSearch
 from keras_tuner.tuners.sklearn_tuner import Sklearn

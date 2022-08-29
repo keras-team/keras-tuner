@@ -16,7 +16,7 @@ import numpy as np
 import tensorflow as tf
 
 from keras_tuner.engine import tuner as tuner_module
-from keras_tuner.tuners import exhaustivesearch
+from keras_tuner.tuners import gridsearch
 
 
 def test_that_exhaustive_space_is_explored(tmp_path):
@@ -52,17 +52,17 @@ def test_that_exhaustive_space_is_explored(tmp_path):
         )
         return model
 
-    class MyExhaustiveSearch(exhaustivesearch.ExhaustiveSearchOracle):
+    class MyGridSearch(gridsearch.GridSearchOracle):
         populate_space_call_count = 0
 
         def populate_space(self, trial_id):
-            result = super(MyExhaustiveSearch, self).populate_space(trial_id)
-            MyExhaustiveSearch.populate_space_call_count += 1
+            result = super(MyGridSearch, self).populate_space(trial_id)
+            MyGridSearch.populate_space_call_count += 1
             return result
 
     # When
     tuner = tuner_module.Tuner(
-        oracle=MyExhaustiveSearch(objective="accuracy"),
+        oracle=MyGridSearch(objective="accuracy"),
         hypermodel=build_model,
         directory=tmp_path,
     )
@@ -94,5 +94,5 @@ def test_that_exhaustive_space_is_explored(tmp_path):
                         "units_2": want_unit_2,
                         "optmizer": want_optimizer,
                         "loss": want_loss,
-                        "dropout": want_dropout
+                        "dropout": want_dropout,
                     } in explored_space
