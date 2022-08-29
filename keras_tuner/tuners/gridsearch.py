@@ -131,10 +131,11 @@ class GridSearchOracle(oracle_module.Oracle):
             else:
                 number_of_hp_choices = number_of_hp_choices * len(hp.values)
 
-        # If max_trials was not given, take the calculated number of hp choices to exhaustion.
-        # If max_trials was given, take the minimum value between it and the calculated number
-        # of hp choices to exhaustion. It implies that grid search will run trials up to the maximum
-        # amount of choices available in the grid, even if the given max_trials is a bigger value.
+        # If max_trials was not given, take the calculated number of hp choices
+        # to exhaustion. f max_trials was given, take the minimum value between
+        # it and the calculated number of hp choices to exhaustion. It implies
+        # that grid search will run trials up to the maximum amount of choices
+        # available in the grid, even if the given max_trials is a bigger value.
         self.max_trials = min(
             trial_count
             for trial_count in [number_of_hp_choices, self.max_trials]
