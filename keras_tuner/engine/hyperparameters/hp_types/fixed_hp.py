@@ -41,7 +41,7 @@ class Fixed(hyperparameter.HyperParameter):
         elif not isinstance(value, (float, str)):
             raise ValueError(
                 "`Fixed` value must be an `int`, `float`, `str`, "
-                "or `bool`, found {}".format(value)
+                f"or `bool`, found {value}"
             )
         self.value = value
 

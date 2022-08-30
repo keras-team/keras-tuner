@@ -63,6 +63,27 @@ def test_choice_types():
         hp_module.Choice("a", values2)
 
 
+def test_choice_value_not_provided_error():
+    with pytest.raises(ValueError, match="`values` must be provided"):
+        hp_module.Choice("a", [])
+
+
+def test_choice_repr():
+    assert repr(hp_module.Choice("a", [1, 2, 3])) == repr(
+        hp_module.Choice("a", [1, 2, 3])
+    )
+
+
+def test_choice_none_as_default():
+    hp = hp_module.Choice("a", [1, 2], default=None)
+    assert hp.default == 1
+
+
+def test_choice_default_not_none():
+    hp = hp_module.Choice("a", [1, 2], default=2)
+    assert hp.default == 2
+
+
 def test_choice_proto():
     hp = hp_module.Choice("a", [2.3, 4.5, 6.3], ordered=True)
     proto = hp.to_proto()

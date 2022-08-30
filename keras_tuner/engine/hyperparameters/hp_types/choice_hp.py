@@ -40,14 +40,14 @@ class Choice(hyperparameter.HyperParameter):
     def __init__(self, name, values, ordered=None, default=None, **kwargs):
         super(Choice, self).__init__(name=name, default=default, **kwargs)
         if not values:
-            raise ValueError("`values` must be provided.")
+            raise ValueError("`values` must be provided for `Choice`.")
 
         # Type checking.
         types = set(type(v) for v in values)
         if len(types) > 1:
             raise TypeError(
                 "A `Choice` can contain only one type of value, found "
-                "values: " + str(values) + " with types " + str(types)
+                f"values: {str(values)} with types {str(types)}."
             )
 
         # Standardize on str, int, float, bool.
@@ -70,7 +70,7 @@ class Choice(hyperparameter.HyperParameter):
         if default is not None and default not in values:
             raise ValueError(
                 "The default value should be one of the choices. "
-                "You passed: values=%s, default=%s" % (values, default)
+                f"You passed: values={values}, default={default}"
             )
         self._default = default
 
@@ -78,20 +78,20 @@ class Choice(hyperparameter.HyperParameter):
         self.ordered = ordered
         is_numeric = isinstance(values[0], (six.integer_types, float))
         if self.ordered and not is_numeric:
-            raise ValueError("`ordered` must be `False` for non-numeric " "types.")
+            raise ValueError("`ordered` must be `False` for non-numeric types.")
         if self.ordered is None:
             self.ordered = is_numeric
 
     def __repr__(self):
-        return 'Choice(name: "{}", values: {}, ordered: {}, default: {})'.format(
-            self.name, self.values, self.ordered, self.default
+        return (
+            f"Choice(name: '{self.name}', "
+            + f"values: {self.values}, "
+            + f"ordered: {self.ordered}, default: {self.default})"
         )
 
     @property
     def default(self):
         if self._default is None:
-            if None in self.values:
-                return None
             return self.values[0]
         return self._default
 

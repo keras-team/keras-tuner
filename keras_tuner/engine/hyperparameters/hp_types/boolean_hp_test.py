@@ -40,3 +40,7 @@ def test_boolean():
         0.25,
         0.75,
     }
+
+
+def test_boolean_repr():
+    assert repr(hp_module.Boolean("bool")) == repr(hp_module.Boolean("bool"))

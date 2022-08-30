@@ -14,11 +14,11 @@
 
 from tensorflow import keras
 
-from keras_tuner.engine.hyperparameters.hps.boolean_hp import Boolean
-from keras_tuner.engine.hyperparameters.hps.choice_hp import Choice
-from keras_tuner.engine.hyperparameters.hps.fixed_hp import Fixed
-from keras_tuner.engine.hyperparameters.hps.float_hp import Float
-from keras_tuner.engine.hyperparameters.hps.int_hp import Int
+from keras_tuner.engine.hyperparameters.hp_types.boolean_hp import Boolean
+from keras_tuner.engine.hyperparameters.hp_types.choice_hp import Choice
+from keras_tuner.engine.hyperparameters.hp_types.fixed_hp import Fixed
+from keras_tuner.engine.hyperparameters.hp_types.float_hp import Float
+from keras_tuner.engine.hyperparameters.hp_types.int_hp import Int
 
 OBJECTS = (
     Fixed,

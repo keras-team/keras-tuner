@@ -234,6 +234,10 @@ def test_hyperparameters_proto():
     hps.Float("b", 2, 8, sampling="linear", default=4)
     hps.Choice("c", [1, 5, 10], ordered=False, default=5)
     hps.Fixed("d", "3")
+    hps.Fixed("e", 3)
+    hps.Fixed("f", 3.1)
+    hps.Fixed("g", True)
+    hps.Boolean("h")
     with hps.name_scope("d"):
         hps.Choice("e", [2.0, 4.5, 8.5], default=2.0)
         hps.Choice("f", ["1", "2"], default="1")
@@ -305,3 +309,14 @@ def test_return_default_value_if_not_populated():
         )
         == "hp_value_default"
     )
+
+
+def test_serialize_deserialize_raw_types():
+    assert hp_module.deserialize(hp_module.serialize(1)) == 1
+
+
+def test_serialize_deserialize_hyperparameters():
+    hp = hp_module.HyperParameters()
+    hp.Int("temp", 1, 5)
+    hp = hp_module.deserialize(hp_module.serialize(hp))
+    assert len(hp.space) == 1

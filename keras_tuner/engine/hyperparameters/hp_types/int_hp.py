@@ -14,14 +14,16 @@
 
 from keras_tuner.engine import conditions as conditions_mod
 from keras_tuner.engine.hyperparameters import hp_utils
-from keras_tuner.engine.hyperparameters.hps import numerical
+from keras_tuner.engine.hyperparameters.hp_types import numerical
 from keras_tuner.protos import keras_tuner_pb2
 
 
 def _check_int(val, arg):
     int_val = int(val)
     if int_val != val:
-        raise ValueError(arg + " must be an int, found: " + str(val))
+        raise ValueError(
+            f"{arg} must be an int, Received: {str(val)} of type {type(val)}."
+        )
     return int_val
 
 
@@ -114,15 +116,9 @@ class Int(numerical.Numerical):
 
     def __repr__(self):
         return (
-            'Int(name: "{}", min_value: {}, max_value: {}, step: {}, '
-            "sampling: {}, default: {})"
-        ).format(
-            self.name,
-            self.min_value,
-            self.max_value,
-            self.step,
-            self.sampling,
-            self.default,
+            f"Int(name: '{self.name}', min_value: {self.min_value}, "
+            f"max_value: {self.max_value}, step: {self.step}, "
+            f"sampling: {self.sampling}, default: {self.default})"
         )
 
     def prob_to_value(self, prob):

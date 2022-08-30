@@ -14,7 +14,7 @@
 
 from keras_tuner.engine import conditions as conditions_mod
 from keras_tuner.engine.hyperparameters import hp_utils
-from keras_tuner.engine.hyperparameters.hps import numerical
+from keras_tuner.engine.hyperparameters.hp_types import numerical
 from keras_tuner.protos import keras_tuner_pb2
 
 

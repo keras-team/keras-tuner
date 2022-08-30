@@ -18,27 +18,29 @@ from keras_tuner.protos import keras_tuner_pb2
 
 
 def sampling_from_proto(sampling):
-    if sampling is None or sampling == keras_tuner_pb2.Sampling.NONE:
-        return None
     if sampling == keras_tuner_pb2.Sampling.LINEAR:
         return "linear"
     if sampling == keras_tuner_pb2.Sampling.LOG:
         return "log"
     if sampling == keras_tuner_pb2.Sampling.REVERSE_LOG:
         return "reverse_log"
-    raise ValueError(f"Unrecognized sampling: {sampling}")
+    raise ValueError(
+        "Expected sampling to be one of predefined proto values. "
+        f"Received: '{sampling}'."
+    )
 
 
 def sampling_to_proto(sampling):
-    if sampling is None:
-        return keras_tuner_pb2.Sampling.NONE
     if sampling == "linear":
         return keras_tuner_pb2.Sampling.LINEAR
     if sampling == "log":
         return keras_tuner_pb2.Sampling.LOG
     if sampling == "reverse_log":
         return keras_tuner_pb2.Sampling.REVERSE_LOG
-    raise ValueError(f"Unrecognized sampling: {sampling}")
+    raise ValueError(
+        "Expected sampling to be 'linear', 'log', or 'reverse_log'. "
+        f"Received: '{sampling}'."
+    )
 
 
 def prob_to_index(prob, n_index):

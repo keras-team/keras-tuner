@@ -38,6 +38,12 @@ def test_int_sampling_arg():
     ):
         hp_module.Int("k", 1, 0, sampling="linear")
 
+    with pytest.raises(
+        ValueError,
+        match="does not support negative values",
+    ):
+        hp_module.Int("k", -10, -1, sampling="log")
+
 
 def test_int():
     rg = hp_module.Int("rg", min_value=5, max_value=9, step=1, default=6)
@@ -81,3 +87,18 @@ def test_int_proto():
     # Pop the implicit default for comparison purposes.
     new_hp._default = None
     assert new_hp.get_config() == hp.get_config()
+
+
+def test_int_raise_error_with_float_min_value():
+    with pytest.raises(ValueError, match="must be an int"):
+        hp_module.Int("j", 0.5, 10)
+
+
+def test_repr_int_is_str():
+    assert "name: 'j'" in repr(hp_module.Int("j", 1, 10))
+
+
+def test_serialize_deserialize_int():
+    hp = hp_module.Int("j", 1, 10)
+    new_hp = hp_module.deserialize(hp_module.serialize(hp))
+    assert repr(hp) == repr(new_hp)

@@ -43,3 +43,9 @@ def test_fixed():
 
     with pytest.raises(ValueError, match="value must be an"):
         hp_module.Fixed("fixed", None)
+
+
+def test_fixed_repr():
+    assert repr(hp_module.Fixed("fixed", "value")) == repr(
+        hp_module.Fixed("fixed", "value")
+    )

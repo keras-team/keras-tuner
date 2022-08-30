@@ -20,7 +20,7 @@ import copy
 import six
 
 from keras_tuner.engine import conditions as conditions_mod
-from keras_tuner.engine.hyperparameters import hps as hps_module
+from keras_tuner.engine.hyperparameters import hp_types
 from keras_tuner.engine.hyperparameters import hyperparameter as hp_module
 from keras_tuner.protos import keras_tuner_pb2
 
@@ -280,7 +280,7 @@ class HyperParameters(object):
             not active.
         """
         with self._maybe_conditional_scope(parent_name, parent_values):
-            hp = hps_module.Choice(
+            hp = hp_types.Choice(
                 name=self._get_name(name),  # Add name_scopes.
                 values=values,
                 ordered=ordered,
@@ -377,7 +377,7 @@ class HyperParameters(object):
             not active.
         """
         with self._maybe_conditional_scope(parent_name, parent_values):
-            hp = hps_module.Int(
+            hp = hp_types.Int(
                 name=self._get_name(name),  # Add name_scopes.
                 min_value=min_value,
                 max_value=max_value,
@@ -472,7 +472,7 @@ class HyperParameters(object):
             not active.
         """
         with self._maybe_conditional_scope(parent_name, parent_values):
-            hp = hps_module.Float(
+            hp = hp_types.Float(
                 name=self._get_name(name),  # Add name_scopes.
                 min_value=min_value,
                 max_value=max_value,
@@ -503,7 +503,7 @@ class HyperParameters(object):
             not active.
         """
         with self._maybe_conditional_scope(parent_name, parent_values):
-            hp = hps_module.Boolean(
+            hp = hp_types.Boolean(
                 name=self._get_name(name),  # Add name_scopes.
                 default=default,
                 conditions=self._conditions,
@@ -529,7 +529,7 @@ class HyperParameters(object):
             not active.
         """
         with self._maybe_conditional_scope(parent_name, parent_values):
-            hp = hps_module.Fixed(
+            hp = hp_types.Fixed(
                 name=self._get_name(name),  # Add name_scopes.
                 value=value,
                 conditions=self._conditions,
@@ -553,7 +553,7 @@ class HyperParameters(object):
     def from_config(cls, config):
         hps = cls()
         for p in config["space"]:
-            p = hps_module.deserialize(p)
+            p = hp_types.deserialize(p)
             hps._hps[p.name].append(p)
             hps._space.append(p)
         hps.values = dict((k, v) for (k, v) in config["values"].items())
@@ -589,19 +589,19 @@ class HyperParameters(object):
             # Allows passing in only values, space becomes `Fixed`.
             for name, value in proto.values.items():
                 space.append(
-                    hps_module.Fixed(name, getattr(value, value.WhichOneof("kind")))
+                    hp_types.Fixed(name, getattr(value, value.WhichOneof("kind")))
                 )
         else:
             for fixed_proto in proto.space.fixed_space:
-                space.append(hps_module.Fixed.from_proto(fixed_proto))
+                space.append(hp_types.Fixed.from_proto(fixed_proto))
             for float_proto in proto.space.float_space:
-                space.append(hps_module.Float.from_proto(float_proto))
+                space.append(hp_types.Float.from_proto(float_proto))
             for int_proto in proto.space.int_space:
-                space.append(hps_module.Int.from_proto(int_proto))
+                space.append(hp_types.Int.from_proto(int_proto))
             for choice_proto in proto.space.choice_space:
-                space.append(hps_module.Choice.from_proto(choice_proto))
+                space.append(hp_types.Choice.from_proto(choice_proto))
             for boolean_proto in proto.space.boolean_space:
-                space.append(hps_module.Boolean.from_proto(boolean_proto))
+                space.append(hp_types.Boolean.from_proto(boolean_proto))
 
         hps.merge(space)
 
@@ -621,15 +621,15 @@ class HyperParameters(object):
         choice_space = []
         boolean_space = []
         for hp in self.space:
-            if isinstance(hp, hps_module.Fixed):
+            if isinstance(hp, hp_types.Fixed):
                 fixed_space.append(hp.to_proto())
-            elif isinstance(hp, hps_module.Float):
+            elif isinstance(hp, hp_types.Float):
                 float_space.append(hp.to_proto())
-            elif isinstance(hp, hps_module.Int):
+            elif isinstance(hp, hp_types.Int):
                 int_space.append(hp.to_proto())
-            elif isinstance(hp, hps_module.Choice):
+            elif isinstance(hp, hp_types.Choice):
                 choice_space.append(hp.to_proto())
-            elif isinstance(hp, hps_module.Boolean):
+            elif isinstance(hp, hp_types.Boolean):
                 boolean_space.append(hp.to_proto())
             else:
                 raise ValueError(f"Unrecognized HP type: {hp}")
