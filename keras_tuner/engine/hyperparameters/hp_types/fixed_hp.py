@@ -74,14 +74,16 @@ class Fixed(hyperparameter.HyperParameter):
         return cls(name=proto.name, value=value, conditions=conditions)
 
     def to_proto(self):
-        if isinstance(self.value, six.integer_types):
+        if isinstance(self.value, bool):
+            # Check bool first as bool is subclass of int.
+            # So bool is also six.integer_types.
+            value = keras_tuner_pb2.Value(boolean_value=self.value)
+        elif isinstance(self.value, six.integer_types):
             value = keras_tuner_pb2.Value(int_value=self.value)
         elif isinstance(self.value, float):
             value = keras_tuner_pb2.Value(float_value=self.value)
         elif isinstance(self.value, six.string_types):
             value = keras_tuner_pb2.Value(string_value=self.value)
-        else:
-            value = keras_tuner_pb2.Value(boolean_value=self.value)
 
         return keras_tuner_pb2.Fixed(
             name=self.name,

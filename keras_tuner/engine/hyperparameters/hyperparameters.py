@@ -120,9 +120,7 @@ class HyperParameters(object):
         """
         parent_name = self._get_name(parent_name)  # Add name_scopes.
         if not self._exists(parent_name):
-            raise ValueError(
-                "`HyperParameter` named: " + parent_name + " " "not defined."
-            )
+            raise ValueError(f"`HyperParameter` named: {parent_name} not defined.")
 
         condition = conditions_mod.Parent(parent_name, parent_values)
         self._conditions.append(condition)
@@ -163,10 +161,7 @@ class HyperParameters(object):
                 return True
         return False
 
-    def _conditions_are_active(self, conditions=None):
-        if conditions is None:
-            conditions = self._conditions
-
+    def _conditions_are_active(self, conditions):
         for condition in conditions:
             if not condition.is_active(self.values):
                 return False
@@ -213,6 +208,7 @@ class HyperParameters(object):
             not active.
         """
         hp = hyperparameter
+        self._validate_name(hp.name)
         # Copy to ensure this param can be serialized.
         hp = hp.__class__.from_config(hp.get_config())
         self._hps[hp.name].append(hp)
@@ -636,14 +632,14 @@ class HyperParameters(object):
 
         values = {}
         for name, value in self.values.items():
-            if isinstance(value, float):
+            if isinstance(value, bool):
+                val = keras_tuner_pb2.Value(boolean_value=value)
+            elif isinstance(value, float):
                 val = keras_tuner_pb2.Value(float_value=value)
             elif isinstance(value, six.integer_types):
                 val = keras_tuner_pb2.Value(int_value=value)
             elif isinstance(value, six.string_types):
                 val = keras_tuner_pb2.Value(string_value=value)
-            elif isinstance(value, bool):
-                val = keras_tuner_pb2.Value(boolean_value=value)
             else:
                 raise ValueError(f"Unrecognized value type: {value}")
             values[name] = val

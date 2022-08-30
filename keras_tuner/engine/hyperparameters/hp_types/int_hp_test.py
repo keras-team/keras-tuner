@@ -15,6 +15,7 @@
 import pytest
 
 from keras_tuner.engine import hyperparameters as hp_module
+from keras_tuner.engine.hyperparameters import hp_types
 from keras_tuner.protos import keras_tuner_pb2
 
 
@@ -101,4 +102,8 @@ def test_repr_int_is_str():
 def test_serialize_deserialize_int():
     hp = hp_module.Int("j", 1, 10)
     new_hp = hp_module.deserialize(hp_module.serialize(hp))
+    assert repr(hp) == repr(new_hp)
+
+    hp = hp_module.Int("j", 1, 10)
+    new_hp = hp_types.deserialize(hp_types.serialize(hp))
     assert repr(hp) == repr(new_hp)

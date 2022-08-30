@@ -73,16 +73,46 @@ def test_parent_name():
 def test_conditional_scope():
     hp = hp_module.HyperParameters()
     hp.Choice("choice", [1, 2, 3], default=2)
+    # Assignment to a non-active conditional hyperparameter returns `None`.
     with hp.conditional_scope("choice", [1, 3]):
         child1 = hp.Choice("child_choice", [4, 5, 6])
-    with hp.conditional_scope("choice", 2):
-        child2 = hp.Choice("child_choice", [7, 8, 9])
-    # Only active values appear in `values`.
-    assert hp.values == {"choice": 2, "child_choice": 7}
-    # Assignment to a non-active conditional hyperparameter returns `None`.
+    assert child1 is None
+    # Retrieve a non-active hp, still none.
+    with hp.conditional_scope("choice", [1, 3]):
+        child1 = hp.Choice("child_choice", [4, 5, 6])
     assert child1 is None
     # Assignment to an active conditional hyperparameter returns the value.
+    with hp.conditional_scope("choice", 2):
+        child2 = hp.Choice("child_choice", [7, 8, 9])
     assert child2 == 7
+    # Retrieve the value, still same value.
+    with hp.conditional_scope("choice", 2):
+        child2 = hp.Choice("child_choice", [7, 8, 9])
+    assert child2 == 7
+    # Only active values appear in `values`.
+    assert hp.values == {"choice": 2, "child_choice": 7}
+
+    with pytest.raises(ValueError, match="not defined"):
+        with hp.conditional_scope("not_defined_hp", 2):
+            hp.Choice("child_choice", [7, 8, 9])
+
+
+def test_to_proto_unrecognized_hp_type():
+    hps = hp_module.HyperParameters()
+    hps._space.append(None)
+    hps.Fixed("d", "3")
+
+    with pytest.raises(ValueError, match="Unrecognized HP"):
+        hp_module.HyperParameters.from_proto(hps.to_proto())
+
+
+def test_to_proto_unrecognized_value_type():
+    hps = hp_module.HyperParameters()
+    hps.Fixed("d", "3")
+    hps.values["d"] = None
+
+    with pytest.raises(ValueError, match="Unrecognized value type"):
+        hp_module.HyperParameters.from_proto(hps.to_proto())
 
 
 def test_is_active_with_hp_name_and_hp():
@@ -134,6 +164,14 @@ def test_build_with_conditional_scope():
         "layers": 1,
         "units": 16,
     }
+
+
+def test_error_when_hp_same_name_as_condition():
+    hp = hp_module.HyperParameters()
+    hp.Choice("a", [1, 2, 3], default=3)
+    with pytest.raises(ValueError, match="cannot have the same name"):
+        with hp.conditional_scope("a", [1, 3]):
+            hp.Choice("a", [4, 5, 6], default=6)
 
 
 def test_nested_conditional_scopes_and_name_scopes():
