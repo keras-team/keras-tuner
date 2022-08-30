@@ -17,7 +17,9 @@
 import abc
 
 import six
+from tensorflow import keras
 
+from keras_tuner import utils
 from keras_tuner.protos import keras_tuner_pb2
 
 
@@ -95,7 +97,7 @@ class Parent(Condition):
         self.name = name
 
         # Standardize on str, int, float, bool.
-        values = _to_list(values)
+        values = utils.to_list(values)
         first_val = values[0]
         if isinstance(first_val, six.string_types):
             values = [str(v) for v in values]
@@ -135,9 +137,16 @@ class Parent(Condition):
         )
 
 
-def _to_list(values):
-    if isinstance(values, list):
-        return values
-    if isinstance(values, tuple):
-        return list(values)
-    return [values]
+OBJECTS = (
+    Condition,
+    Parent,
+)
+ALL_CLASSES = {cls.__name__: cls for cls in OBJECTS}
+
+
+def deserialize(config):
+    return keras.utils.deserialize_keras_object(config, module_objects=ALL_CLASSES)
+
+
+def serialize(obj):
+    return keras.utils.serialize_keras_object(obj)
