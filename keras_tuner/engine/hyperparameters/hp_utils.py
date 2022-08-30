@@ -17,7 +17,7 @@ import math
 from keras_tuner.protos import keras_tuner_pb2
 
 
-def _sampling_from_proto(sampling):
+def sampling_from_proto(sampling):
     if sampling is None or sampling == keras_tuner_pb2.Sampling.NONE:
         return None
     if sampling == keras_tuner_pb2.Sampling.LINEAR:
@@ -29,7 +29,7 @@ def _sampling_from_proto(sampling):
     raise ValueError(f"Unrecognized sampling: {sampling}")
 
 
-def _sampling_to_proto(sampling):
+def sampling_to_proto(sampling):
     if sampling is None:
         return keras_tuner_pb2.Sampling.NONE
     if sampling == "linear":
@@ -41,7 +41,7 @@ def _sampling_to_proto(sampling):
     raise ValueError(f"Unrecognized sampling: {sampling}")
 
 
-def _prob_to_index(prob, n_index):
+def prob_to_index(prob, n_index):
     """Convert a cumulative probability to a 0-based index in the given range."""
     ele_prob = 1 / n_index
     index = int(math.floor(prob / ele_prob))
@@ -51,14 +51,14 @@ def _prob_to_index(prob, n_index):
     return index
 
 
-def _index_to_prob(index, n_index):
+def index_to_prob(index, n_index):
     """Convert a 0-based index in the given range to cumulative probability."""
     ele_prob = 1 / n_index
     # Center the value in its probability bucket.
     return (index + 0.5) * ele_prob
 
 
-def _check_sampling_arg(sampling, min_value, max_value):
+def check_sampling_arg(sampling, min_value, max_value):
     if min_value > max_value:
         raise ValueError(
             f"`min_value` {str(min_value)} is greater than "

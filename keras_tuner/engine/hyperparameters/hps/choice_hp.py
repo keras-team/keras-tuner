@@ -96,10 +96,10 @@ class Choice(hyperparameter.HyperParameter):
         return self._default
 
     def prob_to_value(self, prob):
-        return self.values[hp_utils._prob_to_index(prob, len(self.values))]
+        return self.values[hp_utils.prob_to_index(prob, len(self.values))]
 
     def value_to_prob(self, value):
-        return hp_utils._index_to_prob(self.values.index(value), len(self.values))
+        return hp_utils.index_to_prob(self.values.index(value), len(self.values))
 
     def get_config(self):
         config = super(Choice, self).get_config()

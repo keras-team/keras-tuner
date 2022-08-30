@@ -110,7 +110,7 @@ class Int(numerical.Numerical):
             self.step = _check_int(step, arg="step")
         elif sampling == "linear":
             self.step = 1
-        self.sampling = hp_utils._check_sampling_arg(sampling, min_value, max_value)
+        self.sampling = hp_utils.check_sampling_arg(sampling, min_value, max_value)
 
     def __repr__(self):
         return (
@@ -167,7 +167,7 @@ class Int(numerical.Numerical):
             min_value=proto.min_value,
             max_value=proto.max_value,
             step=proto.step if proto.step else None,
-            sampling=hp_utils._sampling_from_proto(proto.sampling),
+            sampling=hp_utils.sampling_from_proto(proto.sampling),
             default=proto.default,
             conditions=conditions,
         )
@@ -178,7 +178,7 @@ class Int(numerical.Numerical):
             min_value=self.min_value,
             max_value=self.max_value,
             step=self.step if self.step is not None else 0,
-            sampling=hp_utils._sampling_to_proto(self.sampling),
+            sampling=hp_utils.sampling_to_proto(self.sampling),
             default=self.default,
             conditions=[c.to_proto() for c in self.conditions],
         )

@@ -64,17 +64,17 @@ class Numerical(hyperparameter.HyperParameter):
         if self.sampling == "linear":
             # +1 so that max_value may be sampled.
             n_values = (self.max_value - self.min_value) // self.step + 1
-            index = hp_utils._prob_to_index(prob, n_values)
+            index = hp_utils.prob_to_index(prob, n_values)
             return self.min_value + index * self.step
         if self.sampling == "log":
             # +1 so that max_value may be sampled.
             n_values = int(math.log(self.max_value / self.min_value, self.step)) + 1
-            index = hp_utils._prob_to_index(prob, n_values)
+            index = hp_utils.prob_to_index(prob, n_values)
             return self.min_value * math.pow(self.step, index)
         if self.sampling == "reverse_log":
             # +1 so that max_value may be sampled.
             n_values = int(math.log(self.max_value / self.min_value, self.step)) + 1
-            index = hp_utils._prob_to_index(prob, n_values)
+            index = hp_utils.prob_to_index(prob, n_values)
             return (
                 self.max_value
                 + self.min_value
@@ -91,16 +91,16 @@ class Numerical(hyperparameter.HyperParameter):
             index = (value - self.min_value) // self.step
             # +1 so that max_value may be sampled.
             n_values = (self.max_value - self.min_value) // self.step + 1
-            return hp_utils._index_to_prob(index, n_values)
+            return hp_utils.index_to_prob(index, n_values)
         if self.sampling == "log":
             index = math.log(value / self.min_value, self.step)
             # +1 so that max_value may be sampled.
             n_values = int(math.log(self.max_value / self.min_value, self.step)) + 1
-            return hp_utils._index_to_prob(index, n_values)
+            return hp_utils.index_to_prob(index, n_values)
         if self.sampling == "reverse_log":
             index = math.log(
                 (self.max_value - value + self.min_value) / self.min_value, self.step
             )
             # +1 so that max_value may be sampled.
             n_values = int(math.log(self.max_value / self.min_value, self.step)) + 1
-            return hp_utils._index_to_prob(index, n_values)
+            return hp_utils.index_to_prob(index, n_values)
