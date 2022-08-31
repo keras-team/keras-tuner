@@ -349,10 +349,6 @@ def test_return_default_value_if_not_populated():
     )
 
 
-def test_serialize_deserialize_raw_types():
-    assert hp_module.deserialize(hp_module.serialize(1)) == 1
-
-
 def test_serialize_deserialize_hyperparameters():
     hp = hp_module.HyperParameters()
     hp.Int("temp", 1, 5)

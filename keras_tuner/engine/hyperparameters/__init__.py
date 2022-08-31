@@ -30,23 +30,10 @@ OBJECTS = hp_types.OBJECTS + (
 
 ALL_CLASSES = {cls.__name__: cls for cls in OBJECTS}
 
-RAW_TYPES = (
-    int,
-    float,
-    str,
-    bool,
-)
-
 
 def deserialize(config):
-    # Remove the if block after resolving
-    # https://github.com/keras-team/autokeras/issues/1765
-    if isinstance(config, RAW_TYPES):
-        return config
     return keras.utils.deserialize_keras_object(config, module_objects=ALL_CLASSES)
 
 
 def serialize(obj):
-    if isinstance(obj, RAW_TYPES):
-        return obj
     return keras.utils.serialize_keras_object(obj)
