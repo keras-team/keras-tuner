@@ -107,3 +107,15 @@ def test_serialize_deserialize_int():
     hp = hp_module.Int("j", 1, 10)
     new_hp = hp_types.deserialize(hp_types.serialize(hp))
     assert repr(hp) == repr(new_hp)
+
+
+def test_int_values_property_with_step():
+    assert list(hp_module.Int("int", 2, 8, 2).values) == [2, 4, 6, 8]
+    assert isinstance(list(hp_module.Int("int", 2, 8, 2).values)[0], int)
+    assert list(hp_module.Int("int", 2, 8, 2, sampling="log").values) == [2, 4, 8]
+
+
+def test_int_values_property_without_step():
+    assert list(hp_module.Int("int", 2, 4).values) == [2, 3, 4]
+    assert list(hp_module.Int("int", 2, 20).values) == list(range(2, 21))
+    assert len(list(hp_module.Int("int", 2, 1024, sampling="log").values)) == 10

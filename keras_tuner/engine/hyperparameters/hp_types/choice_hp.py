@@ -91,7 +91,7 @@ class Choice(hyperparameter.HyperParameter):
 
     @property
     def values(self):
-        return (value for value in self._values)
+        return self._values
 
     @property
     def default(self):

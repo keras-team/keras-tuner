@@ -118,3 +118,7 @@ def test_prob_one_choice():
 
     value = hp.prob_to_value(0)
     assert value == 0
+
+
+def test_choice_values_property():
+    assert list(hp_module.Choice("choice", [0, 1, 2]).values) == [0, 1, 2]
