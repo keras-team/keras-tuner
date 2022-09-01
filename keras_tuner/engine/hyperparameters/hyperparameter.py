@@ -49,6 +49,11 @@ class HyperParameter(object):
     def default(self):
         return self._default
 
+    @property
+    def values(self):
+        """Return a iterable of all possible values of the hp."""
+        raise NotImplementedError
+
     def random_sample(self, seed=None):
         random_state = random.Random(seed)
         prob = float(random_state.random())
