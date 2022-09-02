@@ -62,3 +62,11 @@ def check_tf_version():
             "ok.",
             ImportWarning,
         )
+
+
+def to_list(values):
+    if isinstance(values, list):
+        return values
+    if isinstance(values, tuple):
+        return list(values)
+    return [values]

@@ -12,24 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
-
-from keras_tuner import utils
+from keras_tuner.engine import hyperparameters as hp_module
 
 
-def test_check_tf_version_error():
-    utils.tf.__version__ = "1.15.0"
-
-    with pytest.warns(ImportWarning) as record:
-        utils.check_tf_version()
-    assert len(record) == 1
-    assert (
-        "Tensorflow package version needs to be at least 2.0.0"
-        in record[0].message.args[0]
-    )
-
-
-def test_to_list_with_tuple_return_list():
-    result = utils.to_list((1, 2, 3))
-    assert isinstance(result, list)
-    assert result == [1, 2, 3]
+def test_base_hyperparameter():
+    base_param = hp_module.HyperParameter(name="base", default=0)
+    assert base_param.name == "base"
+    assert base_param.default == 0
+    assert base_param.get_config() == {
+        "name": "base",
+        "default": 0,
+        "conditions": [],
+    }
+    base_param = hp_module.HyperParameter.from_config(base_param.get_config())
+    assert base_param.name == "base"
+    assert base_param.default == 0

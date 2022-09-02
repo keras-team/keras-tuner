@@ -14,22 +14,14 @@
 
 import pytest
 
-from keras_tuner import utils
+from keras_tuner.engine.hyperparameters import hp_utils
 
 
-def test_check_tf_version_error():
-    utils.tf.__version__ = "1.15.0"
-
-    with pytest.warns(ImportWarning) as record:
-        utils.check_tf_version()
-    assert len(record) == 1
-    assert (
-        "Tensorflow package version needs to be at least 2.0.0"
-        in record[0].message.args[0]
-    )
+def test_sampling_from_proto_raise_error():
+    with pytest.raises(ValueError, match="Expected sampling"):
+        hp_utils.sampling_from_proto("a")
 
 
-def test_to_list_with_tuple_return_list():
-    result = utils.to_list((1, 2, 3))
-    assert isinstance(result, list)
-    assert result == [1, 2, 3]
+def test_sampling_to_proto_raise_error():
+    with pytest.raises(ValueError, match="Expected sampling"):
+        hp_utils.sampling_to_proto("a")
