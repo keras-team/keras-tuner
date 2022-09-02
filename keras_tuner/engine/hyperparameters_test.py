@@ -217,6 +217,7 @@ def test_Choice():
     assert choice.default == 2
     assert choice.random_sample() in [1, 2, 3]
     assert choice.random_sample(123) == choice.random_sample(123)
+    assert abs(choice.value_to_prob(1) - 1.0 / 6) < 1e-4
     # No default
     choice = hp_module.Choice("choice", [1, 2, 3])
     assert choice.default == 1
@@ -279,6 +280,39 @@ def test_Float():
     assert linear.default == 0.5
 
 
+def test_float_linear_value_to_prob_no_step():
+    rg = hp_module.Float("rg", min_value=1.0, max_value=11.0)
+    assert abs(rg.value_to_prob(4.5) - 0.35) < 1e-4
+    assert rg.prob_to_value(0.35) == 4.5
+
+
+def test_float_log_with_step():
+    rg = hp_module.Float(
+        "rg", min_value=0.01, max_value=100, step=10, sampling="log"
+    )
+    for i in range(10):
+        assert rg.random_sample() in [0.01, 0.1, 1.0, 10.0, 100.0]
+    assert abs(rg.value_to_prob(0.1) - 0.3) < 1e-4
+    assert rg.prob_to_value(0.3) == 0.1
+
+
+def test_float_reverse_log_with_step():
+    rg = hp_module.Float(
+        "rg", min_value=0.01, max_value=100, step=10, sampling="reverse_log"
+    )
+    for i in range(10):
+        # print(rg.random_sample())
+        # assert rg.random_sample() in [0.01, 0.1, 1.0, 10.0, 100.0]
+        # [0.09, 0.9, 9, 90]
+        # [90, 9, 0.9, 0.09]
+        sample = rg.random_sample()
+        assert any(
+            [abs(sample - x) < 1e-4 for x in [0.01, 90.01, 99.01, 99.91, 100.0]]
+        )
+    assert abs(rg.value_to_prob(99.91) - 0.3) < 1e-4
+    assert abs(rg.prob_to_value(0.3) - 99.91) < 1e-4
+
+
 def test_sampling_arg():
     f = hp_module.Float("f", 1e-20, 1e10, sampling="log")
     f = hp_module.Float.from_config(f.get_config())
@@ -293,13 +327,13 @@ def test_sampling_arg():
 
     with pytest.raises(
         ValueError,
-        match="`sampling` `min_value` 1 is greater than the `max_value` 0",
+        match="`min_value` 1 is greater than the `max_value` 0",
     ):
         hp_module.Int("k", 1, 0, sampling="linear")
 
     with pytest.raises(
         ValueError,
-        match="`sampling` `min_value` 1 is greater than the `max_value` 0",
+        match="`min_value` 1 is greater than the `max_value` 0",
     ):
         hp_module.Int("k", 1, 0, sampling="linear")
 
@@ -310,8 +344,8 @@ def test_sampling_zero_length_intervals():
     assert rand_sample == 2
 
     val = 2
-    prob = hp_module.value_to_cumulative_prob(val, f)
-    assert prob == 1
+    prob = f.value_to_prob(val)
+    assert prob == 0.5
 
 
 def test_log_sampling_random_state():
@@ -321,21 +355,21 @@ def test_log_sampling_random_state():
     assert rand_sample <= f.max_value
 
     val = 1e-3
-    prob = hp_module.value_to_cumulative_prob(val, f)
+    prob = f.value_to_prob(val)
     assert prob == 0
-    new_val = hp_module.cumulative_prob_to_value(prob, f)
+    new_val = f.prob_to_value(prob)
     assert np.isclose(val, new_val)
 
     val = 1
-    prob = hp_module.value_to_cumulative_prob(val, f)
+    prob = f.value_to_prob(val)
     assert prob == 0.5
-    new_val = hp_module.cumulative_prob_to_value(prob, f)
+    new_val = f.prob_to_value(prob)
     assert np.isclose(val, new_val)
 
     val = 1e3
-    prob = hp_module.value_to_cumulative_prob(val, f)
+    prob = f.value_to_prob(val)
     assert prob == 1
-    new_val = hp_module.cumulative_prob_to_value(prob, f)
+    new_val = f.prob_to_value(prob)
     assert np.isclose(val, new_val)
 
 
@@ -346,15 +380,15 @@ def test_reverse_log_sampling_random_state():
     assert rand_sample <= f.max_value
 
     val = 1e-3
-    prob = hp_module.value_to_cumulative_prob(val, f)
+    prob = f.value_to_prob(val)
     assert prob == 0
-    new_val = hp_module.cumulative_prob_to_value(prob, f)
+    new_val = f.prob_to_value(prob)
     assert np.isclose(val, new_val)
 
     val = 1
-    prob = hp_module.value_to_cumulative_prob(val, f)
+    prob = f.value_to_prob(val)
     assert prob > 0 and prob < 1
-    new_val = hp_module.cumulative_prob_to_value(prob, f)
+    new_val = f.prob_to_value(prob)
     assert np.isclose(val, new_val)
 
 
@@ -365,9 +399,23 @@ def test_Int():
     assert 5 <= rg.random_sample() <= 9
     assert isinstance(rg.random_sample(), int)
     assert rg.random_sample(123) == rg.random_sample(123)
+    assert abs(rg.value_to_prob(6) - 0.3) < 1e-4
     # No default
     rg = hp_module.Int("rg", min_value=5, max_value=9, step=1)
     assert rg.default == 5
+
+
+def test_int_log_with_step():
+    rg = hp_module.Int("rg", min_value=2, max_value=32, step=2, sampling="log")
+    for i in range(10):
+        assert rg.random_sample() in [2, 4, 8, 16, 32]
+    assert abs(rg.value_to_prob(4) - 0.3) < 1e-4
+    assert rg.prob_to_value(0.3) == 4
+
+
+def test_int_log_without_step():
+    rg = hp_module.Int("rg", min_value=2, max_value=32, sampling="log")
+    assert rg.prob_to_value(rg.value_to_prob(4)) == 4
 
 
 def test_Boolean():
@@ -389,6 +437,10 @@ def test_Boolean():
     # Test random_sample
     assert boolean.random_sample() in {True, False}
     assert boolean.random_sample(123) == boolean.random_sample(123)
+    assert {boolean.value_to_prob(True), boolean.value_to_prob(False)} == {
+        0.25,
+        0.75,
+    }
 
 
 def test_Fixed():
@@ -413,6 +465,7 @@ def test_Fixed():
     fixed = hp_module.Fixed("fixed", 8.2)
     assert fixed.value == 8.2
     assert fixed.random_sample() == 8.2
+    assert fixed.value_to_prob(fixed.value) == 0.5
 
     with pytest.raises(ValueError, match="value must be an"):
         hp_module.Fixed("fixed", None)
@@ -469,7 +522,7 @@ def test_int_proto():
     assert proto.sampling == keras_tuner_pb2.Sampling.LOG
     # Proto stores the implicit default.
     assert proto.default == 1
-    assert proto.step == 1
+    assert proto.step == 0
 
     new_hp = hp_module.Int.from_proto(proto)
     assert new_hp._default == 1
@@ -568,10 +621,10 @@ def test_dict_methods():
 def test_prob_one_choice():
     hp = hp_module.Choice("a", [0, 1, 2])
     # Check that boundaries are valid.
-    value = hp_module.cumulative_prob_to_value(1, hp)
+    value = hp.prob_to_value(1)
     assert value == 2
 
-    value = hp_module.cumulative_prob_to_value(0, hp)
+    value = hp.prob_to_value(0)
     assert value == 0
 
 
