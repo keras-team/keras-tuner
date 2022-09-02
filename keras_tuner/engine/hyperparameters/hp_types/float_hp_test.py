@@ -148,3 +148,20 @@ def test_float_proto():
 
     new_hp = hp_module.Float.from_proto(proto)
     assert new_hp.get_config() == hp.get_config()
+
+
+def test_float_values_property_with_step():
+    assert list(hp_module.Float("float", 2, 8, 2).values) == [2.0, 4.0, 6.0, 8.0]
+    assert isinstance(list(hp_module.Float("float", 2, 8, 2).values)[0], float)
+    assert list(hp_module.Float("float", 0.1, 100.0, 10, sampling="log").values) == [
+        0.1,
+        1.0,
+        10.0,
+        100.0,
+    ]
+
+
+def test_float_values_property_without_step():
+    assert len(list(hp_module.Float("float", 2, 4).values)) == 10
+    assert len(list(hp_module.Float("float", 2, 20).values)) == 10
+    assert len(list(hp_module.Float("float", 2, 1024, sampling="log").values)) == 10

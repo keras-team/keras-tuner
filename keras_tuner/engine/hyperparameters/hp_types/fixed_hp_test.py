@@ -49,3 +49,7 @@ def test_fixed_repr():
     assert repr(hp_module.Fixed("fixed", "value")) == repr(
         hp_module.Fixed("fixed", "value")
     )
+
+
+def test_fixed_values_property():
+    assert list(hp_module.Fixed("fixed", 2).values) == [2]

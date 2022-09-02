@@ -54,6 +54,28 @@ class Numerical(hyperparameter.HyperParameter):
                 (max_value + self.min_value - value) / self.min_value
             ) / math.log(max_value / self.min_value)
 
+    def _get_n_values(self):
+        """Get the total number of possible values using step."""
+        if self.sampling == "linear":
+            # +1 so that max_value may be sampled.
+            return int((self.max_value - self.min_value) // self.step + 1)
+        # For log and reverse_log
+        # +1 so that max_value may be sampled.
+        return int(math.log(self.max_value / self.min_value, self.step) + 1e-8) + 1
+
+    def _get_value_by_index(self, index):
+        """Get the index-th value in the range given step."""
+        if self.sampling == "linear":
+            return self.min_value + index * self.step
+        if self.sampling == "log":
+            return self.min_value * math.pow(self.step, index)
+        if self.sampling == "reverse_log":
+            return (
+                self.max_value
+                + self.min_value
+                - self.min_value * math.pow(self.step, index)
+            )
+
     def _sample_with_step(self, prob):
         """Sample a value with the cumulative prob in the given range.
 
@@ -61,25 +83,17 @@ class Numerical(hyperparameter.HyperParameter):
         values. When calling the function, no need to use (max_value + 1) since the
         function takes care of the inclusion of max_value.
         """
-        if self.sampling == "linear":
-            # +1 so that max_value may be sampled.
-            n_values = (self.max_value - self.min_value) // self.step + 1
-            index = hp_utils.prob_to_index(prob, n_values)
-            return self.min_value + index * self.step
-        if self.sampling == "log":
-            # +1 so that max_value may be sampled.
-            n_values = int(math.log(self.max_value / self.min_value, self.step)) + 1
-            index = hp_utils.prob_to_index(prob, n_values)
-            return self.min_value * math.pow(self.step, index)
-        if self.sampling == "reverse_log":
-            # +1 so that max_value may be sampled.
-            n_values = int(math.log(self.max_value / self.min_value, self.step)) + 1
-            index = hp_utils.prob_to_index(prob, n_values)
-            return (
-                self.max_value
-                + self.min_value
-                - self.min_value * math.pow(self.step, index)
-            )
+        n_values = self._get_n_values()
+        index = hp_utils.prob_to_index(prob, n_values)
+        return self._get_value_by_index(index)
+
+    @property
+    def values(self):
+        if self.step is None:
+            # Evenly select 10 samples as the values.
+            return tuple(set(self.prob_to_value(i * 0.1 + 0.05) for i in range(10)))
+        n_values = self._get_n_values()
+        return (self._get_value_by_index(i) for i in range(n_values))
 
     def _to_prob_with_step(self, value):
         """Convert to cumulative prob with step specified.
@@ -89,18 +103,11 @@ class Numerical(hyperparameter.HyperParameter):
         """
         if self.sampling == "linear":
             index = (value - self.min_value) // self.step
-            # +1 so that max_value may be sampled.
-            n_values = (self.max_value - self.min_value) // self.step + 1
-            return hp_utils.index_to_prob(index, n_values)
         if self.sampling == "log":
             index = math.log(value / self.min_value, self.step)
-            # +1 so that max_value may be sampled.
-            n_values = int(math.log(self.max_value / self.min_value, self.step)) + 1
-            return hp_utils.index_to_prob(index, n_values)
         if self.sampling == "reverse_log":
             index = math.log(
                 (self.max_value - value + self.min_value) / self.min_value, self.step
             )
-            # +1 so that max_value may be sampled.
-            n_values = int(math.log(self.max_value / self.min_value, self.step)) + 1
-            return hp_utils.index_to_prob(index, n_values)
+        n_values = self._get_n_values()
+        return hp_utils.index_to_prob(index, n_values)

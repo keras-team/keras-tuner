@@ -65,7 +65,7 @@ class Choice(hyperparameter.HyperParameter):
                 "`bool`, found values: " + str(values) + "with "
                 "types: " + str(type(values[0]))
             )
-        self.values = values
+        self._values = values
 
         if default is not None and default not in values:
             raise ValueError(
@@ -85,25 +85,29 @@ class Choice(hyperparameter.HyperParameter):
     def __repr__(self):
         return (
             f"Choice(name: '{self.name}', "
-            + f"values: {self.values}, "
+            + f"values: {self._values}, "
             + f"ordered: {self.ordered}, default: {self.default})"
         )
 
     @property
+    def values(self):
+        return self._values
+
+    @property
     def default(self):
         if self._default is None:
-            return self.values[0]
+            return self._values[0]
         return self._default
 
     def prob_to_value(self, prob):
-        return self.values[hp_utils.prob_to_index(prob, len(self.values))]
+        return self._values[hp_utils.prob_to_index(prob, len(self._values))]
 
     def value_to_prob(self, value):
-        return hp_utils.index_to_prob(self.values.index(value), len(self.values))
+        return hp_utils.index_to_prob(self._values.index(value), len(self._values))
 
     def get_config(self):
         config = super(Choice, self).get_config()
-        config["values"] = self.values
+        config["values"] = self._values
         config["ordered"] = self.ordered
         return config
 

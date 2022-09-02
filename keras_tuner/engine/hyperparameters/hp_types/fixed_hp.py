@@ -48,6 +48,10 @@ class Fixed(hyperparameter.HyperParameter):
     def __repr__(self):
         return f"Fixed(name: {self.name}, value: {self.value})"
 
+    @property
+    def values(self):
+        return (self.value,)
+
     def prob_to_value(self, prob):
         return self.value
 

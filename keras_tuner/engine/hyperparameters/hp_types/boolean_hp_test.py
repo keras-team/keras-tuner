@@ -44,3 +44,7 @@ def test_boolean():
 
 def test_boolean_repr():
     assert repr(hp_module.Boolean("bool")) == repr(hp_module.Boolean("bool"))
+
+
+def test_boolean_values_property():
+    assert list(hp_module.Boolean("bool").values) == [True, False]

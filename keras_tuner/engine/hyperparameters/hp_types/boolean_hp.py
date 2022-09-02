@@ -37,6 +37,10 @@ class Boolean(hyperparameter.HyperParameter):
     def __repr__(self):
         return f'Boolean(name: "{self.name}", default: {self.default})'
 
+    @property
+    def values(self):
+        return (True, False)
+
     def prob_to_value(self, prob):
         return bool(prob >= 0.5)
 
