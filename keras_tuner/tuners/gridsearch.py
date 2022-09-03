@@ -155,6 +155,11 @@ class GridSearch(tuner_module.Tuner):
     This tuner will fit models for: ["sgd", 0.01], ["sgd", 0.1], ["adam", 0.01]
     ["adam", 0.1].
 
+    For the following hyperparameter types, GridSearch will not exhaust all
+    possible values, but pick 10 samples evenly.
+    * `hp.Float()`.
+    * `hp.Int()` with `sampling` set to `"log"` or `"reverse_log"`.
+
     Args:
         hypermodel: Instance of `HyperModel` class (or callable that takes
             hyperparameters and returns a Model instance). It is optional when
