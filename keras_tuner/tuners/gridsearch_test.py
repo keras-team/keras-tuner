@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import numpy as np
-import tensorflow as tf
+import random
 
-from keras_tuner.engine import tuner as tuner_module
+from tensorflow import keras
+
+from keras_tuner.engine import hypermodel
 from keras_tuner.tuners import gridsearch
 
 
@@ -30,45 +31,19 @@ def test_that_exhaustive_space_is_explored(tmp_path):
     want_loss = "binary_crossentropy"
     want_dropouts = [True, False]
 
-    def build_model(hp):
-        model = tf.keras.Sequential()
-        model.add(
-            tf.keras.layers.Dense(
-                units=hp.Choice("units_1", values=want_units_1), activation="relu"
-            )
-        )
-        if hp.Boolean("dropout", default=want_dropouts[0]):
-            model.add(tf.keras.layers.Dropout(rate=0.25))
-        model.add(
-            tf.keras.layers.Dense(
-                units=hp.Choice("units_2", values=want_units_2), activation="relu"
-            )
-        )
-        model.add(tf.keras.layers.Dense(1, activation="sigmoid"))
-        model.compile(
+    class MyGridSearch(gridsearch.GridSearch):
+        def run_trial(self, trial, *args, **kwargs):
+            hp = trial.hyperparameters
+            hp.Choice("units_1", values=want_units_1)
+            hp.Boolean("dropout", default=want_dropouts[0])
+            hp.Choice("units_2", values=want_units_2)
             hp.Choice("optmizer", values=want_optimizers),
-            loss=hp.Fixed("loss", value=want_loss),
-            metrics=["accuracy"],
-        )
-        return model
-
-    class MyGridSearch(gridsearch.GridSearchOracle):
-        populate_space_call_count = 0
-
-        def populate_space(self, trial_id):
-            result = super(MyGridSearch, self).populate_space(trial_id)
-            MyGridSearch.populate_space_call_count += 1
-            return result
+            hp.Fixed("loss", value=want_loss)
+            return random.random()
 
     # When
-    tuner = tuner_module.Tuner(
-        oracle=MyGridSearch(objective="accuracy"),
-        hypermodel=build_model,
-        directory=tmp_path,
-    )
-
-    x, y = np.ones((10, 10)), np.ones((10, 1))
-    tuner.search(x, y, epochs=1)
+    tuner = MyGridSearch(directory=tmp_path)
+    tuner.search()
 
     # Then
     assert {hp.name for hp in tuner.oracle.get_space().space} == {
@@ -81,7 +56,7 @@ def test_that_exhaustive_space_is_explored(tmp_path):
 
     # 2 units_1, 3 optimizers, 2 units_2, 2 dropout and 1 loss
     expected_hyperparameter_space = 24
-    assert tuner.oracle.populate_space_call_count == expected_hyperparameter_space
+    assert len(tuner.oracle.trials) == expected_hyperparameter_space
 
     trials = tuner.oracle.get_best_trials(num_trials=expected_hyperparameter_space)
     explored_space = [trial.hyperparameters.values for trial in trials]
@@ -96,3 +71,75 @@ def test_that_exhaustive_space_is_explored(tmp_path):
                         "loss": want_loss,
                         "dropout": want_dropout,
                     } in explored_space
+
+
+def test_int_and_float(tmp_path):
+    class MyGridSearch(gridsearch.GridSearch):
+        def run_trial(self, trial, *args, **kwargs):
+            hp = trial.hyperparameters
+            hp.Int("int", 1, 5)
+            hp.Float("float", 1, 2)
+            return random.random()
+
+    tuner = MyGridSearch(directory=tmp_path)
+    tuner.search()
+    # int has 5 values, float sampled 10 values and 1 default value
+    # 5 * (10 + 1)
+    assert len(tuner.oracle.trials) == 55
+
+
+def test_new_hp(tmp_path):
+    class MyGridSearch(gridsearch.GridSearch):
+        def run_trial(self, trial, *args, **kwargs):
+            hp = trial.hyperparameters
+            if hp.Boolean("bool"):
+                hp.Choice("choice1", [0, 1, 2])
+            else:
+                hp.Choice("choice2", [3, 4, 5])
+            return random.random()
+
+    tuner = MyGridSearch(directory=tmp_path)
+    tuner.search(verbose=0)
+    assert len(tuner.oracle.trials) == 3 + 3 * 3
+
+
+def test_hp_in_fit(tmp_path):
+    class MyHyperModel(hypermodel.HyperModel):
+        def build(self, hp):
+            hp.Fixed("fixed", 3)
+            return keras.Sequential()
+
+        def fit(self, hp, model, *args, **kwargs):
+            hp.Choice("choice", [0, 1, 2])
+            return random.random()
+
+    tuner = gridsearch.GridSearch(hypermodel=MyHyperModel(), directory=tmp_path)
+    tuner.search(verbose=0)
+    assert len(tuner.oracle.trials) == 3
+
+
+# def test_conditional_scope(tmp_path):
+#     class MyHyperModel(hypermodel.HyperModel):
+#         def build(self, hp):
+#             a = hp.Boolean("bool")
+#             with hp.conditional_scope("bool", [True]):
+#                 if a:
+#                     hp.Choice("choice1", [0, 1, 2])
+#             with hp.conditional_scope("bool", [False]):
+#                 if not a:
+#                     hp.Choice("choice2", [3, 4, 5])
+#             return keras.Sequential()
+
+#         def fit(self, hp, model, *args, **kwargs):
+#             a = hp.Boolean("bool2")
+#             with hp.conditional_scope("bool2", [True]):
+#                 if a:
+#                     hp.Choice("choice3", [0, 1, 2])
+#             with hp.conditional_scope("bool", [False]):
+#                 if not a:
+#                     hp.Choice("choice4", [3, 4, 5])
+#             return random.random()
+
+#     tuner = gridsearch.GridSearch(hypermodel=MyHyperModel(), directory=tmp_path)
+#     tuner.search(verbose=0)
+#     assert len(tuner.oracle.trials) == 36

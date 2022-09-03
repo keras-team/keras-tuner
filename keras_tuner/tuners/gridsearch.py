@@ -83,9 +83,13 @@ class GridSearchOracle(oracle_module.Oracle):
             is the TrialStatus that should be returned for this trial (one
             of "RUNNING", "IDLE", or "STOPPED").
         """
-        last_trial = self.trials[self.start_order[-1]]
-        last_values = last_trial.hyperparameters.values
-        values = self._get_next_combination(last_values)
+        if len(self.start_order) > 0:
+            last_trial = self.trials[self.start_order[-1]]
+            last_values = last_trial.hyperparameters.values
+            values = self._get_next_combination(last_values)
+        else:
+            # Use all default values for the first trial.
+            values = {hp.name: hp.default for hp in self.get_space().space}
         if values is None:
             return {"status": trial_module.TrialStatus.STOPPED, "values": None}
         return {"status": trial_module.TrialStatus.RUNNING, "values": values}
@@ -93,19 +97,18 @@ class GridSearchOracle(oracle_module.Oracle):
     def _get_next_combination(self, values):
         """Get the next value combination.
 
-        Even with populate_initial_space(), it is still possible to have new hps
-        during search. The new hps typically come from HyperModel.fit(), which
-        is not called in populate_initial_space().
-
-        New hps are only added at the end of the `HyperParameters`. When added,
-        it is already tried once with the default value.
+        This function is called on the second and later trials, but not on the
+        first one. Even new hps appear during search, the all hps in
+        self.get_space() should have corresponding values in the `values` arg.
+        This is because `values` is from the last trial, whose values has been
+        updated during that trial, which contains all seen hps.
 
         We treat the default value of a hp as the first value, and the rest are
         in normal order. We will enumerate the values according to this order.
         Get all possible hyperparameter values
         """
 
-        hps = self.hyperparameters.copy()
+        hps = self.get_space()
         all_values = {}
         for hp in hps.space:
             value_list = list(hp.values)
@@ -122,8 +125,6 @@ class GridSearchOracle(oracle_module.Oracle):
         # Iterate in reverse order so that we can change the value under
         # conditional scope first instead of change the condition value first.
         for name in reversed(names):
-            if name not in new_values:
-                new_values[name] = hps.values[name]
             # Bump up the hp value if possible.
             if new_values[name] != all_values[name][-1]:
                 index = all_values[name].index(new_values[name]) + 1
