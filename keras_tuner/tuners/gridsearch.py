@@ -15,9 +15,9 @@
 "Basic exhaustive search tuner."
 
 
-from keras_tuner.engine import hyperparameters as hp_module
+import copy
+
 from keras_tuner.engine import oracle as oracle_module
-from keras_tuner.engine import trial as trial_lib
 from keras_tuner.engine import trial as trial_module
 from keras_tuner.engine import tuner as tuner_module
 
@@ -83,114 +83,59 @@ class GridSearchOracle(oracle_module.Oracle):
             is the TrialStatus that should be returned for this trial (one
             of "RUNNING", "IDLE", or "STOPPED").
         """
-        values = self._exhaustive_values()
+        last_trial = self.trials[self.start_order[-1]]
+        last_values = last_trial.hyperparameters.values
+        values = self._get_next_combination(last_values)
         if values is None:
             return {"status": trial_module.TrialStatus.STOPPED, "values": None}
         return {"status": trial_module.TrialStatus.RUNNING, "values": values}
 
-    def create_trial(self, tuner_id):
-        """Create a new `Trial` to be run by the `Tuner`.
+    def _get_next_combination(self, values):
+        """Get the next value combination.
 
-        A `Trial` corresponds to a unique set of hyperparameters to be run
-        by `Tuner.run_trial`.
+        Even with populate_initial_space(), it is still possible to have new hps
+        during search. The new hps typically come from HyperModel.fit(), which
+        is not called in populate_initial_space().
 
-        Args:
-            tuner_id: A string, the ID that identifies the `Tuner` requesting a
-                `Trial`. `Tuners` that should run the same trial (for instance,
-                when running a multi-worker model) should have the same ID.
+        New hps are only added at the end of the `HyperParameters`. When added,
+        it is already tried once with the default value.
 
-        Returns:
-            A `Trial` object containing a set of hyperparameter values to run
-            in a `Tuner`.
+        We treat the default value of a hp as the first value, and the rest are
+        in normal order. We will enumerate the values according to this order.
+        Get all possible hyperparameter values
         """
-        # Allow for multi-worker DistributionStrategy within a Trial.
-        if tuner_id in self.ongoing_trials:
-            return self.ongoing_trials[tuner_id]
 
-        # The hyperparameter types that allow an exhaustive search due to their
-        # finite sets.
-        allowed_types = {hp_module.Choice, hp_module.Boolean, hp_module.Fixed}
-        # Calculates the size of the set of all possible choices.
-        number_of_hp_choices = 1
-        for hp in self.hyperparameters.space:
-            if type(hp) not in allowed_types:
-                raise ValueError(
-                    "ExhaustiveSearch tuner accepts hyperparameters of type "
-                    "Choice, Boolean and Fixed as it needs to have a finite "
-                    f"set of choices to search, found: {hp}"
-                )
-            # Fixed has no "values" (it is actually 1) attribute as they do
-            # not dispose of possible choices, so we skip counting it.
-            # As its count is 1 it won't change the final product.
-            # Boolean has True and False, count as 2.
-            # Choice has the values given by its cardinality.
-            if type(hp) == hp_module.Fixed:
-                continue
-            elif type(hp) == hp_module.Boolean:
-                number_of_hp_choices = number_of_hp_choices * 2
-            else:
-                number_of_hp_choices = number_of_hp_choices * len(hp.values)
+        hps = self.hyperparameters.copy()
+        all_values = {}
+        for hp in hps.space:
+            value_list = list(hp.values)
+            if hp.default in value_list:
+                value_list.remove(hp.default)
+            # Put the default value first.
+            all_values[hp.name] = [hp.default] + value_list
+        default_values = {hp.name: hp.default for hp in hps.space}
+        names = [hp.name for hp in hps.space]  # Ordered
+        new_values = copy.deepcopy(values)
 
-        # If max_trials was not given, take the calculated number of hp choices
-        # to exhaustion. f max_trials was given, take the minimum value between
-        # it and the calculated number of hp choices to exhaustion. It implies
-        # that grid search will run trials up to the maximum amount of choices
-        # available in the grid, even if the given max_trials is a bigger value.
-        self.max_trials = min(
-            trial_count
-            for trial_count in [number_of_hp_choices, self.max_trials]
-            if trial_count is not None
-        )
+        bumped_value = False
 
-        # Make the trial_id the current number of trial, pre-padded with 0s
-        trial_id = "{{:0{}d}}".format(len(str(self.max_trials)))
-        trial_id = trial_id.format(len(self.trials))
+        # Iterate in reverse order so that we can change the value under
+        # conditional scope first instead of change the condition value first.
+        for name in reversed(names):
+            if name not in new_values:
+                new_values[name] = hps.values[name]
+            # Bump up the hp value if possible.
+            if new_values[name] != all_values[name][-1]:
+                index = all_values[name].index(new_values[name]) + 1
+                new_values[name] = all_values[name][index]
+                bumped_value = True
+                break
+            # Otherwise, reset to its first value.
+            new_values[name] = default_values[name]
 
-        if self.max_trials and len(self.trials) >= self.max_trials:
-            status = trial_lib.TrialStatus.STOPPED
-            values = None
-        else:
-            response = self.populate_space(trial_id)
-            status = response["status"]
-            values = response["values"] if "values" in response else None
+        if bumped_value:
+            return new_values
 
-        hyperparameters = self.hyperparameters.copy()
-        hyperparameters.values = values or {}
-        trial = trial_lib.Trial(
-            hyperparameters=hyperparameters, trial_id=trial_id, status=status
-        )
-
-        if status == trial_lib.TrialStatus.RUNNING:
-            self.ongoing_trials[tuner_id] = trial
-            self.trials[trial_id] = trial
-            self.start_order.append(trial_id)
-            self._save_trial(trial)
-            self.save()
-
-        return trial
-
-    def _exhaustive_values(self):
-        """Fills the hyperparameter space until exhaustion of values.
-
-        Returns:
-            A dictionary mapping parameter names to suggested values.
-        """
-        # Keep trying until have tried all the possible choice
-        # combinations.
-        while len(self._tried_so_far) < self.max_trials:
-            hps = hp_module.HyperParameters()
-            # Generate a set of random values.
-            for hp in self.hyperparameters.space:
-                hps.merge([hp])
-                if hps.is_active(hp):  # Only active params in `values`.
-                    hps.values[hp.name] = hp.random_sample(self._seed_state)
-                    self._seed_state += 1
-            values = hps.values
-            values_hash = self._compute_values_hash(values)
-            if values_hash in self._tried_so_far:
-                continue
-            self._tried_so_far.add(values_hash)
-            return values
         return None
 
 
