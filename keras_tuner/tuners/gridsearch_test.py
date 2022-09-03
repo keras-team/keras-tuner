@@ -118,28 +118,28 @@ def test_hp_in_fit(tmp_path):
     assert len(tuner.oracle.trials) == 3
 
 
-# def test_conditional_scope(tmp_path):
-#     class MyHyperModel(hypermodel.HyperModel):
-#         def build(self, hp):
-#             a = hp.Boolean("bool")
-#             with hp.conditional_scope("bool", [True]):
-#                 if a:
-#                     hp.Choice("choice1", [0, 1, 2])
-#             with hp.conditional_scope("bool", [False]):
-#                 if not a:
-#                     hp.Choice("choice2", [3, 4, 5])
-#             return keras.Sequential()
+def test_conditional_scope(tmp_path):
+    class MyHyperModel(hypermodel.HyperModel):
+        def build(self, hp):
+            a = hp.Boolean("bool")
+            with hp.conditional_scope("bool", [True]):
+                if a:
+                    hp.Choice("choice1", [1, 2])
+            with hp.conditional_scope("bool", [False]):
+                if not a:
+                    hp.Choice("choice2", [3, 4])
+            return keras.Sequential()
 
-#         def fit(self, hp, model, *args, **kwargs):
-#             a = hp.Boolean("bool2")
-#             with hp.conditional_scope("bool2", [True]):
-#                 if a:
-#                     hp.Choice("choice3", [0, 1, 2])
-#             with hp.conditional_scope("bool", [False]):
-#                 if not a:
-#                     hp.Choice("choice4", [3, 4, 5])
-#             return random.random()
+        def fit(self, hp, model, *args, **kwargs):
+            a = hp.Boolean("bool2")
+            with hp.conditional_scope("bool2", [True]):
+                if a:
+                    hp.Choice("choice3", [1, 2])
+            with hp.conditional_scope("bool2", [False]):
+                if not a:
+                    hp.Choice("choice4", [3, 4])
+            return random.random()
 
-#     tuner = gridsearch.GridSearch(hypermodel=MyHyperModel(), directory=tmp_path)
-#     tuner.search(verbose=0)
-#     assert len(tuner.oracle.trials) == 36
+    tuner = gridsearch.GridSearch(hypermodel=MyHyperModel(), directory=tmp_path)
+    tuner.search(verbose=0)
+    assert len(tuner.oracle.trials) == 4 * 4

@@ -117,17 +117,19 @@ class GridSearchOracle(oracle_module.Oracle):
             # Put the default value first.
             all_values[hp.name] = [hp.default] + value_list
         default_values = {hp.name: hp.default for hp in hps.space}
-        names = [hp.name for hp in hps.space]  # Ordered
         new_values = copy.deepcopy(values)
+        hps.values = new_values
 
         bumped_value = False
 
         # Iterate in reverse order so that we can change the value under
         # conditional scope first instead of change the condition value first.
-        for name in reversed(names):
-            # Bump up the hp value if possible.
-            if new_values[name] != all_values[name][-1]:
-                index = all_values[name].index(new_values[name]) + 1
+        for hp in reversed(hps.space):
+            name = hp.name
+            value = new_values[name]
+            # Bump up the hp value if possible and active.
+            if value != all_values[name][-1] and hps.is_active(hp):
+                index = all_values[name].index(value) + 1
                 new_values[name] = all_values[name][index]
                 bumped_value = True
                 break
