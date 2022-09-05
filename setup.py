@@ -19,7 +19,7 @@ from setuptools import setup
 
 setup(
     name="keras-tuner",
-    description="Hypertuner for Keras",
+    description="Hyperparameter tuning for Keras and more",
     url="https://github.com/keras-team/keras-tuner",
     author="The KerasTuner authors",
     author_email="kerastuner@google.com",
