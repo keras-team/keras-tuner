@@ -86,6 +86,12 @@ class GridSearchOracle(oracle_module.Oracle):
         if len(self.start_order) > 0:
             last_trial = self.trials[self.start_order[-1]]
             last_values = last_trial.hyperparameters.values
+            # The keys (hp names) in the `last_values` are always consistent with
+            # the hps in `self.get_space().space`, even for newly appeared hps.
+            # For example, during last trial's `_populate_space()`, a new hp
+            # has not appeared. During last trial's `HyperModel.build()`, the
+            # new hp appeared. The `hyperparameters.values` is then updated
+            # immediately.
             values = self._get_next_combination(last_values)
         else:
             # Use all default values for the first trial.
@@ -95,17 +101,29 @@ class GridSearchOracle(oracle_module.Oracle):
         return {"status": trial_module.TrialStatus.RUNNING, "values": values}
 
     def _get_next_combination(self, values):
-        """Get the next value combination.
+        """Get the next value combination to try.
 
-        This function is called on the second and later trials, but not on the
-        first one. Even new hps appear during search, the all hps in
-        self.get_space() should have corresponding values in the `values` arg.
-        This is because `values` is from the last trial, whose values has been
-        updated during that trial, which contains all seen hps.
+        Given the last trial's value dictionary, the function finds the next
+        possible value combination for the hps. As it requires the last trial's
+        values as input, it should not be called on the first trial. The first
+        trial should all use default values.
 
-        We treat the default value of a hp as the first value, and the rest are
-        in normal order. We will enumerate the values according to this order.
-        Get all possible hyperparameter values
+        To better handle the newly appeared hps during search, we have a special
+        order for iterating the values of each hp in the search space. We always
+        treat the default value of each hp as the first value to iterate, and
+        the rest of the values follows the original order (each hp type has
+        their own way for sorting values).
+
+        When the new hp appeared in a trial, due to KerasTuner's hp tracing
+        mechanism, the default value is used for that trial. The oracle can only
+        control the values for the following trials, but not the first one.
+
+        Args:
+            values: Dict. The keys are hp names. The values are the hp values
+                from the last trial.
+
+        Returns:
+            Dict. The next possible value combination for the hyperparameters.
         """
 
         hps = self.get_space()
@@ -143,7 +161,7 @@ class GridSearchOracle(oracle_module.Oracle):
 
 
 class GridSearch(tuner_module.Tuner):
-    """The Grid search tuner.
+    """The grid search tuner.
 
     It will try all the possible hyperparameter
     combinations up to exhaustion.
@@ -152,16 +170,20 @@ class GridSearch(tuner_module.Tuner):
 
     ```py
     optimizer = hp.Choice("model_name", values=["sgd", "adam"])
-    lr = hp.Choice("lr", values=[0.01, 0.1])
+    learning_rate = hp.Choice("learning_rate", values=[0.01, 0.1])
     ```
 
-    This tuner will fit models for: ["sgd", 0.01], ["sgd", 0.1], ["adam", 0.01]
-    ["adam", 0.1].
+    This tuner will fit models for:
+    `["sgd", 0.01], ["sgd", 0.1], ["adam", 0.01] ["adam", 0.1]`.
 
     For the following hyperparameter types, GridSearch will not exhaust all
-    possible values, but pick 10 samples evenly.
-    * `hp.Float()`.
-    * `hp.Int()` with `sampling` set to `"log"` or `"reverse_log"`.
+    possible values.
+    * `hp.Float()` when `step` is left unspecified.
+    * `hp.Int()` with `sampling` set to `"log"` or `"reverse_log"`, and `step`
+        is left unspecified.
+    For these cases, KerasTuner would pick 10 samples in the range evenly by default.
+    To configure the granularity of sampling for `hp.Float()` and `hp.Int()`,
+    please use the `step` argument in their initializers.
 
     Args:
         hypermodel: Instance of `HyperModel` class (or callable that takes
