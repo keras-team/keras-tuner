@@ -103,20 +103,15 @@ class GridSearchOracle(oracle_module.Oracle):
     def _get_next_combination(self, values):
         """Get the next value combination to try.
 
-        Given the last trial's value dictionary, the function finds the next
-        possible value combination for the hps. As it requires the last trial's
+        Given the last trial's values dictionary, this method retrieves the next
+        hyperparameter values to try. As it requires the last trial's
         values as input, it should not be called on the first trial. The first
-        trial should all use default values.
+        trial will always use default hp values.
 
-        To better handle the newly appeared hps during search, we have a special
-        order for iterating the values of each hp in the search space. We always
-        treat the default value of each hp as the first value to iterate, and
-        the rest of the values follows the original order (each hp type has
-        their own way for sorting values).
+        This oracle iterates over the search space entirely deterministically.
 
-        When the new hp appeared in a trial, due to KerasTuner's hp tracing
-        mechanism, the default value is used for that trial. The oracle can only
-        control the values for the following trials, but not the first one.
+        When a new hp appears in a trial, the first value tried for that hp
+        will be its default value.
 
         Args:
             values: Dict. The keys are hp names. The values are the hp values
@@ -163,27 +158,29 @@ class GridSearchOracle(oracle_module.Oracle):
 class GridSearch(tuner_module.Tuner):
     """The grid search tuner.
 
-    It will try all the possible hyperparameter
-    combinations up to exhaustion.
+    This tuner iterates over all possible
+    hyperparameter combinations.
 
-    For example:
+    For example, with:
 
     ```py
     optimizer = hp.Choice("model_name", values=["sgd", "adam"])
     learning_rate = hp.Choice("learning_rate", values=[0.01, 0.1])
     ```
 
-    This tuner will fit models for:
+    This tuner will cover the following combinations:
     `["sgd", 0.01], ["sgd", 0.1], ["adam", 0.01] ["adam", 0.1]`.
 
     For the following hyperparameter types, GridSearch will not exhaust all
-    possible values.
+    possible values:
+
     * `hp.Float()` when `step` is left unspecified.
     * `hp.Int()` with `sampling` set to `"log"` or `"reverse_log"`, and `step`
         is left unspecified.
-    For these cases, KerasTuner would pick 10 samples in the range evenly by default.
+
+    For these cases, KerasTuner will pick 10 samples in the range evenly by default.
     To configure the granularity of sampling for `hp.Float()` and `hp.Int()`,
-    please use the `step` argument in their initializers.
+    please use the the `step` argument in their initializers.
 
     Args:
         hypermodel: Instance of `HyperModel` class (or callable that takes
