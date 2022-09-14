@@ -67,7 +67,6 @@ def check_sampling_arg(sampling, min_value, max_value):
             f"the `max_value` {str(max_value)}."
         )
     sampling_values = {"linear", "log", "reverse_log"}
-    sampling = sampling.lower()
     if sampling not in sampling_values:
         raise ValueError(f"`sampling` must be one of {str(sampling_values)}")
     if sampling in {"log", "reverse_log"} and min_value <= 0:
