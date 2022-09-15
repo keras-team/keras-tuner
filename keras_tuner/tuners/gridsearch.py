@@ -180,7 +180,7 @@ class GridSearch(tuner_module.Tuner):
 
     For these cases, KerasTuner will pick 10 samples in the range evenly by default.
     To configure the granularity of sampling for `hp.Float()` and `hp.Int()`,
-    please use the the `step` argument in their initializers.
+    please use the `step` argument in their initializers.
 
     Args:
         hypermodel: Instance of `HyperModel` class (or callable that takes
