@@ -290,7 +290,7 @@ class HyperParameters(object):
         name,
         min_value,
         max_value,
-        step=1,
+        step=None,
         sampling="linear",
         default=None,
         parent_name=None,
