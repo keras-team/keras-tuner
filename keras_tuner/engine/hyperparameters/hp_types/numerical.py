@@ -21,6 +21,60 @@ from keras_tuner.engine.hyperparameters import hyperparameter
 class Numerical(hyperparameter.HyperParameter):
     """Super class for all numerical type hyperparameters."""
 
+    def __init__(
+        self,
+        name,
+        min_value,
+        max_value,
+        step=None,
+        sampling="linear",
+        default=None,
+        **kwargs,
+    ):
+        super().__init__(name=name, default=default, **kwargs)
+        self.max_value = max_value
+        self.min_value = min_value
+        self.step = step
+        self.sampling = sampling
+        self._check_sampling_arg()
+
+    def _check_sampling_arg(self):
+        if self.min_value > self.max_value:
+            raise ValueError(
+                f"For HyperParameters.{self.__class__.__name__}"
+                f"(name='{self.name}'), "
+                f"min_value {str(self.min_value)} is greater than "
+                f"the max_value {str(self.max_value)}."
+            )
+        sampling_values = {"linear", "log", "reverse_log"}
+        if self.sampling is None:
+            self.sampling = "linear"
+        self.sampling = self.sampling.lower()
+        if self.sampling not in sampling_values:
+            raise ValueError(
+                f"For HyperParameters.{self.__class__.__name__}"
+                f"(name='{self.name}'), "
+                f"sampling must be one of {str(sampling_values)}"
+            )
+        if self.sampling in {"log", "reverse_log"} and self.min_value <= 0:
+            raise ValueError(
+                f"For HyperParameters.{self.__class__.__name__}"
+                f"(name='{self.name}'), "
+                f"sampling='{str(self.sampling)}' does not support "
+                f"negative values, found min_value: {str(self.min_value)}."
+            )
+        if (
+            self.sampling in {"log", "reverse_log"}
+            and self.step is not None
+            and self.step <= 1
+        ):
+            raise ValueError(
+                f"For HyperParameters.{self.__class__.__name__}"
+                f"(name='{self.name}'), "
+                f"expected step > 1 with sampling='{str(self.sampling)}'. "
+                f"Received: step={str(self.step)}."
+            )
+
     def _sample_numerical_value(self, prob, max_value=None):
         """Sample a value with the cumulative prob in the given range."""
         if max_value is None:

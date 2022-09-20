@@ -24,18 +24,18 @@ def test_int_sampling_arg():
     i = hp_module.Int.from_config(i.get_config())
     assert i.sampling == "linear"
 
-    with pytest.raises(ValueError, match="`sampling` must be one of"):
+    with pytest.raises(ValueError, match="sampling must be one of"):
         hp_module.Int("j", 0, 10, sampling="invalid")
 
     with pytest.raises(
         ValueError,
-        match="`min_value` 1 is greater than the `max_value` 0",
+        match="min_value 1 is greater than the max_value 0",
     ):
         hp_module.Int("k", 1, 0, sampling="linear")
 
     with pytest.raises(
         ValueError,
-        match="`min_value` 1 is greater than the `max_value` 0",
+        match="min_value 1 is greater than the max_value 0",
     ):
         hp_module.Int("k", 1, 0, sampling="linear")
 
@@ -44,6 +44,12 @@ def test_int_sampling_arg():
         match="does not support negative values",
     ):
         hp_module.Int("k", -10, -1, sampling="log")
+
+    with pytest.raises(
+        ValueError,
+        match="For HyperParameters.Int\(name='k'\), expected step > 1",
+    ):
+        hp_module.Int("k", 1, 10, step=1, sampling="log")
 
 
 def test_int():

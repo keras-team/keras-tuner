@@ -104,15 +104,19 @@ class Int(numerical.Numerical):
         default=None,
         **kwargs,
     ):
-        super(Int, self).__init__(name=name, default=default, **kwargs)
-        self.max_value = _check_int(max_value, arg="max_value")
-        self.min_value = _check_int(min_value, arg="min_value")
-        self.step = None
         if step is not None:
-            self.step = _check_int(step, arg="step")
+            step = _check_int(step, arg="step")
         elif sampling == "linear":
-            self.step = 1
-        self.sampling = hp_utils.check_sampling_arg(sampling, min_value, max_value)
+            step = 1
+        super().__init__(
+            name=name,
+            min_value=_check_int(min_value, arg="min_value"),
+            max_value=_check_int(max_value, arg="max_value"),
+            step=step,
+            sampling=sampling,
+            default=default,
+            **kwargs,
+        )
 
     def __repr__(self):
         return (

@@ -58,23 +58,3 @@ def index_to_prob(index, n_index):
     ele_prob = 1 / n_index
     # Center the value in its probability bucket.
     return (index + 0.5) * ele_prob
-
-
-def check_sampling_arg(sampling, min_value, max_value):
-    if min_value > max_value:
-        raise ValueError(
-            f"`min_value` {str(min_value)} is greater than "
-            f"the `max_value` {str(max_value)}."
-        )
-    sampling_values = {"linear", "log", "reverse_log"}
-    if sampling is None:
-        sampling = "linear"
-    sampling = sampling.lower()
-    if sampling not in sampling_values:
-        raise ValueError(f"`sampling` must be one of {str(sampling_values)}")
-    if sampling in {"log", "reverse_log"} and min_value <= 0:
-        raise ValueError(
-            f"`sampling='{str(sampling)}' does not support "
-            f"negative values, found `min_value`: {str(min_value)}."
-        )
-    return sampling

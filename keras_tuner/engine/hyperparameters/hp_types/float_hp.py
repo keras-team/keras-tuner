@@ -91,14 +91,17 @@ class Float(numerical.Numerical):
         default=None,
         **kwargs,
     ):
-        super(Float, self).__init__(name=name, default=default, **kwargs)
-        self.max_value = float(max_value)
-        self.min_value = float(min_value)
         if step is not None:
             self.step = float(step)
-        else:
-            self.step = None
-        self.sampling = hp_utils.check_sampling_arg(sampling, min_value, max_value)
+        super().__init__(
+            name=name,
+            min_value=float(min_value),
+            max_value=float(max_value),
+            step=step,
+            sampling=sampling,
+            default=default,
+            **kwargs,
+        )
 
     def __repr__(self):
         return (
