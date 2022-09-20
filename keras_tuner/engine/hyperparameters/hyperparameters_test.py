@@ -354,3 +354,9 @@ def test_serialize_deserialize_hyperparameters():
     hp.Int("temp", 1, 5)
     hp = hp_module.deserialize(hp_module.serialize(hp))
     assert len(hp.space) == 1
+
+
+def test_int_log_without_step_random_sample():
+    hp = hp_module.HyperParameters()
+    hp.Int("rg", min_value=2, max_value=32, sampling="log")
+    hp.space[0].random_sample()
