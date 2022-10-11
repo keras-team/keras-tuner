@@ -47,6 +47,8 @@ class Numerical(hyperparameter.HyperParameter):
                 f"the max_value {str(self.max_value)}."
             )
         sampling_values = {"linear", "log", "reverse_log"}
+        # This is for backward compatibility.
+        # sampling=None was allowed and was the default value.
         if self.sampling is None:
             self.sampling = "linear"
         self.sampling = self.sampling.lower()
