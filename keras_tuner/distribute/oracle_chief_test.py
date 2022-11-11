@@ -14,9 +14,6 @@
 """Tests for the OracleServicer class."""
 
 import os
-import sys
-
-import pytest
 
 import keras_tuner
 from keras_tuner.distribute import oracle_chief
@@ -99,7 +96,6 @@ def test_create_trial(tmp_path):
     mock_distribute.mock_distribute(_test_create_trial)
 
 
-@pytest.mark.skipif(sys.version_info < (3, 0), reason="TODO: Enable test for Py2")
 def test_update_trial(tmp_path):
     def _test_update_trial():
         hps = keras_tuner.HyperParameters()
@@ -127,7 +123,6 @@ def test_update_trial(tmp_path):
     mock_distribute.mock_distribute(_test_update_trial)
 
 
-@pytest.mark.skipif(sys.version_info < (3, 0), reason="TODO: Enable test for Py2")
 def test_end_trial(tmp_path):
     def _test_end_trial():
         hps = keras_tuner.HyperParameters()

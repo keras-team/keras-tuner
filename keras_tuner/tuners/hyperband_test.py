@@ -13,10 +13,8 @@
 # limitations under the License.
 
 import logging
-import sys
 
 import numpy as np
-import pytest
 import tensorflow as tf
 
 import keras_tuner
@@ -61,7 +59,6 @@ def test_hyperband_oracle_bracket_configs(tmp_path):
     assert oracle._get_epochs(bracket_num=0, round_num=0) == 8
 
 
-@pytest.mark.skipif(sys.version_info < (3, 0), reason="TODO: Enable test for Py2")
 def test_hyperband_oracle_one_sweep_single_thread(tmp_path):
     hp = keras_tuner.HyperParameters()
     hp.Float("a", -100, 100)
@@ -167,7 +164,6 @@ def test_hyperband_oracle_one_sweep_parallel(tmp_path):
     assert t.status == "STOPPED", oracle._current_sweep
 
 
-@pytest.mark.skipif(sys.version_info < (3, 0), reason="TODO: Enable test for Py2")
 def test_hyperband_integration(tmp_path):
     tuner = hyperband_module.Hyperband(
         objective="val_loss",
@@ -193,7 +189,6 @@ def test_hyperband_integration(tmp_path):
     assert best_model.evaluate(x, y) == best_score
 
 
-@pytest.mark.skipif(sys.version_info < (3, 0), reason="TODO: Enable test for Py2")
 def test_hyperband_save_and_restore(tmp_path):
     tuner = hyperband_module.Hyperband(
         objective="val_loss",

@@ -14,7 +14,6 @@
 """Test mock running KerasTuner in a distributed tuning setting."""
 
 import os
-import sys
 import time
 
 import pytest
@@ -23,7 +22,6 @@ import tensorflow as tf
 from keras_tuner.test_utils import mock_distribute
 
 
-@pytest.mark.skipif(sys.version_info < (3, 0), reason="TODO: Enable test for Py2")
 def test_mock_distribute(tmp_path):
     def process_fn():
         assert "KERASTUNER_ORACLE_IP" in os.environ
