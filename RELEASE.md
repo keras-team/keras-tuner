@@ -1,16 +1,17 @@
 # Release v1.2.0
 
 ## Breaking changes
+* If you override `Oracle.create_trial()`, it may affect you. We changed from
+  only return a `Trial` to return status and `Trial`.
 * Default value of the `step` argument in `keras_tuner.HyperParameters.Int()` is
-  changed to `None`, which was `1` before..
+  changed to `None`, which was `1` before. No change in default behavior.
 * Default value of the `sampling` argument in
   `keras_tuner.HyperParameters.Int()` is changed to `"linear"`, which was `None`
-  before.
+  before. No change in default behavior.
 * Default value of the `sampling` argument in
   `keras_tuner.HyperParameters.Float()` is changed to `"linear"`, which was
-  `None` before.
-* If you explicity rely on protobuf values, the new protobuf bug fix may affect
-  you.
+  `None` before. No change in default behavior.
+* If you explicity rely on protobuf values, the new protobuf bug fix may affect you.
 * Changed the mechanism how a random sample is drawn for a hyperparameter. They
   are now all start from a random value between 0 and 1, and convert the value
   to a random sample.
