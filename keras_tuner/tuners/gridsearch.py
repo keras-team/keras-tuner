@@ -80,8 +80,10 @@ class GridSearchOracle(oracle_module.Oracle):
         Returns:
             A dictionary with keys "values" and "status", where "values" is
             a mapping of parameter names to suggested values, and "status"
-            is the TrialStatus that should be returned for this trial (one
-            of "RUNNING", "IDLE", or "STOPPED").
+            should be one of "RUNNING" (the trial can start normally), "IDLE"
+            (the oracle is waiting on something and cannot create a trial), or
+            "STOPPED" (the oracle has finshed searching and no new trial should
+            be created).
         """
         if len(self.start_order) > 0:
             last_trial = self.trials[self.start_order[-1]]

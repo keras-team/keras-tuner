@@ -26,7 +26,7 @@ from keras_tuner import utils
 from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine import objective as obj_module
 from keras_tuner.engine import stateful
-from keras_tuner.engine import trial as trial_lib
+from keras_tuner.engine import trial as trial_module
 
 # For backward compatibility.
 Objective = obj_module.Objective
@@ -139,8 +139,10 @@ class Oracle(stateful.Stateful):
         Returns:
             A dictionary with keys "values" and "status", where "values" is
             a mapping of parameter names to suggested values, and "status"
-            is the TrialStatus that should be returned for this trial (one
-            of "RUNNING", "IDLE", or "STOPPED").
+            should be one of "RUNNING" (the trial can start normally), "IDLE"
+            (the oracle is waiting on something and cannot create a trial), or
+            "STOPPED" (the oracle has finshed searching and no new trial should
+            be created).
         """
         raise NotImplementedError
 
@@ -188,7 +190,7 @@ class Oracle(stateful.Stateful):
         trial_id = trial_id.format(len(self.trials))
 
         if self.max_trials and len(self.trials) >= self.max_trials:
-            status = trial_lib.TrialStatus.STOPPED
+            status = trial_module.TrialStatus.STOPPED
             values = None
         else:
             response = self.populate_space(trial_id)
@@ -197,11 +199,11 @@ class Oracle(stateful.Stateful):
 
         hyperparameters = self.hyperparameters.copy()
         hyperparameters.values = values or {}
-        trial = trial_lib.Trial(
+        trial = trial_module.Trial(
             hyperparameters=hyperparameters, trial_id=trial_id, status=status
         )
 
-        if status == trial_lib.TrialStatus.RUNNING:
+        if status == trial_module.TrialStatus.RUNNING:
             self.ongoing_trials[tuner_id] = trial
             self.trials[trial_id] = trial
             self.start_order.append(trial_id)
@@ -221,8 +223,7 @@ class Oracle(stateful.Stateful):
                 is the value that `metrics` will be associated with.
 
         Returns:
-            Trial object. Trial.status will be set to "STOPPED" if the Trial
-            should be stopped early.
+            Trial object.
         """
         trial = self.trials[trial_id]
         self._check_objective_found(metrics)
@@ -235,7 +236,7 @@ class Oracle(stateful.Stateful):
             trial.metrics.update(metric_name, metric_value, step=step)
         if self.should_report:
             self._save_trial(trial)
-        # To signal early stopping, set Trial.status to "STOPPED".
+        # TODO: To signal early stopping, set Trial.status to "STOPPED".
         return trial.status
 
     def end_trial(self, trial_id, status="COMPLETED"):
@@ -243,9 +244,9 @@ class Oracle(stateful.Stateful):
 
         Args:
             trial_id: A string, the unique ID for this trial.
-            status: A string, one of `"COMPLETED"`, `"INVALID"`. A status of
-                `"INVALID"` means a trial has crashed or been deemed
-                infeasible.
+            status: A string, one of `"COMPLETED"` (the trial finished
+                normally), or `"INVALID"` (the trial has crashed or been deemed
+                infeasible).
         """
         trial = None
         for tuner_id, ongoing_trial in self.ongoing_trials.items():
@@ -257,7 +258,7 @@ class Oracle(stateful.Stateful):
             raise ValueError(f"Ongoing trial with id: {trial_id} not found.")
 
         trial.status = status
-        if status == trial_lib.TrialStatus.COMPLETED:
+        if status == trial_module.TrialStatus.COMPLETED:
             self.score_trial(trial)
         self.end_order.append(trial_id)
         self._save_trial(trial)
@@ -299,7 +300,7 @@ class Oracle(stateful.Stateful):
         trials = [
             t
             for t in self.trials.values()
-            if t.status == trial_lib.TrialStatus.COMPLETED
+            if t.status == trial_module.TrialStatus.COMPLETED
         ]
 
         sorted_trials = sorted(
@@ -374,7 +375,7 @@ class Oracle(stateful.Stateful):
             with tf.io.gfile.GFile(fname, "r") as f:
                 trial_data = f.read()
             trial_state = json.loads(trial_data)
-            trial = trial_lib.Trial.from_state(trial_state)
+            trial = trial_module.Trial.from_state(trial_state)
             self.trials[trial.trial_id] = trial
         try:
             super(Oracle, self).reload(self._get_oracle_fname())

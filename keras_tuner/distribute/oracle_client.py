@@ -83,13 +83,12 @@ class OracleClient(object):
                 wait_for_ready=True,
             )
             if not self.multi_worker:
-                return trial_module._convert_trial_status_to_str(response.status)
-            return "RUNNING"
+                return trial_module.TrialStatus.from_proto(response.status)
         return "RUNNING"
 
     def end_trial(self, trial_id, status="COMPLETED"):
         if self.should_report:
-            status = trial_module._convert_trial_status_to_proto(status)
+            status = trial_module.TrialStatus.to_proto(status)
             self.stub.EndTrial(
                 service_pb2.EndTrialRequest(trial_id=trial_id, status=status),
                 wait_for_ready=True,
