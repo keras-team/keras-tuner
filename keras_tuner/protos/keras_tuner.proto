@@ -105,12 +105,18 @@ message MetricsTracker {
 }
 
 enum TrialStatus {
+    TRIAL_UNKNOWN = 0;
+    TRIAL_RUNNING = 1;
+    TRIAL_INVALID = 3;
+    TRIAL_STOPPED = 4;
+    TRIAL_COMPLETED = 5;
+}
+
+enum OracleStatus {
     UNKNOWN = 0;
     RUNNING = 1;
     IDLE = 2;
-    INVALID = 3;
     STOPPED = 4;
-    COMPLETED = 5;
 }
 
 message Trial {

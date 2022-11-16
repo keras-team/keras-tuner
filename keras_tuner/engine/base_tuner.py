@@ -168,12 +168,12 @@ class BaseTuner(stateful.Stateful):
         self.on_search_begin()
         while True:
             self.pre_create_trial()
-            trial = self.oracle.create_trial(self.tuner_id)
-            if trial.status == trial_module.TrialStatus.STOPPED:
+            status, trial = self.oracle.create_trial(self.tuner_id)
+            if status == oracle_module.OracleStatus.STOPPED:
                 # Oracle triggered exit.
                 tf.get_logger().info("Oracle triggered exit")
                 break
-            if trial.status == trial_module.TrialStatus.IDLE:
+            if status == oracle_module.OracleStatus.IDLE:
                 # Oracle is calculating, resend request.
                 continue
 

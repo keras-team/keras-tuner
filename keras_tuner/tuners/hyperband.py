@@ -15,6 +15,7 @@ import math
 import random
 
 from keras_tuner.engine import oracle as oracle_module
+from keras_tuner.engine import trial as trial_module
 from keras_tuner.engine import tuner as tuner_module
 
 
@@ -158,7 +159,11 @@ class HyperbandOracle(oracle_module.Oracle):
                         for info in past_round_info
                         if info["id"] not in already_selected
                     ]
-                    candidates = [t for t in candidates if t.status == "COMPLETED"]
+                    candidates = [
+                        t
+                        for t in candidates
+                        if t.status == trial_module.TrialStatus.COMPLETED
+                    ]
                     if len(candidates) > past_size - size:
                         sorted_candidates = sorted(
                             candidates,
@@ -181,7 +186,10 @@ class HyperbandOracle(oracle_module.Oracle):
                         round_info.append(
                             {"past_id": best_trial.trial_id, "id": trial_id}
                         )
-                        return {"status": "RUNNING", "values": values}
+                        return {
+                            "status": oracle_module.OracleStatus.RUNNING,
+                            "values": values,
+                        }
 
         # This is reached if no trials from current brackets can be run.
 
@@ -192,10 +200,10 @@ class HyperbandOracle(oracle_module.Oracle):
         ):
             # Stop creating new brackets, but wait to complete other brackets.
             if self.ongoing_trials:
-                return {"status": "IDLE"}
+                return {"status": oracle_module.OracleStatus.IDLE}
             else:
                 self._increment_bracket_num()
-                return {"status": "STOPPED"}
+                return {"status": oracle_module.OracleStatus.STOPPED}
         # Create a new bracket.
         else:
             self._increment_bracket_num()
@@ -240,14 +248,14 @@ class HyperbandOracle(oracle_module.Oracle):
             values["tuner/bracket"] = self._current_bracket
             values["tuner/round"] = 0
             rounds[0].append({"past_id": None, "id": trial_id})
-            return {"status": "RUNNING", "values": values}
+            return {"status": oracle_module.OracleStatus.RUNNING, "values": values}
         elif self.ongoing_trials:
             # Can't create new random values, but successive halvings may still
             # be needed.
-            return {"status": "IDLE"}
+            return {"status": oracle_module.OracleStatus.IDLE}
         else:
             # Collision and no ongoing trials should trigger an exit.
-            return {"status": "STOPPED"}
+            return {"status": oracle_module.OracleStatus.STOPPED}
 
     def _get_size(self, bracket_num, round_num):
         # Set up so that each bracket takes approx. the same amount of resources.

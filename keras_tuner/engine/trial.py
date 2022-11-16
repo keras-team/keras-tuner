@@ -28,13 +28,54 @@ from keras_tuner.protos import keras_tuner_pb2
 
 class TrialStatus:
     RUNNING = "RUNNING"
-    IDLE = "IDLE"
     INVALID = "INVALID"
     STOPPED = "STOPPED"
     COMPLETED = "COMPLETED"
 
+    @staticmethod
+    def to_proto(status):
+        ts = keras_tuner_pb2.TrialStatus
+        if status is None:
+            return ts.TRIAL_UNKNOWN
+        elif status == TrialStatus.RUNNING:
+            return ts.TRIAL_RUNNING
+        elif status == TrialStatus.INVALID:
+            return ts.TRIAL_INVALID
+        elif status == TrialStatus.STOPPED:
+            return ts.TRIAL_STOPPED
+        elif status == TrialStatus.COMPLETED:
+            return ts.TRIAL_COMPLETED
+        else:
+            raise ValueError(f"Unknown status {status}")
+
+    @staticmethod
+    def from_proto(proto):
+        ts = keras_tuner_pb2.TrialStatus
+        if proto == ts.TRIAL_UNKNOWN:
+            return None
+        elif proto == ts.TRIAL_RUNNING:
+            return TrialStatus.RUNNING
+        elif proto == ts.TRIAL_INVALID:
+            return TrialStatus.INVALID
+        elif proto == ts.TRIAL_STOPPED:
+            return TrialStatus.STOPPED
+        elif proto == ts.TRIAL_COMPLETED:
+            return TrialStatus.COMPLETED
+        else:
+            raise ValueError(f"Unknown status {proto}")
+
 
 class Trial(stateful.Stateful):
+    """The runs with the same set of hyperparameter values.
+
+    Args:
+        hyperparameters: HyperParameters. It contains the hyperparameter values
+            for the trial.
+        trial_id: String. The unique identifier for a trial.
+        status: one of the OracleStatus attributes. It marks the current status
+            of the Oracle.
+    """
+
     def __init__(self, hyperparameters, trial_id=None, status=TrialStatus.RUNNING):
         self.hyperparameters = hyperparameters
         self.trial_id = generate_trial_id() if trial_id is None else trial_id
@@ -103,7 +144,7 @@ class Trial(stateful.Stateful):
             trial_id=self.trial_id,
             hyperparameters=self.hyperparameters.to_proto(),
             score=score,
-            status=_convert_trial_status_to_proto(self.status),
+            status=TrialStatus.to_proto(self.status),
             metrics=self.metrics.to_proto(),
         )
         return proto
@@ -113,7 +154,7 @@ class Trial(stateful.Stateful):
         instance = cls(
             hp_module.HyperParameters.from_proto(proto.hyperparameters),
             trial_id=proto.trial_id,
-            status=_convert_trial_status_to_str(proto.status),
+            status=TrialStatus.from_proto(proto.status),
         )
         if proto.HasField("score"):
             instance.score = proto.score.value
@@ -125,39 +166,3 @@ class Trial(stateful.Stateful):
 def generate_trial_id():
     s = str(time.time()) + str(random.randint(1, int(1e7)))
     return hashlib.sha256(s.encode("utf-8")).hexdigest()[:32]
-
-
-def _convert_trial_status_to_proto(status):
-    ts = keras_tuner_pb2.TrialStatus
-    if status is None:
-        return ts.UNKNOWN
-    elif status == TrialStatus.RUNNING:
-        return ts.RUNNING
-    elif status == TrialStatus.IDLE:
-        return ts.IDLE
-    elif status == TrialStatus.INVALID:
-        return ts.INVALID
-    elif status == TrialStatus.STOPPED:
-        return ts.STOPPED
-    elif status == TrialStatus.COMPLETED:
-        return ts.COMPLETED
-    else:
-        raise ValueError(f"Unknown status {status}")
-
-
-def _convert_trial_status_to_str(status):
-    ts = keras_tuner_pb2.TrialStatus
-    if status == ts.UNKNOWN:
-        return None
-    elif status == ts.RUNNING:
-        return TrialStatus.RUNNING
-    elif status == ts.IDLE:
-        return TrialStatus.IDLE
-    elif status == ts.INVALID:
-        return TrialStatus.INVALID
-    elif status == ts.STOPPED:
-        return TrialStatus.STOPPED
-    elif status == ts.COMPLETED:
-        return TrialStatus.COMPLETED
-    else:
-        raise ValueError(f"Unknown status {status}")

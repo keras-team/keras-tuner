@@ -24,6 +24,8 @@ from tensorboard.plugins.hparams import api as hparams_api
 from tensorflow import keras
 
 import keras_tuner
+from keras_tuner.engine import oracle as oracle_module
+from keras_tuner.engine import trial as trial_module
 from keras_tuner.engine import tuner as tuner_module
 
 INPUT_DIM = 2
@@ -764,7 +766,7 @@ def test_update_trial(tmp_path):
     class MyOracle(keras_tuner.Oracle):
         def populate_space(self, _):
             values = {p.name: p.random_sample() for p in self.hyperparameters.space}
-            return {"values": values, "status": "RUNNING"}
+            return {"values": values, "status": oracle_module.OracleStatus.RUNNING}
 
         def update_trial(self, trial_id, metrics, step=0):
             super().update_trial(trial_id, metrics, step)
@@ -845,13 +847,13 @@ def test_get_best_hyperparameters(tmp_path):
     hp1 = keras_tuner.HyperParameters()
     hp1.Fixed("a", 1)
     trial1 = keras_tuner.engine.trial.Trial(hyperparameters=hp1)
-    trial1.status = "COMPLETED"
+    trial1.status = trial_module.TrialStatus.COMPLETED
     trial1.score = 10
 
     hp2 = keras_tuner.HyperParameters()
     hp2.Fixed("a", 2)
     trial2 = keras_tuner.engine.trial.Trial(hyperparameters=hp2)
-    trial2.status = "COMPLETED"
+    trial2.status = trial_module.TrialStatus.COMPLETED
     trial2.score = 9
 
     tuner = keras_tuner.RandomSearch(
@@ -1197,7 +1199,7 @@ def test_metric_direction_inferred_from_objective(tmp_path):
         objective=keras_tuner.Objective("a", "max"), max_trials=1
     )
     oracle._set_project_dir(tmp_path, "untitled_project")
-    trial = oracle.create_trial("tuner0")
+    _, trial = oracle.create_trial("tuner0")
     oracle.update_trial(trial.trial_id, {"a": 1})
     trial = oracle.get_trial(trial.trial_id)
     assert trial.metrics.get_direction("a") == "max"
@@ -1206,7 +1208,7 @@ def test_metric_direction_inferred_from_objective(tmp_path):
         objective=keras_tuner.Objective("a", "min"), max_trials=1
     )
     oracle._set_project_dir(tmp_path, "untitled_project2")
-    trial = oracle.create_trial("tuner0")
+    _, trial = oracle.create_trial("tuner0")
     oracle.update_trial(trial.trial_id, {"a": 1})
     trial = oracle.get_trial(trial.trial_id)
     assert trial.metrics.get_direction("a") == "min"
@@ -1309,7 +1311,7 @@ def test_build_and_fit_model(tmp_path):
     )
 
     tuner.run_trial(
-        tuner.oracle.create_trial("tuner0"),
+        tuner.oracle.create_trial("tuner0")[1],
         TRAIN_INPUTS,
         TRAIN_TARGETS,
         validation_data=(VAL_INPUTS, VAL_TARGETS),
@@ -1334,7 +1336,7 @@ def test_build_and_fit_model_in_tuner(tmp_path):
     )
 
     tuner.run_trial(
-        tuner.oracle.create_trial("tuner0"),
+        tuner.oracle.create_trial("tuner0")[1],
         TRAIN_INPUTS,
         TRAIN_TARGETS,
         validation_data=(VAL_INPUTS, VAL_TARGETS),

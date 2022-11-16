@@ -20,6 +20,7 @@ import tensorflow as tf
 
 import keras_tuner
 from keras_tuner.engine import hyperparameters as hp_module
+from keras_tuner.engine import oracle as oracle_module
 from keras_tuner.engine import trial as trial_module
 from keras_tuner.tuners import bayesian as bo_module
 
@@ -86,9 +87,9 @@ def test_bayesian_oracle(tmp_path):
     )
     oracle._set_project_dir(tmp_path, "untitled")
     for i in range(5):
-        trial = oracle.create_trial(str(i))
+        _, trial = oracle.create_trial(str(i))
         oracle.update_trial(trial.trial_id, {"score": i})
-        oracle.end_trial(trial.trial_id, "COMPLETED")
+        oracle.end_trial(trial.trial_id, trial_module.TrialStatus.COMPLETED)
 
 
 def test_bayesian_oracle_with_zero_y(tmp_path):
@@ -106,9 +107,9 @@ def test_bayesian_oracle_with_zero_y(tmp_path):
     )
     oracle._set_project_dir(tmp_path, "untitled")
     for i in range(5):
-        trial = oracle.create_trial(str(i))
+        _, trial = oracle.create_trial(str(i))
         oracle.update_trial(trial.trial_id, {"score": 0})
-        oracle.end_trial(trial.trial_id, "COMPLETED")
+        oracle.end_trial(trial.trial_id, trial_module.TrialStatus.COMPLETED)
 
 
 def test_bayesian_dynamic_space(tmp_path):
@@ -146,9 +147,9 @@ def test_bayesian_save_reload(tmp_path):
     oracle._set_project_dir(tmp_path, "untitled")
 
     for _ in range(3):
-        trial = oracle.create_trial("tuner_id")
+        _, trial = oracle.create_trial("tuner_id")
         oracle.update_trial(trial.trial_id, {"score": 1.0})
-        oracle.end_trial(trial.trial_id, "COMPLETED")
+        oracle.end_trial(trial.trial_id, trial_module.TrialStatus.COMPLETED)
 
     oracle.save()
     oracle = bo_module.BayesianOptimizationOracle(
@@ -160,9 +161,9 @@ def test_bayesian_save_reload(tmp_path):
     oracle.reload()
 
     for trial_id in range(3):
-        trial = oracle.create_trial("tuner_id")
+        _, trial = oracle.create_trial("tuner_id")
         oracle.update_trial(trial.trial_id, {"score": 1.0})
-        oracle.end_trial(trial.trial_id, "COMPLETED")
+        oracle.end_trial(trial.trial_id, trial_module.TrialStatus.COMPLETED)
 
     assert len(oracle.trials) == 6
 
@@ -220,7 +221,7 @@ def test_bayesian_oracle_maximize(tmp_path):
         trial = trial_module.Trial(hyperparameters=hps.copy())
         trial.hyperparameters.values["a"] = 10 * i
         trial.score = i
-        trial.status = "COMPLETED"
+        trial.status = trial_module.TrialStatus.COMPLETED
         oracle.trials[trial.trial_id] = trial
 
     # Make examples with low 'a' and low score
@@ -228,11 +229,11 @@ def test_bayesian_oracle_maximize(tmp_path):
         trial = trial_module.Trial(hyperparameters=hps.copy())
         trial.hyperparameters.values["a"] = -10 * i
         trial.score = -i
-        trial.status = "COMPLETED"
+        trial.status = trial_module.TrialStatus.COMPLETED
         oracle.trials[trial.trial_id] = trial
 
-    trial = oracle.create_trial("tuner0")
-    assert trial.status == "RUNNING"
+    status, trial = oracle.create_trial("tuner0")
+    assert status == oracle_module.OracleStatus.RUNNING
     # Assert that the oracle suggests hps it thinks will maximize.
     assert trial.hyperparameters.get("a") > 0
 
@@ -254,7 +255,7 @@ def test_hyperparameters_added(tmp_path):
         trial = trial_module.Trial(hyperparameters=hps.copy())
         trial.hyperparameters.values["a"] = 10 * i
         trial.score = i
-        trial.status = "COMPLETED"
+        trial.status = trial_module.TrialStatus.COMPLETED
         oracle.trials[trial.trial_id] = trial
 
     # A new trial discovered a new hp and synced to oracle.hyperparameters.
@@ -264,8 +265,8 @@ def test_hyperparameters_added(tmp_path):
     oracle.update_space(new_hps)
 
     # Make a new trial, it should have b set.
-    trial = oracle.create_trial("tuner0")
-    assert trial.status == "RUNNING"
+    status, trial = oracle.create_trial("tuner0")
+    assert status == oracle_module.OracleStatus.RUNNING
     assert "b" in trial.hyperparameters.values
     assert "c" in trial.hyperparameters.values
 
@@ -286,10 +287,10 @@ def test_step_respected(tmp_path):
         trial = trial_module.Trial(hyperparameters=hps.copy())
         trial.hyperparameters.values["c"] = 3.0
         trial.score = i
-        trial.status = "COMPLETED"
+        trial.status = trial_module.TrialStatus.COMPLETED
         oracle.trials[trial.trial_id] = trial
 
-    trial = oracle.create_trial("tuner0")
+    _, trial = oracle.create_trial("tuner0")
     # Check that oracle respects the `step` param.
     assert trial.hyperparameters.get("c") in {0, 3, 6, 9}
 
@@ -357,14 +358,14 @@ def test_distributed_optimization(tmp_path):
     for _ in range(10):
         trials = []
         for i in range(tuners):
-            trial = oracle.create_trial("tuner_" + str(i))
+            _, trial = oracle.create_trial("tuner_" + str(i))
             trials.append(trial)
         for trial in trials:
             oracle.update_trial(
                 trial.trial_id, {"score": evaluate(trial.hyperparameters)}
             )
         for trial in trials:
-            oracle.end_trial(trial.trial_id, "COMPLETED")
+            oracle.end_trial(trial.trial_id, trial_module.TrialStatus.COMPLETED)
 
     atol, rtol = 1e-1, 1e-1
     best_trial = oracle.get_best_trials()[0]
@@ -402,38 +403,38 @@ def test_interleaved_distributed_optimization(tmp_path):
     # Run 4 trials on 2 tuners
 
     # Start both tuners at the same time
-    trial_1 = oracle.create_trial("tuner_0")
-    trial_2 = oracle.create_trial("tuner_1")
+    _, trial_1 = oracle.create_trial("tuner_0")
+    _, trial_2 = oracle.create_trial("tuner_1")
 
     # tuner_0 finishes trial_1 before tuner_1 finishes
     oracle.update_trial(
         trial_1.trial_id, {"score": evaluate(trial_1.hyperparameters)}
     )
-    oracle.end_trial(trial_1.trial_id, "COMPLETED")
+    oracle.end_trial(trial_1.trial_id, trial_module.TrialStatus.COMPLETED)
 
     # tuner_0 request a new trial (trial_3)
-    trial_3 = oracle.create_trial("tuner_0")
+    _, trial_3 = oracle.create_trial("tuner_0")
 
     # tuner_1 finishes trial_2
     oracle.update_trial(
         trial_2.trial_id, {"score": evaluate(trial_2.hyperparameters)}
     )
-    oracle.end_trial(trial_2.trial_id, "COMPLETED")
+    oracle.end_trial(trial_2.trial_id, trial_module.TrialStatus.COMPLETED)
 
     # tuner_1 requests the final new trial (trial_4)
     # the Bayesian optimizer will use ongoing trial_3 to hallucinate
-    trial_4 = oracle.create_trial("tuner_1")
+    _, trial_4 = oracle.create_trial("tuner_1")
 
     # tuner_0 finishes trial_3
     oracle.update_trial(
         trial_3.trial_id, {"score": evaluate(trial_3.hyperparameters)}
     )
-    oracle.end_trial(trial_3.trial_id, "COMPLETED")
+    oracle.end_trial(trial_3.trial_id, trial_module.TrialStatus.COMPLETED)
 
     # tuner_1 finishes trial_4
     oracle.update_trial(
         trial_4.trial_id, {"score": evaluate(trial_4.hyperparameters)}
     )
-    oracle.end_trial(trial_4.trial_id, "COMPLETED")
+    oracle.end_trial(trial_4.trial_id, trial_module.TrialStatus.COMPLETED)
 
     assert True

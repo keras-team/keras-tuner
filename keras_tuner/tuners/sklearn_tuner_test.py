@@ -25,6 +25,7 @@ from sklearn import neighbors
 from sklearn import pipeline
 
 import keras_tuner
+from keras_tuner.engine import trial as trial_module
 
 
 def build_model(hp):
@@ -102,7 +103,7 @@ def test_sklearn_tuner_simple_with_np(tmp_path):
     assert len(tuner.oracle.trials) == 10
 
     best_trial = tuner.oracle.get_best_trials()[0]
-    assert best_trial.status == "COMPLETED"
+    assert best_trial.status == trial_module.TrialStatus.COMPLETED
     assert best_trial.score is not None
     assert best_trial.best_step == 0
     assert best_trial.metrics.exists("score")
@@ -147,7 +148,7 @@ def test_sklearn_custom_scoring_and_cv(tmp_path):
     assert len(tuner.oracle.trials) == 10
 
     best_trial = tuner.oracle.get_best_trials()[0]
-    assert best_trial.status == "COMPLETED"
+    assert best_trial.status == trial_module.TrialStatus.COMPLETED
     assert best_trial.score is not None
     assert best_trial.best_step == 0
     assert best_trial.metrics.exists("score")
@@ -174,7 +175,7 @@ def test_sklearn_additional_metrics(tmp_path):
     assert len(tuner.oracle.trials) == 10
 
     best_trial = tuner.oracle.get_best_trials()[0]
-    assert best_trial.status == "COMPLETED"
+    assert best_trial.status == trial_module.TrialStatus.COMPLETED
     assert best_trial.score is not None
     assert best_trial.best_step == 0
     assert best_trial.metrics.exists("score")
@@ -203,7 +204,7 @@ def test_sklearn_sample_weight(tmp_path):
     assert len(tuner.oracle.trials) == 10
 
     best_trial = tuner.oracle.get_best_trials()[0]
-    assert best_trial.status == "COMPLETED"
+    assert best_trial.status == trial_module.TrialStatus.COMPLETED
     assert best_trial.score is not None
     assert best_trial.best_step == 0
     assert best_trial.metrics.exists("score")
@@ -230,7 +231,7 @@ def test_sklearn_pipeline(tmp_path):
     assert len(tuner.oracle.trials) == 10
 
     best_trial = tuner.oracle.get_best_trials()[0]
-    assert best_trial.status == "COMPLETED"
+    assert best_trial.status == trial_module.TrialStatus.COMPLETED
     assert best_trial.score is not None
     assert best_trial.best_step == 0
     assert best_trial.metrics.exists("score")
@@ -258,7 +259,7 @@ def test_sklearn_cv_with_groups(tmp_path):
     assert len(tuner.oracle.trials) == 10
 
     best_trial = tuner.oracle.get_best_trials()[0]
-    assert best_trial.status == "COMPLETED"
+    assert best_trial.status == trial_module.TrialStatus.COMPLETED
     assert best_trial.score is not None
     assert best_trial.best_step == 0
     assert best_trial.metrics.exists("score")

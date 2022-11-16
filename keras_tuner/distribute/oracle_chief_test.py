@@ -19,6 +19,8 @@ import keras_tuner
 from keras_tuner.distribute import oracle_chief
 from keras_tuner.distribute import oracle_client
 from keras_tuner.engine import metrics_tracking
+from keras_tuner.engine import oracle as oracle_module
+from keras_tuner.engine import trial as trial_module
 from keras_tuner.test_utils import mock_distribute
 from keras_tuner.tuners import randomsearch
 
@@ -86,8 +88,8 @@ def test_create_trial(tmp_path):
             oracle_chief.start_server(oracle)
         else:
             client = oracle_client.OracleClient(oracle)
-            trial = client.create_trial(tuner_id)
-            assert trial.status == "RUNNING"
+            status, trial = client.create_trial(tuner_id)
+            assert status == oracle_module.OracleStatus.RUNNING
             a = trial.hyperparameters.get("a")
             assert a >= 0 and a <= 10
             b = trial.hyperparameters.get("b")
@@ -111,7 +113,7 @@ def test_update_trial(tmp_path):
             oracle_chief.start_server(oracle)
         else:
             client = oracle_client.OracleClient(oracle)
-            trial = client.create_trial(tuner_id)
+            status, trial = client.create_trial(tuner_id)
             assert "score" not in trial.metrics.metrics
             trial_id = trial.trial_id
             client.update_trial(trial_id, {"score": 1}, step=2)
@@ -138,12 +140,12 @@ def test_end_trial(tmp_path):
             oracle_chief.start_server(oracle)
         else:
             client = oracle_client.OracleClient(oracle)
-            trial = client.create_trial(tuner_id)
+            _, trial = client.create_trial(tuner_id)
             trial_id = trial.trial_id
             client.update_trial(trial_id, {"score": 1}, step=2)
-            client.end_trial(trial_id, "INVALID")
+            client.end_trial(trial_id, trial_module.TrialStatus.INVALID)
             updated_trial = client.get_trial(trial_id)
-            assert updated_trial.status == "INVALID"
+            assert updated_trial.status == trial_module.TrialStatus.INVALID
 
     mock_distribute.mock_distribute(_test_end_trial)
 
@@ -166,15 +168,14 @@ def test_get_best_trials(tmp_path):
             client = oracle_client.OracleClient(oracle)
             trial_scores = {}
             for score in range(10):
-                trial = client.create_trial(tuner_id)
-                assert trial.status == "RUNNING"
+                status, trial = client.create_trial(tuner_id)
+                assert status == oracle_module.OracleStatus.RUNNING
                 assert "a" in trial.hyperparameters.values
                 assert "b" in trial.hyperparameters.values
                 trial_id = trial.trial_id
                 client.update_trial(trial_id, {"score": score})
                 client.end_trial(trial_id)
                 trial_scores[trial_id] = score
-            return
             best_trials = client.get_best_trials(3)
             best_scores = [t.score for t in best_trials]
             assert best_scores == [9, 8, 7]

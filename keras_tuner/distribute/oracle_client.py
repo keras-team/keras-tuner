@@ -18,6 +18,7 @@ import os
 import grpc
 
 from keras_tuner.engine import hyperparameters as hp_module
+from keras_tuner.engine import oracle as oracle_module
 from keras_tuner.engine import trial as trial_module
 from keras_tuner.protos import service_pb2
 from keras_tuner.protos import service_pb2_grpc
@@ -71,7 +72,9 @@ class OracleClient(object):
         response = self.stub.CreateTrial(
             service_pb2.CreateTrialRequest(tuner_id=tuner_id), wait_for_ready=True
         )
-        return trial_module.Trial.from_proto(response.trial)
+        return oracle_module.OracleStatus.from_proto(
+            response.status
+        ), trial_module.Trial.from_proto(response.trial)
 
     def update_trial(self, trial_id, metrics, step=0):
         # TODO: support early stopping in multi-worker.
@@ -83,13 +86,12 @@ class OracleClient(object):
                 wait_for_ready=True,
             )
             if not self.multi_worker:
-                return trial_module._convert_trial_status_to_str(response.status)
-            return "RUNNING"
-        return "RUNNING"
+                return trial_module.TrialStatus.from_proto(response.status)
+        return trial_module.TrialStatus.RUNNING
 
-    def end_trial(self, trial_id, status="COMPLETED"):
+    def end_trial(self, trial_id, status=trial_module.TrialStatus.COMPLETED):
         if self.should_report:
-            status = trial_module._convert_trial_status_to_proto(status)
+            status = trial_module.TrialStatus.to_proto(status)
             self.stub.EndTrial(
                 service_pb2.EndTrialRequest(trial_id=trial_id, status=status),
                 wait_for_ready=True,

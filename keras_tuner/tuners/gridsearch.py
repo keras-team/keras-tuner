@@ -18,7 +18,6 @@
 import copy
 
 from keras_tuner.engine import oracle as oracle_module
-from keras_tuner.engine import trial as trial_module
 from keras_tuner.engine import tuner as tuner_module
 
 
@@ -80,7 +79,7 @@ class GridSearchOracle(oracle_module.Oracle):
         Returns:
             A dictionary with keys "values" and "status", where "values" is
             a mapping of parameter names to suggested values, and "status"
-            is the TrialStatus that should be returned for this trial (one
+            is the OracleStatus that should be returned for this trial (one
             of "RUNNING", "IDLE", or "STOPPED").
         """
         if len(self.start_order) > 0:
@@ -97,8 +96,8 @@ class GridSearchOracle(oracle_module.Oracle):
             # Use all default values for the first trial.
             values = {hp.name: hp.default for hp in self.get_space().space}
         if values is None:
-            return {"status": trial_module.TrialStatus.STOPPED, "values": None}
-        return {"status": trial_module.TrialStatus.RUNNING, "values": values}
+            return {"status": oracle_module.OracleStatus.STOPPED, "values": None}
+        return {"status": oracle_module.OracleStatus.RUNNING, "values": values}
 
     def _get_next_combination(self, values):
         """Get the next value combination to try.

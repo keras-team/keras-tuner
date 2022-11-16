@@ -26,10 +26,48 @@ from keras_tuner import utils
 from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine import objective as obj_module
 from keras_tuner.engine import stateful
-from keras_tuner.engine import trial as trial_lib
+from keras_tuner.engine import trial as trial_module
+from keras_tuner.protos import keras_tuner_pb2
 
 # For backward compatibility.
 Objective = obj_module.Objective
+
+
+class OracleStatus:
+    # Normal status. New trials may start.
+    RUNNING = "RUNNING"
+    # Waiting old trials to finish before starting a new trial
+    IDLE = "IDLE"
+    # Oracle finished searching no new trial needed
+    STOPPED = "STOPPED"
+
+    @staticmethod
+    def to_proto(status):
+        ts = keras_tuner_pb2.OracleStatus
+        if status is None:
+            return ts.UNKNOWN
+        elif status == OracleStatus.RUNNING:
+            return ts.RUNNING
+        elif status == OracleStatus.IDLE:
+            return ts.IDLE
+        elif status == OracleStatus.STOPPED:
+            return ts.STOPPED
+        else:
+            raise ValueError(f"Unknown status {status}")
+
+    @staticmethod
+    def from_proto(proto):
+        ts = keras_tuner_pb2.OracleStatus
+        if proto == ts.UNKNOWN:
+            return None
+        elif proto == ts.RUNNING:
+            return OracleStatus.RUNNING
+        elif proto == ts.IDLE:
+            return OracleStatus.IDLE
+        elif proto == ts.STOPPED:
+            return OracleStatus.STOPPED
+        else:
+            raise ValueError(f"Unknown status {proto}")
 
 
 class Oracle(stateful.Stateful):
@@ -139,7 +177,7 @@ class Oracle(stateful.Stateful):
         Returns:
             A dictionary with keys "values" and "status", where "values" is
             a mapping of parameter names to suggested values, and "status"
-            is the TrialStatus that should be returned for this trial (one
+            is the OracleStatus that should be returned for this trial (one
             of "RUNNING", "IDLE", or "STOPPED").
         """
         raise NotImplementedError
@@ -188,27 +226,36 @@ class Oracle(stateful.Stateful):
         trial_id = trial_id.format(len(self.trials))
 
         if self.max_trials and len(self.trials) >= self.max_trials:
-            status = trial_lib.TrialStatus.STOPPED
+            status = OracleStatus.STOPPED
             values = None
         else:
             response = self.populate_space(trial_id)
             status = response["status"]
             values = response["values"] if "values" in response else None
 
+        # Only create the Trial object when Oracle is RUNNING.
+        if not status == OracleStatus.RUNNING:
+            # Return an empty trial.
+            return status, trial_module.Trial(
+                hyperparameters=hp_module.HyperParameters(),
+                trial_id=None,
+                status=None,
+            )
+
         hyperparameters = self.hyperparameters.copy()
         hyperparameters.values = values or {}
-        trial = trial_lib.Trial(
-            hyperparameters=hyperparameters, trial_id=trial_id, status=status
+        trial = trial_module.Trial(
+            hyperparameters=hyperparameters,
+            trial_id=trial_id,
+            status=trial_module.TrialStatus.RUNNING,
         )
 
-        if status == trial_lib.TrialStatus.RUNNING:
-            self.ongoing_trials[tuner_id] = trial
-            self.trials[trial_id] = trial
-            self.start_order.append(trial_id)
-            self._save_trial(trial)
-            self.save()
-
-        return trial
+        self.ongoing_trials[tuner_id] = trial
+        self.trials[trial_id] = trial
+        self.start_order.append(trial_id)
+        self._save_trial(trial)
+        self.save()
+        return status, trial
 
     def update_trial(self, trial_id, metrics, step=0):
         """Used by a worker to report the status of a trial.
@@ -238,7 +285,7 @@ class Oracle(stateful.Stateful):
         # To signal early stopping, set Trial.status to "STOPPED".
         return trial.status
 
-    def end_trial(self, trial_id, status="COMPLETED"):
+    def end_trial(self, trial_id, status=trial_module.TrialStatus.COMPLETED):
         """Record the measured objective for a set of parameter values.
 
         Args:
@@ -257,7 +304,7 @@ class Oracle(stateful.Stateful):
             raise ValueError(f"Ongoing trial with id: {trial_id} not found.")
 
         trial.status = status
-        if status == trial_lib.TrialStatus.COMPLETED:
+        if status == trial_module.TrialStatus.COMPLETED:
             self.score_trial(trial)
         self.end_order.append(trial_id)
         self._save_trial(trial)
@@ -299,7 +346,7 @@ class Oracle(stateful.Stateful):
         trials = [
             t
             for t in self.trials.values()
-            if t.status == trial_lib.TrialStatus.COMPLETED
+            if t.status == trial_module.TrialStatus.COMPLETED
         ]
 
         sorted_trials = sorted(
@@ -374,7 +421,7 @@ class Oracle(stateful.Stateful):
             with tf.io.gfile.GFile(fname, "r") as f:
                 trial_data = f.read()
             trial_state = json.loads(trial_data)
-            trial = trial_lib.Trial.from_state(trial_state)
+            trial = trial_module.Trial.from_state(trial_state)
             self.trials[trial.trial_id] = trial
         try:
             super(Oracle, self).reload(self._get_oracle_fname())

@@ -37,7 +37,8 @@ message CreateTrialRequest {
 }
 
 message CreateTrialResponse {
-    keras_tuner.Trial trial = 1;
+    keras_tuner.OracleStatus status = 1;
+    keras_tuner.Trial trial = 2;
 }
 
 message UpdateTrialRequest {
@@ -47,7 +48,7 @@ message UpdateTrialRequest {
 }
 
 message UpdateTrialResponse {
-    keras_tuner.TrialStatus status = 1;
+    keras_tuner.OracleStatus status = 1;
 }
 
 message EndTrialRequest {

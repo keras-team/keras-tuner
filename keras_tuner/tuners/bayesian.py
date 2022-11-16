@@ -234,7 +234,9 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
     def populate_space(self, trial_id):
         # Generate enough samples before training Gaussian process.
         completed_trials = [
-            t for t in self.trials.values() if t.status == "COMPLETED"
+            t
+            for t in self.trials.values()
+            if t.status == trial_module.TrialStatus.COMPLETED
         ]
 
         # Use 3 times the dimensionality of the space as the default number of
@@ -276,13 +278,13 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                 optimal_x = result.x
 
         values = self._vector_to_values(optimal_x)
-        return {"status": trial_module.TrialStatus.RUNNING, "values": values}
+        return {"status": oracle_module.OracleStatus.RUNNING, "values": values}
 
     def _random_populate_space(self):
         values = self._random_values()
         if values is None:
-            return {"status": trial_module.TrialStatus.STOPPED, "values": None}
-        return {"status": trial_module.TrialStatus.RUNNING, "values": values}
+            return {"status": oracle_module.OracleStatus.STOPPED, "values": None}
+        return {"status": oracle_module.OracleStatus.RUNNING, "values": values}
 
     def get_state(self):
         state = super(BayesianOptimizationOracle, self).get_state()
@@ -333,7 +335,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                 y_h_mean, y_h_std = self.gpr.predict(x_h)
                 # Give a pessimistic estimate of the ongoing trial.
                 score = y_h_mean[0] + y_h_std[0]
-            elif trial.status == "COMPLETED":
+            elif trial.status == trial_module.TrialStatus.COMPLETED:
                 score = trial.score
                 # Always frame the optimization as a minimization for scipy.minimize.
                 if self.objective.direction == "max":

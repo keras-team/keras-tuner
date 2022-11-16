@@ -20,7 +20,9 @@ from keras_tuner.engine import trial as trial_module
 def test_trial_proto():
     hps = hp_module.HyperParameters()
     hps.Int("a", 0, 10, default=3)
-    trial = trial_module.Trial(hps, trial_id="trial1", status="COMPLETED")
+    trial = trial_module.Trial(
+        hps, trial_id="trial1", status=trial_module.TrialStatus.COMPLETED
+    )
     trial.metrics.register("score", direction="max")
     trial.metrics.update("score", 10, step=1)
 
@@ -30,7 +32,7 @@ def test_trial_proto():
     assert not proto.HasField("score")
 
     new_trial = trial_module.Trial.from_proto(proto)
-    assert new_trial.status == "COMPLETED"
+    assert new_trial.status == trial_module.TrialStatus.COMPLETED
     assert new_trial.hyperparameters.get("a") == 3
     assert new_trial.trial_id == "trial1"
     assert new_trial.score is None

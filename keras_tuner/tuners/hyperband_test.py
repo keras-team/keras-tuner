@@ -18,6 +18,8 @@ import numpy as np
 import tensorflow as tf
 
 import keras_tuner
+from keras_tuner.engine import oracle as oracle_module
+from keras_tuner.engine import trial as trial_module
 from keras_tuner.engine import tuner_utils
 from keras_tuner.tuners import hyperband as hyperband_module
 
@@ -76,19 +78,21 @@ def test_hyperband_oracle_one_sweep_single_thread(tmp_path):
     for bracket_num in reversed(range(oracle._get_num_brackets())):
         for round_num in range(oracle._get_num_rounds(bracket_num)):
             for model_num in range(oracle._get_size(bracket_num, round_num)):
-                trial = oracle.create_trial("tuner0")
-                assert trial.status == "RUNNING"
+                status, trial = oracle.create_trial("tuner0")
+                assert trial.status == oracle_module.OracleStatus.RUNNING
                 score += 1
                 oracle.update_trial(trial.trial_id, {"score": score})
-                oracle.end_trial(trial.trial_id, status="COMPLETED")
+                oracle.end_trial(
+                    trial.trial_id, status=trial_module.TrialStatus.COMPLETED
+                )
             assert len(oracle._brackets[0]["rounds"][round_num]) == oracle._get_size(
                 bracket_num, round_num
             )
         assert len(oracle._brackets) == 1
 
     # Iteration should now be complete.
-    trial = oracle.create_trial("tuner0")
-    assert trial.status == "STOPPED", oracle.hyperband_iterations
+    status, trial = oracle.create_trial("tuner0")
+    assert status == oracle_module.OracleStatus.STOPPED, oracle.hyperband_iterations
     assert len(oracle.ongoing_trials) == 0
 
     # Brackets should all be finished and removed.
@@ -115,53 +119,53 @@ def test_hyperband_oracle_one_sweep_parallel(tmp_path):
     # in parallel.
     round0_trials = []
     for i in range(10):
-        t = oracle.create_trial("tuner" + str(i))
-        assert t.status == "RUNNING"
-        round0_trials.append(t)
+        status, trial = oracle.create_trial("tuner" + str(i))
+        assert status == oracle_module.OracleStatus.RUNNING
+        round0_trials.append(trial)
 
     assert len(oracle._brackets) == 3
 
     # Round 1 can't be run until enough models from round 0
     # have completed.
-    t = oracle.create_trial("tuner10")
-    assert t.status == "IDLE"
+    status, trial = oracle.create_trial("tuner10")
+    assert status == oracle_module.OracleStatus.IDLE
 
     for t in round0_trials:
         oracle.update_trial(t.trial_id, {"score": 1})
-        oracle.end_trial(t.trial_id, "COMPLETED")
+        oracle.end_trial(t.trial_id, trial_module.TrialStatus.COMPLETED)
 
     round1_trials = []
     for i in range(4):
-        t = oracle.create_trial("tuner" + str(i))
-        assert t.status == "RUNNING"
-        round1_trials.append(t)
+        status, trial = oracle.create_trial("tuner" + str(i))
+        assert status == oracle_module.OracleStatus.RUNNING
+        round1_trials.append(trial)
 
     # Bracket 0 is complete as it only has round 0.
     assert len(oracle._brackets) == 2
 
     # Round 2 can't be run until enough models from round 1
     # have completed.
-    t = oracle.create_trial("tuner10")
-    assert t.status == "IDLE"
+    status, trial = oracle.create_trial("tuner10")
+    assert status == oracle_module.OracleStatus.IDLE
 
     for t in round1_trials:
         oracle.update_trial(t.trial_id, {"score": 1})
-        oracle.end_trial(t.trial_id, "COMPLETED")
+        oracle.end_trial(t.trial_id, trial_module.TrialStatus.COMPLETED)
 
     # Only one trial runs in round 2.
-    round2_trial = oracle.create_trial("tuner0")
+    status, round2_trial = oracle.create_trial("tuner0")
 
     assert len(oracle._brackets) == 1
 
     # No more trials to run, but wait for existing brackets to end.
-    t = oracle.create_trial("tuner10")
-    assert t.status == "IDLE"
+    status, trial = oracle.create_trial("tuner10")
+    assert status == oracle_module.OracleStatus.IDLE
 
     oracle.update_trial(round2_trial.trial_id, {"score": 1})
-    oracle.end_trial(round2_trial.trial_id, "COMPLETED")
+    oracle.end_trial(round2_trial.trial_id, trial_module.TrialStatus.COMPLETED)
 
-    t = oracle.create_trial("tuner10")
-    assert t.status == "STOPPED", oracle._current_sweep
+    status, trial = oracle.create_trial("tuner10")
+    assert status == oracle_module.OracleStatus.STOPPED, oracle._current_sweep
 
 
 def test_hyperband_integration(tmp_path):
@@ -231,17 +235,17 @@ def test_hyperband_load_weights(tmp_path):
     assert nb_models_round_0 == 2
     # run the trials for the round 0 (from scratch)
     for _ in range(nb_models_round_0):
-        trial = tuner.oracle.create_trial("tuner0")
+        status, trial = tuner.oracle.create_trial("tuner0")
         result = tuner.run_trial(trial, x, y, validation_data=(x, y))
         tuner.oracle.update_trial(
             trial.trial_id,
             tuner_utils.convert_to_metrics_dict(result, tuner.oracle.objective),
             tuner_utils.get_best_step(result, tuner.oracle.objective),
         )
-        tuner.oracle.end_trial(trial.trial_id, "COMPLETED")
+        tuner.oracle.end_trial(trial.trial_id, trial_module.TrialStatus.COMPLETED)
 
     # ensure the model run in round 1 is loaded from the best model in round 0
-    trial = tuner.oracle.create_trial("tuner0")
+    status, trial = tuner.oracle.create_trial("tuner0")
     hp = trial.hyperparameters
     assert "tuner/trial_id" in hp
     new_model = tuner._try_build(hp)

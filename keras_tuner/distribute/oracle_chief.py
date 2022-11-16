@@ -19,6 +19,7 @@ from concurrent import futures
 import grpc
 
 from keras_tuner.engine import hyperparameters as hp_module
+from keras_tuner.engine import oracle as oracle_module
 from keras_tuner.engine import trial as trial_module
 from keras_tuner.protos import service_pb2
 from keras_tuner.protos import service_pb2_grpc
@@ -39,20 +40,23 @@ class OracleServicer(service_pb2_grpc.OracleServicer):
         return service_pb2.UpdateSpaceResponse()
 
     def CreateTrial(self, request, context):
-        trial = self.oracle.create_trial(request.tuner_id)
-        if trial.status == trial_module.TrialStatus.STOPPED:
+        status, trial = self.oracle.create_trial(request.tuner_id)
+        if status == oracle_module.OracleStatus.STOPPED:
             self.stop_triggered = True
-        return service_pb2.CreateTrialResponse(trial=trial.to_proto())
+        return service_pb2.CreateTrialResponse(
+            status=oracle_module.OracleStatus.to_proto(status),
+            trial=trial.to_proto(),
+        )
 
     def UpdateTrial(self, request, context):
         status = self.oracle.update_trial(
             request.trial_id, request.metrics, step=request.step
         )
-        status_proto = trial_module._convert_trial_status_to_proto(status)
+        status_proto = trial_module.TrialStatus.to_proto(status)
         return service_pb2.UpdateTrialResponse(status=status_proto)
 
     def EndTrial(self, request, context):
-        status = trial_module._convert_trial_status_to_str(request.status)
+        status = trial_module.TrialStatus.from_proto(request.status)
         self.oracle.end_trial(request.trial_id, status)
         return service_pb2.EndTrialResponse()
 

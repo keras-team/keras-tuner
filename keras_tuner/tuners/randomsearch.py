@@ -16,7 +16,6 @@
 
 
 from keras_tuner.engine import oracle as oracle_module
-from keras_tuner.engine import trial as trial_module
 from keras_tuner.engine import tuner as tuner_module
 
 
@@ -77,13 +76,13 @@ class RandomSearchOracle(oracle_module.Oracle):
         Returns:
             A dictionary with keys "values" and "status", where "values" is
             a mapping of parameter names to suggested values, and "status"
-            is the TrialStatus that should be returned for this trial (one
+            is the OracleStatus that should be returned for this trial (one
             of "RUNNING", "IDLE", or "STOPPED").
         """
         values = self._random_values()
         if values is None:
-            return {"status": trial_module.TrialStatus.STOPPED, "values": None}
-        return {"status": trial_module.TrialStatus.RUNNING, "values": values}
+            return {"status": oracle_module.OracleStatus.STOPPED, "values": None}
+        return {"status": oracle_module.OracleStatus.RUNNING, "values": values}
 
 
 class RandomSearch(tuner_module.Tuner):
