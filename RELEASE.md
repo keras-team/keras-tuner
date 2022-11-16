@@ -2,13 +2,13 @@
 
 ## Breaking changes
 * Default value of the `step` argument in `keras_tuner.HyperParameters.Int()` is
-  changed to `None`, which was `1` before..
+  changed to `None`, which was `1` before. No change in default behavior.
 * Default value of the `sampling` argument in
   `keras_tuner.HyperParameters.Int()` is changed to `"linear"`, which was `None`
-  before.
+  before. No change in default behavior.
 * Default value of the `sampling` argument in
   `keras_tuner.HyperParameters.Float()` is changed to `"linear"`, which was
-  `None` before.
+  `None` before. No change in default behavior.
 * If you explicity rely on protobuf values, the new protobuf bug fix may affect
   you.
 * Changed the mechanism how a random sample is drawn for a hyperparameter. They
