@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
+
 from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine import metrics_tracking
 from keras_tuner.engine import trial as trial_module
@@ -50,3 +52,20 @@ def test_trial_proto():
     assert new_trial.metrics.get_history("score") == [
         metrics_tracking.MetricObservation(10, step=1)
     ]
+
+
+def test_trial_status_proto():
+    assert (
+        trial_module.TrialStatus.from_proto(trial_module.TrialStatus.to_proto(None))
+        is None
+    )
+    assert (
+        trial_module.TrialStatus.from_proto(
+            trial_module.TrialStatus.to_proto(trial_module.TrialStatus.IDLE)
+        )
+        == trial_module.TrialStatus.IDLE
+    )
+    with pytest.raises(ValueError, match="Unknown status"):
+        trial_module.TrialStatus.to_proto("OTHER")
+    with pytest.raises(ValueError, match="Unknown status"):
+        trial_module.TrialStatus.from_proto(16)
