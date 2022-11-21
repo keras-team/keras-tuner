@@ -239,7 +239,7 @@ class Oracle(stateful.Stateful):
         # TODO: To signal early stopping, set Trial.status to "STOPPED".
         return trial.status
 
-    def end_trial(self, trial_id, status="COMPLETED"):
+    def end_trial(self, trial_id, status="COMPLETED", message=None):
         """Record the measured objective for a set of parameter values.
 
         Args:
@@ -247,6 +247,8 @@ class Oracle(stateful.Stateful):
             status: A string, one of `"COMPLETED"` (the trial finished
                 normally), or `"INVALID"` (the trial has crashed or been deemed
                 infeasible).
+            message: Optional string. The error message if the trial status is
+                "INVALID".
         """
         trial = None
         for tuner_id, ongoing_trial in self.ongoing_trials.items():
@@ -260,6 +262,8 @@ class Oracle(stateful.Stateful):
         trial.status = status
         if status == trial_module.TrialStatus.COMPLETED:
             self.score_trial(trial)
+        else:
+            trial.message = message
         self.end_order.append(trial_id)
         self._save_trial(trial)
         self.save()

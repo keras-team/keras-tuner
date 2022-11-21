@@ -53,6 +53,7 @@ message UpdateTrialResponse {
 message EndTrialRequest {
     string trial_id = 1;
     keras_tuner.TrialStatus status = 2;
+    string message = 3;
 }
 
 message EndTrialResponse {}

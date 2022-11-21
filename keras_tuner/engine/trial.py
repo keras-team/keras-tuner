@@ -84,9 +84,16 @@ class Trial(stateful.Stateful):
         trial_id: String. The unique identifier for a trial.
         status: one of the TrialStatus attributes. It marks the current status
             of the Trial.
+        message: String. The error message if the trial status is "INVALID".
     """
 
-    def __init__(self, hyperparameters, trial_id=None, status=TrialStatus.RUNNING):
+    def __init__(
+        self,
+        hyperparameters,
+        trial_id=None,
+        status=TrialStatus.RUNNING,
+        message=None,
+    ):
         self.hyperparameters = hyperparameters
         self.trial_id = generate_trial_id() if trial_id is None else trial_id
 
@@ -94,6 +101,7 @@ class Trial(stateful.Stateful):
         self.score = None
         self.best_step = 0
         self.status = status
+        self.message = message
 
     def summary(self):
         """Displays a summary of this Trial."""
