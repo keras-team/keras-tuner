@@ -20,6 +20,7 @@ import warnings
 
 import tensorflow as tf
 
+from keras_tuner import errors
 from keras_tuner import utils
 from keras_tuner.distribute import oracle_chief
 from keras_tuner.distribute import oracle_client
@@ -201,7 +202,10 @@ class BaseTuner(stateful.Stateful):
                 continue
 
             self.on_trial_begin(trial)
-            results = self.run_trial(trial, *fit_args, **fit_kwargs)
+            try:
+                results = self.run_trial(trial, *fit_args, **fit_kwargs)
+            except errors.InvalidTrialError:
+                pass
             # `results` is None indicates user updated oracle in `run_trial()`.
             if results is None:
                 warnings.warn(
