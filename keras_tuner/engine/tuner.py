@@ -77,6 +77,15 @@ class Tuner(base_tuner.BaseTuner):
             depending on random initialization, hence it is often a good idea
             to run several executions per trial in order to evaluate the
             performance of a given set of hyperparameter values.
+        max_retries_per_trial: Integer. Defaults to 3. The maximum number of
+            times to retry a failed `Trial`. A `Trial` fails when an error is
+            raised during the trial, or the objective value is NaN. If the
+            retries all fail, the `Trial` is marked as invalid.
+        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum
+            number of consecutive invalid `Trial`s before stopping the search. A
+            trial is considered invalid when it failed all its retries. A
+            `Trial` fails when an error is raised during the trial, or the
+            objective value is NaN.
 
     Attributes:
         remaining_trials: Number of trials remaining, `None` if `max_trials` is
@@ -98,6 +107,8 @@ class Tuner(base_tuner.BaseTuner):
         tuner_id=None,
         overwrite=False,
         executions_per_trial=1,
+        max_retries_per_trial=3,
+        max_consecutive_failed_trials=3,
     ):
         if hypermodel is None and self.__class__.run_trial is Tuner.run_trial:
             raise ValueError(
@@ -114,6 +125,9 @@ class Tuner(base_tuner.BaseTuner):
             project_name=project_name,
             logger=logger,
             overwrite=overwrite,
+            executions_per_trial=executions_per_trial,
+            max_retries_per_trial=max_retries_per_trial,
+            max_consecutive_failed_trials=max_consecutive_failed_trials,
         )
 
         self.max_model_size = max_model_size
@@ -138,8 +152,6 @@ class Tuner(base_tuner.BaseTuner):
         self._save_n_checkpoints = 10
 
         self.tuner_id = tuner_id or self.tuner_id
-
-        self.executions_per_trial = executions_per_trial
 
     def _build_hypermodel(self, hp):
         with maybe_distribute(self.distribution_strategy):

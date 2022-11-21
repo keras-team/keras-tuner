@@ -34,9 +34,9 @@ from keras_tuner.engine import tuner_utils
 class BaseTuner(stateful.Stateful):
     """Tuner base class.
 
-    `BaseTuner` is the base class for all Tuners, which manages the search
-    loop, Oracle, logging, saving, etc. Tuners for non-Keras models can be
-    created by subclassing `BaseTuner`.
+    `BaseTuner` is the super class of `Tuner`, which manages the search
+    loop, Oracle, logging, saving, etc. All logics used by both Keras and
+    non-Keras models should be put into this class.
 
     Args:
         oracle: Instance of Oracle class.
@@ -52,6 +52,21 @@ class BaseTuner(stateful.Stateful):
         overwrite: Boolean, defaults to `False`. If `False`, reloads an
             existing project of the same name if one is found. Otherwise,
             overwrites the project.
+        executions_per_trial: Integer, the number of executions (training a
+            model from scratch, starting from a new initialization) to run per
+            trial (model configuration). Model metrics may vary greatly
+            depending on random initialization, hence it is often a good idea
+            to run several executions per trial in order to evaluate the
+            performance of a given set of hyperparameter values.
+        max_retries_per_trial: Integer. Defaults to 3. The maximum number of
+            times to retry a failed `Trial`. A `Trial` fails when an error is
+            raised during the trial, or the objective value is NaN. If the
+            retries all fail, the `Trial` is marked as invalid.
+        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum
+            number of consecutive invalid `Trial`s before stopping the search. A
+            trial is considered invalid when it failed all its retries. A
+            `Trial` fails when an error is raised during the trial, or the
+            objective value is NaN.
 
     Attributes:
         remaining_trials: Number of trials remaining, `None` if `max_trials` is
@@ -66,6 +81,9 @@ class BaseTuner(stateful.Stateful):
         project_name=None,
         logger=None,
         overwrite=False,
+        executions_per_trial=1,
+        max_retries_per_trial=3,
+        max_consecutive_failed_trials=3,
     ):
         # Ops and metadata
         self.directory = directory or "."
@@ -100,11 +118,16 @@ class BaseTuner(stateful.Stateful):
         self.logger = logger
         self._display = tuner_utils.Display(oracle=self.oracle)
 
-        self._populate_initial_space()
+        self.executions_per_trial = executions_per_trial
+        self.max_retries_per_trial = max_retries_per_trial
+        self.max_consecutive_failed_trials = max_consecutive_failed_trials
 
         if not overwrite and tf.io.gfile.exists(self._get_tuner_fname()):
             tf.get_logger().info(f"Reloading Tuner from {self._get_tuner_fname()}")
             self.reload()
+        else:
+            # Only populate initial space if not reloading.
+            self._populate_initial_space()
 
     def _populate_initial_space(self):
         """Populate initial search space for oracle.
