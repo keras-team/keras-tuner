@@ -60,6 +60,9 @@ class Oracle(stateful.Stateful):
             request hyperparameter entries not listed in `hyperparameters`.
             Defaults to True.
         seed: Int. Random seed.
+        max_consecutive_failures: Integer. Defaults to 3. The maximum number of
+            consecutive failures. When this number is reached, the search will be
+            stopped. A `Trial` that failed all its retries is count as one failure.
     """
 
     def __init__(
@@ -70,6 +73,7 @@ class Oracle(stateful.Stateful):
         allow_new_entries=True,
         tune_new_entries=True,
         seed=None,
+        max_consecutive_failures=3,
     ):
         self.objective = obj_module.create_objective(objective)
         self.max_trials = max_trials
@@ -117,6 +121,7 @@ class Oracle(stateful.Stateful):
         # results and save trials.
         self.multi_worker = False
         self.should_report = True
+        self.max_consecutive_failures = max_consecutive_failures
 
     def _populate_space(self, trial_id):
         warnings.warn(

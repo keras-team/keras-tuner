@@ -78,14 +78,8 @@ class Tuner(base_tuner.BaseTuner):
             to run several executions per trial in order to evaluate the
             performance of a given set of hyperparameter values.
         max_retries_per_trial: Integer. Defaults to 3. The maximum number of
-            times to retry a failed `Trial`. A `Trial` fails when an error is
-            raised during the trial, or the objective value is NaN. If the
-            retries all fail, the `Trial` is marked as invalid.
-        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum
-            number of consecutive invalid `Trial`s before stopping the search. A
-            trial is considered invalid when it failed all its retries. A
-            `Trial` fails when an error is raised during the trial, or the
-            objective value is NaN.
+            times to retry a `Trial` when an error is raised during the trial,
+            or the objective value is NaN.
 
     Attributes:
         remaining_trials: Number of trials remaining, `None` if `max_trials` is
@@ -125,7 +119,6 @@ class Tuner(base_tuner.BaseTuner):
             project_name=project_name,
             logger=logger,
             overwrite=overwrite,
-            executions_per_trial=executions_per_trial,
             max_retries_per_trial=max_retries_per_trial,
             max_consecutive_failed_trials=max_consecutive_failed_trials,
         )
@@ -135,6 +128,7 @@ class Tuner(base_tuner.BaseTuner):
         self.loss = loss
         self.metrics = metrics
         self.distribution_strategy = distribution_strategy
+        self.executions_per_trial = executions_per_trial
 
         # Support multi-worker distribution strategies w/ distributed tuning.
         # Only the chief worker in each cluster should report results.
@@ -147,9 +141,6 @@ class Tuner(base_tuner.BaseTuner):
             self.oracle.should_report = (
                 self.distribution_strategy.extended.should_checkpoint
             )
-
-        # Save only the last N checkpoints.
-        self._save_n_checkpoints = 10
 
         self.tuner_id = tuner_id or self.tuner_id
 

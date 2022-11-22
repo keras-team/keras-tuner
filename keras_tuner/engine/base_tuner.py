@@ -53,21 +53,8 @@ class BaseTuner(stateful.Stateful):
         overwrite: Boolean, defaults to `False`. If `False`, reloads an
             existing project of the same name if one is found. Otherwise,
             overwrites the project.
-        executions_per_trial: Integer, the number of executions (training a
-            model from scratch, starting from a new initialization) to run per
-            trial (model configuration). Model metrics may vary greatly
-            depending on random initialization, hence it is often a good idea
-            to run several executions per trial in order to evaluate the
-            performance of a given set of hyperparameter values.
         max_retries_per_trial: Integer. Defaults to 3. The maximum number of
-            times to retry a failed `Trial`. A `Trial` fails when an error is
-            raised during the trial, or the objective value is NaN. If the
-            retries all fail, the `Trial` is marked as invalid.
-        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum
-            number of consecutive invalid `Trial`s before stopping the search. A
-            trial is considered invalid when it failed all its retries. A
-            `Trial` fails when an error is raised during the trial, or the
-            objective value is NaN.
+            times to retry a `Trial` if the trial fails.
 
     Attributes:
         remaining_trials: Number of trials remaining, `None` if `max_trials` is
@@ -82,7 +69,6 @@ class BaseTuner(stateful.Stateful):
         project_name=None,
         logger=None,
         overwrite=False,
-        executions_per_trial=1,
         max_retries_per_trial=3,
         max_consecutive_failed_trials=3,
     ):
@@ -119,9 +105,7 @@ class BaseTuner(stateful.Stateful):
         self.logger = logger
         self._display = tuner_utils.Display(oracle=self.oracle)
 
-        self.executions_per_trial = executions_per_trial
         self.max_retries_per_trial = max_retries_per_trial
-        self.max_consecutive_failed_trials = max_consecutive_failed_trials
 
         if not overwrite and tf.io.gfile.exists(self._get_tuner_fname()):
             tf.get_logger().info(f"Reloading Tuner from {self._get_tuner_fname()}")
@@ -202,10 +186,7 @@ class BaseTuner(stateful.Stateful):
                 continue
 
             self.on_trial_begin(trial)
-            try:
-                results = self.run_trial(trial, *fit_args, **fit_kwargs)
-            except errors.InvalidTrialError:
-                pass
+            results = self._try_run_trial(trial, *fit_args, **fit_kwargs)
             # `results` is None indicates user updated oracle in `run_trial()`.
             if results is None:
                 warnings.warn(
@@ -233,6 +214,12 @@ class BaseTuner(stateful.Stateful):
                 )
             self.on_trial_end(trial)
         self.on_search_end()
+
+    def _try_run_trial(self, trial, *fit_args, **fit_kwargs):
+        try:
+            return self.run_trial(trial, *fit_args, **fit_kwargs)
+        except errors.InvalidTrialError:
+            pass
 
     def run_trial(self, trial, *fit_args, **fit_kwargs):
         """Evaluates a set of hyperparameter values."""
