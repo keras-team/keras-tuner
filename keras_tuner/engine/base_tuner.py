@@ -15,11 +15,15 @@
 
 
 import copy
+import gc
 import os
+import traceback
 import warnings
 
 import tensorflow as tf
+from tensorflow import keras
 
+from keras_tuner import config as config_module
 from keras_tuner import errors
 from keras_tuner import utils
 from keras_tuner.distribute import oracle_chief
@@ -186,40 +190,67 @@ class BaseTuner(stateful.Stateful):
                 continue
 
             self.on_trial_begin(trial)
-            results = self._try_run_trial(trial, *fit_args, **fit_kwargs)
-            # `results` is None indicates user updated oracle in `run_trial()`.
-            if results is None:
-                warnings.warn(
-                    "`Tuner.run_trial()` returned None. It should return one of "
-                    "float, dict, keras.callbacks.History, or a list of one "
-                    "of these types. The use case of calling "
-                    "`Tuner.oracle.update_trial()` in `Tuner.run_trial()` is "
-                    "deprecated, and will be removed in the future.",
-                    DeprecationWarning,
-                    stacklevel=2,
-                )
-            else:
-                tuner_utils.validate_trial_results(
-                    results, self.oracle.objective, "Tuner.run_trial()"
-                ),
-                self.oracle.update_trial(
-                    trial.trial_id,
-                    # Convert to dictionary before calling `update_trial()`
-                    # to pass it from gRPC.
-                    tuner_utils.convert_to_metrics_dict(
-                        results,
-                        self.oracle.objective,
-                    ),
-                    step=tuner_utils.get_best_step(results, self.oracle.objective),
-                )
+            self._retry_trial(trial, *fit_args, **fit_kwargs)
             self.on_trial_end(trial)
         self.on_search_end()
 
     def _try_run_trial(self, trial, *fit_args, **fit_kwargs):
-        try:
-            return self.run_trial(trial, *fit_args, **fit_kwargs)
-        except errors.InvalidTrialError:
-            pass
+        results = self.run_trial(trial, *fit_args, **fit_kwargs)
+        # `results` is None indicates user updated oracle in `run_trial()`.
+        if results is None and trial.status:
+            warnings.warn(
+                "`Tuner.run_trial()` returned None. It should return one of "
+                "float, dict, keras.callbacks.History, or a list of one "
+                "of these types. The use case of calling "
+                "`Tuner.oracle.update_trial()` in `Tuner.run_trial()` is "
+                "deprecated, and will be removed in the future.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        else:
+            tuner_utils.validate_trial_results(
+                results, self.oracle.objective, "Tuner.run_trial()"
+            ),
+            self.oracle.update_trial(
+                trial.trial_id,
+                # Convert to dictionary before calling `update_trial()`
+                # to pass it from gRPC.
+                tuner_utils.convert_to_metrics_dict(
+                    results,
+                    self.oracle.objective,
+                ),
+                step=tuner_utils.get_best_step(results, self.oracle.objective),
+            )
+
+    def _retry_trial(self, trial, *fit_args, **fit_kwargs):
+        for i in range(self.max_retries_per_trial + 1):
+            # clean-up TF graph from previously stored (defunct) graph
+            keras.backend.clear_session()
+            gc.collect()
+
+            # Build a model, allowing max_fail_streak failed attempts.
+            try:
+                self._try_run_trial(trial, *fit_args, **fit_kwargs)
+                trial.status = trial_module.TrialStatus.COMPLETED
+                return
+            except Exception as e:
+                if isinstance(e, errors.FatalError):
+                    raise e
+                message = "".join(
+                    traceback.format_exception_only(type(e), e)
+                ).strip()
+                if config_module.DEBUG:
+                    # Printing the stacktrace and the error.
+                    traceback.print_exc()
+
+                if isinstance(e, errors.InvalidTrialError):
+                    break
+
+                print(f"Invalid model {i}/{self.max_retries_per_trial}")
+
+        trial.status = trial_module.TrialStatus.INVALID
+        trial.message = message
+        return
 
     def run_trial(self, trial, *fit_args, **fit_kwargs):
         """Evaluates a set of hyperparameter values."""
@@ -273,7 +304,7 @@ class BaseTuner(stateful.Stateful):
         if self.logger:
             self.logger.report_trial_state(trial.trial_id, trial.get_state())
 
-        self.oracle.end_trial(trial.trial_id, trial_module.TrialStatus.COMPLETED)
+        self.oracle.end_trial(trial.trial_id, trial.status, trial.message)
         self.oracle.update_space(trial.hyperparameters)
         # Display needs the updated trial scored by the Oracle.
         self._display.on_trial_end(self.oracle.get_trial(trial.trial_id))

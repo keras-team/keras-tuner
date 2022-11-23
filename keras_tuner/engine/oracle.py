@@ -20,6 +20,7 @@ import os
 import random
 import warnings
 
+import numpy as np
 import tensorflow as tf
 
 from keras_tuner import utils
@@ -244,6 +245,21 @@ class Oracle(stateful.Stateful):
         # TODO: To signal early stopping, set Trial.status to "STOPPED".
         return trial.status
 
+    def _check_consecutive_failures(self):
+        # For thread safety, check all trials for consecutive failures.
+        consecutive_failures = 0
+        for trial_id in self.end_order:
+            trial = self.trials[trial_id]
+            if trial.status == trial_module.TrialStatus.INVALID:
+                consecutive_failures += 1
+            else:
+                consecutive_failures = 0
+            if consecutive_failures == self.max_consecutive_failures:
+                raise RuntimeError(
+                    "Number of consecutive failures excceeded the limit "
+                    f"of {self.max_consecutive_failures}.\n" + trial.message
+                )
+
     def end_trial(self, trial_id, status="COMPLETED", message=None):
         """Record the measured objective for a set of parameter values.
 
@@ -255,6 +271,7 @@ class Oracle(stateful.Stateful):
             message: Optional string. The error message if the trial status is
                 "INVALID".
         """
+        # Retrieve the Trial.
         trial = None
         for tuner_id, ongoing_trial in self.ongoing_trials.items():
             if ongoing_trial.trial_id == trial_id:
@@ -264,12 +281,16 @@ class Oracle(stateful.Stateful):
         if not trial:
             raise ValueError(f"Ongoing trial with id: {trial_id} not found.")
 
+        # Update the Trial.
         trial.status = status
-        if status == trial_module.TrialStatus.COMPLETED:
+        trial.message = message
+        if trial.status == trial_module.TrialStatus.COMPLETED:
             self.score_trial(trial)
-        else:
-            trial.message = message
+            if np.isnan(trial.score):
+                trial.status = trial_module.TrialStatus.INVALID
+
         self.end_order.append(trial_id)
+        self._check_consecutive_failures()
         self._save_trial(trial)
         self.save()
 

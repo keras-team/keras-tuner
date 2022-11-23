@@ -16,19 +16,15 @@
 
 import contextlib
 import copy
-import gc
 import os
-import traceback
 
 import numpy as np
 from tensorboard.plugins.hparams import api as hparams_api
 from tensorflow import keras
 
-from keras_tuner import config as config_module
+from keras_tuner import errors
 from keras_tuner.engine import base_tuner
 from keras_tuner.engine import tuner_utils
-
-MAX_FAIL_STREAK = 5
 
 
 class Tuner(base_tuner.BaseTuner):
@@ -37,6 +33,10 @@ class Tuner(base_tuner.BaseTuner):
     This is the base `Tuner` class for all tuners for Keras models. It manages
     the building, training, evaluation and saving of the Keras models. New
     tuners can be created by subclassing the class.
+
+    All Keras related logics are in `Tuner.run_trial()` and its subroutines.
+    When subclassing `Tuner`, if not calling `super().run_trial()`, it can tune
+    anything.
 
     Args:
         oracle: Instance of `Oracle` class.
@@ -151,39 +151,19 @@ class Tuner(base_tuner.BaseTuner):
             return model
 
     def _try_build(self, hp):
-        for i in range(MAX_FAIL_STREAK + 1):
-            # clean-up TF graph from previously stored (defunct) graph
-            keras.backend.clear_session()
-            gc.collect()
-
-            # Build a model, allowing max_fail_streak failed attempts.
-            try:
-                model = self._build_hypermodel(hp)
-            except:
-                if config_module.DEBUG:
-                    traceback.print_exc()
-
-                print(f"Invalid model {i}/{MAX_FAIL_STREAK}")
-
-                if i == MAX_FAIL_STREAK:
-                    raise RuntimeError("Too many failed attempts to build model.")
-                continue
-
-            # Stop if `build()` does not return a valid model.
-            if not isinstance(model, keras.models.Model):
-                raise RuntimeError(
-                    "Model-building function did not return "
-                    "a valid Keras Model instance, found {}".format(model)
-                )
-
-            # Check model size.
-            size = maybe_compute_model_size(model)
-            if self.max_model_size and size > self.max_model_size:
-                print(f"Oversized model: {size} parameters -- skipping")
-                if i == MAX_FAIL_STREAK:
-                    raise RuntimeError("Too many consecutive oversized models.")
-                continue
-            break
+        model = self._build_hypermodel(hp)
+        # Stop if `build()` does not return a valid model.
+        if not isinstance(model, keras.models.Model):
+            raise errors.FatalRuntimeError(
+                "Model-building function did not return "
+                f"a valid Keras Model instance, found {model}."
+            )
+        # Check model size.
+        size = maybe_compute_model_size(model)
+        if self.max_model_size and size > self.max_model_size:
+            raise errors.InvalidTrialError(
+                f"Oversized model: {size} parameters. Skip model."
+            )
         return model
 
     def _override_compile_args(self, model):
@@ -380,7 +360,7 @@ class Tuner(base_tuner.BaseTuner):
         try:
             callbacks = copy.deepcopy(callbacks)
         except:
-            raise ValueError(
+            raise errors.FatalValueError(
                 "All callbacks used during a search "
                 "should be deep-copyable (since they are "
                 "reused across trials). "

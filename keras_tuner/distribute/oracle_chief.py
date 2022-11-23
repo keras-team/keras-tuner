@@ -53,7 +53,7 @@ class OracleServicer(service_pb2_grpc.OracleServicer):
 
     def EndTrial(self, request, context):
         status = trial_module.TrialStatus.from_proto(request.status)
-        self.oracle.end_trial(request.trial_id, status)
+        self.oracle.end_trial(request.trial_id, status, request.message)
         return service_pb2.EndTrialResponse()
 
     def GetTrial(self, request, context):

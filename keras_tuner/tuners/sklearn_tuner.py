@@ -194,9 +194,8 @@ class SklearnTuner(base_tuner.BaseTuner):
                     )
                     metrics[metric.__name__].append(result)
 
-        trial_metrics = {name: np.mean(values) for name, values in metrics.items()}
-        self.oracle.update_trial(trial.trial_id, trial_metrics)
         self.save_model(trial.trial_id, model)
+        return {name: np.mean(values) for name, values in metrics.items()}
 
     def save_model(self, trial_id, model, step=0):
         fname = os.path.join(self.get_trial_dir(trial_id), "model.pickle")

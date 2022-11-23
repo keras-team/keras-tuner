@@ -1173,7 +1173,7 @@ def test_tuner_errors(tmp_path):
             directory=tmp_path,
         )
     # oversize model
-    with pytest.raises(RuntimeError, match="Too many consecutive oversized models"):
+    with pytest.raises(RuntimeError, match="Oversized model"):
         tuner = tuner_module.Tuner(
             oracle=keras_tuner.tuners.randomsearch.RandomSearchOracle(
                 objective="val_accuracy", max_trials=3

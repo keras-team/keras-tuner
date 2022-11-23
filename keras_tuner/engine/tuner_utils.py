@@ -24,6 +24,7 @@ import tensorflow as tf
 from tensorboard.plugins.hparams import api as hparams_api
 from tensorflow import keras
 
+from keras_tuner import errors
 from keras_tuner import utils
 from keras_tuner.distribute import utils as ds_utils
 from keras_tuner.engine import hyperparameters as hp_module
@@ -297,7 +298,7 @@ def validate_trial_results(results, objective, func_name):
     if isinstance(objective, obj_module.DefaultObjective) and not (
         isinstance(results, dict) and objective.name in results
     ):
-        raise TypeError(
+        raise errors.FatalTypeError(
             f"Expected the return value of {func_name} to be "
             "a single float when `objective` is left unspecified. "
             f"Recevied return value: {results} of type {type(results)}."
@@ -306,7 +307,7 @@ def validate_trial_results(results, objective, func_name):
     # A dictionary.
     if isinstance(results, dict):
         if objective.name not in results:
-            raise ValueError(
+            raise errors.FatalValueError(
                 f"Expected the returned dictionary from {func_name} to have "
                 f"the specified objective, {objective.name}, "
                 "as one of the keys. "
@@ -318,7 +319,7 @@ def validate_trial_results(results, objective, func_name):
     if isinstance(results, keras.callbacks.History):
         return
 
-    raise TypeError(
+    raise errors.FatalTypeError(
         f"Expected the return value of {func_name} to be "
         "one of float, dict, keras.callbacks.History, "
         "or a list of one of these types. "

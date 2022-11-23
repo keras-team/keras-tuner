@@ -34,3 +34,28 @@ class InvalidTrialError(Exception):
     """
 
     pass
+
+
+class FatalError(Exception):
+    """Error specially to breakthrough try-except for `Tuner.run_trial()`.
+
+    This error will raised again after caught by the try-except around
+    `Tuner.run_trial()`. So, it should only be used in subroutines of
+    `Tuner.run_trial()`.
+
+    It is used to terminate the KerasTuner program for errors that need users
+    immediate attention.
+
+    """
+
+
+class FatalValueError(FatalError, ValueError):
+    pass
+
+
+class FatalTypeError(FatalError, TypeError):
+    pass
+
+
+class FatalRuntimeError(FatalError, RuntimeError):
+    pass

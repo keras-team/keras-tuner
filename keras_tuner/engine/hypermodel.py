@@ -13,6 +13,8 @@
 # limitations under the License.
 "HyperModel base class."
 
+from keras_tuner import errors
+
 
 class HyperModel(object):
     """Defines a search space of models.
@@ -157,7 +159,7 @@ def get_hypermodel(hypermodel):
         return hypermodel
 
     if not callable(hypermodel):
-        raise ValueError(
+        raise errors.FatalValueError(
             "The `hypermodel` argument should be either "
             "a callable with signature `build(hp)` returning a model, "
             "or an instance of `HyperModel`."
