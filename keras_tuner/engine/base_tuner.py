@@ -39,9 +39,28 @@ from keras_tuner.engine import tuner_utils
 class BaseTuner(stateful.Stateful):
     """Tuner base class.
 
-    `BaseTuner` is the super class of `Tuner`, which manages the search
-    loop, Oracle, logging, saving, etc. All logics used by both Keras and
-    non-Keras models should be put into this class.
+    `BaseTuner` is the super class of all `Tuner` classes. It defines the APIs
+    for the `Tuner` classes and serves as a wrapper class for the internal
+    logics.
+
+    `BaseTuner` supports parallel tuning. In parallel tuning, the communication
+    between `BaseTuner` and `Oracle` are all going through gRPC. There are
+    multiple running instances of `BaseTuner` but only one `Oracle`. This design
+    allows the user to run the same script on multiple machines to launch the
+    parallel tuning.
+
+    The `Oracle` instance should manage the life cycles of all the `Trial`s,
+    while a `BaseTuner` is a worker for running the `Trial`s. `BaseTuner`s
+    requests `Trial`s from the `Oracle`, run them, and report the results back
+    to the `Oracle`. A `BaseTuner` also handles events happening during running
+    the `Trial`, like saving the model, logging, error handling. Other than
+    these responsibilities, a `BaseTuner` should avoid managing a `Trial` since
+    the relevant contexts for a `Trial` are in the `Oracle`, which only
+    accessible from gRPC.
+
+    The `BaseTuner` should be a general tuner for all types of models and avoid
+    any logic directly related to Keras. The Keras related logics should be
+    handled by the `Tuner` class, which is a subclass of `BaseTuner`.
 
     Args:
         oracle: Instance of Oracle class.
@@ -57,8 +76,6 @@ class BaseTuner(stateful.Stateful):
         overwrite: Boolean, defaults to `False`. If `False`, reloads an
             existing project of the same name if one is found. Otherwise,
             overwrites the project.
-        max_retries_per_trial: Integer. Defaults to 3. The maximum number of
-            times to retry a `Trial` if the trial fails.
 
     Attributes:
         remaining_trials: Number of trials remaining, `None` if `max_trials` is
@@ -73,8 +90,6 @@ class BaseTuner(stateful.Stateful):
         project_name=None,
         logger=None,
         overwrite=False,
-        max_retries_per_trial=3,
-        max_consecutive_failed_trials=3,
     ):
         # Ops and metadata
         self.directory = directory or "."
@@ -108,8 +123,6 @@ class BaseTuner(stateful.Stateful):
         # Logs etc
         self.logger = logger
         self._display = tuner_utils.Display(oracle=self.oracle)
-
-        self.max_retries_per_trial = max_retries_per_trial
 
         if not overwrite and tf.io.gfile.exists(self._get_tuner_fname()):
             tf.get_logger().info(f"Reloading Tuner from {self._get_tuner_fname()}")
@@ -190,11 +203,11 @@ class BaseTuner(stateful.Stateful):
                 continue
 
             self.on_trial_begin(trial)
-            self._retry_trial(trial, *fit_args, **fit_kwargs)
+            self._try_run_and_update_trial(trial, *fit_args, **fit_kwargs)
             self.on_trial_end(trial)
         self.on_search_end()
 
-    def _try_run_trial(self, trial, *fit_args, **fit_kwargs):
+    def _run_and_update_trial(self, trial, *fit_args, **fit_kwargs):
         results = self.run_trial(trial, *fit_args, **fit_kwargs)
         # `results` is None indicates user updated oracle in `run_trial()`.
         if results is None and trial.status:
@@ -222,35 +235,27 @@ class BaseTuner(stateful.Stateful):
                 step=tuner_utils.get_best_step(results, self.oracle.objective),
             )
 
-    def _retry_trial(self, trial, *fit_args, **fit_kwargs):
-        for i in range(self.max_retries_per_trial + 1):
-            # clean-up TF graph from previously stored (defunct) graph
-            keras.backend.clear_session()
-            gc.collect()
+    def _try_run_and_update_trial(self, trial, *fit_args, **fit_kwargs):
+        # clean-up TF graph from previously stored (defunct) graph
+        keras.backend.clear_session()
+        gc.collect()
 
-            # Build a model, allowing max_fail_streak failed attempts.
-            try:
-                self._try_run_trial(trial, *fit_args, **fit_kwargs)
-                trial.status = trial_module.TrialStatus.COMPLETED
-                return
-            except Exception as e:
-                if isinstance(e, errors.FatalError):
-                    raise e
-                message = "".join(
-                    traceback.format_exception_only(type(e), e)
-                ).strip()
-                if config_module.DEBUG:
-                    # Printing the stacktrace and the error.
-                    traceback.print_exc()
+        # Build a model, allowing max_fail_streak failed attempts.
+        try:
+            self._run_and_update_trial(trial, *fit_args, **fit_kwargs)
+            trial.status = trial_module.TrialStatus.COMPLETED
+            return
+        except Exception as e:
+            if isinstance(e, errors.FatalError):
+                raise e
+            message = "".join(traceback.format_exception_only(type(e), e)).strip()
+            if config_module.DEBUG:
+                # Printing the stacktrace and the error.
+                traceback.print_exc()
 
-                if isinstance(e, errors.InvalidTrialError):
-                    break
-
-                print(f"Invalid model {i}/{self.max_retries_per_trial}")
-
-        trial.status = trial_module.TrialStatus.INVALID
-        trial.message = message
-        return
+            if isinstance(e, errors.InvalidTrialError):
+                trial.status = trial_module.TrialStatus.INVALID
+                trial.message = message
 
     def run_trial(self, trial, *fit_args, **fit_kwargs):
         """Evaluates a set of hyperparameter values."""

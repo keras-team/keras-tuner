@@ -14,6 +14,7 @@
 "Oracle base class."
 
 
+import collections
 import hashlib
 import json
 import os
@@ -61,6 +62,8 @@ class Oracle(stateful.Stateful):
             request hyperparameter entries not listed in `hyperparameters`.
             Defaults to True.
         seed: Int. Random seed.
+        max_retries_per_trial: Integer. Defaults to 3. The maximum number of
+            times to retry a `Trial` if the trial fails.
         max_consecutive_failures: Integer. Defaults to 3. The maximum number of
             consecutive failures. When this number is reached, the search will be
             stopped. A `Trial` that failed all its retries is count as one failure.
@@ -74,6 +77,7 @@ class Oracle(stateful.Stateful):
         allow_new_entries=True,
         tune_new_entries=True,
         seed=None,
+        max_retries_per_trial=3,
         max_consecutive_failures=3,
     ):
         self.objective = obj_module.create_objective(objective)
@@ -105,6 +109,10 @@ class Oracle(stateful.Stateful):
         self.start_order = []
         # List of trial_ids in the order of the trials end
         self.end_order = []
+        # Map trial_id to failed times
+        self._failed_times = collections.defaultdict(lambda: 0)
+        # Used as a queue of trial_id to retry
+        self._retry_queue = []
 
         self.seed = seed or random.randint(1, 10000)
         self._seed_state = self.seed
@@ -122,6 +130,7 @@ class Oracle(stateful.Stateful):
         # results and save trials.
         self.multi_worker = False
         self.should_report = True
+        self.max_retries_per_trial = max_retries_per_trial
         self.max_consecutive_failures = max_consecutive_failures
 
     def _populate_space(self, trial_id):
@@ -190,6 +199,13 @@ class Oracle(stateful.Stateful):
         # Allow for multi-worker DistributionStrategy within a Trial.
         if tuner_id in self.ongoing_trials:
             return self.ongoing_trials[tuner_id]
+
+        # Pick the Trials waiting for retry first.
+        if len(self._retry_queue) > 0:
+            trial = self.trials[self._retry_queue.pop()]
+            trial.status = trial_module.TrialStatus.RUNNING
+            self.ongoing_trials[tuner_id] = trial
+            return trial
 
         # Make the trial_id the current number of trial, pre-padded with 0s
         trial_id = f"{{:0{len(str(self.max_trials))}d}}"
@@ -289,6 +305,22 @@ class Oracle(stateful.Stateful):
             if np.isnan(trial.score):
                 trial.status = trial_module.TrialStatus.INVALID
 
+        # Check if need to retry the trial.
+        if (
+            trial.status == trial_module.TrialStatus.INVALID
+            and self._failed_times[trial_id] <= self.max_retries_per_trial
+        ):
+            self._failed_times[trial_id] += 1
+            print(
+                f"Trial {trial_id} failed {self._failed_times[trial_id]} "
+                "times. "
+                f"{self.max_retries_per_trial + 1 - self._failed_times[trial_id]} "
+                "retries left."
+            )
+            self._retry_queue.append(trial_id)
+            return
+
+        # End the trial
         self.end_order.append(trial_id)
         self._check_consecutive_failures()
         self._save_trial(trial)
