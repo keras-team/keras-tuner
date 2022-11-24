@@ -111,6 +111,7 @@ enum TrialStatus {
     INVALID = 3;
     STOPPED = 4;
     COMPLETED = 5;
+    FAILED = 6;
 }
 
 message Trial {

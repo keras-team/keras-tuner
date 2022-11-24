@@ -62,11 +62,12 @@ class Oracle(stateful.Stateful):
             request hyperparameter entries not listed in `hyperparameters`.
             Defaults to True.
         seed: Int. Random seed.
-        max_retries_per_trial: Integer. Defaults to 3. The maximum number of
-            times to retry a `Trial` if the trial fails.
-        max_consecutive_failures: Integer. Defaults to 3. The maximum number of
-            consecutive failures. When this number is reached, the search will be
-            stopped. A `Trial` that failed all its retries is count as one failure.
+        max_retries_per_trial: Integer. Defaults to 0. The maximum number of
+            times to retry a `Trial` if the trial crashed or the results are invalid.
+        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum number of
+            consecutive failed `Trial`s. When this number is reached, the search
+            will be stopped. A `Trial` is marked as failed when none of the
+            retries succeeded.
     """
 
     def __init__(
@@ -77,8 +78,8 @@ class Oracle(stateful.Stateful):
         allow_new_entries=True,
         tune_new_entries=True,
         seed=None,
-        max_retries_per_trial=3,
-        max_consecutive_failures=3,
+        max_retries_per_trial=0,
+        max_consecutive_failed_trials=3,
     ):
         self.objective = obj_module.create_objective(objective)
         self.max_trials = max_trials
@@ -110,7 +111,7 @@ class Oracle(stateful.Stateful):
         # List of trial_ids in the order of the trials end
         self.end_order = []
         # Map trial_id to failed times
-        self._failed_times = collections.defaultdict(lambda: 0)
+        self._run_times = collections.defaultdict(lambda: 0)
         # Used as a queue of trial_id to retry
         self._retry_queue = []
 
@@ -131,7 +132,7 @@ class Oracle(stateful.Stateful):
         self.multi_worker = False
         self.should_report = True
         self.max_retries_per_trial = max_retries_per_trial
-        self.max_consecutive_failures = max_consecutive_failures
+        self.max_consecutive_failed_trials = max_consecutive_failed_trials
 
     def _populate_space(self, trial_id):
         warnings.warn(
@@ -266,14 +267,14 @@ class Oracle(stateful.Stateful):
         consecutive_failures = 0
         for trial_id in self.end_order:
             trial = self.trials[trial_id]
-            if trial.status == trial_module.TrialStatus.INVALID:
+            if trial.status == trial_module.TrialStatus.FAILED:
                 consecutive_failures += 1
             else:
                 consecutive_failures = 0
-            if consecutive_failures == self.max_consecutive_failures:
+            if consecutive_failures == self.max_consecutive_failed_trials:
                 raise RuntimeError(
                     "Number of consecutive failures excceeded the limit "
-                    f"of {self.max_consecutive_failures}.\n" + trial.message
+                    f"of {self.max_consecutive_failed_trials}.\n" + trial.message
                 )
 
     def end_trial(self, trial_id, status="COMPLETED", message=None):
@@ -282,10 +283,11 @@ class Oracle(stateful.Stateful):
         Args:
             trial_id: A string, the unique ID for this trial.
             status: A string, one of `"COMPLETED"` (the trial finished
-                normally), or `"INVALID"` (the trial has crashed or been deemed
-                infeasible).
+                normally), `"INVALID"` (the trial has crashed or been deemed
+                infeasible, but subject to retries), or `"FAILED"` (The Trial is
+                failed. No more retries needed.).
             message: Optional string. The error message if the trial status is
-                "INVALID".
+                `"INVALID"` or `"FAILED"`.
         """
         # Retrieve the Trial.
         trial = None
@@ -306,25 +308,33 @@ class Oracle(stateful.Stateful):
                 trial.status = trial_module.TrialStatus.INVALID
 
         # Check if need to retry the trial.
-        if (
-            trial.status == trial_module.TrialStatus.INVALID
-            and self._failed_times[trial_id] <= self.max_retries_per_trial
-        ):
-            self._failed_times[trial_id] += 1
-            print(
-                f"Trial {trial_id} failed {self._failed_times[trial_id]} "
-                "times. "
-                f"{self.max_retries_per_trial + 1 - self._failed_times[trial_id]} "
-                "retries left."
-            )
-            self._retry_queue.append(trial_id)
-            return
+        self._run_times[trial_id] += 1
+        self._maybe_retry(trial)
 
         # End the trial
         self.end_order.append(trial_id)
         self._check_consecutive_failures()
         self._save_trial(trial)
         self.save()
+
+    def _maybe_retry(self, trial):
+        if trial.status != trial_module.TrialStatus.INVALID:
+            return
+
+        trial_id = trial.trial_id
+        max_run_times = self.max_retries_per_trial + 1
+
+        if self._run_times[trial_id] >= max_run_times:
+            trial.status = trial_module.TrialStatus.FAILED
+            return
+
+        print(
+            f"Trial {trial_id} failed {self._run_times[trial_id]} "
+            "times. "
+            f"{max_run_times - self._run_times[trial_id]} "
+            "retries left."
+        )
+        self._retry_queue.append(trial_id)
 
     def get_space(self):
         """Returns the `HyperParameters` search space."""

@@ -65,6 +65,12 @@ def test_trial_status_proto():
         )
         == trial_module.TrialStatus.IDLE
     )
+    assert (
+        trial_module.TrialStatus.from_proto(
+            trial_module.TrialStatus.to_proto(trial_module.TrialStatus.FAILED)
+        )
+        == trial_module.TrialStatus.FAILED
+    )
     with pytest.raises(ValueError, match="Unknown status"):
         trial_module.TrialStatus.to_proto("OTHER")
     with pytest.raises(ValueError, match="Unknown status"):

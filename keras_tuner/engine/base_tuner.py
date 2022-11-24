@@ -248,14 +248,18 @@ class BaseTuner(stateful.Stateful):
         except Exception as e:
             if isinstance(e, errors.FatalError):
                 raise e
-            message = "".join(traceback.format_exception_only(type(e), e)).strip()
             if config_module.DEBUG:
                 # Printing the stacktrace and the error.
                 traceback.print_exc()
 
             if isinstance(e, errors.InvalidTrialError):
+                trial.status = trial_module.TrialStatus.FAILED
+            else:
                 trial.status = trial_module.TrialStatus.INVALID
-                trial.message = message
+
+            # Include the stack traces in the message.
+            message = traceback.format_exc()
+            trial.message = message
 
     def run_trial(self, trial, *fit_args, **fit_kwargs):
         """Evaluates a set of hyperparameter values."""
