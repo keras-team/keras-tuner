@@ -154,7 +154,7 @@ class Tuner(base_tuner.BaseTuner):
         # Check model size.
         size = maybe_compute_model_size(model)
         if self.max_model_size and size > self.max_model_size:
-            raise errors.InvalidTrialError(
+            raise errors.FailedTrialError(
                 f"Oversized model: {size} parameters. Skip model."
             )
         return model

@@ -252,7 +252,7 @@ class BaseTuner(stateful.Stateful):
                 # Printing the stacktrace and the error.
                 traceback.print_exc()
 
-            if isinstance(e, errors.InvalidTrialError):
+            if isinstance(e, errors.FailedTrialError):
                 trial.status = trial_module.TrialStatus.FAILED
             else:
                 trial.status = trial_module.TrialStatus.INVALID

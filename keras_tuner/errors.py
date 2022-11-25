@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-class InvalidTrialError(Exception):
+class FailedTrialError(Exception):
     """Raise this error to mark a `Trial` as invalid.
 
     When this error is raised, the `Tuner` would not retry the `Trial` but
@@ -28,7 +28,7 @@ class InvalidTrialError(Exception):
             ...
             if too_slow(model):
                 # Mark the Trial as "INVALID" if the model is too slow.
-                raise keras_tuner.InvalidTrialError("Model is too slow.")
+                raise keras_tuner.FailedTrialError("Model is too slow.")
             return model
     ```
     """
