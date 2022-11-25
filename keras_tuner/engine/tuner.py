@@ -147,9 +147,10 @@ class Tuner(base_tuner.BaseTuner):
         model = self._build_hypermodel(hp)
         # Stop if `build()` does not return a valid model.
         if not isinstance(model, keras.models.Model):
-            raise errors.FatalRuntimeError(
-                "Model-building function did not return "
-                f"a valid Keras Model instance, found {model}."
+            raise errors.FatalTypeError(
+                "Expected the model-building function, or HyperModel.build() to "
+                "return a valid Keras Model instance. "
+                f"Received: {model} of type {type(model)}."
             )
         # Check model size.
         size = maybe_compute_model_size(model)

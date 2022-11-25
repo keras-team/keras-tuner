@@ -240,7 +240,8 @@ class Oracle(stateful.Stateful):
 
         Args:
             trial_id: A string, a previously seen trial id.
-            metrics: Dict of float. The current value of this trial's metrics.
+            metrics: Dict. The keys are metric names, and the values are this
+                trial's metric values.
             step: Optional float, reporting intermediate results. The current
                 value in a timeseries representing the state of the trial. This
                 is the value that `metrics` will be associated with.
@@ -309,7 +310,8 @@ class Oracle(stateful.Stateful):
 
         # Check if need to retry the trial.
         self._run_times[trial_id] += 1
-        self._maybe_retry(trial)
+        if self._maybe_retry(trial):
+            return
 
         # End the trial
         self.end_order.append(trial_id)
@@ -318,15 +320,23 @@ class Oracle(stateful.Stateful):
         self.save()
 
     def _maybe_retry(self, trial):
+        """Send the trial for retry if needed.
+
+        Args:
+            trial: Trial. The trial to check.
+
+        Returns:
+            Boolean. Whether the trial should be retried.
+        """
         if trial.status != trial_module.TrialStatus.INVALID:
-            return
+            return False
 
         trial_id = trial.trial_id
         max_run_times = self.max_retries_per_trial + 1
 
         if self._run_times[trial_id] >= max_run_times:
             trial.status = trial_module.TrialStatus.FAILED
-            return
+            return False
 
         print(
             f"Trial {trial_id} failed {self._run_times[trial_id]} "
@@ -335,6 +345,7 @@ class Oracle(stateful.Stateful):
             "retries left."
         )
         self._retry_queue.append(trial_id)
+        return True
 
     def get_space(self):
         """Returns the `HyperParameters` search space."""

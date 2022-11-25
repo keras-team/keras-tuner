@@ -18,7 +18,6 @@ import copy
 import gc
 import os
 import traceback
-import warnings
 
 import tensorflow as tf
 from tensorflow import keras
@@ -209,31 +208,19 @@ class BaseTuner(stateful.Stateful):
 
     def _run_and_update_trial(self, trial, *fit_args, **fit_kwargs):
         results = self.run_trial(trial, *fit_args, **fit_kwargs)
-        # `results` is None indicates user updated oracle in `run_trial()`.
-        if results is None and trial.status:
-            warnings.warn(
-                "`Tuner.run_trial()` returned None. It should return one of "
-                "float, dict, keras.callbacks.History, or a list of one "
-                "of these types. The use case of calling "
-                "`Tuner.oracle.update_trial()` in `Tuner.run_trial()` is "
-                "deprecated, and will be removed in the future.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-        else:
-            tuner_utils.validate_trial_results(
-                results, self.oracle.objective, "Tuner.run_trial()"
+        tuner_utils.validate_trial_results(
+            results, self.oracle.objective, "Tuner.run_trial()"
+        ),
+        self.oracle.update_trial(
+            trial.trial_id,
+            # Convert to dictionary before calling `update_trial()`
+            # to pass it from gRPC.
+            tuner_utils.convert_to_metrics_dict(
+                results,
+                self.oracle.objective,
             ),
-            self.oracle.update_trial(
-                trial.trial_id,
-                # Convert to dictionary before calling `update_trial()`
-                # to pass it from gRPC.
-                tuner_utils.convert_to_metrics_dict(
-                    results,
-                    self.oracle.objective,
-                ),
-                step=tuner_utils.get_best_step(results, self.oracle.objective),
-            )
+            step=tuner_utils.get_best_step(results, self.oracle.objective),
+        )
 
     def _try_run_and_update_trial(self, trial, *fit_args, **fit_kwargs):
         # clean-up TF graph from previously stored (defunct) graph

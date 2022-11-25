@@ -293,6 +293,20 @@ def validate_trial_results(results, objective, func_name):
     if isinstance(results, (int, float, np.floating)):
         return
 
+    # None
+    if results is None:
+        error_message = (
+            f"The return value of {func_name} is None. "
+            "Did you forget to return the metrics? "
+        )
+        if func_name == "Tuner.run_trial()":
+            error_message += (
+                "\nIf you are calling Oracle.update_trial() "
+                "in Tuner.run_trial() to report the metrics, "
+                "please remove the call and return the metrics directly."
+            )
+        raise errors.FatalTypeError(error_message)
+
     # objective left unspecified,
     # and objective value is not a single float.
     if isinstance(objective, obj_module.DefaultObjective) and not (
@@ -319,6 +333,7 @@ def validate_trial_results(results, objective, func_name):
     if isinstance(results, keras.callbacks.History):
         return
 
+    # Other unsupported types.
     raise errors.FatalTypeError(
         f"Expected the return value of {func_name} to be "
         "one of float, dict, keras.callbacks.History, "

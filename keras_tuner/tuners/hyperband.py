@@ -102,6 +102,8 @@ class HyperbandOracle(oracle_module.Oracle):
         hyperparameters=None,
         allow_new_entries=True,
         tune_new_entries=True,
+        max_retries_per_trial=0,
+        max_consecutive_failed_trials=3,
     ):
         super(HyperbandOracle, self).__init__(
             objective=objective,
@@ -109,6 +111,8 @@ class HyperbandOracle(oracle_module.Oracle):
             allow_new_entries=allow_new_entries,
             tune_new_entries=tune_new_entries,
             seed=seed,
+            max_retries_per_trial=max_retries_per_trial,
+            max_consecutive_failed_trials=max_consecutive_failed_trials,
         )
         if factor < 2:
             raise ValueError("factor needs to be a int larger than 1.")
@@ -373,6 +377,8 @@ class Hyperband(tuner_module.Tuner):
         hyperparameters=None,
         tune_new_entries=True,
         allow_new_entries=True,
+        max_retries_per_trial=0,
+        max_consecutive_failed_trials=3,
         **kwargs
     ):
         oracle = HyperbandOracle(
@@ -384,6 +390,8 @@ class Hyperband(tuner_module.Tuner):
             hyperparameters=hyperparameters,
             tune_new_entries=tune_new_entries,
             allow_new_entries=allow_new_entries,
+            max_retries_per_trial=max_retries_per_trial,
+            max_consecutive_failed_trials=max_consecutive_failed_trials,
         )
         super(Hyperband, self).__init__(
             oracle=oracle, hypermodel=hypermodel, **kwargs

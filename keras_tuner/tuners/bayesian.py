@@ -206,6 +206,8 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         hyperparameters=None,
         allow_new_entries=True,
         tune_new_entries=True,
+        max_retries_per_trial=0,
+        max_consecutive_failed_trials=3,
     ):
         super(BayesianOptimizationOracle, self).__init__(
             objective=objective,
@@ -214,6 +216,8 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             tune_new_entries=tune_new_entries,
             allow_new_entries=allow_new_entries,
             seed=seed,
+            max_retries_per_trial=max_retries_per_trial,
+            max_consecutive_failed_trials=max_consecutive_failed_trials,
         )
         self.num_initial_points = num_initial_points
         self.alpha = alpha
@@ -457,6 +461,8 @@ class BayesianOptimization(tuner_module.Tuner):
         hyperparameters=None,
         tune_new_entries=True,
         allow_new_entries=True,
+        max_retries_per_trial=0,
+        max_consecutive_failed_trials=3,
         **kwargs
     ):
         oracle = BayesianOptimizationOracle(
@@ -469,6 +475,8 @@ class BayesianOptimization(tuner_module.Tuner):
             hyperparameters=hyperparameters,
             tune_new_entries=tune_new_entries,
             allow_new_entries=allow_new_entries,
+            max_retries_per_trial=max_retries_per_trial,
+            max_consecutive_failed_trials=max_consecutive_failed_trials,
         )
         super(
             BayesianOptimization,

@@ -120,6 +120,9 @@ class Trial(stateful.Stateful):
         if self.score is not None:
             print(f"Score: {self.score}")
 
+        if self.message is not None:
+            print(self.message)
+
     def display_hyperparameters(self):
         if self.hyperparameters.values:
             for hp, value in self.hyperparameters.values.items():

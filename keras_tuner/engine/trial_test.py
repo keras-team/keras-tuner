@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import io
+import sys
+
 import pytest
 
 from keras_tuner.engine import hyperparameters as hp_module
@@ -71,7 +74,29 @@ def test_trial_status_proto():
         )
         == trial_module.TrialStatus.FAILED
     )
+    assert (
+        trial_module.TrialStatus.from_proto(
+            trial_module.TrialStatus.to_proto(trial_module.TrialStatus.INVALID)
+        )
+        == trial_module.TrialStatus.INVALID
+    )
     with pytest.raises(ValueError, match="Unknown status"):
         trial_module.TrialStatus.to_proto("OTHER")
     with pytest.raises(ValueError, match="Unknown status"):
         trial_module.TrialStatus.from_proto(16)
+
+
+def test_trial_error_in_summary():
+    error_message = "stack_trace\nerror_type\n"
+    trial = trial_module.Trial(
+        hyperparameters=hp_module.HyperParameters(),
+        trial_id="3",
+        status=trial_module.TrialStatus.FAILED,
+        message=error_message,
+    )
+
+    stdout = io.StringIO()
+    sys.stdout = stdout
+    trial.summary()
+    sys.stdout = sys.__stdout__
+    assert error_message in stdout.getvalue()

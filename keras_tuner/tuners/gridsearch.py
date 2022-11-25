@@ -61,6 +61,8 @@ class GridSearchOracle(oracle_module.Oracle):
         hyperparameters=None,
         allow_new_entries=True,
         tune_new_entries=True,
+        max_retries_per_trial=0,
+        max_consecutive_failed_trials=3,
     ):
         super(GridSearchOracle, self).__init__(
             objective=objective,
@@ -69,6 +71,8 @@ class GridSearchOracle(oracle_module.Oracle):
             tune_new_entries=tune_new_entries,
             allow_new_entries=allow_new_entries,
             seed=seed,
+            max_retries_per_trial=max_retries_per_trial,
+            max_consecutive_failed_trials=max_consecutive_failed_trials,
         )
 
     def populate_space(self, trial_id):
@@ -222,18 +226,24 @@ class GridSearch(tuner_module.Tuner):
         self,
         hypermodel=None,
         objective=None,
+        max_trials=None,
         seed=None,
         hyperparameters=None,
         tune_new_entries=True,
         allow_new_entries=True,
+        max_retries_per_trial=0,
+        max_consecutive_failed_trials=3,
         **kwargs,
     ):
         self.seed = seed
         oracle = GridSearchOracle(
             objective=objective,
+            max_trials=max_trials,
             seed=seed,
             hyperparameters=hyperparameters,
             tune_new_entries=tune_new_entries,
             allow_new_entries=allow_new_entries,
+            max_retries_per_trial=max_retries_per_trial,
+            max_consecutive_failed_trials=max_consecutive_failed_trials,
         )
         super(GridSearch, self).__init__(oracle, hypermodel, **kwargs)

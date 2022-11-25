@@ -32,8 +32,8 @@ from keras_tuner.test_utils import mock_distribute
 class SimpleTuner(keras_tuner.engine.base_tuner.BaseTuner):
     def run_trial(self, trial):
         score = self.hypermodel.build(trial.hyperparameters)
-        self.oracle.update_trial(trial.trial_id, {"score": score})
         self.save_model(trial.trial_id, score)
+        return {"score": score}
 
     def save_model(self, trial_id, score, step=0):
         save_path = os.path.join(self.project_dir, trial_id)
