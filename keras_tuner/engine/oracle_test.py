@@ -16,30 +16,40 @@ import pytest
 
 import keras_tuner
 from keras_tuner.engine import oracle as oracle_module
+from keras_tuner.engine import trial as trial_module
 
 
 class OracleStub(oracle_module.Oracle):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, directory, **kwargs):
+        super().__init__(**kwargs)
         self.score_trial_called = False
+        self._set_project_dir(
+            directory=directory, project_name="name", overwrite=True
+        )
 
     def populate_space(self, trial_id):
-        return "populate_space"
+        return {
+            "values": {"hp1": "populate_space"},
+            "status": trial_module.TrialStatus.RUNNING,
+        }
 
     def score_trial(self, trial_id):
+        super().score_trial(trial_id)
         self.score_trial_called = True
 
 
-def test_private_populate_space_deprecated_and_call_public():
-    oracle = OracleStub(objective="val_loss")
+def test_private_populate_space_deprecated_and_call_public(tmp_path):
+    oracle = OracleStub(directory=tmp_path, objective="val_loss")
     with pytest.deprecated_call():
-        assert oracle._populate_space("100") == "populate_space"
+        assert isinstance(oracle._populate_space("100"), dict)
 
 
-def test_private_score_trial_deprecated_and_call_public():
-    oracle = OracleStub(objective="val_loss")
+def test_private_score_trial_deprecated_and_call_public(tmp_path):
+    oracle = OracleStub(directory=tmp_path, objective="val_loss")
+    trial = oracle.create_trial(tuner_id="a")
+    oracle.update_trial(trial_id=trial.trial_id, metrics={"val_loss": 0.5})
     with pytest.deprecated_call():
-        oracle._score_trial("trial")
+        oracle._score_trial(trial)
     assert oracle.score_trial_called
 
 
@@ -48,3 +58,103 @@ def test_import_objective_from_oracle():
     from keras_tuner.engine.oracle import Objective
 
     assert Objective is keras_tuner.Objective
+
+
+def test_default_no_retry(tmp_path):
+    oracle = OracleStub(directory=tmp_path, objective="val_loss")
+    trial_1 = oracle.create_trial(tuner_id="a")
+    trial_1.status = trial_module.TrialStatus.INVALID
+    oracle.end_trial(
+        trial_id=trial_1.trial_id, status=trial_1.status, message="error1"
+    )
+
+    trial_2 = oracle.create_trial(tuner_id="a")
+    assert trial_1.trial_id != trial_2.trial_id
+
+
+def test_retry_invalid_trial(tmp_path):
+    oracle = OracleStub(
+        directory=tmp_path, objective="val_loss", max_retries_per_trial=1
+    )
+    trial_1 = oracle.create_trial(tuner_id="a")
+    trial_1.status = trial_module.TrialStatus.INVALID
+    oracle.end_trial(
+        trial_id=trial_1.trial_id, status=trial_1.status, message="error1"
+    )
+
+    # This is the retry for the trial.
+    trial_2 = oracle.create_trial(tuner_id="a")
+    assert trial_1.trial_id == trial_2.trial_id
+
+    # Retried once. This is a new trial.
+    trial_3 = oracle.create_trial(tuner_id="b")
+    assert trial_1.trial_id != trial_3.trial_id
+
+
+def test_is_nan_mark_as_invalid(tmp_path):
+    oracle = OracleStub(
+        directory=tmp_path, objective="val_loss", max_retries_per_trial=1
+    )
+    trial = oracle.create_trial(tuner_id="a")
+    oracle.update_trial(trial.trial_id, metrics={"val_loss": float("nan")})
+    trial.status = trial_module.TrialStatus.COMPLETED
+    oracle.end_trial(trial_id=trial.trial_id, status=trial.status, message="error1")
+    assert oracle.trials[trial.trial_id].status == trial_module.TrialStatus.INVALID
+
+
+def test_no_retry_for_failed_trial(tmp_path):
+    oracle = OracleStub(
+        directory=tmp_path, objective="val_loss", max_retries_per_trial=1
+    )
+    trial_1 = oracle.create_trial(tuner_id="a")
+    # Failed, so no retry.
+    trial_1.status = trial_module.TrialStatus.FAILED
+    oracle.end_trial(
+        trial_id=trial_1.trial_id, status=trial_1.status, message="error1"
+    )
+
+    trial_2 = oracle.create_trial(tuner_id="a")
+    assert trial_1.trial_id != trial_2.trial_id
+
+
+def test_consecutive_failures_in_limit(tmp_path):
+    oracle = OracleStub(
+        directory=tmp_path, objective="val_loss", max_retries_per_trial=2
+    )
+
+    # (1 run + 2 retry) * 2 trial = 6
+    for _ in range(6):
+        trial = oracle.create_trial(tuner_id="a")
+        # Failed, so no retry.
+        trial.status = trial_module.TrialStatus.INVALID
+        oracle.end_trial(
+            trial_id=trial.trial_id, status=trial.status, message="error1"
+        )
+
+    for _ in range(3):
+        trial = oracle.create_trial(tuner_id="a")
+        # Failed, so no retry.
+        trial.status = trial_module.TrialStatus.COMPLETED
+        oracle.update_trial(trial.trial_id, metrics={"val_loss": 0.5})
+        oracle.end_trial(trial_id=trial.trial_id, status=trial.status)
+
+    # Should reach this line without error
+    assert True
+
+
+def test_too_many_consecutive_failures(tmp_path):
+    oracle = OracleStub(
+        directory=tmp_path, objective="val_loss", max_retries_per_trial=2
+    )
+
+    with pytest.raises(RuntimeError, match="Number of consecutive") as e:
+        for _ in range(3):
+            trial = oracle.create_trial(tuner_id="a")
+            # Failed, so no retry.
+            trial.status = trial_module.TrialStatus.FAILED
+            oracle.end_trial(
+                trial_id=trial.trial_id,
+                status=trial.status,
+                message="custom_error_info",
+            )
+        assert "custom_error_info" in str(e)

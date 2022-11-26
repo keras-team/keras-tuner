@@ -58,6 +58,8 @@ class RandomSearchOracle(oracle_module.Oracle):
         hyperparameters=None,
         allow_new_entries=True,
         tune_new_entries=True,
+        max_retries_per_trial=0,
+        max_consecutive_failed_trials=3,
     ):
         super(RandomSearchOracle, self).__init__(
             objective=objective,
@@ -66,6 +68,8 @@ class RandomSearchOracle(oracle_module.Oracle):
             tune_new_entries=tune_new_entries,
             allow_new_entries=allow_new_entries,
             seed=seed,
+            max_retries_per_trial=max_retries_per_trial,
+            max_consecutive_failed_trials=max_consecutive_failed_trials,
         )
 
     def populate_space(self, trial_id):
@@ -133,6 +137,8 @@ class RandomSearch(tuner_module.Tuner):
         hyperparameters=None,
         tune_new_entries=True,
         allow_new_entries=True,
+        max_retries_per_trial=0,
+        max_consecutive_failed_trials=3,
         **kwargs
     ):
         self.seed = seed
@@ -143,5 +149,7 @@ class RandomSearch(tuner_module.Tuner):
             hyperparameters=hyperparameters,
             tune_new_entries=tune_new_entries,
             allow_new_entries=allow_new_entries,
+            max_retries_per_trial=max_retries_per_trial,
+            max_consecutive_failed_trials=max_consecutive_failed_trials,
         )
         super(RandomSearch, self).__init__(oracle, hypermodel, **kwargs)

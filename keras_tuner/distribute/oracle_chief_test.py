@@ -141,9 +141,9 @@ def test_end_trial(tmp_path):
             trial = client.create_trial(tuner_id)
             trial_id = trial.trial_id
             client.update_trial(trial_id, {"score": 1}, step=2)
-            client.end_trial(trial_id, "INVALID")
+            client.end_trial(trial_id, "FAILED")
             updated_trial = client.get_trial(trial_id)
-            assert updated_trial.status == "INVALID"
+            assert updated_trial.status == "FAILED"
 
     mock_distribute.mock_distribute(_test_end_trial)
 

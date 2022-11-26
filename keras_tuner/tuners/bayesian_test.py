@@ -295,15 +295,10 @@ def test_step_respected(tmp_path):
 
 
 def test_float_optimization(tmp_path):
-    def build_model(hp):
-        # Maximum at a=-1, b=1, c=1, d=0 with score=3
-        return -1 * hp["a"] ** 3 + hp["b"] ** 3 + hp["c"] - abs(hp["d"])
-
     class PolynomialTuner(keras_tuner.engine.base_tuner.BaseTuner):
         def run_trial(self, trial):
-            hps = trial.hyperparameters
-            score = self.hypermodel.build(hps)
-            self.oracle.update_trial(trial.trial_id, {"score": score})
+            hp = trial.hyperparameters
+            return -1 * hp["a"] ** 3 + hp["b"] ** 3 + hp["c"] - abs(hp["d"])
 
     hps = hp_module.HyperParameters()
     hps.Float("a", -1, 1)
@@ -312,7 +307,6 @@ def test_float_optimization(tmp_path):
     hps.Float("d", -1, 1)
 
     tuner = PolynomialTuner(
-        hypermodel=build_model,
         oracle=keras_tuner.oracles.BayesianOptimization(
             objective=keras_tuner.Objective("score", "max"),
             hyperparameters=hps,

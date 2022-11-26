@@ -24,6 +24,7 @@ from tensorboard.plugins.hparams import api as hparams_api
 from tensorflow import keras
 
 import keras_tuner
+from keras_tuner import errors
 from keras_tuner.engine import tuner as tuner_module
 
 INPUT_DIM = 2
@@ -1105,7 +1106,7 @@ def test_run_trial_return_none(tmp_path):
                 trial.trial_id, {"loss": min(history.history["loss"])}
             )
 
-    with pytest.deprecated_call(match="float, dict, keras.callbacks.History"):
+    with pytest.raises(errors.FatalTypeError, match="return the metrics directly"):
         assert_found_best_score(tmp_path, MockHyperModel(), MyTuner)
 
 
@@ -1173,7 +1174,7 @@ def test_tuner_errors(tmp_path):
             directory=tmp_path,
         )
     # oversize model
-    with pytest.raises(RuntimeError, match="Too many consecutive oversized models"):
+    with pytest.raises(RuntimeError, match="Oversized model"):
         tuner = tuner_module.Tuner(
             oracle=keras_tuner.tuners.randomsearch.RandomSearchOracle(
                 objective="val_accuracy", max_trials=3
@@ -1395,3 +1396,29 @@ def test_init_build_all_hps_in_all_conditions(tmp_path):
         hypermodel=ConditionalHyperModel(),
         directory=tmp_path,
     )
+
+
+def test_build_did_not_return_keras_model(tmp_path):
+    tuner = keras_tuner.tuners.RandomSearch(
+        hypermodel=lambda hp: None,
+        objective="val_accuracy",
+        directory=tmp_path,
+    )
+    with pytest.raises(
+        errors.FatalTypeError,
+        match="Expected the model-building function",
+    ):
+        tuner.search()
+
+
+def test_callback_cannot_be_deep_copied(tmp_path):
+    tuner = keras_tuner.tuners.RandomSearch(
+        hypermodel=lambda hp: keras.Sequential(),
+        objective="val_accuracy",
+        directory=tmp_path,
+    )
+    with pytest.raises(
+        errors.FatalValueError,
+        match="All callbacks used during a search should be deep-copyable",
+    ):
+        tuner.search(callbacks=[keras_tuner])

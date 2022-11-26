@@ -32,13 +32,16 @@ class TrialStatus:
     # The Trial is empty. The Oracle is waiting on something else before
     # creating the trial. Should call Oracle.create_trial() again.
     IDLE = "IDLE"
-    # The Trial has crashed or been deemed infeasible.
+    # The Trial has crashed or been deemed infeasible for the current run, but
+    # subject to retries.
     INVALID = "INVALID"
     # The Trial is empty. Oracle finished searching. No new trial needed. The
     # tuner should also end the search.
     STOPPED = "STOPPED"
     # The Trial finished normally.
     COMPLETED = "COMPLETED"
+    # The Trial is failed. No more retries needed.
+    FAILED = "FAILED"
 
     def to_proto(status):
         ts = keras_tuner_pb2.TrialStatus
@@ -54,6 +57,8 @@ class TrialStatus:
             return ts.STOPPED
         elif status == TrialStatus.COMPLETED:
             return ts.COMPLETED
+        elif status == TrialStatus.FAILED:
+            return ts.FAILED
         else:
             raise ValueError(f"Unknown status {status}")
 
@@ -71,6 +76,8 @@ class TrialStatus:
             return TrialStatus.STOPPED
         elif proto == ts.COMPLETED:
             return TrialStatus.COMPLETED
+        elif proto == ts.FAILED:
+            return TrialStatus.FAILED
         else:
             raise ValueError(f"Unknown status {proto}")
 
@@ -84,9 +91,16 @@ class Trial(stateful.Stateful):
         trial_id: String. The unique identifier for a trial.
         status: one of the TrialStatus attributes. It marks the current status
             of the Trial.
+        message: String. The error message if the trial status is "INVALID".
     """
 
-    def __init__(self, hyperparameters, trial_id=None, status=TrialStatus.RUNNING):
+    def __init__(
+        self,
+        hyperparameters,
+        trial_id=None,
+        status=TrialStatus.RUNNING,
+        message=None,
+    ):
         self.hyperparameters = hyperparameters
         self.trial_id = generate_trial_id() if trial_id is None else trial_id
 
@@ -94,6 +108,7 @@ class Trial(stateful.Stateful):
         self.score = None
         self.best_step = 0
         self.status = status
+        self.message = message
 
     def summary(self):
         """Displays a summary of this Trial."""
@@ -104,6 +119,9 @@ class Trial(stateful.Stateful):
 
         if self.score is not None:
             print(f"Score: {self.score}")
+
+        if self.message is not None:
+            print(self.message)
 
     def display_hyperparameters(self):
         if self.hyperparameters.values:

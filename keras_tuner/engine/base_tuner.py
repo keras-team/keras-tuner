@@ -15,11 +15,15 @@
 
 
 import copy
+import gc
 import os
-import warnings
+import traceback
 
 import tensorflow as tf
+from tensorflow import keras
 
+from keras_tuner import config as config_module
+from keras_tuner import errors
 from keras_tuner import utils
 from keras_tuner.distribute import oracle_chief
 from keras_tuner.distribute import oracle_client
@@ -34,9 +38,28 @@ from keras_tuner.engine import tuner_utils
 class BaseTuner(stateful.Stateful):
     """Tuner base class.
 
-    `BaseTuner` is the base class for all Tuners, which manages the search
-    loop, Oracle, logging, saving, etc. Tuners for non-Keras models can be
-    created by subclassing `BaseTuner`.
+    `BaseTuner` is the super class of all `Tuner` classes. It defines the APIs
+    for the `Tuner` classes and serves as a wrapper class for the internal
+    logics.
+
+    `BaseTuner` supports parallel tuning. In parallel tuning, the communication
+    between `BaseTuner` and `Oracle` are all going through gRPC. There are
+    multiple running instances of `BaseTuner` but only one `Oracle`. This design
+    allows the user to run the same script on multiple machines to launch the
+    parallel tuning.
+
+    The `Oracle` instance should manage the life cycles of all the `Trial`s,
+    while a `BaseTuner` is a worker for running the `Trial`s. `BaseTuner`s
+    requests `Trial`s from the `Oracle`, run them, and report the results back
+    to the `Oracle`. A `BaseTuner` also handles events happening during running
+    the `Trial`, like saving the model, logging, error handling. Other than
+    these responsibilities, a `BaseTuner` should avoid managing a `Trial` since
+    the relevant contexts for a `Trial` are in the `Oracle`, which only
+    accessible from gRPC.
+
+    The `BaseTuner` should be a general tuner for all types of models and avoid
+    any logic directly related to Keras. The Keras related logics should be
+    handled by the `Tuner` class, which is a subclass of `BaseTuner`.
 
     Args:
         oracle: Instance of Oracle class.
@@ -100,11 +123,12 @@ class BaseTuner(stateful.Stateful):
         self.logger = logger
         self._display = tuner_utils.Display(oracle=self.oracle)
 
-        self._populate_initial_space()
-
         if not overwrite and tf.io.gfile.exists(self._get_tuner_fname()):
             tf.get_logger().info(f"Reloading Tuner from {self._get_tuner_fname()}")
             self.reload()
+        else:
+            # Only populate initial space if not reloading.
+            self._populate_initial_space()
 
     def _populate_initial_space(self):
         """Populate initial search space for oracle.
@@ -178,34 +202,51 @@ class BaseTuner(stateful.Stateful):
                 continue
 
             self.on_trial_begin(trial)
-            results = self.run_trial(trial, *fit_args, **fit_kwargs)
-            # `results` is None indicates user updated oracle in `run_trial()`.
-            if results is None:
-                warnings.warn(
-                    "`Tuner.run_trial()` returned None. It should return one of "
-                    "float, dict, keras.callbacks.History, or a list of one "
-                    "of these types. The use case of calling "
-                    "`Tuner.oracle.update_trial()` in `Tuner.run_trial()` is "
-                    "deprecated, and will be removed in the future.",
-                    DeprecationWarning,
-                    stacklevel=2,
-                )
-            else:
-                tuner_utils.validate_trial_results(
-                    results, self.oracle.objective, "Tuner.run_trial()"
-                ),
-                self.oracle.update_trial(
-                    trial.trial_id,
-                    # Convert to dictionary before calling `update_trial()`
-                    # to pass it from gRPC.
-                    tuner_utils.convert_to_metrics_dict(
-                        results,
-                        self.oracle.objective,
-                    ),
-                    step=tuner_utils.get_best_step(results, self.oracle.objective),
-                )
+            self._try_run_and_update_trial(trial, *fit_args, **fit_kwargs)
             self.on_trial_end(trial)
         self.on_search_end()
+
+    def _run_and_update_trial(self, trial, *fit_args, **fit_kwargs):
+        results = self.run_trial(trial, *fit_args, **fit_kwargs)
+        tuner_utils.validate_trial_results(
+            results, self.oracle.objective, "Tuner.run_trial()"
+        ),
+        self.oracle.update_trial(
+            trial.trial_id,
+            # Convert to dictionary before calling `update_trial()`
+            # to pass it from gRPC.
+            tuner_utils.convert_to_metrics_dict(
+                results,
+                self.oracle.objective,
+            ),
+            step=tuner_utils.get_best_step(results, self.oracle.objective),
+        )
+
+    def _try_run_and_update_trial(self, trial, *fit_args, **fit_kwargs):
+        # clean-up TF graph from previously stored (defunct) graph
+        keras.backend.clear_session()
+        gc.collect()
+
+        # Build a model, allowing max_fail_streak failed attempts.
+        try:
+            self._run_and_update_trial(trial, *fit_args, **fit_kwargs)
+            trial.status = trial_module.TrialStatus.COMPLETED
+            return
+        except Exception as e:
+            if isinstance(e, errors.FatalError):
+                raise e
+            if config_module.DEBUG:
+                # Printing the stacktrace and the error.
+                traceback.print_exc()
+
+            if isinstance(e, errors.FailedTrialError):
+                trial.status = trial_module.TrialStatus.FAILED
+            else:
+                trial.status = trial_module.TrialStatus.INVALID
+
+            # Include the stack traces in the message.
+            message = traceback.format_exc()
+            trial.message = message
 
     def run_trial(self, trial, *fit_args, **fit_kwargs):
         """Evaluates a set of hyperparameter values."""
@@ -259,7 +300,7 @@ class BaseTuner(stateful.Stateful):
         if self.logger:
             self.logger.report_trial_state(trial.trial_id, trial.get_state())
 
-        self.oracle.end_trial(trial.trial_id, trial_module.TrialStatus.COMPLETED)
+        self.oracle.end_trial(trial.trial_id, trial.status, trial.message)
         self.oracle.update_space(trial.hyperparameters)
         # Display needs the updated trial scored by the Oracle.
         self._display.on_trial_end(self.oracle.get_trial(trial.trial_id))
