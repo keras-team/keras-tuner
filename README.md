@@ -14,7 +14,6 @@ experiment with new search algorithms.
 
 Official Website: [https://keras.io/keras_tuner/](https://keras.io/keras_tuner/)
 
----
 ## Quick links
 
 * [Getting started with KerasTuner](https://keras.io/guides/keras_tuner/getting_started)
@@ -22,7 +21,6 @@ Official Website: [https://keras.io/keras_tuner/](https://keras.io/keras_tuner/)
 * [KerasTuner API reference](https://keras.io/api/keras_tuner/)
 
 
----
 ## Installation
 
 KerasTuner requires **Python 3.7+** and **TensorFlow 2.0+**.
@@ -37,7 +35,6 @@ You can also check out other versions in our
 [GitHub repository](https://github.com/keras-team/keras-tuner).
 
 
----
 ## Quick introduction
 
 Import KerasTuner and TensorFlow:
@@ -81,19 +78,20 @@ best_model = tuner.get_best_models()[0]
 
 To learn more about KerasTuner, check out [this starter guide](https://keras.io/guides/keras_tuner/getting_started/).
 
----
 ## Contributing Guide
 
 Please refer to the [CONTRIBUTING.md](https://github.com/keras-team/keras-tuner/blob/master/CONTRIBUTING.md) for the contributing guide.
 
----
+Thank all the contributors!
+
+[![The contributors](https://raw.githubusercontent.com/keras-team/keras-tuner/master/docs/contributors.svg)](https://github.com/keras-team/keras-tuner/graphs/contributors)
+
 ## Community
 
 Please use the [Keras Slack workspace](https://kerasteam.slack.com/), the `#keras-tuner` channel for communication.
 
 Use [this link](https://keras-slack-autojoin.herokuapp.com/) to request an invitation to the channel.
 
----
 ## Citing KerasTuner
 
 If KerasTuner helps your research, we appreciate your citations.
