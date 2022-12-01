@@ -84,6 +84,8 @@ Please refer to the [CONTRIBUTING.md](https://github.com/keras-team/keras-tuner/
 
 Thank all the contributors!
 
+[![The contributors](https://raw.githubusercontent.com/keras-team/keras-tuner/master/docs/contributors.svg)](https://github.com/keras-team/keras-tuner/graphs/contributors)
+
 ## Community
 
 Please use the [Keras Slack workspace](https://kerasteam.slack.com/), the `#keras-tuner` channel for communication.
