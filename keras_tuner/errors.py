@@ -48,6 +48,8 @@ class FatalError(Exception):
 
     """
 
+    pass
+
 
 class FatalValueError(FatalError, ValueError):
     pass

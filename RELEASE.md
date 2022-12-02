@@ -28,7 +28,7 @@
   hyperparameters.
 
 ## Bug fixes
-* Protobuf was not converting Boolean type hyperparameter correctly. Now it is
+* Protobuf was not converting Boolean type hyperparameter correctly. This is now
   fixed.
-* Hyperband was not loading the weights correctly for half-trained models, which
-  is fixed now.
+* Hyperband was not loading the weights correctly for half-trained models. This
+  is now fixed.
