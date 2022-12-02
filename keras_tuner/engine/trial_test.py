@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import io
+import sys
+
+import pytest
+
 from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine import metrics_tracking
 from keras_tuner.engine import trial as trial_module
@@ -50,3 +55,48 @@ def test_trial_proto():
     assert new_trial.metrics.get_history("score") == [
         metrics_tracking.MetricObservation(10, step=1)
     ]
+
+
+def test_trial_status_proto():
+    assert (
+        trial_module.TrialStatus.from_proto(trial_module.TrialStatus.to_proto(None))
+        is None
+    )
+    assert (
+        trial_module.TrialStatus.from_proto(
+            trial_module.TrialStatus.to_proto(trial_module.TrialStatus.IDLE)
+        )
+        == trial_module.TrialStatus.IDLE
+    )
+    assert (
+        trial_module.TrialStatus.from_proto(
+            trial_module.TrialStatus.to_proto(trial_module.TrialStatus.FAILED)
+        )
+        == trial_module.TrialStatus.FAILED
+    )
+    assert (
+        trial_module.TrialStatus.from_proto(
+            trial_module.TrialStatus.to_proto(trial_module.TrialStatus.INVALID)
+        )
+        == trial_module.TrialStatus.INVALID
+    )
+    with pytest.raises(ValueError, match="Unknown status"):
+        trial_module.TrialStatus.to_proto("OTHER")
+    with pytest.raises(ValueError, match="Unknown status"):
+        trial_module.TrialStatus.from_proto(16)
+
+
+def test_trial_error_in_summary():
+    error_message = "stack_trace\nerror_type\n"
+    trial = trial_module.Trial(
+        hyperparameters=hp_module.HyperParameters(),
+        trial_id="3",
+        status=trial_module.TrialStatus.FAILED,
+        message=error_message,
+    )
+
+    stdout = io.StringIO()
+    sys.stdout = stdout
+    trial.summary()
+    sys.stdout = sys.__stdout__
+    assert error_message in stdout.getvalue()

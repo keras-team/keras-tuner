@@ -102,6 +102,8 @@ class HyperbandOracle(oracle_module.Oracle):
         hyperparameters=None,
         allow_new_entries=True,
         tune_new_entries=True,
+        max_retries_per_trial=0,
+        max_consecutive_failed_trials=3,
     ):
         super(HyperbandOracle, self).__init__(
             objective=objective,
@@ -109,6 +111,8 @@ class HyperbandOracle(oracle_module.Oracle):
             allow_new_entries=allow_new_entries,
             tune_new_entries=tune_new_entries,
             seed=seed,
+            max_retries_per_trial=max_retries_per_trial,
+            max_consecutive_failed_trials=max_consecutive_failed_trials,
         )
         if factor < 2:
             raise ValueError("factor needs to be a int larger than 1.")
@@ -133,6 +137,19 @@ class HyperbandOracle(oracle_module.Oracle):
         self._start_new_bracket()
 
     def populate_space(self, trial_id):
+        """Fill the hyperparameter space with values.
+
+        Args:
+            trial_id: A string, the ID for this Trial.
+
+        Returns:
+            A dictionary with keys "values" and "status", where "values" is
+            a mapping of parameter names to suggested values, and "status"
+            should be one of "RUNNING" (the trial can start normally), "IDLE"
+            (the oracle is waiting on something and cannot create a trial), or
+            "STOPPED" (the oracle has finshed searching and no new trial should
+            be created).
+        """
         self._remove_completed_brackets()
 
         for bracket in self._brackets:
@@ -360,6 +377,8 @@ class Hyperband(tuner_module.Tuner):
         hyperparameters=None,
         tune_new_entries=True,
         allow_new_entries=True,
+        max_retries_per_trial=0,
+        max_consecutive_failed_trials=3,
         **kwargs
     ):
         oracle = HyperbandOracle(
@@ -371,6 +390,8 @@ class Hyperband(tuner_module.Tuner):
             hyperparameters=hyperparameters,
             tune_new_entries=tune_new_entries,
             allow_new_entries=allow_new_entries,
+            max_retries_per_trial=max_retries_per_trial,
+            max_consecutive_failed_trials=max_consecutive_failed_trials,
         )
         super(Hyperband, self).__init__(
             oracle=oracle, hypermodel=hypermodel, **kwargs

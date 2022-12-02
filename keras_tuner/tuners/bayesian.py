@@ -206,6 +206,8 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         hyperparameters=None,
         allow_new_entries=True,
         tune_new_entries=True,
+        max_retries_per_trial=0,
+        max_consecutive_failed_trials=3,
     ):
         super(BayesianOptimizationOracle, self).__init__(
             objective=objective,
@@ -214,6 +216,8 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             tune_new_entries=tune_new_entries,
             allow_new_entries=allow_new_entries,
             seed=seed,
+            max_retries_per_trial=max_retries_per_trial,
+            max_consecutive_failed_trials=max_consecutive_failed_trials,
         )
         self.num_initial_points = num_initial_points
         self.alpha = alpha
@@ -232,6 +236,19 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         )
 
     def populate_space(self, trial_id):
+        """Fill the hyperparameter space with values.
+
+        Args:
+            trial_id: A string, the ID for this Trial.
+
+        Returns:
+            A dictionary with keys "values" and "status", where "values" is
+            a mapping of parameter names to suggested values, and "status"
+            should be one of "RUNNING" (the trial can start normally), "IDLE"
+            (the oracle is waiting on something and cannot create a trial), or
+            "STOPPED" (the oracle has finshed searching and no new trial should
+            be created).
+        """
         # Generate enough samples before training Gaussian process.
         completed_trials = [
             t for t in self.trials.values() if t.status == "COMPLETED"
@@ -444,6 +461,8 @@ class BayesianOptimization(tuner_module.Tuner):
         hyperparameters=None,
         tune_new_entries=True,
         allow_new_entries=True,
+        max_retries_per_trial=0,
+        max_consecutive_failed_trials=3,
         **kwargs
     ):
         oracle = BayesianOptimizationOracle(
@@ -456,6 +475,8 @@ class BayesianOptimization(tuner_module.Tuner):
             hyperparameters=hyperparameters,
             tune_new_entries=tune_new_entries,
             allow_new_entries=allow_new_entries,
+            max_retries_per_trial=max_retries_per_trial,
+            max_consecutive_failed_trials=max_consecutive_failed_trials,
         )
         super(
             BayesianOptimization,
