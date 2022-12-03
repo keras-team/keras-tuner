@@ -16,6 +16,7 @@
 
 import contextlib
 import copy
+import gc
 import os
 
 import numpy as np
@@ -144,6 +145,10 @@ class Tuner(base_tuner.BaseTuner):
             return model
 
     def _try_build(self, hp):
+        # clean-up TF graph from previously stored (defunct) graph
+        keras.backend.clear_session()
+        gc.collect()
+
         model = self._build_hypermodel(hp)
         # Stop if `build()` does not return a valid model.
         if not isinstance(model, keras.models.Model):
