@@ -48,6 +48,12 @@ class RandomSearchOracle(oracle_module.Oracle):
         allow_new_entries: Boolean, whether the hypermodel is allowed to
             request hyperparameter entries not listed in `hyperparameters`.
             Defaults to True.
+        max_retries_per_trial: Integer. Defaults to 0. The maximum number of
+            times to retry a `Trial` if the trial crashed or the results are invalid.
+        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum number of
+            consecutive failed `Trial`s. When this number is reached, the search
+            will be stopped. A `Trial` is marked as failed when none of the
+            retries succeeded.
     """
 
     def __init__(
@@ -124,6 +130,12 @@ class RandomSearch(tuner_module.Tuner):
         allow_new_entries: Boolean, whether the hypermodel is allowed to
             request hyperparameter entries not listed in `hyperparameters`.
             Defaults to True.
+        max_retries_per_trial: Integer. Defaults to 0. The maximum number of
+            times to retry a `Trial` if the trial crashed or the results are invalid.
+        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum number of
+            consecutive failed `Trial`s. When this number is reached, the search
+            will be stopped. A `Trial` is marked as failed when none of the
+            retries succeeded.
         **kwargs: Keyword arguments relevant to all `Tuner` subclasses.
             Please see the docstring for `Tuner`.
     """
