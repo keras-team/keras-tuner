@@ -15,12 +15,10 @@
 
 
 import copy
-import gc
 import os
 import traceback
 
 import tensorflow as tf
-from tensorflow import keras
 
 from keras_tuner import config as config_module
 from keras_tuner import errors
@@ -223,11 +221,6 @@ class BaseTuner(stateful.Stateful):
         )
 
     def _try_run_and_update_trial(self, trial, *fit_args, **fit_kwargs):
-        # clean-up TF graph from previously stored (defunct) graph
-        keras.backend.clear_session()
-        gc.collect()
-
-        # Build a model, allowing max_fail_streak failed attempts.
         try:
             self._run_and_update_trial(trial, *fit_args, **fit_kwargs)
             trial.status = trial_module.TrialStatus.COMPLETED
