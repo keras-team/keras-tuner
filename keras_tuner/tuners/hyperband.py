@@ -153,7 +153,7 @@ class HyperbandOracle(oracle_module.Oracle):
             a mapping of parameter names to suggested values, and "status"
             should be one of "RUNNING" (the trial can start normally), "IDLE"
             (the oracle is waiting on something and cannot create a trial), or
-            "STOPPED" (the oracle has finshed searching and no new trial should
+            "STOPPED" (the oracle has finished searching and no new trial should
             be created).
         """
         self._remove_completed_brackets()
