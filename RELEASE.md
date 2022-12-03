@@ -4,6 +4,9 @@
 * If you implemented your own `Tuner`, the old use case of reporting results
   with `Oracle.update_trial()` in `Tuner.run_trial()` is deprecated. Please
   return the metrics in `Tuner.run_trial()` instead.
+* If you implemented your own `Oracle` and overrided `Oracle.end_trial()`, you
+  need to change the signature of the function to
+  `Oracle.end_trial(trial_id, status, message)`.
 * The default value of the `step` argument in `keras_tuner.HyperParameters.Int()` is
   changed to `None`, which was `1` before. No change in default behavior.
 * The default value of the `sampling` argument in
