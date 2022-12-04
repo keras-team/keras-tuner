@@ -301,9 +301,11 @@ def validate_trial_results(results, objective, func_name):
         )
         if func_name == "Tuner.run_trial()":
             error_message += (
-                "\nIf you are calling Oracle.update_trial() "
-                "in Tuner.run_trial() to report the metrics, "
-                "please remove the call and return the metrics directly."
+                "\nIf you are calling "
+                "`self.oracle.update_trial(trial_id, metrics)` "
+                "in `Tuner.run_trial()` to report the metrics, "
+                "please remove the call and `return metrics` "
+                "in `Tuner.run_trial()` instead."
             )
         raise errors.FatalTypeError(error_message)
 
