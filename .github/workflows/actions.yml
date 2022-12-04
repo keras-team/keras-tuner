@@ -30,7 +30,6 @@ jobs:
             ${{ runner.os }}-pip-
       - name: Install dependencies
         run: |
-          pip install tensorflow
           pip install -e ".[tests]" --progress-bar off --upgrade
       - name: Test with pytest
         run: |
@@ -92,7 +91,6 @@ jobs:
             ${{ runner.os }}-pip-
       - name: Install dependencies
         run: |
-          pip install tensorflow
           pip install -e ".[tests]" --progress-bar off --upgrade
       - name: Lint
         run: bash shell/lint.sh
