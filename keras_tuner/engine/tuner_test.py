@@ -1106,7 +1106,10 @@ def test_run_trial_return_none(tmp_path):
                 trial.trial_id, {"loss": min(history.history["loss"])}
             )
 
-    with pytest.raises(errors.FatalTypeError, match="return the metrics directly"):
+    with pytest.raises(
+        errors.FatalTypeError,
+        match="`self\.oracle\.update_trial\(trial_id, metrics\)`",
+    ):
         assert_found_best_score(tmp_path, MockHyperModel(), MyTuner)
 
 
