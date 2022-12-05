@@ -73,8 +73,8 @@ class HyperResNet(hypermodel.HyperModel):
         conv4_depth = hp.Choice("conv4_depth", [6, 23, 36])
 
         # Version-conditional fixed parameters
-        preact = True if version == "v2" else False
-        use_bias = False if version == "next" else True
+        preact = bool(version == "v2")
+        use_bias = bool(version != "next")
 
         # Model definition.
         bn_axis = 3 if backend.image_data_format() == "channels_last" else 1
