@@ -227,8 +227,7 @@ class HyperbandOracle(oracle_module.Oracle):
 
     def _start_new_bracket(self):
         rounds = []
-        for _ in range(self._get_num_rounds(self._current_bracket)):
-            rounds.append([])
+        rounds.extend([] for _ in range(self._get_num_rounds(self._current_bracket)))
         bracket = {"bracket_num": self._current_bracket, "rounds": rounds}
         self._brackets.append(bracket)
 

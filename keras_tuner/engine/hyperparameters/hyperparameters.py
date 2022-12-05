@@ -583,21 +583,36 @@ class HyperParameters(object):
         space = []
         if isinstance(proto, keras_tuner_pb2.HyperParameters.Values):
             # Allows passing in only values, space becomes `Fixed`.
-            for name, value in proto.values.items():
-                space.append(
-                    hp_types.Fixed(name, getattr(value, value.WhichOneof("kind")))
-                )
+            space.extend(
+                hp_types.Fixed(name, getattr(value, value.WhichOneof("kind")))
+                for name, value in proto.values.items()
+            )
+
         else:
-            for fixed_proto in proto.space.fixed_space:
-                space.append(hp_types.Fixed.from_proto(fixed_proto))
-            for float_proto in proto.space.float_space:
-                space.append(hp_types.Float.from_proto(float_proto))
-            for int_proto in proto.space.int_space:
-                space.append(hp_types.Int.from_proto(int_proto))
-            for choice_proto in proto.space.choice_space:
-                space.append(hp_types.Choice.from_proto(choice_proto))
-            for boolean_proto in proto.space.boolean_space:
-                space.append(hp_types.Boolean.from_proto(boolean_proto))
+            space.extend(
+                hp_types.Fixed.from_proto(fixed_proto)
+                for fixed_proto in proto.space.fixed_space
+            )
+
+            space.extend(
+                hp_types.Float.from_proto(float_proto)
+                for float_proto in proto.space.float_space
+            )
+
+            space.extend(
+                hp_types.Int.from_proto(int_proto)
+                for int_proto in proto.space.int_space
+            )
+
+            space.extend(
+                hp_types.Choice.from_proto(choice_proto)
+                for choice_proto in proto.space.choice_space
+            )
+
+            space.extend(
+                hp_types.Boolean.from_proto(boolean_proto)
+                for boolean_proto in proto.space.boolean_space
+            )
 
         hps.merge(space)
 
