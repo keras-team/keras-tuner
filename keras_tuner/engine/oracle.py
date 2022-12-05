@@ -475,7 +475,7 @@ class Oracle(stateful.Stateful):
 
     def _compute_values_hash(self, values):
         keys = sorted(values.keys())
-        s = "".join(str(k) + "=" + str(values[k]) for k in keys)
+        s = "".join(f"{str(k)}={str(values[k])}" for k in keys)
         return hashlib.sha256(s.encode("utf-8")).hexdigest()[:32]
 
     def _check_objective_found(self, metrics):
@@ -495,7 +495,7 @@ class Oracle(stateful.Stateful):
             )
 
     def _get_trial_dir(self, trial_id):
-        dirname = os.path.join(self._project_dir, "trial_" + str(trial_id))
+        dirname = os.path.join(self._project_dir, f"trial_{str(trial_id)}")
         utils.create_directory(dirname)
         return dirname
 

@@ -43,9 +43,10 @@ def build_model(hp):
     x = keras.layers.Reshape((28 * 28,))(inputs)
     for i in range(hp.Int("num_layers", 1, 4)):
         x = keras.layers.Dense(
-            units=hp.Int("units_" + str(i), 128, 512, 32, default=256),
+            units=hp.Int(f"units_{str(i)}", 128, 512, 32, default=256),
             activation="relu",
         )(x)
+
     x = keras.layers.Dropout(hp.Float("dp", 0.0, 0.6, 0.1, default=0.5))(x)
     outputs = keras.layers.Dense(10, activation="softmax")(x)
     model = keras.Model(inputs, outputs)

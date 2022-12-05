@@ -30,9 +30,10 @@ def build_model(hp):
     for i in range(3):
         model.add(
             tf.keras.layers.Dense(
-                units=hp.Int("units_" + str(i), 2, 4, 2), activation="relu"
+                units=hp.Int(f"units_{str(i)}", 2, 4, 2), activation="relu"
             )
         )
+
     model.add(tf.keras.layers.Dense(2, activation="softmax"))
     model.compile(
         optimizer=tf.keras.optimizers.Adam(
@@ -351,7 +352,7 @@ def test_distributed_optimization(tmp_path):
     for _ in range(10):
         trials = []
         for i in range(tuners):
-            trial = oracle.create_trial("tuner_" + str(i))
+            trial = oracle.create_trial(f"tuner_{str(i)}")
             trials.append(trial)
         for trial in trials:
             oracle.update_trial(

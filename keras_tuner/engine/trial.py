@@ -126,7 +126,7 @@ class Trial(stateful.Stateful):
     def display_hyperparameters(self):
         if self.hyperparameters.values:
             for hp, value in self.hyperparameters.values.items():
-                print(hp + ":", value)
+                print(f"{hp}:", value)
         else:
             print("default configuration")
 

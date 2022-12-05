@@ -42,7 +42,7 @@ class TunerStats(object):
     def summary(self, extended=False):
         print("Tuning stats")
         for setting, value in self.get_config():
-            print(setting + ":", value)
+            print(f"{setting}:", value)
 
     def get_config(self):
         return {
@@ -169,7 +169,7 @@ class Display(object):
             return f"{val:.5g}"
         val_str = str(val)
         if len(val_str) > self.col_width:
-            val_str = val_str[: self.col_width - 3] + "..."
+            val_str = f"{val_str[:self.col_width - 3]}..."
         return val_str
 
     def format_duration(self, d):

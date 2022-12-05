@@ -26,11 +26,13 @@ def build_model(hp):
     model = tf.keras.Sequential()
     for i in range(hp.Int("layers", 1, 3)):
         model.add(
-            tf.keras.layers.Dense(hp.Int("units" + str(i), 1, 5), activation="relu")
+            tf.keras.layers.Dense(hp.Int(f"units{str(i)}", 1, 5), activation="relu")
         )
+
         model.add(
-            tf.keras.layers.Lambda(lambda x: x + hp.Float("bias" + str(i), -1, 1))
+            tf.keras.layers.Lambda(lambda x: x + hp.Float(f"bias{str(i)}", -1, 1))
         )
+
     model.add(tf.keras.layers.Dense(1, activation="sigmoid"))
     model.compile("sgd", "mse")
     return model
@@ -115,7 +117,7 @@ def test_hyperband_oracle_one_sweep_parallel(tmp_path):
     # in parallel.
     round0_trials = []
     for i in range(10):
-        t = oracle.create_trial("tuner" + str(i))
+        t = oracle.create_trial(f"tuner{str(i)}")
         assert t.status == "RUNNING"
         round0_trials.append(t)
 
@@ -132,7 +134,7 @@ def test_hyperband_oracle_one_sweep_parallel(tmp_path):
 
     round1_trials = []
     for i in range(4):
-        t = oracle.create_trial("tuner" + str(i))
+        t = oracle.create_trial(f"tuner{str(i)}")
         assert t.status == "RUNNING"
         round1_trials.append(t)
 

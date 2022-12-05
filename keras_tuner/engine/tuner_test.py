@@ -41,8 +41,9 @@ def build_model(hp):
     x = inputs
     for i in range(hp.Int("num_layers", 1, 4)):
         x = keras.layers.Dense(
-            units=hp.Int("units_" + str(i), 5, 9, 1, default=6), activation="relu"
+            units=hp.Int(f"units_{str(i)}", 5, 9, 1, default=6), activation="relu"
         )(x)
+
     outputs = keras.layers.Dense(NUM_CLASSES, activation="softmax")(x)
     model = keras.Model(inputs, outputs)
     model.compile(
@@ -158,9 +159,10 @@ class ExampleHyperModel(keras_tuner.HyperModel):
         x = inputs
         for i in range(hp.Int("num_layers", 1, 4)):
             x = keras.layers.Dense(
-                units=hp.Int("units_" + str(i), 5, 9, 1, default=6),
+                units=hp.Int(f"units_{str(i)}", 5, 9, 1, default=6),
                 activation="relu",
             )(x)
+
         outputs = keras.layers.Dense(NUM_CLASSES, activation="softmax")(x)
         model = keras.Model(inputs, outputs)
         model.compile(
@@ -459,7 +461,7 @@ def test_static_space(tmp_path):
         x = inputs
         for i in range(hp.get("num_layers")):
             x = keras.layers.Dense(
-                units=hp.get("units_" + str(i)), activation="relu"
+                units=hp.get(f"units_{str(i)}"), activation="relu"
             )(x)
         outputs = keras.layers.Dense(NUM_CLASSES, activation="softmax")(x)
         model = keras.Model(inputs, outputs)
@@ -501,7 +503,7 @@ def test_static_space_errors(tmp_path):
         x = inputs
         for i in range(hp.get("num_layers")):
             x = keras.layers.Dense(
-                units=hp.get("units_" + str(i)), activation="relu"
+                units=hp.get(f"units_{str(i)}"), activation="relu"
             )(x)
         outputs = keras.layers.Dense(NUM_CLASSES, activation="softmax")(x)
         model = keras.Model(inputs, outputs)
@@ -538,7 +540,7 @@ def test_static_space_errors(tmp_path):
         x = inputs
         for i in range(hp.get("num_layers")):
             x = keras.layers.Dense(
-                units=hp.get("units_" + str(i)), activation="relu"
+                units=hp.get(f"units_{str(i)}"), activation="relu"
             )(x)
         outputs = keras.layers.Dense(NUM_CLASSES, activation="softmax")(x)
         model = keras.Model(inputs, outputs)
