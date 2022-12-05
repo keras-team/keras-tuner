@@ -25,6 +25,7 @@ from keras_tuner.engine.objective import Objective
 from keras_tuner.engine.oracle import Oracle
 from keras_tuner.engine.tuner import Tuner
 from keras_tuner.tuners import BayesianOptimization
+from keras_tuner.tuners import GeneticOptimization
 from keras_tuner.tuners import GridSearch
 from keras_tuner.tuners import Hyperband
 from keras_tuner.tuners import RandomSearch
