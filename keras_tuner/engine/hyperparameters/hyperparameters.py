@@ -542,7 +542,7 @@ class HyperParameters(object):
                 {"class_name": p.__class__.__name__, "config": p.get_config()}
                 for p in self.space
             ],
-            "values": dict((k, v) for (k, v) in self.values.items()),
+            "values": {k: v for (k, v) in self.values.items()},
         }
 
     @classmethod
@@ -552,7 +552,7 @@ class HyperParameters(object):
             p = hp_types.deserialize(p)
             hps._hps[p.name].append(p)
             hps._space.append(p)
-        hps.values = dict((k, v) for (k, v) in config["values"].items())
+        hps.values = {k: v for (k, v) in config["values"].items()}
         return hps
 
     def copy(self):

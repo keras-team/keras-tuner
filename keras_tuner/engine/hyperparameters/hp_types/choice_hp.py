@@ -43,7 +43,7 @@ class Choice(hyperparameter.HyperParameter):
             raise ValueError("`values` must be provided for `Choice`.")
 
         # Type checking.
-        types = set(type(v) for v in values)
+        types = {type(v) for v in values}
         if len(types) > 1:
             raise TypeError(
                 "A `Choice` can contain only one type of value, found "

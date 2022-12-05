@@ -147,7 +147,7 @@ class Numerical(hyperparameter.HyperParameter):
     def values(self):
         if self.step is None:
             # Evenly select 10 samples as the values.
-            return tuple(set(self.prob_to_value(i * 0.1 + 0.05) for i in range(10)))
+            return tuple({self.prob_to_value(i * 0.1 + 0.05) for i in range(10)})
         n_values = self._get_n_values()
         return (self._get_value_by_index(i) for i in range(n_values))
 

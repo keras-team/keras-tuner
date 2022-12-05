@@ -98,7 +98,7 @@ class MetricHistory(object):
             self._observations[step] = MetricObservation(value, step=step)
 
     def get_best_value(self):
-        values = list(obs.mean() for obs in self._observations.values())
+        values = [obs.mean() for obs in self._observations.values()]
         if not values:
             return None
         if self.direction == "min":
