@@ -77,7 +77,7 @@ def test_hyperband_oracle_one_sweep_single_thread(tmp_path):
     score = 0
     for bracket_num in reversed(range(oracle._get_num_brackets())):
         for round_num in range(oracle._get_num_rounds(bracket_num)):
-            for model_num in range(oracle._get_size(bracket_num, round_num)):
+            for _ in range(oracle._get_size(bracket_num, round_num)):
                 trial = oracle.create_trial("tuner0")
                 assert trial.status == "RUNNING"
                 score += 1

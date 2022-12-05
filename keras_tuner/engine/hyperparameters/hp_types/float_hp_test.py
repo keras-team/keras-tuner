@@ -52,7 +52,7 @@ def test_float_log_with_step():
     rg = hp_module.Float(
         "rg", min_value=0.01, max_value=100, step=10, sampling="log"
     )
-    for i in range(10):
+    for _ in range(10):
         assert rg.random_sample() in [0.01, 0.1, 1.0, 10.0, 100.0]
     assert abs(rg.value_to_prob(0.1) - 0.3) < 1e-4
     assert rg.prob_to_value(0.3) == 0.1
@@ -62,7 +62,7 @@ def test_float_reverse_log_with_step():
     rg = hp_module.Float(
         "rg", min_value=0.01, max_value=100, step=10, sampling="reverse_log"
     )
-    for i in range(10):
+    for _ in range(10):
         # print(rg.random_sample())
         # assert rg.random_sample() in [0.01, 0.1, 1.0, 10.0, 100.0]
         # [0.09, 0.9, 9, 90]

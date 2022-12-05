@@ -67,7 +67,7 @@ def test_int():
 
 def test_int_log_with_step():
     rg = hp_module.Int("rg", min_value=2, max_value=32, step=2, sampling="log")
-    for i in range(10):
+    for _ in range(10):
         assert rg.random_sample() in [2, 4, 8, 16, 32]
     assert abs(rg.value_to_prob(4) - 0.3) < 1e-4
     assert rg.prob_to_value(0.3) == 4
