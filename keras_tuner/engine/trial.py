@@ -43,43 +43,43 @@ class TrialStatus:
     # The Trial is failed. No more retries needed.
     FAILED = "FAILED"
 
-    def to_proto(status):
+    def to_proto(self):
         ts = keras_tuner_pb2.TrialStatus
-        if status is None:
+        if self is None:
             return ts.UNKNOWN
-        elif status == TrialStatus.RUNNING:
+        elif self == TrialStatus.RUNNING:
             return ts.RUNNING
-        elif status == TrialStatus.IDLE:
+        elif self == TrialStatus.IDLE:
             return ts.IDLE
-        elif status == TrialStatus.INVALID:
+        elif self == TrialStatus.INVALID:
             return ts.INVALID
-        elif status == TrialStatus.STOPPED:
+        elif self == TrialStatus.STOPPED:
             return ts.STOPPED
-        elif status == TrialStatus.COMPLETED:
+        elif self == TrialStatus.COMPLETED:
             return ts.COMPLETED
-        elif status == TrialStatus.FAILED:
+        elif self == TrialStatus.FAILED:
             return ts.FAILED
         else:
-            raise ValueError(f"Unknown status {status}")
+            raise ValueError(f"Unknown status {self}")
 
-    def from_proto(proto):
+    def from_proto(self):
         ts = keras_tuner_pb2.TrialStatus
-        if proto == ts.UNKNOWN:
+        if self == ts.UNKNOWN:
             return None
-        elif proto == ts.RUNNING:
+        elif self == ts.RUNNING:
             return TrialStatus.RUNNING
-        elif proto == ts.IDLE:
+        elif self == ts.IDLE:
             return TrialStatus.IDLE
-        elif proto == ts.INVALID:
+        elif self == ts.INVALID:
             return TrialStatus.INVALID
-        elif proto == ts.STOPPED:
+        elif self == ts.STOPPED:
             return TrialStatus.STOPPED
-        elif proto == ts.COMPLETED:
+        elif self == ts.COMPLETED:
             return TrialStatus.COMPLETED
-        elif proto == ts.FAILED:
+        elif self == ts.FAILED:
             return TrialStatus.FAILED
         else:
-            raise ValueError(f"Unknown status {proto}")
+            raise ValueError(f"Unknown status {self}")
 
 
 class Trial(stateful.Stateful):
