@@ -143,17 +143,13 @@ class Display(object):
     def show_hyperparameter_table(self, trial):
         template = "{{0:{0}}}|{{1:{0}}}|{{2}}".format(self.col_width)
         best_trials = self.oracle.get_best_trials()
-        if len(best_trials) > 0:
-            best_trial = best_trials[0]
-        else:
-            best_trial = None
+        best_trial = best_trials[0] if len(best_trials) > 0 else None
         if trial.hyperparameters.values:
             print(template.format("Value", "Best Value So Far", "Hyperparameter"))
             for hp, value in trial.hyperparameters.values.items():
-                if best_trial:
-                    best_value = best_trial.hyperparameters.values.get(hp)
-                else:
-                    best_value = "?"
+                best_value = (
+                    best_trial.hyperparameters.values.get(hp) if best_trial else "?"
+                )
                 print(
                     template.format(
                         self.format_value(value),

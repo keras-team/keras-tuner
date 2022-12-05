@@ -394,10 +394,9 @@ class Oracle(stateful.Stateful):
         return sorted_trials[:num_trials]
 
     def remaining_trials(self):
-        if self.max_trials:
-            return self.max_trials - len(self.trials.items())
-        else:
-            return None
+        return (
+            self.max_trials - len(self.trials.items()) if self.max_trials else None
+        )
 
     def get_state(self):
         # `self.trials` are saved in their own, Oracle-agnostic files.
