@@ -95,7 +95,7 @@ class MultiObjective(Objective):
         }
 
     def has_value(self, logs):
-        return all([key in logs for key in self.name_to_direction])
+        return all(key in logs for key in self.name_to_direction)
 
     def get_value(self, logs):
         obj_value = 0

@@ -69,7 +69,7 @@ def test_float_reverse_log_with_step():
         # [90, 9, 0.9, 0.09]
         sample = rg.random_sample()
         assert any(
-            [abs(sample - x) < 1e-4 for x in [0.01, 90.01, 99.01, 99.91, 100.0]]
+            abs(sample - x) < 1e-4 for x in [0.01, 90.01, 99.01, 99.91, 100.0]
         )
     assert abs(rg.value_to_prob(99.91) - 0.3) < 1e-4
     assert abs(rg.prob_to_value(0.3) - 99.91) < 1e-4

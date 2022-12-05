@@ -1378,7 +1378,7 @@ def test_init_build_all_hps_in_all_conditions(tmp_path):
             return super().build(hp)
 
     def name_in_hp(name, hp):
-        return any([name == single_hp.name for single_hp in hp.space])
+        return any(name == single_hp.name for single_hp in hp.space)
 
     class MyTuner(tuner_module.Tuner):
         def _populate_initial_space(self):

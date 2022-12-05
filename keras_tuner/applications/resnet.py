@@ -355,7 +355,7 @@ def block3(
     output_shape = x_shape + (groups, c) if backend.backend() == "theano" else None
 
     x = layers.Lambda(
-        lambda x: sum([x[:, :, :, :, i] for i in range(c)]),
+        lambda x: sum(x[:, :, :, :, i] for i in range(c)),
         output_shape=output_shape,
         name=f"{name}_2_reduce",
     )(x)
