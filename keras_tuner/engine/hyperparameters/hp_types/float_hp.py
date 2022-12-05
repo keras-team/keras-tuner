@@ -105,15 +105,9 @@ class Float(numerical.Numerical):
 
     def __repr__(self):
         return (
-            'Float(name: "{}", min_value: {}, max_value: {}, step: {}, '
-            "sampling: {}, default: {})"
-        ).format(
-            self.name,
-            self.min_value,
-            self.max_value,
-            self.step,
-            self.sampling,
-            self.default,
+            f"Float(name: '{self.name}', min_value: '{self.min_value}', "
+            f"max_value: '{self.max_value}', step: '{self.step}', "
+            f"sampling: '{self.sampling}', default: '{self.default}')"
         )
 
     @property

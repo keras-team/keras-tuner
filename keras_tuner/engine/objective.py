@@ -126,7 +126,7 @@ def create_objective(objective):
     if not isinstance(objective, str):
         raise ValueError(
             "`objective` not understood, expected str or "
-            "`Objective` object, found: {}".format(objective)
+            f"`Objective` object, found: {objective}"
         )
 
     direction = metrics_tracking.infer_metric_direction(objective)

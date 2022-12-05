@@ -167,8 +167,8 @@ class HyperImageAugment(hypermodel.HyperModel):
                 and isinstance(augment_layers_max, int)
             ):
                 raise ValueError(
-                    "Keyword argument `augment_layers` must be int,"
-                    "but received {}. ".format(augment_layers)
+                    "Keyword argument `augment_layers` must be "
+                    f"int,but received {augment_layers}."
                 )
 
             self.augment_layers_min = augment_layers_min
@@ -270,8 +270,8 @@ class HyperImageAugment(hypermodel.HyperModel):
             and isinstance(transform_factor_min, (int, float))
         ):
             raise ValueError(
-                "Keyword argument {} must be int or float, "
-                "but received {}. ".format(transform_name, transform_params)
+                f"Keyword argument {transform_name} must be int "
+                f"or float, but received {transform_params}."
             )
 
         self.transforms.append(

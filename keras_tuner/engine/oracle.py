@@ -463,10 +463,11 @@ class Oracle(stateful.Stateful):
             super(Oracle, self).reload(self._get_oracle_fname())
         except KeyError:
             raise RuntimeError(
-                "Error reloading `Oracle` from existing project. If you did not "
-                "mean to reload from an existing project, change the `project_name` "
-                "or pass `overwrite=True` when creating the `Tuner`. Found existing "
-                "project at: {}".format(self._project_dir)
+                "Error reloading `Oracle` from existing project. "
+                "If you did not mean to reload from an existing project, "
+                f"change the `project_name` or pass `overwrite=True` "
+                "when creating the `Tuner`. Found existing "
+                f"project at: {self._project_dir}"
             )
 
     def _get_oracle_fname(self):
@@ -487,10 +488,9 @@ class Oracle(stateful.Stateful):
                 objective_names.remove(metric_name)
         if objective_names:
             raise ValueError(
-                "Objective value missing in metrics reported to the "
-                "Oracle, expected: {}, found: {}".format(
-                    objective_names, metrics.keys()
-                )
+                "Objective value missing in metrics reported to "
+                f"the Oracle, expected: {objective_names}, "
+                f"found: {metrics.keys()}"
             )
 
     def _get_trial_dir(self, trial_id):
