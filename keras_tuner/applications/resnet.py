@@ -73,8 +73,8 @@ class HyperResNet(hypermodel.HyperModel):
         conv4_depth = hp.Choice("conv4_depth", [6, 23, 36])
 
         # Version-conditional fixed parameters
-        preact = bool(version == "v2")
-        use_bias = bool(version != "next")
+        preact = version == "v2"
+        use_bias = version != "next"
 
         # Model definition.
         bn_axis = 3 if backend.image_data_format() == "channels_last" else 1
@@ -89,7 +89,7 @@ class HyperResNet(hypermodel.HyperModel):
         # Initial conv2d block.
         x = layers.ZeroPadding2D(padding=((3, 3), (3, 3)), name="conv1_pad")(x)
         x = layers.Conv2D(64, 7, strides=2, use_bias=use_bias, name="conv1_conv")(x)
-        if preact is False:
+        if not preact:
             x = layers.BatchNormalization(
                 axis=bn_axis, epsilon=1.001e-5, name="conv1_bn"
             )(x)
@@ -115,7 +115,7 @@ class HyperResNet(hypermodel.HyperModel):
             x = stack3(x, 1024, 3, stride1=1, name="conv5")
 
         # Top of the model.
-        if preact is True:
+        if preact:
             x = layers.BatchNormalization(
                 axis=bn_axis, epsilon=1.001e-5, name="post_bn"
             )(x)
@@ -127,24 +127,23 @@ class HyperResNet(hypermodel.HyperModel):
         elif pooling == "max":
             x = layers.GlobalMaxPooling2D(name="max_pool")(x)
 
-        if self.include_top:
-            x = layers.Dense(self.classes, activation="softmax", name="probs")(x)
-            model = keras.Model(inputs, x, name="ResNet")
-            optimizer_name = hp.Choice(
-                "optimizer", ["adam", "rmsprop", "sgd"], default="adam"
-            )
-            optimizer = keras.optimizers.get(optimizer_name)
-            optimizer.learning_rate = hp.Choice(
-                "learning_rate", [0.1, 0.01, 0.001], default=0.01
-            )
-            model.compile(
-                optimizer=optimizer,
-                loss="categorical_crossentropy",
-                metrics=["accuracy"],
-            )
-            return model
-        else:
+        if not self.include_top:
             return keras.Model(inputs, x, name="ResNet")
+        x = layers.Dense(self.classes, activation="softmax", name="probs")(x)
+        model = keras.Model(inputs, x, name="ResNet")
+        optimizer_name = hp.Choice(
+            "optimizer", ["adam", "rmsprop", "sgd"], default="adam"
+        )
+        optimizer = keras.optimizers.get(optimizer_name)
+        optimizer.learning_rate = hp.Choice(
+            "learning_rate", [0.1, 0.01, 0.001], default=0.01
+        )
+        model.compile(
+            optimizer=optimizer,
+            loss="categorical_crossentropy",
+            metrics=["accuracy"],
+        )
+        return model
 
 
 def block1(x, filters, kernel_size=3, stride=1, conv_shortcut=True, name=None):

@@ -138,9 +138,6 @@ def test_consecutive_failures_in_limit(tmp_path):
         oracle.update_trial(trial.trial_id, metrics={"val_loss": 0.5})
         oracle.end_trial(trial_id=trial.trial_id, status=trial.status)
 
-    # Should reach this line without error
-    assert True
-
 
 def test_too_many_consecutive_failures(tmp_path):
     oracle = OracleStub(

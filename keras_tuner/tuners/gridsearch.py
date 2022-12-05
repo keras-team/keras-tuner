@@ -161,10 +161,7 @@ class GridSearchOracle(oracle_module.Oracle):
             # Otherwise, reset to its first value.
             new_values[name] = default_values[name]
 
-        if bumped_value:
-            return new_values
-
-        return None
+        return new_values if bumped_value else None
 
 
 class GridSearch(tuner_module.Tuner):

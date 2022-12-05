@@ -144,9 +144,7 @@ class Int(numerical.Numerical):
 
     @property
     def default(self):
-        if self._default is not None:
-            return self._default
-        return self.min_value
+        return self._default if self._default is not None else self.min_value
 
     def get_config(self):
         config = super(Int, self).get_config()
@@ -166,7 +164,7 @@ class Int(numerical.Numerical):
             name=proto.name,
             min_value=proto.min_value,
             max_value=proto.max_value,
-            step=proto.step if proto.step else None,
+            step=proto.step or None,
             sampling=hp_utils.sampling_from_proto(proto.sampling),
             default=proto.default,
             conditions=conditions,

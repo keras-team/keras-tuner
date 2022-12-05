@@ -290,12 +290,14 @@ class Oracle(stateful.Stateful):
             message: Optional string. The error message if the trial status is
                 `"INVALID"` or `"FAILED"`.
         """
-        # Retrieve the Trial.
-        trial = None
-        for tuner_id, ongoing_trial in self.ongoing_trials.items():
-            if ongoing_trial.trial_id == trial_id:
-                trial = self.ongoing_trials.pop(tuner_id)
-                break
+        trial = next(
+            (
+                self.ongoing_trials.pop(tuner_id)
+                for tuner_id, ongoing_trial in self.ongoing_trials.items()
+                if ongoing_trial.trial_id == trial_id
+            ),
+            None,
+        )
 
         if not trial:
             raise ValueError(f"Ongoing trial with id: {trial_id} not found.")
@@ -403,11 +405,13 @@ class Oracle(stateful.Stateful):
     def get_state(self):
         # `self.trials` are saved in their own, Oracle-agnostic files.
         # Just save the IDs for ongoing trials, since these are in `trials`.
-        state = {}
-        state["ongoing_trials"] = {
-            tuner_id: trial.trial_id
-            for tuner_id, trial in self.ongoing_trials.items()
+        state = {
+            "ongoing_trials": {
+                tuner_id: trial.trial_id
+                for tuner_id, trial in self.ongoing_trials.items()
+            }
         }
+
         # Hyperparameters are part of the state because they can be added to
         # during the course of the search.
         state["hyperparameters"] = self.hyperparameters.get_config()
@@ -463,14 +467,14 @@ class Oracle(stateful.Stateful):
             self.trials[trial.trial_id] = trial
         try:
             super(Oracle, self).reload(self._get_oracle_fname())
-        except KeyError:
+        except KeyError as e:
             raise RuntimeError(
                 "Error reloading `Oracle` from existing project. "
                 "If you did not mean to reload from an existing project, "
                 f"change the `project_name` or pass `overwrite=True` "
                 "when creating the `Tuner`. Found existing "
                 f"project at: {self._project_dir}"
-            )
+            ) from e
 
     def _get_oracle_fname(self):
         return os.path.join(self._project_dir, "oracle.json")
@@ -538,7 +542,6 @@ class Oracle(stateful.Stateful):
 def _maybe_infer_direction_from_objective(objective, metric_name):
     if isinstance(objective, obj_module.Objective):
         objective = [objective]
-    for obj in objective:
-        if obj.name == metric_name:
-            return obj.direction
-    return None
+    return next(
+        (obj.direction for obj in objective if obj.name == metric_name), None
+    )

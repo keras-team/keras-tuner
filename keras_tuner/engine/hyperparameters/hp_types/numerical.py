@@ -55,9 +55,10 @@ class Numerical(hyperparameter.HyperParameter):
         if self.sampling not in sampling_values:
             raise ValueError(
                 f"For HyperParameters.{self.__class__.__name__}"
-                f"(name='{self.name}'), "
-                f"sampling must be one of {str(sampling_values)}"
+                f"(name='{self.name}'), sampling must be one "
+                f"of {sampling_values}"
             )
+
         if self.sampling in {"log", "reverse_log"} and self.min_value <= 0:
             raise ValueError(
                 f"For HyperParameters.{self.__class__.__name__}"

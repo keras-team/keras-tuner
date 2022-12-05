@@ -138,17 +138,16 @@ class GaussianProcessRegressor(object):
         Returns:
             A bool indicates whether all required attributes are present.
         """
-        for attribute in [
-            "_x_train",
-            "_alpha_vector",
-            "_l_matrix",
-            "_y_train_std",
-            "_y_train_mean",
-        ]:
-            if not hasattr(self, attribute):
-                return False
-
-        return True
+        return all(
+            hasattr(self, attribute)
+            for attribute in [
+                "_x_train",
+                "_alpha_vector",
+                "_l_matrix",
+                "_y_train_std",
+                "_y_train_mean",
+            ]
+        )
 
 
 class BayesianOptimizationOracle(oracle_module.Oracle):

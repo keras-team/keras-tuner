@@ -241,10 +241,7 @@ class HyperbandOracle(oracle_module.Oracle):
             bracket_num = bracket["bracket_num"]
             rounds = bracket["rounds"]
             last_round = len(rounds) - 1
-            if len(rounds[last_round]) == self._get_size(bracket_num, last_round):
-                # All trials have been created for the current bracket.
-                return False
-            return True
+            return len(rounds[last_round]) != self._get_size(bracket_num, last_round)
 
         self._brackets = list(filter(_bracket_is_incomplete, self._brackets))
 

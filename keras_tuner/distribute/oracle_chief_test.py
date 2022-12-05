@@ -175,11 +175,5 @@ def test_get_best_trials(tmp_path):
                 client.end_trial(trial_id)
                 trial_scores[trial_id] = score
             return
-            best_trials = client.get_best_trials(3)
-            best_scores = [t.score for t in best_trials]
-            assert best_scores == [9, 8, 7]
-            # Check that trial_ids are correctly mapped to scores.
-            for t in best_trials:
-                assert trial_scores[t.trial_id] == t.score
 
     mock_distribute.mock_distribute(_test_get_best_trials, num_workers=1)

@@ -90,8 +90,5 @@ def test_cloud_logger(tmp_path):
         ("register_trial", 6),
     ]
     for key, count in keys:
-        actual_count = 0
-        for url in MOCK_POST.url_calls:
-            if key in url:
-                actual_count += 1
+        actual_count = sum(key in url for url in MOCK_POST.url_calls)
         assert count == actual_count

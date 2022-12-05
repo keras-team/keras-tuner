@@ -156,16 +156,13 @@ class HyperParameters(object):
         if isinstance(hp, hp_module.HyperParameter):
             return self._conditions_are_active(hp.conditions)
         hp_name = str(hp)
-        for temp_hp in self._hps[hp_name]:
-            if self._conditions_are_active(temp_hp.conditions):
-                return True
-        return False
+        return any(
+            self._conditions_are_active(temp_hp.conditions)
+            for temp_hp in self._hps[hp_name]
+        )
 
     def _conditions_are_active(self, conditions):
-        for condition in conditions:
-            if not condition.is_active(self.values):
-                return False
-        return True
+        return all(condition.is_active(self.values) for condition in conditions)
 
     def _exists(self, name, conditions=None):
         """Checks for a hyperparameter with the same name and conditions."""
@@ -542,7 +539,7 @@ class HyperParameters(object):
                 {"class_name": p.__class__.__name__, "config": p.get_config()}
                 for p in self.space
             ],
-            "values": {k: v for (k, v) in self.values.items()},
+            "values": dict(self.values.items()),
         }
 
     @classmethod
@@ -552,7 +549,7 @@ class HyperParameters(object):
             p = hp_types.deserialize(p)
             hps._hps[p.name].append(p)
             hps._space.append(p)
-        hps.values = {k: v for (k, v) in config["values"].items()}
+        hps.values = dict(config["values"].items())
         return hps
 
     def copy(self):
@@ -683,9 +680,7 @@ class HyperParameters(object):
         if name_scopes is None:
             name_scopes = self._name_scopes
 
-        if name_scopes:
-            return "/".join(name_scopes) + "/" + str(name)
-        return str(name)
+        return "/".join(name_scopes) + "/" + str(name) if name_scopes else str(name)
 
     def _validate_name(self, name):
         for condition in self._conditions:

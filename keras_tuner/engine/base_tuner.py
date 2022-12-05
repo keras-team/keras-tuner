@@ -166,7 +166,7 @@ class BaseTuner(stateful.Stateful):
                         scopes_never_active.append(copy.deepcopy(conditions))
 
                 # All conditional scopes are activated.
-                if len(scopes_never_active) == 0:
+                if not scopes_never_active:
                     break
 
                 # Generate new values to activate new conditions.

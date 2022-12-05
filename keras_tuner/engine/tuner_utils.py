@@ -229,9 +229,11 @@ def average_metrics_dicts(metrics_dicts):
     for metrics_dict in metrics_dicts:
         for metric_name, metric_value in metrics_dict.items():
             metrics[metric_name].append(metric_value)
-    averaged_metrics = {}
-    for metric_name, metric_values in metrics.items():
-        averaged_metrics[metric_name] = np.mean(metric_values)
+    averaged_metrics = {
+        metric_name: np.mean(metric_values)
+        for metric_name, metric_values in metrics.items()
+    }
+
     return averaged_metrics
 
 

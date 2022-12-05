@@ -986,8 +986,9 @@ def test_convert_hyperparams_to_hparams():
     }
     hparams_repr_list = [repr(hparams[x]) for x in hparams.keys()]
     expected_hparams_repr_list = [
-        repr(expected_hparams[x]) for x in expected_hparams.keys()
+        repr(expected_hparams[x]) for x in expected_hparams
     ]
+
     assert sorted(hparams_repr_list) == sorted(expected_hparams_repr_list)
 
     hps = keras_tuner.engine.hyperparameters.HyperParameters()
@@ -1297,7 +1298,7 @@ def test_callbacks_run_each_execution(tmp_path):
 
     # Unknown reason cause the callback to run 5 times sometime.
     # Make 5 & 6 both pass the test before found the reason.
-    assert len(callback_instances) in (5, 6)
+    assert len(callback_instances) in {5, 6}
 
 
 def test_build_and_fit_model(tmp_path):
