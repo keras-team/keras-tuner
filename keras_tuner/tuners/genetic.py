@@ -105,9 +105,7 @@ class GeneticEvolutionaryProcess(object):
             return parent_1_cross, parent_2_cross
         return parent_1, parent_2
 
-    def _roulette_wheel_selection(
-        self, scores: list, population: list[hp_module.HyperParameters]
-    ):
+    def _roulette_wheel_selection(self, scores, population):
         """Perform roulette wheel selection for generating a couple.
 
         Args:
@@ -128,9 +126,7 @@ class GeneticEvolutionaryProcess(object):
         )
         return population[parent_index_1], population[parent_index_2]
 
-    def _tournament_selection(
-        self, scores: list, population: list[hp_module.HyperParameters]
-    ):
+    def _tournament_selection(self, scores, population):
         """Perform tournament selection for generating a couple.
 
         Args:
