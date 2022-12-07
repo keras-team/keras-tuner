@@ -28,6 +28,11 @@ Before you submit a pull request, check that it meets these guidelines:
 ## Setup Environment
 We introduce 2 different options: **GitHub Codespaces**, **VS Code & Remote-Containers**.
 You may also use any other environment as long as you install the dependencies in `setup.py`.
+Be sure that you have the same environment as us, we recommend you to install like this:
+
+```shell
+pip install -e .[tests]
+```
 
 ### Option 1: GitHub Codespaces
 You can simply open the repository in GitHub Codespaces.
