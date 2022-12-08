@@ -67,4 +67,6 @@ def check_tf_version():
 def to_list(values):
     if isinstance(values, list):
         return values
-    return list(values) if isinstance(values, tuple) else [values]
+    if isinstance(values, tuple):
+        return list(values)
+    return [values]

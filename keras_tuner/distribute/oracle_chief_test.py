@@ -174,6 +174,5 @@ def test_get_best_trials(tmp_path):
                 client.update_trial(trial_id, {"score": score})
                 client.end_trial(trial_id)
                 trial_scores[trial_id] = score
-            return
 
     mock_distribute.mock_distribute(_test_get_best_trials, num_workers=1)

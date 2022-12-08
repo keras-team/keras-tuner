@@ -362,12 +362,11 @@ class Oracle(stateful.Stateful):
             hyperparameters: An updated `HyperParameters` object.
         """
         hps = hyperparameters.space
-        new_hps = []
-        new_hps.extend(
+        new_hps = [
             hp
             for hp in hps
             if not self.hyperparameters._exists(hp.name, hp.conditions)
-        )
+        ]
 
         if new_hps and not self.allow_new_entries:
             raise RuntimeError(

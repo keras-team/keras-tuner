@@ -403,8 +403,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         ]
 
     def _get_hp_bounds(self):
-        bounds = []
-        bounds.extend([0, 1] for _ in self._nonfixed_space())
+        bounds = [[0, 1] for _ in self._nonfixed_space()]
         return np.array(bounds)
 
 
