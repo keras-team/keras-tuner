@@ -404,20 +404,18 @@ class Oracle(stateful.Stateful):
     def get_state(self):
         # `self.trials` are saved in their own, Oracle-agnostic files.
         # Just save the IDs for ongoing trials, since these are in `trials`.
-        state = {
+        return {
             "ongoing_trials": {
                 tuner_id: trial.trial_id
                 for tuner_id, trial in self.ongoing_trials.items()
-            }
+            },
+            # Hyperparameters are part of the state because they can be added to
+            # during the course of the search.
+            "hyperparameters": self.hyperparameters.get_config(),
+            "seed": self.seed,
+            "seed_state": self._seed_state,
+            "tried_so_far": list(self._tried_so_far),
         }
-
-        # Hyperparameters are part of the state because they can be added to
-        # during the course of the search.
-        state["hyperparameters"] = self.hyperparameters.get_config()
-        state["seed"] = self.seed
-        state["seed_state"] = self._seed_state
-        state["tried_so_far"] = list(self._tried_so_far)
-        return state
 
     def set_state(self, state):
         # `self.trials` are saved in their own, Oracle-agnostic files.
