@@ -42,7 +42,7 @@ class TunerStats(object):
     def summary(self, extended=False):
         print("Tuning stats")
         for setting, value in self.get_config():
-            print(setting + ":", value)
+            print(f"{setting}:", value)
 
     def get_config(self):
         return {
@@ -143,17 +143,13 @@ class Display(object):
     def show_hyperparameter_table(self, trial):
         template = "{{0:{0}}}|{{1:{0}}}|{{2}}".format(self.col_width)
         best_trials = self.oracle.get_best_trials()
-        if len(best_trials) > 0:
-            best_trial = best_trials[0]
-        else:
-            best_trial = None
+        best_trial = best_trials[0] if len(best_trials) > 0 else None
         if trial.hyperparameters.values:
             print(template.format("Value", "Best Value So Far", "Hyperparameter"))
             for hp, value in trial.hyperparameters.values.items():
-                if best_trial:
-                    best_value = best_trial.hyperparameters.values.get(hp)
-                else:
-                    best_value = "?"
+                best_value = (
+                    best_trial.hyperparameters.values.get(hp) if best_trial else "?"
+                )
                 print(
                     template.format(
                         self.format_value(value),
@@ -169,7 +165,7 @@ class Display(object):
             return f"{val:.5g}"
         val_str = str(val)
         if len(val_str) > self.col_width:
-            val_str = val_str[: self.col_width - 3] + "..."
+            val_str = f"{val_str[:self.col_width - 3]}..."
         return val_str
 
     def format_duration(self, d):
@@ -233,9 +229,11 @@ def average_metrics_dicts(metrics_dicts):
     for metrics_dict in metrics_dicts:
         for metric_name, metric_value in metrics_dict.items():
             metrics[metric_name].append(metric_value)
-    averaged_metrics = {}
-    for metric_name, metric_values in metrics.items():
-        averaged_metrics[metric_name] = np.mean(metric_values)
+    averaged_metrics = {
+        metric_name: np.mean(metric_values)
+        for metric_name, metric_values in metrics.items()
+    }
+
     return averaged_metrics
 
 

@@ -56,9 +56,11 @@ class MetricObservation(object):
         return cls(**config)
 
     def __eq__(self, other):
-        if not isinstance(other, MetricObservation):
-            return False
-        return other.value == self.value and other.step == self.step
+        return (
+            other.value == self.value and other.step == self.step
+            if isinstance(other, MetricObservation)
+            else False
+        )
 
     def __repr__(self):
         return f"MetricObservation(value={self.value}, step={self.step})"
@@ -98,12 +100,10 @@ class MetricHistory(object):
             self._observations[step] = MetricObservation(value, step=step)
 
     def get_best_value(self):
-        values = list(obs.mean() for obs in self._observations.values())
+        values = [obs.mean() for obs in self._observations.values()]
         if not values:
             return None
-        if self.direction == "min":
-            return np.nanmin(values)
-        return np.nanmax(values)
+        return np.nanmin(values) if self.direction == "min" else np.nanmax(values)
 
     def get_best_step(self):
         best_value = self.get_best_value()
@@ -123,16 +123,18 @@ class MetricHistory(object):
     def get_statistics(self):
         history = self.get_history()
         history_values = [obs.mean() for obs in history]
-        if not len(history_values):
-            return {}
-        return {
-            "min": float(np.nanmin(history_values)),
-            "max": float(np.nanmax(history_values)),
-            "mean": float(np.nanmean(history_values)),
-            "median": float(np.nanmedian(history_values)),
-            "var": float(np.nanvar(history_values)),
-            "std": float(np.nanstd(history_values)),
-        }
+        return (
+            {
+                "min": float(np.nanmin(history_values)),
+                "max": float(np.nanmax(history_values)),
+                "mean": float(np.nanmean(history_values)),
+                "median": float(np.nanmedian(history_values)),
+                "var": float(np.nanvar(history_values)),
+                "std": float(np.nanstd(history_values)),
+            }
+            if len(history_values)
+            else {}
+        )
 
     def get_last_value(self):
         history = self.get_history()
@@ -143,9 +145,11 @@ class MetricHistory(object):
             return None
 
     def get_config(self):
-        config = {}
-        config["direction"] = self.direction
-        config["observations"] = [obs.get_config() for obs in self.get_history()]
+        config = {
+            "direction": self.direction,
+            "observations": [obs.get_config() for obs in self.get_history()],
+        }
+
         return config
 
     @classmethod
@@ -332,7 +336,7 @@ def infer_metric_direction(metric):
         except ValueError:
             try:
                 metric = keras.losses.get(metric_name)
-            except:
+            except Exception:
                 # Direction can't be inferred.
                 return None
 

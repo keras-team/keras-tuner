@@ -49,7 +49,7 @@ def prob_to_index(prob, n_index):
     index = int(math.floor(prob / ele_prob))
     # Can happen when `prob` is very close to 1.
     if index == n_index:
-        index = index - 1
+        index -= 1
     return index
 
 

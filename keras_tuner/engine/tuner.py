@@ -385,7 +385,7 @@ class Tuner(base_tuner.BaseTuner):
                 )
 
     def _get_tensorboard_dir(self, logdir, trial_id, execution):
-        return os.path.join(str(logdir), str(trial_id), "execution" + str(execution))
+        return os.path.join(str(logdir), str(trial_id), f"execution{str(execution)}")
 
     def _get_checkpoint_fname(self, trial_id):
         return os.path.join(

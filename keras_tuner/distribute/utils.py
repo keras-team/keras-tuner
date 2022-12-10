@@ -87,7 +87,7 @@ Experimental. API is subject to change.
 
 def _get_base_dirpath(strategy):
     task_id = strategy.extended._task_id  # pylint: disable=protected-access
-    return "workertemp_" + str(task_id)
+    return f"workertemp_{str(task_id)}"
 
 
 def _is_temp_dir(dirpath, strategy):

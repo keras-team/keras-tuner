@@ -26,11 +26,13 @@ def build_model(hp):
     model = tf.keras.Sequential()
     for i in range(hp.Int("layers", 1, 3)):
         model.add(
-            tf.keras.layers.Dense(hp.Int("units" + str(i), 1, 5), activation="relu")
+            tf.keras.layers.Dense(hp.Int(f"units{str(i)}", 1, 5), activation="relu")
         )
+
         model.add(
-            tf.keras.layers.Lambda(lambda x: x + hp.Float("bias" + str(i), -1, 1))
+            tf.keras.layers.Lambda(lambda x: x + hp.Float(f"bias{str(i)}", -1, 1))
         )
+
     model.add(tf.keras.layers.Dense(1, activation="sigmoid"))
     model.compile("sgd", "mse")
     return model
@@ -75,7 +77,7 @@ def test_hyperband_oracle_one_sweep_single_thread(tmp_path):
     score = 0
     for bracket_num in reversed(range(oracle._get_num_brackets())):
         for round_num in range(oracle._get_num_rounds(bracket_num)):
-            for model_num in range(oracle._get_size(bracket_num, round_num)):
+            for _ in range(oracle._get_size(bracket_num, round_num)):
                 trial = oracle.create_trial("tuner0")
                 assert trial.status == "RUNNING"
                 score += 1
@@ -115,7 +117,7 @@ def test_hyperband_oracle_one_sweep_parallel(tmp_path):
     # in parallel.
     round0_trials = []
     for i in range(10):
-        t = oracle.create_trial("tuner" + str(i))
+        t = oracle.create_trial(f"tuner{str(i)}")
         assert t.status == "RUNNING"
         round0_trials.append(t)
 
@@ -132,7 +134,7 @@ def test_hyperband_oracle_one_sweep_parallel(tmp_path):
 
     round1_trials = []
     for i in range(4):
-        t = oracle.create_trial("tuner" + str(i))
+        t = oracle.create_trial(f"tuner{str(i)}")
         assert t.status == "RUNNING"
         round1_trials.append(t)
 
@@ -260,10 +262,8 @@ def test_hyperband_load_weights(tmp_path):
     # compare the weights
     assert len(new_model_weights) == len(best_model_round_0_weights)
     assert all(
-        [
-            np.alltrue(new_weight == best_old_weight)
-            for new_weight, best_old_weight in zip(
-                new_model_weights, best_model_round_0_weights
-            )
-        ]
+        np.alltrue(new_weight == best_old_weight)
+        for new_weight, best_old_weight in zip(
+            new_model_weights, best_model_round_0_weights
+        )
     )

@@ -49,8 +49,9 @@ def build_model(hp):
     x = inputs
     for i in range(hp.Int("num_layers", 1, 4)):
         x = keras.layers.Dense(
-            units=hp.Int("units_" + str(i), 5, 9, 1, default=6), activation="relu"
+            units=hp.Int(f"units_{str(i)}", 5, 9, 1, default=6), activation="relu"
         )(x)
+
     outputs = keras.layers.Dense(NUM_CLASSES, activation="softmax")(x)
     model = keras.Model(inputs, outputs)
     model.compile(
@@ -89,8 +90,5 @@ def test_cloud_logger(tmp_path):
         ("register_trial", 6),
     ]
     for key, count in keys:
-        actual_count = 0
-        for url in MOCK_POST.url_calls:
-            if key in url:
-                actual_count += 1
+        actual_count = sum(key in url for url in MOCK_POST.url_calls)
         assert count == actual_count

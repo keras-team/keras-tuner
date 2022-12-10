@@ -46,9 +46,7 @@ class Boolean(hyperparameter.HyperParameter):
 
     def value_to_prob(self, value):
         # Center the value in its probability bucket.
-        if value:
-            return 0.75
-        return 0.25
+        return 0.75 if value else 0.25
 
     @classmethod
     def from_proto(cls, proto):

@@ -98,8 +98,8 @@ class HyperEfficientNet(hypermodel.HyperModel):
         ):
             raise ValueError(
                 "Keyword augmentation_model should be "
-                "a `HyperModel`, a Keras `Model` or empty. "
-                "Received {}.".format(augmentation_model)
+                "a `HyperModel`, a Keras `Model` or "
+                f"empty. Received {augmentation_model}."
             )
 
         if not classes:

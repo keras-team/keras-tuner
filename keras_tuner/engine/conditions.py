@@ -60,7 +60,7 @@ class Condition(object):
         return cls(**config)  # pytype: disable=not-instantiable
 
     @classmethod
-    def from_proto(self, proto):
+    def from_proto(cls, proto):
         kind = proto.WhichOneof("kind")
         if kind == "parent":
             parent = getattr(proto, kind)

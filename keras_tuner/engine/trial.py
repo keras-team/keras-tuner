@@ -43,6 +43,7 @@ class TrialStatus:
     # The Trial is failed. No more retries needed.
     FAILED = "FAILED"
 
+    @staticmethod
     def to_proto(status):
         ts = keras_tuner_pb2.TrialStatus
         if status is None:
@@ -62,6 +63,7 @@ class TrialStatus:
         else:
             raise ValueError(f"Unknown status {status}")
 
+    @staticmethod
     def from_proto(proto):
         ts = keras_tuner_pb2.TrialStatus
         if proto == ts.UNKNOWN:
@@ -126,7 +128,7 @@ class Trial(stateful.Stateful):
     def display_hyperparameters(self):
         if self.hyperparameters.values:
             for hp, value in self.hyperparameters.values.items():
-                print(hp + ":", value)
+                print(f"{hp}:", value)
         else:
             print("default configuration")
 

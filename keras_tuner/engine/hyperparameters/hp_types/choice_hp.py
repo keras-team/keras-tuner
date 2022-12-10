@@ -43,11 +43,11 @@ class Choice(hyperparameter.HyperParameter):
             raise ValueError("`values` must be provided for `Choice`.")
 
         # Type checking.
-        types = set(type(v) for v in values)
+        types = {type(v) for v in values}
         if len(types) > 1:
             raise TypeError(
-                "A `Choice` can contain only one type of value, found "
-                f"values: {str(values)} with types {str(types)}."
+                "A `Choice` can contain only one type of value, "
+                f"found values: {str(values)} with types {types}."
             )
 
         # Standardize on str, int, float, bool.
@@ -95,9 +95,7 @@ class Choice(hyperparameter.HyperParameter):
 
     @property
     def default(self):
-        if self._default is None:
-            return self._values[0]
-        return self._default
+        return self._values[0] if self._default is None else self._default
 
     def prob_to_value(self, prob):
         return self._values[hp_utils.prob_to_index(prob, len(self._values))]

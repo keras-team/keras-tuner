@@ -55,9 +55,10 @@ class Numerical(hyperparameter.HyperParameter):
         if self.sampling not in sampling_values:
             raise ValueError(
                 f"For HyperParameters.{self.__class__.__name__}"
-                f"(name='{self.name}'), "
-                f"sampling must be one of {str(sampling_values)}"
+                f"(name='{self.name}'), sampling must be one "
+                f"of {sampling_values}"
             )
+
         if self.sampling in {"log", "reverse_log"} and self.min_value <= 0:
             raise ValueError(
                 f"For HyperParameters.{self.__class__.__name__}"
@@ -147,7 +148,7 @@ class Numerical(hyperparameter.HyperParameter):
     def values(self):
         if self.step is None:
             # Evenly select 10 samples as the values.
-            return tuple(set(self.prob_to_value(i * 0.1 + 0.05) for i in range(10)))
+            return tuple({self.prob_to_value(i * 0.1 + 0.05) for i in range(10)})
         n_values = self._get_n_values()
         return (self._get_value_by_index(i) for i in range(n_values))
 

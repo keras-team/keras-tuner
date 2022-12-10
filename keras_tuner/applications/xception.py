@@ -106,32 +106,31 @@ class HyperXception(hypermodel.HyperModel):
         else:
             x = layers.GlobalMaxPooling2D()(x)
 
-        if self.include_top:
-            # Dense
-            num_dense_layers = hp.Int("num_dense_layers", 1, 3)
-            dropout_rate = hp.Float("dropout_rate", 0.0, 0.6, step=0.1, default=0.5)
-            dense_use_bn = hp.Choice("dense_use_bn", [True, False])
-            for _ in range(num_dense_layers):
-                x = dense(
-                    x,
-                    self.classes,
-                    activation=activation,
-                    batchnorm=dense_use_bn,
-                    dropout_rate=dropout_rate,
-                )
-            output = layers.Dense(self.classes, activation="softmax")(x)
-            model = keras.Model(inputs, output, name="Xception")
-
-            model.compile(
-                optimizer=keras.optimizers.Adam(
-                    hp.Choice("learning_rate", [1e-3, 1e-4, 1e-5])
-                ),
-                loss="categorical_crossentropy",
-                metrics=["accuracy"],
-            )
-            return model
-        else:
+        if not self.include_top:
             return keras.Model(inputs, x, name="Xception")
+        # Dense
+        num_dense_layers = hp.Int("num_dense_layers", 1, 3)
+        dropout_rate = hp.Float("dropout_rate", 0.0, 0.6, step=0.1, default=0.5)
+        dense_use_bn = hp.Choice("dense_use_bn", [True, False])
+        for _ in range(num_dense_layers):
+            x = dense(
+                x,
+                self.classes,
+                activation=activation,
+                batchnorm=dense_use_bn,
+                dropout_rate=dropout_rate,
+            )
+        output = layers.Dense(self.classes, activation="softmax")(x)
+        model = keras.Model(inputs, output, name="Xception")
+
+        model.compile(
+            optimizer=keras.optimizers.Adam(
+                hp.Choice("learning_rate", [1e-3, 1e-4, 1e-5])
+            ),
+            loss="categorical_crossentropy",
+            metrics=["accuracy"],
+        )
+        return model
 
 
 def sep_conv(x, num_filters, kernel_size=(3, 3), activation="relu"):

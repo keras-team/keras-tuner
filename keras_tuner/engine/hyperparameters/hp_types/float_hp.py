@@ -105,22 +105,14 @@ class Float(numerical.Numerical):
 
     def __repr__(self):
         return (
-            'Float(name: "{}", min_value: {}, max_value: {}, step: {}, '
-            "sampling: {}, default: {})"
-        ).format(
-            self.name,
-            self.min_value,
-            self.max_value,
-            self.step,
-            self.sampling,
-            self.default,
+            f"Float(name: '{self.name}', min_value: '{self.min_value}', "
+            f"max_value: '{self.max_value}', step: '{self.step}', "
+            f"sampling: '{self.sampling}', default: '{self.default}')"
         )
 
     @property
     def default(self):
-        if self._default is not None:
-            return self._default
-        return self.min_value
+        return self._default if self._default is not None else self.min_value
 
     def prob_to_value(self, prob):
         if self.step is None:
@@ -149,7 +141,7 @@ class Float(numerical.Numerical):
             name=proto.name,
             min_value=proto.min_value,
             max_value=proto.max_value,
-            step=proto.step if proto.step else None,
+            step=proto.step or None,
             sampling=hp_utils.sampling_from_proto(proto.sampling),
             default=proto.default,
             conditions=conditions,

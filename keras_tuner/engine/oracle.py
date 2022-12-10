@@ -290,12 +290,14 @@ class Oracle(stateful.Stateful):
             message: Optional string. The error message if the trial status is
                 `"INVALID"` or `"FAILED"`.
         """
-        # Retrieve the Trial.
-        trial = None
-        for tuner_id, ongoing_trial in self.ongoing_trials.items():
-            if ongoing_trial.trial_id == trial_id:
-                trial = self.ongoing_trials.pop(tuner_id)
-                break
+        trial = next(
+            (
+                self.ongoing_trials.pop(tuner_id)
+                for tuner_id, ongoing_trial in self.ongoing_trials.items()
+                if ongoing_trial.trial_id == trial_id
+            ),
+            None,
+        )
 
         if not trial:
             raise ValueError(f"Ongoing trial with id: {trial_id} not found.")
@@ -360,10 +362,11 @@ class Oracle(stateful.Stateful):
             hyperparameters: An updated `HyperParameters` object.
         """
         hps = hyperparameters.space
-        new_hps = []
-        for hp in hps:
-            if not self.hyperparameters._exists(hp.name, hp.conditions):
-                new_hps.append(hp)
+        new_hps = [
+            hp
+            for hp in hps
+            if not self.hyperparameters._exists(hp.name, hp.conditions)
+        ]
 
         if new_hps and not self.allow_new_entries:
             raise RuntimeError(
@@ -394,26 +397,25 @@ class Oracle(stateful.Stateful):
         return sorted_trials[:num_trials]
 
     def remaining_trials(self):
-        if self.max_trials:
-            return self.max_trials - len(self.trials.items())
-        else:
-            return None
+        return (
+            self.max_trials - len(self.trials.items()) if self.max_trials else None
+        )
 
     def get_state(self):
         # `self.trials` are saved in their own, Oracle-agnostic files.
         # Just save the IDs for ongoing trials, since these are in `trials`.
-        state = {}
-        state["ongoing_trials"] = {
-            tuner_id: trial.trial_id
-            for tuner_id, trial in self.ongoing_trials.items()
+        return {
+            "ongoing_trials": {
+                tuner_id: trial.trial_id
+                for tuner_id, trial in self.ongoing_trials.items()
+            },
+            # Hyperparameters are part of the state because they can be added to
+            # during the course of the search.
+            "hyperparameters": self.hyperparameters.get_config(),
+            "seed": self.seed,
+            "seed_state": self._seed_state,
+            "tried_so_far": list(self._tried_so_far),
         }
-        # Hyperparameters are part of the state because they can be added to
-        # during the course of the search.
-        state["hyperparameters"] = self.hyperparameters.get_config()
-        state["seed"] = self.seed
-        state["seed_state"] = self._seed_state
-        state["tried_so_far"] = list(self._tried_so_far)
-        return state
 
     def set_state(self, state):
         # `self.trials` are saved in their own, Oracle-agnostic files.
@@ -462,20 +464,21 @@ class Oracle(stateful.Stateful):
             self.trials[trial.trial_id] = trial
         try:
             super(Oracle, self).reload(self._get_oracle_fname())
-        except KeyError:
+        except KeyError as e:
             raise RuntimeError(
-                "Error reloading `Oracle` from existing project. If you did not "
-                "mean to reload from an existing project, change the `project_name` "
-                "or pass `overwrite=True` when creating the `Tuner`. Found existing "
-                "project at: {}".format(self._project_dir)
-            )
+                "Error reloading `Oracle` from existing project. "
+                "If you did not mean to reload from an existing project, "
+                f"change the `project_name` or pass `overwrite=True` "
+                "when creating the `Tuner`. Found existing "
+                f"project at: {self._project_dir}"
+            ) from e
 
     def _get_oracle_fname(self):
         return os.path.join(self._project_dir, "oracle.json")
 
     def _compute_values_hash(self, values):
         keys = sorted(values.keys())
-        s = "".join(str(k) + "=" + str(values[k]) for k in keys)
+        s = "".join(f"{str(k)}={str(values[k])}" for k in keys)
         return hashlib.sha256(s.encode("utf-8")).hexdigest()[:32]
 
     def _check_objective_found(self, metrics):
@@ -488,14 +491,13 @@ class Oracle(stateful.Stateful):
                 objective_names.remove(metric_name)
         if objective_names:
             raise ValueError(
-                "Objective value missing in metrics reported to the "
-                "Oracle, expected: {}, found: {}".format(
-                    objective_names, metrics.keys()
-                )
+                "Objective value missing in metrics reported to "
+                f"the Oracle, expected: {objective_names}, "
+                f"found: {metrics.keys()}"
             )
 
     def _get_trial_dir(self, trial_id):
-        dirname = os.path.join(self._project_dir, "trial_" + str(trial_id))
+        dirname = os.path.join(self._project_dir, f"trial_{str(trial_id)}")
         utils.create_directory(dirname)
         return dirname
 
@@ -537,7 +539,6 @@ class Oracle(stateful.Stateful):
 def _maybe_infer_direction_from_objective(objective, metric_name):
     if isinstance(objective, obj_module.Objective):
         objective = [objective]
-    for obj in objective:
-        if obj.name == metric_name:
-            return obj.direction
-    return None
+    return next(
+        (obj.direction for obj in objective if obj.name == metric_name), None
+    )

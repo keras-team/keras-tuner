@@ -166,7 +166,7 @@ class BaseTuner(stateful.Stateful):
                         scopes_never_active.append(copy.deepcopy(conditions))
 
                 # All conditional scopes are activated.
-                if len(scopes_never_active) == 0:
+                if not scopes_never_active:
                     break
 
                 # Generate new values to activate new conditions.
@@ -420,9 +420,9 @@ class BaseTuner(stateful.Stateful):
         return dirname
 
     def get_trial_dir(self, trial_id):
-        dirname = os.path.join(str(self.project_dir), "trial_" + str(trial_id))
+        dirname = os.path.join(str(self.project_dir), f"trial_{str(trial_id)}")
         utils.create_directory(dirname)
         return dirname
 
     def _get_tuner_fname(self):
-        return os.path.join(str(self.project_dir), str(self.tuner_id) + ".json")
+        return os.path.join(str(self.project_dir), f"{str(self.tuner_id)}.json")
