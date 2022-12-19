@@ -120,7 +120,7 @@ class GaussianProcessRegressor(object):
         )
         kernel_inv = l_inv.dot(l_inv.T)
 
-        y_var = np.ones(len(x), dtype=np.float)
+        y_var = np.ones(len(x), dtype=float)
         y_var -= np.einsum(
             "ij,ij->i", np.dot(kernel_trans, kernel_inv), kernel_trans
         )
