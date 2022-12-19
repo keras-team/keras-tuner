@@ -88,9 +88,7 @@ Thank all the contributors!
 
 ## Community
 
-Please use the [Keras Slack workspace](https://kerasteam.slack.com/), the `#keras-tuner` channel for communication.
-
-Use [this link](https://keras-slack-autojoin.herokuapp.com/) to request an invitation to the channel.
+Ask your questions on our [GitHub Discussions](https://github.com/keras-team/keras-tuner/discussions).
 
 ## Citing KerasTuner
 
