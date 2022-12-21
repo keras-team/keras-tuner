@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import math
-import random
 
 from keras_tuner.engine import oracle as oracle_module
 from keras_tuner.engine import tuner as tuner_module
@@ -129,11 +128,6 @@ class HyperbandOracle(oracle_module.Oracle):
         # degress of aggressiveness.
         self.min_epochs = 1
         self.factor = factor
-
-        self.seed = seed or random.randint(1, 10000)
-        self._max_collisions = 20
-        self._seed_state = self.seed
-        self._tried_so_far = set()
 
         self._current_iteration = 0
         # Start with most aggressively halving bracket.

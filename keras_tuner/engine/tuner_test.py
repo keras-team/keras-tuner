@@ -1404,6 +1404,40 @@ def test_init_build_all_hps_in_all_conditions(tmp_path):
     )
 
 
+def test_populate_initial_space_with_hp_parent_arg(tmp_path):
+    def build_model(hp):
+        hp.Boolean("parent", default=True)
+        hp.Boolean(
+            "child",
+            parent_name="parent",
+            parent_values=[False],
+        )
+        return keras.Sequential()
+
+    keras_tuner.RandomSearch(
+        build_model,
+        objective="val_accuracy",
+        directory=tmp_path,
+        max_trials=1,
+    )
+
+
+def test_populate_initial_space_with_declare_hp(tmp_path):
+    class MyHyperModel(keras_tuner.HyperModel):
+        def declare_hyperparameters(self, hp):
+            hp.Boolean("bool")
+
+        def build(self, hp):
+            return keras.Sequential()
+
+    keras_tuner.RandomSearch(
+        MyHyperModel(),
+        objective="val_accuracy",
+        directory=tmp_path,
+        max_trials=1,
+    )
+
+
 def test_build_did_not_return_keras_model(tmp_path):
     tuner = keras_tuner.tuners.RandomSearch(
         hypermodel=lambda hp: None,

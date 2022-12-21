@@ -113,7 +113,7 @@ class HyperModel(object):
         return self._build(hp, *args, **kwargs)
 
     def declare_hyperparameters(self, hp):
-        raise NotImplementedError
+        pass
 
     def fit(self, hp, model, *args, **kwargs):
         """Train the model.
