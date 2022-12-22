@@ -33,7 +33,7 @@ from keras_tuner.engine import tuner as tuner_module
 def cdist(x, y=None):
     if y is None:
         y = x
-    return np.linalg.norm(x[:, None, :] - y[None, :, :], axis=-1)
+    return tf.linalg.norm(x[:, None, :] - y[None, :, :], axis=-1).numpy()
 
 
 def solve_triangular(a, b, lower):
@@ -85,20 +85,27 @@ class GaussianProcessRegressor(object):
             x: np.ndarray with shape (samples, features).
             y: np.ndarray with shape (samples,).
         """
-        self._x_train = np.copy(x)
-        self._y_train = np.copy(y)
+        # Be sure that numpy is not copying float '1.0' as int '1'.
+        self._x_train = np.copy(x).astype(float)
+        self._y_train = np.copy(y).astype(float)
 
-        # Normalize y.
-        self._y_train_mean = np.mean(self._y_train, axis=0)
-        self._y_train_std = np.std(self._y_train, axis=0)
+        # Normalize y via tensorflow routines.
+        self._y_train_mean = tf.reduce_mean(self._y_train, axis=0).numpy()
+        self._y_train_std = tf.math.reduce_std(self._y_train, axis=0).numpy()
         self._y_train = (self._y_train - self._y_train_mean) / self._y_train_std
 
         # TODO: choose a theta for the kernel.
         kernel_matrix = self.kernel(self._x_train)
-        kernel_matrix[np.diag_indices_from(kernel_matrix)] += self.alpha
+
+        # Forma: kernel_matrix[np.diag_indices_from(kernel_matrix)] += self.alpha
+        kernel_matrix[
+            tf.experimental.numpy.diag_indices(
+                kernel_matrix.shape[0], kernel_matrix.ndim
+            )
+        ] += self.alpha
 
         # l_matrix * l_matrix^T == kernel_matrix
-        self._l_matrix = np.linalg.cholesky(kernel_matrix)
+        self._l_matrix = tf.linalg.cholesky(kernel_matrix).numpy()
         self._alpha_vector = cho_solve(self._l_matrix, self._y_train)
 
     def predict(self, x):
@@ -116,15 +123,15 @@ class GaussianProcessRegressor(object):
 
         # Compute the variance.
         l_inv = solve_triangular(
-            self._l_matrix.T, np.eye(self._l_matrix.shape[0]), lower=False
+            self._l_matrix.T, tf.eye(self._l_matrix.shape[0]), lower=False
         )
         kernel_inv = l_inv.dot(l_inv.T)
 
-        y_var = np.ones(len(x), dtype=float)
-        y_var -= np.einsum(
+        y_var = tf.experimental.numpy.ones(len(x), dtype=float)
+        y_var -= tf.experimental.numpy.einsum(
             "ij,ij->i", np.dot(kernel_trans, kernel_inv), kernel_trans
         )
-        y_var[y_var < 0] = 0.0
+        y_var = tf.where(y_var < 0, tf.zeros_like(y_var), y_var)
 
         # Undo normalize y.
         y_var *= self._y_train_std**2
