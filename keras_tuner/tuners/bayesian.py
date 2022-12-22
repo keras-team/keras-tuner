@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import math
-import random
 
 import numpy as np
 import tensorflow as tf
@@ -227,10 +226,6 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         self.num_initial_points = num_initial_points
         self.alpha = alpha
         self.beta = beta
-        self.seed = seed or random.randint(1, int(1e4))
-        self._seed_state = self.seed
-        self._tried_so_far = set()
-        self._max_collisions = 20
         self._random_state = np.random.RandomState(self.seed)
         self.gpr = self._make_gpr()
 

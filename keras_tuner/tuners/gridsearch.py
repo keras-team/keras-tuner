@@ -151,13 +151,14 @@ class GridSearchOracle(oracle_module.Oracle):
         # conditional scope first instead of change the condition value first.
         for hp in reversed(hps.space):
             name = hp.name
-            value = new_values[name]
             # Bump up the hp value if possible and active.
-            if value != all_values[name][-1] and hps.is_active(hp):
-                index = all_values[name].index(value) + 1
-                new_values[name] = all_values[name][index]
-                bumped_value = True
-                break
+            if hps.is_active(hp):
+                value = new_values[name]
+                if value != all_values[name][-1]:
+                    index = all_values[name].index(value) + 1
+                    new_values[name] = all_values[name][index]
+                    bumped_value = True
+                    break
             # Otherwise, reset to its first value.
             new_values[name] = default_values[name]
 

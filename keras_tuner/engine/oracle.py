@@ -121,7 +121,7 @@ class Oracle(stateful.Stateful):
         self._tried_so_far = set()
         # Maximum number of identical values that can be generated
         # before we consider the space to be exhausted.
-        self._max_collisions = 5
+        self._max_collisions = 20
 
         # Set in `BaseTuner` via `set_project_dir`.
         self.directory = None
@@ -222,6 +222,10 @@ class Oracle(stateful.Stateful):
 
         hyperparameters = self.hyperparameters.copy()
         hyperparameters.values = values or {}
+
+        self._tried_so_far.add(self._compute_values_hash(hyperparameters.values))
+        hyperparameters.ensure_active_values()
+
         trial = trial_module.Trial(
             hyperparameters=hyperparameters, trial_id=trial_id, status=status
         )
@@ -511,7 +515,7 @@ class Oracle(stateful.Stateful):
         """Fills the hyperparameter space with random values.
 
         Returns:
-            A dictionary mapping parameter names to suggested values.
+            A dictionary mapping hyperparameter names to suggested values.
         """
         collisions = 0
         while 1:
@@ -522,18 +526,26 @@ class Oracle(stateful.Stateful):
                 if hps.is_active(hp):  # Only active params in `values`.
                     hps.values[hp.name] = hp.random_sample(self._seed_state)
                     self._seed_state += 1
-            values = hps.values
             # Keep trying until the set of values is unique,
             # or until we exit due to too many collisions.
-            values_hash = self._compute_values_hash(values)
-            if values_hash in self._tried_so_far:
+            if self._duplicate(hps.values):
                 collisions += 1
                 if collisions > self._max_collisions:
                     return None
                 continue
-            self._tried_so_far.add(values_hash)
             break
-        return values
+        return hps.values
+
+    def _duplicate(self, values):
+        """Check if the values has been tried in previous trials.
+
+        Args:
+            A dictionary mapping hyperparameter names to suggested values.
+
+        Returns:
+            Boolean. Whether the values has been tried in previous trials.
+        """
+        return self._compute_values_hash(values) in self._tried_so_far
 
 
 def _maybe_infer_direction_from_objective(objective, metric_name):

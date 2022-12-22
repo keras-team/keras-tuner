@@ -35,3 +35,5 @@
   fixed.
 * Hyperband was not loading the weights correctly for half-trained models. This
   is now fixed.
+* `KeyError` may occur if using `hp.conditional_scope()`, or the `parent`
+  argument for hyperparameters. This is ow fixed.

@@ -57,6 +57,9 @@ class HyperParameters(object):
 
         # A list of active `conditional_scope`s in a build,
         # each of which is a list of condtions.
+        # Used by BaseTuner to activate all conditions.
+        # No need to empty these after builds since when building the model, hp
+        # is copied from the Oracle's hp, which always have these 2 fields empty.
         self.active_scopes = []
         # Similar for inactive `conditional_scope`s.
         self.inactive_scopes = []
@@ -187,7 +190,7 @@ class HyperParameters(object):
             not active.
         """
         if self._exists(hp.name, hp.conditions):
-            if self._conditions_are_active(hp.conditions):
+            if self.is_active(hp):
                 return self.values[hp.name]
             return None  # Ensures inactive values are not relied on by user.
         return self._register(hp)
@@ -211,7 +214,7 @@ class HyperParameters(object):
         self._hps[hp.name].append(hp)
         self._space.append(hp)
         # Only add active values to `self.values`.
-        if self._conditions_are_active(hp.conditions):
+        if self.is_active(hp):
             # Use the default value only if not populated.
             if overwrite or hp.name not in self.values:
                 self.values[hp.name] = hp.default
@@ -572,6 +575,22 @@ class HyperParameters(object):
 
         for hp in hps:
             self._register(hp, overwrite)
+
+    def ensure_active_values(self):
+        """Add and remove values if necessary.
+
+        KerasTuner requires only active values to be populated. This function
+        removes the inactive values and add the missing active values.
+
+        Args:
+            hps: HyperParameters, whose values to be ensured.
+        """
+        for hp in self.space:
+            if self.is_active(hp):
+                if hp.name not in self.values:
+                    self.values[hp.name] = hp.random_sample()
+            else:
+                self.values.pop(hp.name, None)
 
     @classmethod
     def from_proto(cls, proto):
