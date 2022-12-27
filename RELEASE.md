@@ -36,4 +36,6 @@
 * Hyperband was not loading the weights correctly for half-trained models. This
   is now fixed.
 * `KeyError` may occur if using `hp.conditional_scope()`, or the `parent`
-  argument for hyperparameters. This is ow fixed.
+  argument for hyperparameters. This is now fixed.
+* `num_initial_points` of the `BayesianOptimization` should defaults to `3 * dimension`,
+  but it defaults to 2. This is now fixed.
