@@ -458,7 +458,7 @@ class BayesianOptimization(tuner_module.Tuner):
         hypermodel=None,
         objective=None,
         max_trials=10,
-        num_initial_points=2,
+        num_initial_points=None,
         alpha=1e-4,
         beta=2.6,
         seed=None,
