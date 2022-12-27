@@ -58,18 +58,17 @@ def test_scipy_not_install_error(tmp_path):
     keras_tuner.tuners.bayesian.scipy = scipy_module
 
 
-def test_gpr_mse_is_small():
-    x_train = np.random.rand(1000, 2)
-    y_train = np.multiply(x_train, x_train).mean(axis=-1)
-    x_test = np.random.rand(1000, 2)
-    y_test = np.multiply(x_test, x_test).mean(axis=-1)
+def test_sklearn_not_install_error(tmp_path):
+    sklearn_module = keras_tuner.tuners.bayesian.sklearn
+    keras_tuner.tuners.bayesian.sklearn = None
 
-    gpr = bo_module.GaussianProcessRegressor(alpha=1e-4, seed=3)
-    gpr.fit(x_train, y_train)
-    y_predict_mean, y_predict_std = gpr.predict(x_test)
+    with pytest.raises(ImportError, match="Please install scikit-learn"):
+        keras_tuner.BayesianOptimization(
+            hypermodel=build_model,
+            directory=tmp_path,
+        )
 
-    assert ((y_predict_mean - y_test) ** 2).mean(axis=0) < 1e-8
-    assert y_predict_std.shape == (1000,)
+    keras_tuner.tuners.bayesian.sklearn = sklearn_module
 
 
 def test_bayesian_oracle(tmp_path):
