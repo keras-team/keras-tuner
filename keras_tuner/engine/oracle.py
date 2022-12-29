@@ -229,10 +229,13 @@ class Oracle(stateful.Stateful):
             hyperparameters=hyperparameters, trial_id=trial_id, status=status
         )
 
-        # Record the populated values (active only).
-        self._record_values(trial)
-
         if status == trial_module.TrialStatus.RUNNING:
+            # Record the populated values (active only). Only record when the
+            # status is RUNNING. If other status, the trial will not run, the
+            # values are discarded and should not be recorded, in which case,
+            # the trial_id may appear again in the future.
+            self._record_values(trial)
+
             self.ongoing_trials[tuner_id] = trial
             self.trials[trial_id] = trial
             self.start_order.append(trial_id)
@@ -439,7 +442,8 @@ class Oracle(stateful.Stateful):
         self.seed = state["seed"]
         self._seed_state = state["seed_state"]
         self._tried_so_far = set(state["tried_so_far"])
-        self._id_to_hash = state["id_to_hash"]
+        self._id_to_hash = collections.defaultdict(lambda: None)
+        self._id_to_hash.update(state["id_to_hash"])
 
     def _set_project_dir(self, directory, project_name, overwrite=False):
         """Sets the project directory and reloads the Oracle."""
