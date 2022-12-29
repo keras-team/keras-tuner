@@ -17,6 +17,7 @@
 import copy
 import os
 import traceback
+import warnings
 
 import tensorflow as tf
 
@@ -210,6 +211,24 @@ class BaseTuner(stateful.Stateful):
 
     def _run_and_update_trial(self, trial, *fit_args, **fit_kwargs):
         results = self.run_trial(trial, *fit_args, **fit_kwargs)
+        if self.oracle.get_trial(trial.trial_id).metrics.exists(
+            self.oracle.objective.name
+        ):
+            # The oracle is updated by calling `self.oracle.update_trial()` in
+            # `Tuner.run_trial()`. For backward compatibility, we support this
+            # use case. No further action needed in this case.
+            warnings.warn(
+                "The use case of calling "
+                "`self.oracle.update_trial(trial_id, metrics)` "
+                "in `Tuner.run_trial()` to report the metrics is deprecated, "
+                "and will be removed in the future."
+                "Please remove the call and do 'return metrics' "
+                "in `Tuner.run_trial()` instead. ",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            return
+
         tuner_utils.validate_trial_results(
             results, self.oracle.objective, "Tuner.run_trial()"
         ),

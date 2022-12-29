@@ -1099,7 +1099,19 @@ def test_hypermodel_fit_return_an_int(tmp_path):
     assert_found_best_score(tmp_path, MyHyperModel())
 
 
-def test_run_trial_return_none(tmp_path):
+def test_run_trial_return_none_without_update_trial(tmp_path):
+    class MyTuner(keras_tuner.Tuner):
+        def run_trial(self, trial, *fit_args, **fit_kwargs):
+            self.hypermodel.build(trial.hyperparameters).fit(*fit_args, **fit_kwargs)
+
+    with pytest.raises(
+        errors.FatalTypeError,
+        match="Did you forget",
+    ):
+        assert_found_best_score(tmp_path, MockHyperModel(), MyTuner)
+
+
+def test_run_trial_return_none_with_update_trial(tmp_path):
     class MyTuner(keras_tuner.Tuner):
         def run_trial(self, trial, *fit_args, **fit_kwargs):
             history = self.hypermodel.build(trial.hyperparameters).fit(
@@ -1109,10 +1121,7 @@ def test_run_trial_return_none(tmp_path):
                 trial.trial_id, {"loss": min(history.history["loss"])}
             )
 
-    with pytest.raises(
-        errors.FatalTypeError,
-        match="`self\.oracle\.update_trial\(trial_id, metrics\)`",
-    ):
+    with pytest.deprecated_call(match="Please remove the call"):
         assert_found_best_score(tmp_path, MockHyperModel(), MyTuner)
 
 
