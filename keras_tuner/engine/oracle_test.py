@@ -60,6 +60,61 @@ def test_import_objective_from_oracle():
     assert Objective is keras_tuner.Objective
 
 
+def test_duplicate(tmp_path):
+    class MyOracle(OracleStub):
+        def populate_space(self, trial_id):
+            values = {"hp1": 1}
+            if len(self.ongoing_trials) > 0:
+                assert self._duplicate(values)
+            return {
+                "values": values,
+                "status": trial_module.TrialStatus.RUNNING,
+            }
+
+    oracle = MyOracle(directory=tmp_path, objective="val_loss")
+    oracle.create_trial(tuner_id="a")
+    oracle.create_trial(tuner_id="b")
+    assert len(oracle.ongoing_trials) == 2
+
+
+def test_not_duplicate(tmp_path):
+    class MyOracle(OracleStub):
+        def populate_space(self, trial_id):
+            values = {"hp1": len(self.ongoing_trials)}
+            assert not self._duplicate(values)
+            return {
+                "values": values,
+                "status": trial_module.TrialStatus.RUNNING,
+            }
+
+    oracle = MyOracle(directory=tmp_path, objective="val_loss")
+    oracle.create_trial(tuner_id="a")
+    oracle.create_trial(tuner_id="b")
+    assert len(oracle.ongoing_trials) == 2
+
+
+def test_new_hp_duplicate(tmp_path):
+    class MyOracle(OracleStub):
+        def populate_space(self, trial_id):
+            values = {"hp1": 1}
+            assert not self._duplicate(values)
+            if len(self.end_order) > 0:
+                values["hp2"] = 2
+                assert self._duplicate(values)
+            return {
+                "values": values,
+                "status": trial_module.TrialStatus.RUNNING,
+            }
+
+    oracle = MyOracle(directory=tmp_path, objective="val_loss")
+    trial = oracle.create_trial(tuner_id="a")
+    trial.hyperparameters.values["hp2"] = 2
+    oracle.update_trial(trial.trial_id, {"val_loss": 3.0})
+    oracle.end_trial(trial.trial_id)
+    oracle.create_trial(tuner_id="b")
+    assert len(oracle.start_order) == 2
+
+
 def test_default_no_retry(tmp_path):
     oracle = OracleStub(directory=tmp_path, objective="val_loss")
     trial_1 = oracle.create_trial(tuner_id="a")
