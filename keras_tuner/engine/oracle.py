@@ -117,8 +117,10 @@ class Oracle(stateful.Stateful):
 
         self.seed = seed or random.randint(1, 10000)
         self._seed_state = self.seed
-        # Hashes of values tried so far.
+        # Hashes of values in the trials, which only hashes the active values.
         self._tried_so_far = set()
+        # Dictionary mapping trial_id to the the hash of the values.
+        self._id_to_hash = collections.defaultdict(lambda: None)
         # Maximum number of identical values that can be generated
         # before we consider the space to be exhausted.
         self._max_collisions = 20
@@ -223,12 +225,12 @@ class Oracle(stateful.Stateful):
         hyperparameters = self.hyperparameters.copy()
         hyperparameters.values = values or {}
 
-        self._tried_so_far.add(self._compute_values_hash(hyperparameters.values))
-        hyperparameters.ensure_active_values()
-
         trial = trial_module.Trial(
             hyperparameters=hyperparameters, trial_id=trial_id, status=status
         )
+
+        # Record the populated values (active only).
+        self._record_values(trial)
 
         if status == trial_module.TrialStatus.RUNNING:
             self.ongoing_trials[tuner_id] = trial
@@ -313,6 +315,9 @@ class Oracle(stateful.Stateful):
             self.score_trial(trial)
             if np.isnan(trial.score):
                 trial.status = trial_module.TrialStatus.INVALID
+
+        # Record the values again in case of new hps appeared.
+        self._record_values(trial)
 
         # Check if need to retry the trial.
         self._run_times[trial_id] += 1
@@ -419,6 +424,7 @@ class Oracle(stateful.Stateful):
             "seed": self.seed,
             "seed_state": self._seed_state,
             "tried_so_far": list(self._tried_so_far),
+            "id_to_hash": self._id_to_hash,
         }
 
     def set_state(self, state):
@@ -433,6 +439,7 @@ class Oracle(stateful.Stateful):
         self.seed = state["seed"]
         self._seed_state = state["seed_state"]
         self._tried_so_far = set(state["tried_so_far"])
+        self._id_to_hash = state["id_to_hash"]
 
     def _set_project_dir(self, directory, project_name, overwrite=False):
         """Sets the project directory and reloads the Oracle."""
@@ -546,6 +553,19 @@ class Oracle(stateful.Stateful):
             Boolean. Whether the values has been tried in previous trials.
         """
         return self._compute_values_hash(values) in self._tried_so_far
+
+    def _record_values(self, trial):
+        hyperparameters = trial.hyperparameters
+        hyperparameters.ensure_active_values()
+        new_hash_value = self._compute_values_hash(hyperparameters.values)
+        self._tried_so_far.add(new_hash_value)
+
+        # In case of new hp appeared, remove the old hash value.
+        old_hash_value = self._id_to_hash[trial.trial_id]
+        if old_hash_value is None:
+            self._id_to_hash[trial.trial_id] = new_hash_value
+        elif old_hash_value != new_hash_value:
+            self._tried_so_far.remove(old_hash_value)
 
 
 def _maybe_infer_direction_from_objective(objective, metric_name):
