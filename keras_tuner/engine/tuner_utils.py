@@ -293,19 +293,10 @@ def validate_trial_results(results, objective, func_name):
 
     # None
     if results is None:
-        error_message = (
+        raise errors.FatalTypeError(
             f"The return value of {func_name} is None. "
             "Did you forget to return the metrics? "
         )
-        if func_name == "Tuner.run_trial()":
-            error_message += (
-                "\nIf you are calling "
-                "`self.oracle.update_trial(trial_id, metrics)` "
-                "in `Tuner.run_trial()` to report the metrics, "
-                "please remove the call and `return metrics` "
-                "in `Tuner.run_trial()` instead."
-            )
-        raise errors.FatalTypeError(error_message)
 
     # objective left unspecified,
     # and objective value is not a single float.
