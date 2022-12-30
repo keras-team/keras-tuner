@@ -22,6 +22,18 @@ from keras_tuner.engine import trial as trial_module
 from keras_tuner.engine import tuner as tuner_module
 
 
+def compare(a, b):
+    """Compare two `HyperParameters` values.
+
+    Args:
+        a:
+        b:
+
+    Returns:
+    """
+    pass
+
+
 class GridSearchOracle(oracle_module.Oracle):
     """Grid search oracle.
 
