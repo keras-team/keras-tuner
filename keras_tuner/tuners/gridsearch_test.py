@@ -203,3 +203,23 @@ def test_exhaust_trials_in_between_before_the_latter_finishes(tmp_path):
     end_trial(trial_4)
     trial_5 = oracle.create_trial(tuner_id="5")
     assert trial_5.status == trial_module.TrialStatus.STOPPED
+
+
+def test_linked_list():
+    linked_list = gridsearch.LinkedList()
+    linked_list.insert("0")
+    assert linked_list.next("0") is None
+    linked_list.insert("1")
+    assert linked_list.next("0") == "1"
+    assert linked_list.next("1") is None
+    linked_list.insert("2", "0")
+    assert linked_list.next("0") == "2"
+    assert linked_list.next("2") == "1"
+    assert linked_list.next("1") is None
+    linked_list.insert("3", "1")
+    linked_list.insert("4")
+    assert linked_list.next("0") == "2"
+    assert linked_list.next("2") == "1"
+    assert linked_list.next("1") == "3"
+    assert linked_list.next("3") == "4"
+    assert linked_list.next("4") is None
