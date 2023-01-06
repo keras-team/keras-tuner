@@ -141,7 +141,8 @@ def test_end_trial(tmp_path):
             trial = client.create_trial(tuner_id)
             trial_id = trial.trial_id
             client.update_trial(trial_id, {"score": 1}, step=2)
-            client.end_trial(trial_id, "FAILED")
+            trial.status = "FAILED"
+            client.end_trial(trial)
             updated_trial = client.get_trial(trial_id)
             assert updated_trial.status == "FAILED"
 
@@ -172,7 +173,8 @@ def test_get_best_trials(tmp_path):
                 assert "b" in trial.hyperparameters.values
                 trial_id = trial.trial_id
                 client.update_trial(trial_id, {"score": score})
-                client.end_trial(trial_id)
+                trial.status = "COMPLETED"
+                client.end_trial(trial)
                 trial_scores[trial_id] = score
             best_trials = client.get_best_trials(3)
             best_scores = [t.score for t in best_trials]

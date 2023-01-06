@@ -40,7 +40,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     serialized_pb=_b(
-        '\n keras_tuner/protos/service.proto\x12\x0bkeras_tuner\x1a$keras_tuner/protos/keras_tuner.proto"\x11\n\x0fGetSpaceRequest"I\n\x10GetSpaceResponse\x12\x35\n\x0fhyperparameters\x18\x01 \x01(\x0b\x32\x1c.keras_tuner.HyperParameters"K\n\x12UpdateSpaceRequest\x12\x35\n\x0fhyperparameters\x18\x01 \x01(\x0b\x32\x1c.keras_tuner.HyperParameters"\x15\n\x13UpdateSpaceResponse"&\n\x12\x43reateTrialRequest\x12\x10\n\x08tuner_id\x18\x01 \x01(\t"8\n\x13\x43reateTrialResponse\x12!\n\x05trial\x18\x01 \x01(\x0b\x32\x12.keras_tuner.Trial"\xa3\x01\n\x12UpdateTrialRequest\x12\x10\n\x08trial_id\x18\x01 \x01(\t\x12=\n\x07metrics\x18\x02 \x03(\x0b\x32,.keras_tuner.UpdateTrialRequest.MetricsEntry\x12\x0c\n\x04step\x18\x03 \x01(\x03\x1a.\n\x0cMetricsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x01:\x02\x38\x01"?\n\x13UpdateTrialResponse\x12(\n\x06status\x18\x01 \x01(\x0e\x32\x18.keras_tuner.TrialStatus"^\n\x0f\x45ndTrialRequest\x12\x10\n\x08trial_id\x18\x01 \x01(\t\x12(\n\x06status\x18\x02 \x01(\x0e\x32\x18.keras_tuner.TrialStatus\x12\x0f\n\x07message\x18\x03 \x01(\t"\x12\n\x10\x45ndTrialResponse"*\n\x14GetBestTrialsRequest\x12\x12\n\nnum_trials\x18\x01 \x01(\x03";\n\x15GetBestTrialsResponse\x12"\n\x06trials\x18\x01 \x03(\x0b\x32\x12.keras_tuner.Trial"#\n\x0fGetTrialRequest\x12\x10\n\x08trial_id\x18\x01 \x01(\t"5\n\x10GetTrialResponse\x12!\n\x05trial\x18\x01 \x01(\x0b\x32\x12.keras_tuner.Trial2\xbf\x04\n\x06Oracle\x12I\n\x08GetSpace\x12\x1c.keras_tuner.GetSpaceRequest\x1a\x1d.keras_tuner.GetSpaceResponse"\x00\x12R\n\x0bUpdateSpace\x12\x1f.keras_tuner.UpdateSpaceRequest\x1a .keras_tuner.UpdateSpaceResponse"\x00\x12R\n\x0b\x43reateTrial\x12\x1f.keras_tuner.CreateTrialRequest\x1a .keras_tuner.CreateTrialResponse"\x00\x12R\n\x0bUpdateTrial\x12\x1f.keras_tuner.UpdateTrialRequest\x1a .keras_tuner.UpdateTrialResponse"\x00\x12I\n\x08\x45ndTrial\x12\x1c.keras_tuner.EndTrialRequest\x1a\x1d.keras_tuner.EndTrialResponse"\x00\x12X\n\rGetBestTrials\x12!.keras_tuner.GetBestTrialsRequest\x1a".keras_tuner.GetBestTrialsResponse"\x00\x12I\n\x08GetTrial\x12\x1c.keras_tuner.GetTrialRequest\x1a\x1d.keras_tuner.GetTrialResponse"\x00\x62\x06proto3'
+        '\n keras_tuner/protos/service.proto\x12\x0bkeras_tuner\x1a$keras_tuner/protos/keras_tuner.proto"\x11\n\x0fGetSpaceRequest"I\n\x10GetSpaceResponse\x12\x35\n\x0fhyperparameters\x18\x01 \x01(\x0b\x32\x1c.keras_tuner.HyperParameters"K\n\x12UpdateSpaceRequest\x12\x35\n\x0fhyperparameters\x18\x01 \x01(\x0b\x32\x1c.keras_tuner.HyperParameters"\x15\n\x13UpdateSpaceResponse"&\n\x12\x43reateTrialRequest\x12\x10\n\x08tuner_id\x18\x01 \x01(\t"8\n\x13\x43reateTrialResponse\x12!\n\x05trial\x18\x01 \x01(\x0b\x32\x12.keras_tuner.Trial"\xa3\x01\n\x12UpdateTrialRequest\x12\x10\n\x08trial_id\x18\x01 \x01(\t\x12=\n\x07metrics\x18\x02 \x03(\x0b\x32,.keras_tuner.UpdateTrialRequest.MetricsEntry\x12\x0c\n\x04step\x18\x03 \x01(\x03\x1a.\n\x0cMetricsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x01:\x02\x38\x01"?\n\x13UpdateTrialResponse\x12(\n\x06status\x18\x01 \x01(\x0e\x32\x18.keras_tuner.TrialStatus"4\n\x0f\x45ndTrialRequest\x12!\n\x05trial\x18\x01 \x01(\x0b\x32\x12.keras_tuner.Trial"\x12\n\x10\x45ndTrialResponse"*\n\x14GetBestTrialsRequest\x12\x12\n\nnum_trials\x18\x01 \x01(\x03";\n\x15GetBestTrialsResponse\x12"\n\x06trials\x18\x01 \x03(\x0b\x32\x12.keras_tuner.Trial"#\n\x0fGetTrialRequest\x12\x10\n\x08trial_id\x18\x01 \x01(\t"5\n\x10GetTrialResponse\x12!\n\x05trial\x18\x01 \x01(\x0b\x32\x12.keras_tuner.Trial2\xbf\x04\n\x06Oracle\x12I\n\x08GetSpace\x12\x1c.keras_tuner.GetSpaceRequest\x1a\x1d.keras_tuner.GetSpaceResponse"\x00\x12R\n\x0bUpdateSpace\x12\x1f.keras_tuner.UpdateSpaceRequest\x1a .keras_tuner.UpdateSpaceResponse"\x00\x12R\n\x0b\x43reateTrial\x12\x1f.keras_tuner.CreateTrialRequest\x1a .keras_tuner.CreateTrialResponse"\x00\x12R\n\x0bUpdateTrial\x12\x1f.keras_tuner.UpdateTrialRequest\x1a .keras_tuner.UpdateTrialResponse"\x00\x12I\n\x08\x45ndTrial\x12\x1c.keras_tuner.EndTrialRequest\x1a\x1d.keras_tuner.EndTrialResponse"\x00\x12X\n\rGetBestTrials\x12!.keras_tuner.GetBestTrialsRequest\x1a".keras_tuner.GetBestTrialsResponse"\x00\x12I\n\x08GetTrial\x12\x1c.keras_tuner.GetTrialRequest\x1a\x1d.keras_tuner.GetTrialResponse"\x00\x62\x06proto3'
     ),
     dependencies=[
         keras__tuner_dot_protos_dot_keras__tuner__pb2.DESCRIPTOR,
@@ -424,51 +424,15 @@ _ENDTRIALREQUEST = _descriptor.Descriptor(
     containing_type=None,
     fields=[
         _descriptor.FieldDescriptor(
-            name="trial_id",
-            full_name="keras_tuner.EndTrialRequest.trial_id",
+            name="trial",
+            full_name="keras_tuner.EndTrialRequest.trial",
             index=0,
             number=1,
-            type=9,
-            cpp_type=9,
+            type=11,
+            cpp_type=10,
             label=1,
             has_default_value=False,
-            default_value=_b("").decode("utf-8"),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-        ),
-        _descriptor.FieldDescriptor(
-            name="status",
-            full_name="keras_tuner.EndTrialRequest.status",
-            index=1,
-            number=2,
-            type=14,
-            cpp_type=8,
-            label=1,
-            has_default_value=False,
-            default_value=0,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-        ),
-        _descriptor.FieldDescriptor(
-            name="message",
-            full_name="keras_tuner.EndTrialRequest.message",
-            index=2,
-            number=3,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=_b("").decode("utf-8"),
+            default_value=None,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -487,7 +451,7 @@ _ENDTRIALREQUEST = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=610,
-    serialized_end=704,
+    serialized_end=662,
 )
 
 
@@ -506,8 +470,8 @@ _ENDTRIALRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=706,
-    serialized_end=724,
+    serialized_start=664,
+    serialized_end=682,
 )
 
 
@@ -545,8 +509,8 @@ _GETBESTTRIALSREQUEST = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=726,
-    serialized_end=768,
+    serialized_start=684,
+    serialized_end=726,
 )
 
 
@@ -584,8 +548,8 @@ _GETBESTTRIALSRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=770,
-    serialized_end=829,
+    serialized_start=728,
+    serialized_end=787,
 )
 
 
@@ -623,8 +587,8 @@ _GETTRIALREQUEST = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=831,
-    serialized_end=866,
+    serialized_start=789,
+    serialized_end=824,
 )
 
 
@@ -662,8 +626,8 @@ _GETTRIALRESPONSE = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=868,
-    serialized_end=921,
+    serialized_start=826,
+    serialized_end=879,
 )
 
 _GETSPACERESPONSE.fields_by_name[
@@ -683,8 +647,8 @@ _UPDATETRIALRESPONSE.fields_by_name[
     "status"
 ].enum_type = keras__tuner_dot_protos_dot_keras__tuner__pb2._TRIALSTATUS
 _ENDTRIALREQUEST.fields_by_name[
-    "status"
-].enum_type = keras__tuner_dot_protos_dot_keras__tuner__pb2._TRIALSTATUS
+    "trial"
+].message_type = keras__tuner_dot_protos_dot_keras__tuner__pb2._TRIAL
 _GETBESTTRIALSRESPONSE.fields_by_name[
     "trials"
 ].message_type = keras__tuner_dot_protos_dot_keras__tuner__pb2._TRIAL
@@ -880,8 +844,8 @@ _ORACLE = _descriptor.ServiceDescriptor(
     file=DESCRIPTOR,
     index=0,
     serialized_options=None,
-    serialized_start=924,
-    serialized_end=1499,
+    serialized_start=882,
+    serialized_end=1457,
     methods=[
         _descriptor.MethodDescriptor(
             name="GetSpace",

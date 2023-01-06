@@ -82,7 +82,8 @@ def test_hyperband_oracle_one_sweep_single_thread(tmp_path):
                 assert trial.status == "RUNNING"
                 score += 1
                 oracle.update_trial(trial.trial_id, {"score": score})
-                oracle.end_trial(trial.trial_id, status="COMPLETED")
+                trial.status = "COMPLETED"
+                oracle.end_trial(trial)
             assert len(oracle._brackets[0]["rounds"][round_num]) == oracle._get_size(
                 bracket_num, round_num
             )
@@ -130,7 +131,8 @@ def test_hyperband_oracle_one_sweep_parallel(tmp_path):
 
     for t in round0_trials:
         oracle.update_trial(t.trial_id, {"score": 1})
-        oracle.end_trial(t.trial_id, "COMPLETED")
+        t.status = "COMPLETED"
+        oracle.end_trial(t)
 
     round1_trials = []
     for i in range(4):
@@ -148,7 +150,8 @@ def test_hyperband_oracle_one_sweep_parallel(tmp_path):
 
     for t in round1_trials:
         oracle.update_trial(t.trial_id, {"score": 1})
-        oracle.end_trial(t.trial_id, "COMPLETED")
+        t.status = "COMPLETED"
+        oracle.end_trial(t)
 
     # Only one trial runs in round 2.
     round2_trial = oracle.create_trial("tuner0")
@@ -160,7 +163,8 @@ def test_hyperband_oracle_one_sweep_parallel(tmp_path):
     assert t.status == "IDLE"
 
     oracle.update_trial(round2_trial.trial_id, {"score": 1})
-    oracle.end_trial(round2_trial.trial_id, "COMPLETED")
+    round2_trial.status = "COMPLETED"
+    oracle.end_trial(round2_trial)
 
     t = oracle.create_trial("tuner10")
     assert t.status == "STOPPED", oracle._current_sweep
@@ -240,7 +244,8 @@ def test_hyperband_load_weights(tmp_path):
             tuner_utils.convert_to_metrics_dict(result, tuner.oracle.objective),
             tuner_utils.get_best_step(result, tuner.oracle.objective),
         )
-        tuner.oracle.end_trial(trial.trial_id, "COMPLETED")
+        trial.status = "COMPLETED"
+        tuner.oracle.end_trial(trial)
 
     # ensure the model run in round 1 is loaded from the best model in round 0
     trial = tuner.oracle.create_trial("tuner0")

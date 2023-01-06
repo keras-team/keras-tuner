@@ -110,7 +110,7 @@ def test_new_hp_duplicate(tmp_path):
     trial = oracle.create_trial(tuner_id="a")
     trial.hyperparameters.values["hp2"] = 2
     oracle.update_trial(trial.trial_id, {"val_loss": 3.0})
-    oracle.end_trial(trial.trial_id)
+    oracle.end_trial(trial)
     oracle.create_trial(tuner_id="b")
     assert len(oracle.start_order) == 2
 
@@ -119,9 +119,8 @@ def test_default_no_retry(tmp_path):
     oracle = OracleStub(directory=tmp_path, objective="val_loss")
     trial_1 = oracle.create_trial(tuner_id="a")
     trial_1.status = trial_module.TrialStatus.INVALID
-    oracle.end_trial(
-        trial_id=trial_1.trial_id, status=trial_1.status, message="error1"
-    )
+    trial_1.message = "error1"
+    oracle.end_trial(trial_1)
 
     trial_2 = oracle.create_trial(tuner_id="a")
     assert trial_1.trial_id != trial_2.trial_id
@@ -133,9 +132,8 @@ def test_retry_invalid_trial(tmp_path):
     )
     trial_1 = oracle.create_trial(tuner_id="a")
     trial_1.status = trial_module.TrialStatus.INVALID
-    oracle.end_trial(
-        trial_id=trial_1.trial_id, status=trial_1.status, message="error1"
-    )
+    trial_1.message = "error1"
+    oracle.end_trial(trial_1)
 
     # This is the retry for the trial.
     trial_2 = oracle.create_trial(tuner_id="a")
@@ -153,7 +151,8 @@ def test_is_nan_mark_as_invalid(tmp_path):
     trial = oracle.create_trial(tuner_id="a")
     oracle.update_trial(trial.trial_id, metrics={"val_loss": float("nan")})
     trial.status = trial_module.TrialStatus.COMPLETED
-    oracle.end_trial(trial_id=trial.trial_id, status=trial.status, message="error1")
+    trial.message = "error1"
+    oracle.end_trial(trial)
     assert oracle.trials[trial.trial_id].status == trial_module.TrialStatus.INVALID
 
 
@@ -164,9 +163,8 @@ def test_no_retry_for_failed_trial(tmp_path):
     trial_1 = oracle.create_trial(tuner_id="a")
     # Failed, so no retry.
     trial_1.status = trial_module.TrialStatus.FAILED
-    oracle.end_trial(
-        trial_id=trial_1.trial_id, status=trial_1.status, message="error1"
-    )
+    trial_1.message = "error1"
+    oracle.end_trial(trial_1)
 
     trial_2 = oracle.create_trial(tuner_id="a")
     assert trial_1.trial_id != trial_2.trial_id
@@ -182,16 +180,15 @@ def test_consecutive_failures_in_limit(tmp_path):
         trial = oracle.create_trial(tuner_id="a")
         # Failed, so no retry.
         trial.status = trial_module.TrialStatus.INVALID
-        oracle.end_trial(
-            trial_id=trial.trial_id, status=trial.status, message="error1"
-        )
+        trial.message = "error1"
+        oracle.end_trial(trial)
 
     for _ in range(3):
         trial = oracle.create_trial(tuner_id="a")
         # Failed, so no retry.
         trial.status = trial_module.TrialStatus.COMPLETED
         oracle.update_trial(trial.trial_id, metrics={"val_loss": 0.5})
-        oracle.end_trial(trial_id=trial.trial_id, status=trial.status)
+        oracle.end_trial(trial)
 
 
 def test_too_many_consecutive_failures(tmp_path):
@@ -204,9 +201,6 @@ def test_too_many_consecutive_failures(tmp_path):
             trial = oracle.create_trial(tuner_id="a")
             # Failed, so no retry.
             trial.status = trial_module.TrialStatus.FAILED
-            oracle.end_trial(
-                trial_id=trial.trial_id,
-                status=trial.status,
-                message="custom_error_info",
-            )
+            trial.message = "custom_error_info"
+            oracle.end_trial(trial)
         assert "custom_error_info" in str(e)

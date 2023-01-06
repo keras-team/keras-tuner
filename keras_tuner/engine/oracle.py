@@ -287,7 +287,7 @@ class Oracle(stateful.Stateful):
                     f"of {self.max_consecutive_failed_trials}.\n" + trial.message
                 )
 
-    def end_trial(self, trial_id, status="COMPLETED", message=None):
+    def end_trial(self, trial):
         """Record the measured objective for a set of parameter values.
 
         Args:
@@ -299,21 +299,15 @@ class Oracle(stateful.Stateful):
             message: Optional string. The error message if the trial status is
                 `"INVALID"` or `"FAILED"`.
         """
-        trial = next(
-            (
+        for tuner_id, ongoing_trial in self.ongoing_trials.items():
+            if ongoing_trial.trial_id == trial.trial_id:
                 self.ongoing_trials.pop(tuner_id)
-                for tuner_id, ongoing_trial in self.ongoing_trials.items()
-                if ongoing_trial.trial_id == trial_id
-            ),
-            None,
-        )
+                break
 
-        if not trial:
-            raise ValueError(f"Ongoing trial with id: {trial_id} not found.")
-
-        # Update the Trial.
-        trial.status = status
-        trial.message = message
+        # Merge the 2 Trials.
+        trial.metrics = self.trials[trial.trial_id].metrics
+        self.trials[trial.trial_id] = trial
+        self.update_space(trial.hyperparameters)
         if trial.status == trial_module.TrialStatus.COMPLETED:
             self.score_trial(trial)
             if np.isnan(trial.score):
@@ -323,12 +317,12 @@ class Oracle(stateful.Stateful):
         self._record_values(trial)
 
         # Check if need to retry the trial.
-        self._run_times[trial_id] += 1
+        self._run_times[trial.trial_id] += 1
         if self._maybe_retry(trial):
             return
 
         # End the trial
-        self.end_order.append(trial_id)
+        self.end_order.append(trial.trial_id)
         self._check_consecutive_failures()
         self._save_trial(trial)
         self.save()

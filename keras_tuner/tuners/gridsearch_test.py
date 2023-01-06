@@ -170,9 +170,8 @@ def test_exhaust_trials_in_between_before_the_latter_finishes(tmp_path):
         oracle.update_trial(
             trial_id=trial.trial_id, metrics={oracle.objective.name: random.random()}
         )
-        oracle.end_trial(
-            trial_id=trial.trial_id, status=trial_module.TrialStatus.COMPLETED
-        )
+        trial.status = trial_module.TrialStatus.COMPLETED
+        oracle.end_trial(trial)
 
     trial_1 = oracle.create_trial(tuner_id="1")
     assert trial_1.status == trial_module.TrialStatus.RUNNING

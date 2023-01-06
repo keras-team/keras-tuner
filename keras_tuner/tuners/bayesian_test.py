@@ -88,7 +88,8 @@ def test_bayesian_oracle(tmp_path):
     for i in range(5):
         trial = oracle.create_trial(str(i))
         oracle.update_trial(trial.trial_id, {"score": i})
-        oracle.end_trial(trial.trial_id, "COMPLETED")
+        trial.status = "COMPLETED"
+        oracle.end_trial(trial)
 
 
 def test_bayesian_oracle_with_zero_y(tmp_path):
@@ -108,7 +109,8 @@ def test_bayesian_oracle_with_zero_y(tmp_path):
     for i in range(5):
         trial = oracle.create_trial(str(i))
         oracle.update_trial(trial.trial_id, {"score": 0})
-        oracle.end_trial(trial.trial_id, "COMPLETED")
+        trial.status = "COMPLETED"
+        oracle.end_trial(trial)
 
 
 def test_bayesian_dynamic_space(tmp_path):
@@ -148,7 +150,8 @@ def test_bayesian_save_reload(tmp_path):
     for _ in range(3):
         trial = oracle.create_trial("tuner_id")
         oracle.update_trial(trial.trial_id, {"score": 1.0})
-        oracle.end_trial(trial.trial_id, "COMPLETED")
+        trial.status = "COMPLETED"
+        oracle.end_trial(trial)
 
     oracle.save()
     oracle = bo_module.BayesianOptimizationOracle(
@@ -162,7 +165,8 @@ def test_bayesian_save_reload(tmp_path):
     for _ in range(3):
         trial = oracle.create_trial("tuner_id")
         oracle.update_trial(trial.trial_id, {"score": 1.0})
-        oracle.end_trial(trial.trial_id, "COMPLETED")
+        trial.status = "COMPLETED"
+        oracle.end_trial(trial)
 
     assert len(oracle.trials) == 6
 
@@ -358,7 +362,8 @@ def test_distributed_optimization(tmp_path):
                 trial.trial_id, {"score": evaluate(trial.hyperparameters)}
             )
         for trial in trials:
-            oracle.end_trial(trial.trial_id, "COMPLETED")
+            trial.status = "COMPLETED"
+            oracle.end_trial(trial)
 
     atol, rtol = 1e-1, 1e-1
     best_trial = oracle.get_best_trials()[0]
@@ -403,7 +408,8 @@ def test_interleaved_distributed_optimization(tmp_path):
     oracle.update_trial(
         trial_1.trial_id, {"score": evaluate(trial_1.hyperparameters)}
     )
-    oracle.end_trial(trial_1.trial_id, "COMPLETED")
+    trial_1.status = "COMPLETED"
+    oracle.end_trial(trial_1)
 
     # tuner_0 request a new trial (trial_3)
     trial_3 = oracle.create_trial("tuner_0")
@@ -412,7 +418,8 @@ def test_interleaved_distributed_optimization(tmp_path):
     oracle.update_trial(
         trial_2.trial_id, {"score": evaluate(trial_2.hyperparameters)}
     )
-    oracle.end_trial(trial_2.trial_id, "COMPLETED")
+    trial_2.status = "COMPLETED"
+    oracle.end_trial(trial_2)
 
     # tuner_1 requests the final new trial (trial_4)
     # the Bayesian optimizer will use ongoing trial_3 to hallucinate
@@ -422,12 +429,14 @@ def test_interleaved_distributed_optimization(tmp_path):
     oracle.update_trial(
         trial_3.trial_id, {"score": evaluate(trial_3.hyperparameters)}
     )
-    oracle.end_trial(trial_3.trial_id, "COMPLETED")
+    trial_3.status = "COMPLETED"
+    oracle.end_trial(trial_3)
 
     # tuner_1 finishes trial_4
     oracle.update_trial(
         trial_4.trial_id, {"score": evaluate(trial_4.hyperparameters)}
     )
-    oracle.end_trial(trial_4.trial_id, "COMPLETED")
+    trial_4.status = "COMPLETED"
+    oracle.end_trial(trial_4)
 
     assert True

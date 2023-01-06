@@ -307,14 +307,14 @@ class GridSearchOracle(oracle_module.Oracle):
         hps.ensure_active_values()
         return hps.values if bumped_value else None
 
-    def end_trial(self, trial_id, status="COMPLETED", message=None):
-        super().end_trial(trial_id=trial_id, status=status, message=message)
+    def end_trial(self, trial):
+        super().end_trial(trial)
         # It is OK for a trial_id to be pushed into _populate_next multiple
         # times. It will be skipped during _populate_space if its next
         # combination has been tried.
 
         # For not blocking _populate_space, we push it regardless of the status.
-        self._populate_next.append(trial_id)
+        self._populate_next.append(trial.trial_id)
 
 
 class GridSearch(tuner_module.Tuner):
