@@ -192,8 +192,6 @@ class GridSearchOracle(oracle_module.Oracle):
 
             index_a = value_list.index(a[hp.name])
             index_b = value_list.index(b[hp.name])
-            if index_a == index_b:
-                continue
             return -1 if index_a < index_b else 1
 
         return 0
