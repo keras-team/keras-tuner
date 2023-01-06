@@ -139,7 +139,7 @@ class GridSearchOracle(oracle_module.Oracle):
             if next_id is None:
                 self._ordered_ids.append(trial_id)
             else:
-                self._ordered_ids.insert(next_id)
+                self._ordered_ids.insert(self._ordered_ids.index(next_id), trial_id)
 
             values = new_values
 

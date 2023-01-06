@@ -17,6 +17,7 @@ import random
 from tensorflow import keras
 
 from keras_tuner.engine import hypermodel
+from keras_tuner.engine import trial as trial_module
 from keras_tuner.tuners import gridsearch
 
 
@@ -143,3 +144,62 @@ def test_conditional_scope(tmp_path):
     tuner = gridsearch.GridSearch(hypermodel=MyHyperModel(), directory=tmp_path)
     tuner.search(verbose=0)
     assert len(tuner.oracle.trials) == 4 * 4
+
+
+def test_exhaust_trials_in_between_before_the_latter_finishes(tmp_path):
+    class MyHyperModel(hypermodel.HyperModel):
+        def build(self, hp):
+            hp.Boolean("bool")
+            return keras.Sequential()
+
+        def fit(self, hp, model, *args, **kwargs):
+            hp.Boolean("bool2")
+            return random.random()
+
+    tuner = gridsearch.GridSearch(hypermodel=MyHyperModel(), directory=tmp_path)
+    oracle = tuner.oracle
+
+    def run(trial):
+        hp = trial.hyperparameters
+        hm = MyHyperModel()
+        hm.fit(hp, hm.build(hp))
+        oracle.update_space(hp)
+
+    def end_trial(trial):
+        run(trial)
+        oracle.update_trial(
+            trial_id=trial.trial_id, metrics={oracle.objective.name: random.random()}
+        )
+        oracle.end_trial(
+            trial_id=trial.trial_id, status=trial_module.TrialStatus.COMPLETED
+        )
+
+    trial_1 = oracle.create_trial(tuner_id="1")
+    assert trial_1.status == trial_module.TrialStatus.RUNNING
+    trial_2 = oracle.create_trial(tuner_id="2")
+    assert trial_2.status == trial_module.TrialStatus.RUNNING
+
+    # Iterated bool1, bool2 not discovered yet. So idle.
+    trial_3 = oracle.create_trial(tuner_id="3")
+    assert trial_3.status == trial_module.TrialStatus.IDLE
+
+    end_trial(trial_1)
+    # Discovered bool2 in trial_1, so new value of bool2 for trial_3 after trial_1.
+    trial_3 = oracle.create_trial(tuner_id="3")
+    assert trial_3.status == trial_module.TrialStatus.RUNNING
+    # Exhausted all possible combinations whose order is between trial_1 and trial_2.
+    # So idle.
+    trial_4 = oracle.create_trial(tuner_id="4")
+    assert trial_4.status == trial_module.TrialStatus.IDLE
+
+    end_trial(trial_2)
+    # New value of bool2 for trial_4 after trial_2.
+    trial_4 = oracle.create_trial(tuner_id="4")
+    assert trial_4.status == trial_module.TrialStatus.RUNNING
+    trial_5 = oracle.create_trial(tuner_id="5")
+    assert trial_5.status == trial_module.TrialStatus.IDLE
+
+    end_trial(trial_3)
+    end_trial(trial_4)
+    trial_5 = oracle.create_trial(tuner_id="5")
+    assert trial_5.status == trial_module.TrialStatus.STOPPED
