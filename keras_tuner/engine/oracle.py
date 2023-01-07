@@ -291,22 +291,24 @@ class Oracle(stateful.Stateful):
         """Record the measured objective for a set of parameter values.
 
         Args:
-            trial_id: A string, the unique ID for this trial.
-            status: A string, one of `"COMPLETED"` (the trial finished
-                normally), `"INVALID"` (the trial has crashed or been deemed
-                infeasible, but subject to retries), or `"FAILED"` (The Trial is
-                failed. No more retries needed.).
-            message: Optional string. The error message if the trial status is
-                `"INVALID"` or `"FAILED"`.
+            trial: The Trial to be ended. `trial.status` should be one of
+                `"COMPLETED"` (the trial finished normally), `"INVALID"` (the
+                trial has crashed or been deemed infeasible, but subject to
+                retries), or `"FAILED"` (The Trial is failed. No more retries
+                needed.). `trial.message` is an optional string, which is the
+                error message if the trial status is `"INVALID"` or `"FAILED"`.
         """
         for tuner_id, ongoing_trial in self.ongoing_trials.items():
             if ongoing_trial.trial_id == trial.trial_id:
                 self.ongoing_trials.pop(tuner_id)
                 break
 
-        # Merge the 2 Trials.
-        trial.metrics = self.trials[trial.trial_id].metrics
-        self.trials[trial.trial_id] = trial
+        # Update the self.trials with the given trial.
+        old_trial = self.trials[trial.trial_id]
+        old_trial.status = trial.status
+        old_trial.message = trial.message
+        trial = old_trial
+
         self.update_space(trial.hyperparameters)
         if trial.status == trial_module.TrialStatus.COMPLETED:
             self.score_trial(trial)
