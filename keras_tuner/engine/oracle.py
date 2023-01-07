@@ -305,6 +305,7 @@ class Oracle(stateful.Stateful):
 
         # Update the self.trials with the given trial.
         old_trial = self.trials[trial.trial_id]
+        old_trial.hyperparameters = trial.hyperparameters
         old_trial.status = trial.status
         old_trial.message = trial.message
         trial = old_trial
