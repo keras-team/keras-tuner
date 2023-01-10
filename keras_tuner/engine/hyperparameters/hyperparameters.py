@@ -31,7 +31,11 @@ class HyperParameters(object):
     A `HyperParameters` instance can be pass to `HyperModel.build(hp)` as an
     argument to build a model.
 
+    To prevent the users from depending on inactive hyperparameter values, only
+    active hyperparameters should have values in `HyperParameters.values`.
+
     Attributes:
+        space: A list of `HyperParameter` objects.
         values: A dict mapping hyperparameter names to current values.
     """
 
