@@ -37,6 +37,20 @@ Objective = obj_module.Objective
 class Oracle(stateful.Stateful):
     """Implements a hyperparameter optimization algorithm.
 
+    In a parallel tuning setting, there is only one `Oracle` instance. The
+    workers would communicate with the centralized `Oracle` instance with gPRC
+    calls to the `Oracle` methods.
+
+    `Trial` objects are often used as the communication packet through the gPRC
+    calls to pass information between the worker `Tuner` instances and the
+    `Oracle`. For example, `Oracle.create_trial()` returns a `Trial` object, and
+    `Oracle.end_trial()` accepts a `Trial` in its arguments.
+
+    New copies of the same `Trial` instance are reconstructed as it going
+    through the gRPC calls. The changes to the `Trial` objects in the worker
+    `Tuner`s are synced to the original copy in the `Oracle` when they are
+    passed back to the `Oracle` by calling `Oracle.end_trial()`.
+
     Args:
         objective: A string, `keras_tuner.Objective` instance, or a list of
             `keras_tuner.Objective`s and strings. If a string, the direction of
