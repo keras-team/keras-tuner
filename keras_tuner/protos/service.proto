@@ -47,13 +47,11 @@ message UpdateTrialRequest {
 }
 
 message UpdateTrialResponse {
-    keras_tuner.TrialStatus status = 1;
+    keras_tuner.Trial trial = 1;
 }
 
 message EndTrialRequest {
-    string trial_id = 1;
-    keras_tuner.TrialStatus status = 2;
-    string message = 3;
+    keras_tuner.Trial trial = 1;
 }
 
 message EndTrialResponse {}

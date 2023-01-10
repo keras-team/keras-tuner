@@ -316,8 +316,7 @@ class BaseTuner(stateful.Stateful):
         if self.logger:
             self.logger.report_trial_state(trial.trial_id, trial.get_state())
 
-        self.oracle.end_trial(trial.trial_id, trial.status, trial.message)
-        self.oracle.update_space(trial.hyperparameters)
+        self.oracle.end_trial(trial)
         # Display needs the updated trial scored by the Oracle.
         self._display.on_trial_end(self.oracle.get_trial(trial.trial_id))
         self.save()

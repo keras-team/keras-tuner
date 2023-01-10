@@ -301,33 +301,34 @@ class Oracle(stateful.Stateful):
                     f"of {self.max_consecutive_failed_trials}.\n" + trial.message
                 )
 
-    def end_trial(self, trial_id, status="COMPLETED", message=None):
-        """Record the measured objective for a set of parameter values.
+    def end_trial(self, trial):
+        """Logistics when a `Trial` finished running.
+
+        Record the `Trial` information and end the trial or send it for retry.
 
         Args:
-            trial_id: A string, the unique ID for this trial.
-            status: A string, one of `"COMPLETED"` (the trial finished
-                normally), `"INVALID"` (the trial has crashed or been deemed
-                infeasible, but subject to retries), or `"FAILED"` (The Trial is
-                failed. No more retries needed.).
-            message: Optional string. The error message if the trial status is
-                `"INVALID"` or `"FAILED"`.
+            trial: The Trial to be ended. `trial.status` should be one of
+                `"COMPLETED"` (the trial finished normally), `"INVALID"` (the
+                trial has crashed or been deemed infeasible, but subject to
+                retries), or `"FAILED"` (The Trial is failed. No more retries
+                needed.). `trial.message` is an optional string, which is the
+                error message if the trial status is `"INVALID"` or `"FAILED"`.
         """
-        trial = next(
-            (
+        for tuner_id, ongoing_trial in self.ongoing_trials.items():
+            if ongoing_trial.trial_id == trial.trial_id:
                 self.ongoing_trials.pop(tuner_id)
-                for tuner_id, ongoing_trial in self.ongoing_trials.items()
-                if ongoing_trial.trial_id == trial_id
-            ),
-            None,
-        )
+                break
 
-        if not trial:
-            raise ValueError(f"Ongoing trial with id: {trial_id} not found.")
+        # To support parallel tuning, the information in the `trial` argument is
+        # synced back to the `Oracle`. Update the self.trials with the given
+        # trial.
+        old_trial = self.trials[trial.trial_id]
+        old_trial.hyperparameters = trial.hyperparameters
+        old_trial.status = trial.status
+        old_trial.message = trial.message
+        trial = old_trial
 
-        # Update the Trial.
-        trial.status = status
-        trial.message = message
+        self.update_space(trial.hyperparameters)
         if trial.status == trial_module.TrialStatus.COMPLETED:
             self.score_trial(trial)
             if np.isnan(trial.score):
@@ -337,12 +338,12 @@ class Oracle(stateful.Stateful):
         self._record_values(trial)
 
         # Check if need to retry the trial.
-        self._run_times[trial_id] += 1
+        self._run_times[trial.trial_id] += 1
         if self._maybe_retry(trial):
             return
 
         # End the trial
-        self.end_order.append(trial_id)
+        self.end_order.append(trial.trial_id)
         self._check_consecutive_failures()
         self._save_trial(trial)
         self.save()
