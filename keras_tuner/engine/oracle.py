@@ -288,7 +288,9 @@ class Oracle(stateful.Stateful):
                 )
 
     def end_trial(self, trial):
-        """Record the measured objective for a set of parameter values.
+        """Logistics when a `Trial` finished running.
+
+        Record the `Trial` information and end the trial or send it for retry.
 
         Args:
             trial: The Trial to be ended. `trial.status` should be one of
@@ -303,7 +305,9 @@ class Oracle(stateful.Stateful):
                 self.ongoing_trials.pop(tuner_id)
                 break
 
-        # Update the self.trials with the given trial.
+        # To support parallel tuning, the information in the `trial` argument is
+        # synced back to the `Oracle`. Update the self.trials with the given
+        # trial.
         old_trial = self.trials[trial.trial_id]
         old_trial.hyperparameters = trial.hyperparameters
         old_trial.status = trial.status
