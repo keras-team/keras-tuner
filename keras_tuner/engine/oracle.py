@@ -439,6 +439,10 @@ class Oracle(stateful.Stateful):
             # Hyperparameters are part of the state because they can be added to
             # during the course of the search.
             "hyperparameters": self.hyperparameters.get_config(),
+            "start_order": self.start_order,
+            "end_order": self.end_order,
+            "run_times": self._run_times,
+            "retry_queue": self._retry_queue,
             "seed": self.seed,
             "seed_state": self._seed_state,
             "tried_so_far": list(self._tried_so_far),
@@ -454,6 +458,10 @@ class Oracle(stateful.Stateful):
         self.hyperparameters = hp_module.HyperParameters.from_config(
             state["hyperparameters"]
         )
+        self.start_order = state["start_order"]
+        self.end_order = state["end_order"]
+        self._run_times = state["run_times"]
+        self._retry_queue = state["retry_queue"]
         self.seed = state["seed"]
         self._seed_state = state["seed_state"]
         self._tried_so_far = set(state["tried_so_far"])
