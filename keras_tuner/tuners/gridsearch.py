@@ -307,6 +307,7 @@ class GridSearchOracle(oracle_module.Oracle):
         hps.ensure_active_values()
         return hps.values if bumped_value else None
 
+    @oracle_module.synchronized
     def end_trial(self, trial):
         super().end_trial(trial)
         # It is OK for a trial_id to be pushed into _populate_next multiple
