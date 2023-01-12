@@ -49,22 +49,30 @@ def synchronized(func, *args, **kwargs):
     to ensure the calls are synchronized, which only allows one call to run at a
     time.
 
-    Here are some more details about how the synchronization works:
-    * The decorator only support methods within classes.
-    * Concurrent calls to different `Oracle` objects would not block each other.
-    * Concurrent calls to different functions of the same `Oracle` object would
-    block each other.
-    * You can decorate a subclass function, which overrides an already decorated
+    Concurrent calls to different `Oracle` objects would not block one another.
+    Concurrent calls to the same or different functions of the same `Oracle`
+    object would block one another.
+
+    You can decorate a subclass function, which overrides an already decorated
     function in the base class, without worrying about creating a deadlock.
-    * You do not need to decorate `Oracle.populate_space()`, which is only
+    However, the decorator only support methods within classes, and cannot be
+    applied to standalone functions.
+
+    You do not need to decorate `Oracle.populate_space()`, which is only
     called by `Oracle.create_trial()`, which is decorated.
 
     Example:
+
     ```py
     class MyOracle(keras_tuner.Oracle):
         @keras_tuner.synchronized
         def create_trial(self, tuner_id):
             super().create_trial(tuner_id)
+            ...
+
+        @keras_tuner.synchronized
+        def update_trial(self, trial_id, metrics, step=0):
+            super().update_trial(trial_id, metrics, step)
             ...
 
         @keras_tuner.synchronized
