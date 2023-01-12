@@ -217,7 +217,7 @@ def test_synchronized_functions_in_same_oracle_same_function(tmp_path):
         def create_trial(self, tuner_id):
             # Log ID at the beginning.
             self.log.append(tuner_id)
-            time.sleep(0.3)
+            time.sleep(0.5)
             # Log ID in the end.
             self.log.append(tuner_id)
             return super().create_trial(tuner_id)
@@ -251,14 +251,14 @@ def test_synchronized_functions_in_same_oracle_diff_function(tmp_path):
         @oracle_module.synchronized
         def create_trial(self, tuner_id):
             self.log.append("create")
-            time.sleep(0.3)
+            time.sleep(0.5)
             self.log.append("create")
             return super().create_trial(tuner_id)
 
         @oracle_module.synchronized
         def end_trial(self, trial):
             self.log.append("end")
-            time.sleep(0.3)
+            time.sleep(0.5)
             self.log.append("end")
             return super().end_trial(trial)
 
@@ -300,7 +300,7 @@ def test_synchronized_functions_in_different_oracle_doesnt_block(tmp_path):
         def create_trial(self, tuner_id):
             # Log ID at the beginning.
             log.append(tuner_id)
-            time.sleep(0.3)
+            time.sleep(0.5)
             # Log ID in the end.
             log.append(tuner_id)
             return super().create_trial(tuner_id)
