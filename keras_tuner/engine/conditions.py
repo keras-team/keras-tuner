@@ -24,7 +24,7 @@ from keras_tuner.protos import keras_tuner_pb2
 
 
 @six.add_metaclass(abc.ABCMeta)
-class Condition(object):
+class Condition:
     """Abstract condition for a conditional hyperparameter.
 
     Subclasses of this object can be passed to a `HyperParameter` to specify

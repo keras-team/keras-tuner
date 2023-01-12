@@ -25,7 +25,7 @@ from keras_tuner.engine.hyperparameters import hyperparameter as hp_module
 from keras_tuner.protos import keras_tuner_pb2
 
 
-class HyperParameters(object):
+class HyperParameters:
     """Container for both a hyperparameter space, and current values.
 
     A `HyperParameters` instance can be pass to `HyperModel.build(hp)` as an
