@@ -29,6 +29,9 @@
   `max_consecutive_failed_trials`.
 * Provides better error messages for invalid configs for `Int` and `Float` type
   hyperparameters.
+* A decorator `@keras_tuner.synchronized` is added to decorate the methods in
+  `Oracle` and its subclasses to synchronize the concurrent calls to ensure
+  thread safety in parallel tuning.
 
 ## Bug fixes
 * Protobuf was not converting Boolean type hyperparameter correctly. This is now
@@ -37,5 +40,5 @@
   is now fixed.
 * `KeyError` may occur if using `hp.conditional_scope()`, or the `parent`
   argument for hyperparameters. This is now fixed.
-* `num_initial_points` of the `BayesianOptimization` should defaults to `3 * dimension`,
-  but it defaults to 2. This is now fixed.
+* `num_initial_points` of the `BayesianOptimization` should defaults to `3 *
+  dimension`, but it defaults to 2. This is now fixed.
