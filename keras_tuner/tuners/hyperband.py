@@ -391,9 +391,7 @@ class Hyperband(tuner_module.Tuner):
             max_retries_per_trial=max_retries_per_trial,
             max_consecutive_failed_trials=max_consecutive_failed_trials,
         )
-        super().__init__(
-            oracle=oracle, hypermodel=hypermodel, **kwargs
-        )
+        super().__init__(oracle=oracle, hypermodel=hypermodel, **kwargs)
 
     def run_trial(self, trial, *fit_args, **fit_kwargs):
         hp = trial.hyperparameters
