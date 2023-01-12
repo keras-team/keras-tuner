@@ -178,7 +178,7 @@ class HyperImageAugment(hypermodel.HyperModel):
             # `randaug_count` is set to 0.
             self.model_name = "image_augment"
 
-        super(HyperImageAugment, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def build(self, hp):
         if self.input_tensor is not None:

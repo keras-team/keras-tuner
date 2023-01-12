@@ -488,7 +488,7 @@ class Oracle(stateful.Stateful):
     def save(self):
         if self.should_report:
             # `self.trials` are saved in their own, Oracle-agnostic files.
-            super(Oracle, self).save(self._get_oracle_fname())
+            super().save(self._get_oracle_fname())
 
     def reload(self):
         # Reload trials from their own files.
@@ -502,7 +502,7 @@ class Oracle(stateful.Stateful):
             trial = trial_module.Trial.from_state(trial_state)
             self.trials[trial.trial_id] = trial
         try:
-            super(Oracle, self).reload(self._get_oracle_fname())
+            super().reload(self._get_oracle_fname())
         except KeyError as e:
             raise RuntimeError(
                 "Error reloading `Oracle` from existing project. "

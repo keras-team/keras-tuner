@@ -427,13 +427,13 @@ class BaseTuner(stateful.Stateful):
         """Saves this object to its project directory."""
         if not dist_utils.has_chief_oracle():
             self.oracle.save()
-        super(BaseTuner, self).save(self._get_tuner_fname())
+        super().save(self._get_tuner_fname())
 
     def reload(self):
         """Reloads this object from its project directory."""
         if not dist_utils.has_chief_oracle():
             self.oracle.reload()
-        super(BaseTuner, self).reload(self._get_tuner_fname())
+        super().reload(self._get_tuner_fname())
 
     @property
     def project_dir(self):

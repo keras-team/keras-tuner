@@ -37,7 +37,7 @@ def test_update_space(tmp_path):
 
     class MyRandomSearch(randomsearch.RandomSearchOracle):
         def populate_space(self, trial_id):
-            result = super(MyRandomSearch, self).populate_space(trial_id)
+            result = super().populate_space(trial_id)
             if "values" in result:
                 result["values"]["layers"] = 2
             return result

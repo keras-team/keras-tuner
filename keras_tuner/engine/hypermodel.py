@@ -146,7 +146,7 @@ class DefaultHyperModel(HyperModel):
     """Produces HyperModel from a model building function."""
 
     def __init__(self, build, name=None, tunable=True):
-        super(DefaultHyperModel, self).__init__(name=name)
+        super().__init__(name=name)
         self.build = build
 
 

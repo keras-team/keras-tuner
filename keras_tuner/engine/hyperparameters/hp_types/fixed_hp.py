@@ -29,7 +29,7 @@ class Fixed(hyperparameter.HyperParameter):
     """
 
     def __init__(self, name, value, **kwargs):
-        super(Fixed, self).__init__(name=name, default=value, **kwargs)
+        super().__init__(name=name, default=value, **kwargs)
         self.name = name
 
         if isinstance(value, bool):
@@ -63,7 +63,7 @@ class Fixed(hyperparameter.HyperParameter):
         return self.value
 
     def get_config(self):
-        config = super(Fixed, self).get_config()
+        config = super().get_config()
         config["name"] = self.name
         config.pop("default")
         config["value"] = self.value

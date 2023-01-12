@@ -115,7 +115,7 @@ class HyperEfficientNet(hypermodel.HyperModel):
         self.classes = classes
         self.augmentation_model = augmentation_model
 
-        super(HyperEfficientNet, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def build(self, hp):
 

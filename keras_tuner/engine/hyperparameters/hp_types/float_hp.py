@@ -125,7 +125,7 @@ class Float(numerical.Numerical):
         return self._to_prob_with_step(value)
 
     def get_config(self):
-        config = super(Float, self).get_config()
+        config = super().get_config()
         config["min_value"] = self.min_value
         config["max_value"] = self.max_value
         config["step"] = self.step

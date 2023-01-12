@@ -26,7 +26,7 @@ class ExceptionStoringThread(threading.Thread):
     def run(self):
         self.raised_exception = None
         try:
-            super(ExceptionStoringThread, self).run()
+            super().run()
         except BaseException:
             self.raised_exception = sys.exc_info()
 
