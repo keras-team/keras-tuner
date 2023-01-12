@@ -146,6 +146,7 @@ class Trial(stateful.Stateful):
             "score": self.score,
             "best_step": self.best_step,
             "status": self.status,
+            "message": self.message,
         }
 
     def set_state(self, state):
@@ -156,6 +157,7 @@ class Trial(stateful.Stateful):
         self.score = state["score"]
         self.best_step = state["best_step"]
         self.status = state["status"]
+        self.message = state["message"]
 
     @classmethod
     def from_state(cls, state):
