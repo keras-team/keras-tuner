@@ -18,7 +18,7 @@ from keras_tuner import utils
 from keras_tuner.engine import conditions as conditions_mod
 
 
-class HyperParameter(object):
+class HyperParameter:
     """Hyperparameter base class.
 
     A `HyperParameter` instance is uniquely identified by its `name` and

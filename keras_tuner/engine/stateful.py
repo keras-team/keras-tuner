@@ -19,7 +19,7 @@ import json
 import tensorflow as tf
 
 
-class Stateful(object):
+class Stateful:
     """The base class for saving and restoring the state.
 
     The functionalities in this class is for the user to resume a previously

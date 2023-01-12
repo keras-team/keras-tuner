@@ -27,7 +27,7 @@ AUTH_ERROR = 3
 UPLOAD_ERROR = 4
 
 
-class Logger(object):
+class Logger:
     def register_tuner(self, tuner_state):
         """Informs the logger that a new search is starting."""
         raise NotImplementedError
