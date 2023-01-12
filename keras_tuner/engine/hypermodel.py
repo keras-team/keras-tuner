@@ -16,7 +16,7 @@
 from keras_tuner import errors
 
 
-class HyperModel(object):
+class HyperModel:
     """Defines a search space of models.
 
     A search space is a collection of models. The `build` function will build

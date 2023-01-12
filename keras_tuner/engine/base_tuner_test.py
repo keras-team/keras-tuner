@@ -47,7 +47,7 @@ def test_base_tuner(tmp_path):
             return models
 
     def build_model(hp):
-        class MyModel(object):
+        class MyModel:
             def __init__(self):
                 self.factor = hp.Float("a", 0, 10)
 

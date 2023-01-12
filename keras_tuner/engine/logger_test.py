@@ -20,11 +20,11 @@ from tensorflow import keras
 import keras_tuner
 
 
-class OkResponse(object):
+class OkResponse:
     ok = True
 
 
-class MockPost(object):
+class MockPost:
     def __init__(self):
         self.url_calls = []
 

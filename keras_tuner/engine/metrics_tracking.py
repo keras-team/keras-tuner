@@ -20,7 +20,7 @@ from tensorflow import keras
 from keras_tuner.protos import keras_tuner_pb2
 
 
-class MetricObservation(object):
+class MetricObservation:
     """Metric value at a given step of training across multiple executions.
 
     If the model is trained multiple
@@ -73,7 +73,7 @@ class MetricObservation(object):
         return cls(value=list(proto.value), step=proto.step)
 
 
-class MetricHistory(object):
+class MetricHistory:
     """Record of multiple executions of a single metric.
 
     It contains a collection of `MetricObservation` instances.
@@ -176,7 +176,7 @@ class MetricHistory(object):
         return instance
 
 
-class MetricsTracker(object):
+class MetricsTracker:
     """Record of the values of multiple executions of all metrics.
 
     It contains `MetricHistory` instances for the metrics.
