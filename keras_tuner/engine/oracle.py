@@ -460,7 +460,8 @@ class Oracle(stateful.Stateful):
         )
         self.start_order = state["start_order"]
         self.end_order = state["end_order"]
-        self._run_times = state["run_times"]
+        self._run_times = collections.defaultdict(lambda: 0)
+        self._run_times.update(state["run_times"])
         self._retry_queue = state["retry_queue"]
         self.seed = state["seed"]
         self._seed_state = state["seed_state"]
