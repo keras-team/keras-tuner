@@ -110,7 +110,7 @@ class HyperbandOracle(oracle_module.Oracle):
         max_retries_per_trial=0,
         max_consecutive_failed_trials=3,
     ):
-        super(HyperbandOracle, self).__init__(
+        super().__init__(
             objective=objective,
             hyperparameters=hyperparameters,
             allow_new_entries=allow_new_entries,
@@ -280,7 +280,7 @@ class HyperbandOracle(oracle_module.Oracle):
         return brackets
 
     def get_state(self):
-        state = super(HyperbandOracle, self).get_state()
+        state = super().get_state()
         state.update(
             {
                 "hyperband_iterations": self.hyperband_iterations,
@@ -295,7 +295,7 @@ class HyperbandOracle(oracle_module.Oracle):
         return state
 
     def set_state(self, state):
-        super(HyperbandOracle, self).set_state(state)
+        super().set_state(state)
         self.hyperband_iterations = state["hyperband_iterations"]
         self.max_epochs = state["max_epochs"]
         self.min_epochs = state["min_epochs"]
@@ -391,7 +391,7 @@ class Hyperband(tuner_module.Tuner):
             max_retries_per_trial=max_retries_per_trial,
             max_consecutive_failed_trials=max_consecutive_failed_trials,
         )
-        super(Hyperband, self).__init__(
+        super().__init__(
             oracle=oracle, hypermodel=hypermodel, **kwargs
         )
 
@@ -400,10 +400,10 @@ class Hyperband(tuner_module.Tuner):
         if "tuner/epochs" in hp.values:
             fit_kwargs["epochs"] = hp.values["tuner/epochs"]
             fit_kwargs["initial_epoch"] = hp.values["tuner/initial_epoch"]
-        return super(Hyperband, self).run_trial(trial, *fit_args, **fit_kwargs)
+        return super().run_trial(trial, *fit_args, **fit_kwargs)
 
     def _build_hypermodel(self, hp):
-        model = super(Hyperband, self)._build_hypermodel(hp)
+        model = super()._build_hypermodel(hp)
         if "tuner/trial_id" in hp.values:
             trial_id = hp.values["tuner/trial_id"]
             # Load best checkpoint from this trial.

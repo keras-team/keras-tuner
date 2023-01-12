@@ -108,7 +108,7 @@ class Tuner(base_tuner.BaseTuner):
                 "using a `HyperModel` instance."
             )
 
-        super(Tuner, self).__init__(
+        super().__init__(
             oracle=oracle,
             hypermodel=hypermodel,
             directory=directory,
@@ -353,7 +353,7 @@ class Tuner(base_tuner.BaseTuner):
             List of trained model instances sorted from the best to the worst.
         """
         # Method only exists in this class for the docstring override.
-        return super(Tuner, self).get_best_models(num_models)
+        return super().get_best_models(num_models)
 
     def _deepcopy_callbacks(self, callbacks):
         try:

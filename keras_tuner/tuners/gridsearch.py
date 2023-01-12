@@ -129,7 +129,7 @@ class GridSearchOracle(oracle_module.Oracle):
         max_retries_per_trial=0,
         max_consecutive_failed_trials=3,
     ):
-        super(GridSearchOracle, self).__init__(
+        super().__init__(
             objective=objective,
             max_trials=max_trials,
             hyperparameters=hyperparameters,
@@ -408,4 +408,4 @@ class GridSearch(tuner_module.Tuner):
             max_retries_per_trial=max_retries_per_trial,
             max_consecutive_failed_trials=max_consecutive_failed_trials,
         )
-        super(GridSearch, self).__init__(oracle, hypermodel, **kwargs)
+        super().__init__(oracle, hypermodel, **kwargs)

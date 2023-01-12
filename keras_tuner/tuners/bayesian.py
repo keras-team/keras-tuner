@@ -107,7 +107,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                 "Please install scikit-learn (sklearn) before using the "
                 "`BayesianOptimization`."
             )
-        super(BayesianOptimizationOracle, self).__init__(
+        super().__init__(
             objective=objective,
             max_trials=max_trials,
             hyperparameters=hyperparameters,
@@ -199,7 +199,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         return {"status": trial_module.TrialStatus.RUNNING, "values": values}
 
     def get_state(self):
-        state = super(BayesianOptimizationOracle, self).get_state()
+        state = super().get_state()
         state.update(
             {
                 "num_initial_points": self.num_initial_points,
@@ -210,7 +210,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         return state
 
     def set_state(self, state):
-        super(BayesianOptimizationOracle, self).set_state(state)
+        super().set_state(state)
         self.num_initial_points = state["num_initial_points"]
         self.alpha = state["alpha"]
         self.beta = state["beta"]
@@ -379,7 +379,4 @@ class BayesianOptimization(tuner_module.Tuner):
             max_retries_per_trial=max_retries_per_trial,
             max_consecutive_failed_trials=max_consecutive_failed_trials,
         )
-        super(
-            BayesianOptimization,
-            self,
-        ).__init__(oracle=oracle, hypermodel=hypermodel, **kwargs)
+        super().__init__(oracle=oracle, hypermodel=hypermodel, **kwargs)

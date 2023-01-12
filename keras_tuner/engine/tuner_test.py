@@ -58,7 +58,7 @@ def build_model(hp):
 
 class MockModel(keras.Model):
     def __init__(self, full_history):
-        super(MockModel, self).__init__()
+        super().__init__()
         self.full_history = full_history
         self.callbacks = []
         self.optimizer = True

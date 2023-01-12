@@ -147,7 +147,7 @@ class Int(numerical.Numerical):
         return self._default if self._default is not None else self.min_value
 
     def get_config(self):
-        config = super(Int, self).get_config()
+        config = super().get_config()
         config["min_value"] = self.min_value
         config["max_value"] = self.max_value
         config["step"] = self.step

@@ -67,7 +67,7 @@ class RandomSearchOracle(oracle_module.Oracle):
         max_retries_per_trial=0,
         max_consecutive_failed_trials=3,
     ):
-        super(RandomSearchOracle, self).__init__(
+        super().__init__(
             objective=objective,
             max_trials=max_trials,
             hyperparameters=hyperparameters,
@@ -164,4 +164,4 @@ class RandomSearch(tuner_module.Tuner):
             max_retries_per_trial=max_retries_per_trial,
             max_consecutive_failed_trials=max_consecutive_failed_trials,
         )
-        super(RandomSearch, self).__init__(oracle, hypermodel, **kwargs)
+        super().__init__(oracle, hypermodel, **kwargs)

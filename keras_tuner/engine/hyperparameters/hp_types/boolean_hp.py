@@ -28,7 +28,7 @@ class Boolean(hyperparameter.HyperParameter):
     """
 
     def __init__(self, name, default=False, **kwargs):
-        super(Boolean, self).__init__(name=name, default=default, **kwargs)
+        super().__init__(name=name, default=default, **kwargs)
         if default not in {True, False}:
             raise ValueError(
                 f"`default` must be a Python boolean. You passed: default={default}"

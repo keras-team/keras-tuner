@@ -38,7 +38,7 @@ class Choice(hyperparameter.HyperParameter):
     """
 
     def __init__(self, name, values, ordered=None, default=None, **kwargs):
-        super(Choice, self).__init__(name=name, default=default, **kwargs)
+        super().__init__(name=name, default=default, **kwargs)
         if not values:
             raise ValueError("`values` must be provided for `Choice`.")
 
@@ -104,7 +104,7 @@ class Choice(hyperparameter.HyperParameter):
         return hp_utils.index_to_prob(self._values.index(value), len(self._values))
 
     def get_config(self):
-        config = super(Choice, self).get_config()
+        config = super().get_config()
         config["values"] = self._values
         config["ordered"] = self.ordered
         return config
