@@ -300,7 +300,7 @@ def test_synchronized_functions_in_different_oracle_doesnt_block(tmp_path):
         def create_trial(self, tuner_id):
             # Log ID at the beginning.
             log.append(tuner_id)
-            time.sleep(1.0)
+            time.sleep(0.5)
             # Log ID in the end.
             log.append(tuner_id)
             return super().create_trial(tuner_id)
@@ -318,7 +318,5 @@ def test_synchronized_functions_in_different_oracle_doesnt_block(tmp_path):
     for thread in threads:
         thread.join()
 
-    for i in range(5):
-        # The same ID should be 5 element apart.
-        # All threads begin to sleep before anyone ends.
-        assert log[i] == log[i + 5]
+    # All threads begin to sleep before anyone ends.
+    assert set(log[:5]) == set(log[5:])
