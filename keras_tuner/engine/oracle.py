@@ -37,7 +37,7 @@ Objective = obj_module.Objective
 # Map each `Oracle` instance to its `Lock`.
 LOCKS = collections.defaultdict(lambda: threading.Lock())
 # Map each `Oracle` instance to the thread name aquired the `Lock`.
-THREAD = collections.defaultdict(lambda: None)
+THREADS = collections.defaultdict(lambda: None)
 
 
 def synchronized(func, *args, **kwargs):
@@ -85,14 +85,14 @@ def synchronized(func, *args, **kwargs):
     def wrapped_func(*args, **kwargs):
         oracle = args[0]
         thread_name = threading.currentThread().getName()
-        need_acquire = THREAD[oracle] != thread_name
+        need_acquire = THREADS[oracle] != thread_name
 
         if need_acquire:
             LOCKS[oracle].acquire()
-            THREAD[oracle] = thread_name
+            THREADS[oracle] = thread_name
         ret_val = func(*args, **kwargs)
         if need_acquire:
-            THREAD[oracle] = None
+            THREADS[oracle] = None
             LOCKS[oracle].release()
         return ret_val
 
