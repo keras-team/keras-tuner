@@ -47,10 +47,10 @@ class Tuner(base_tuner.BaseTuner):
             `self.hypermodel`.
         max_model_size: Integer, maximum number of scalars in the parameters of
             a model. Models larger than this are rejected.
-        optimizer: Optional `Optimizer` instance.  May be used to override the
-            `optimizer` argument in the `compile` step for the models. If the
-            hypermodel does not compile the models it generates, then this
-            argument must be specified.
+        optimizer: Optional optimizer. It is used to override the `optimizer`
+            argument in the `compile` step for the models. If the hypermodel
+            does not compile the models it generates, then this argument must be
+            specified.
         loss: Optional loss. May be used to override the `loss` argument in the
             `compile` step for the models. If the hypermodel does not compile
             the models it generates, then this argument must be specified.
@@ -176,8 +176,12 @@ class Tuner(base_tuner.BaseTuner):
                 if self.loss:
                     compile_kwargs["loss"] = self.loss
                 if self.optimizer:
-                    optimizer = keras.optimizers.deserialize(
-                        keras.optimizers.serialize(self.optimizer)
+                    optimizer = (
+                        self.optimizer
+                        if isinstance(self.optimizer, str)
+                        else keras.optimizers.deserialize(
+                            keras.optimizers.serialize(self.optimizer)
+                        )
                     )
                     compile_kwargs["optimizer"] = optimizer
                 if self.metrics:
