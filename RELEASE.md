@@ -42,3 +42,5 @@
   argument for hyperparameters. This is now fixed.
 * `num_initial_points` of the `BayesianOptimization` should defaults to `3 *
   dimension`, but it defaults to 2. This is now fixed.
+* It would through an error when using a concrete Keras optimizer object to
+  override the `HyperModel` compile arg. This is now fixed.
