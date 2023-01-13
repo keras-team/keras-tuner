@@ -355,3 +355,7 @@ def test_oracle_reload_ongoing_trials_to_retry(tmp_path):
     assert set([trial_3.trial_id, trial_4.trial_id]) == set(
         [trial_1.trial_id, trial_2.trial_id]
     )
+
+
+def test_get_best_trial_with_nans():
+    pass
