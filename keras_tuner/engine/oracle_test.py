@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import threading
+import time
+
 import pytest
 
 import keras_tuner
@@ -178,14 +181,12 @@ def test_consecutive_failures_in_limit(tmp_path):
     # (1 run + 2 retry) * 2 trial = 6
     for _ in range(6):
         trial = oracle.create_trial(tuner_id="a")
-        # Failed, so no retry.
         trial.status = trial_module.TrialStatus.INVALID
         trial.message = "error1"
         oracle.end_trial(trial)
 
     for _ in range(3):
         trial = oracle.create_trial(tuner_id="a")
-        # Failed, so no retry.
         trial.status = trial_module.TrialStatus.COMPLETED
         oracle.update_trial(trial.trial_id, metrics={"val_loss": 0.5})
         oracle.end_trial(trial)
@@ -204,3 +205,118 @@ def test_too_many_consecutive_failures(tmp_path):
             trial.message = "custom_error_info"
             oracle.end_trial(trial)
         assert "custom_error_info" in str(e)
+
+
+def test_synchronized_functions_in_same_oracle_same_function(tmp_path):
+    class MyOracle(OracleStub):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.log = []
+
+        @oracle_module.synchronized
+        def create_trial(self, tuner_id):
+            # Log ID at the beginning.
+            self.log.append(tuner_id)
+            time.sleep(0.5)
+            # Log ID in the end.
+            self.log.append(tuner_id)
+            return super().create_trial(tuner_id)
+
+    oracle = MyOracle(directory=tmp_path)
+
+    def thread_function(i):
+        oracle.create_trial(tuner_id=str(i))
+
+    threads = []
+    for i in range(5):
+        thread = threading.Thread(target=thread_function, args=(i,))
+        threads.append(thread)
+        thread.start()
+
+    for thread in threads:
+        thread.join()
+
+    for i in range(5):
+        # The same ID should be next to each other.
+        # No other thread interupting between start and end.
+        assert oracle.log[i * 2] == oracle.log[i * 2 + 1]
+
+
+def test_synchronized_functions_in_same_oracle_diff_function(tmp_path):
+    class MyOracle(OracleStub):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.log = []
+
+        @oracle_module.synchronized
+        def create_trial(self, tuner_id):
+            self.log.append("create")
+            time.sleep(0.5)
+            self.log.append("create")
+            return super().create_trial(tuner_id)
+
+        @oracle_module.synchronized
+        def end_trial(self, trial):
+            self.log.append("end")
+            time.sleep(0.5)
+            self.log.append("end")
+            return super().end_trial(trial)
+
+    oracle = MyOracle(
+        directory=tmp_path,
+        objective="val_loss",
+    )
+
+    trial = oracle.create_trial(tuner_id="a")
+    trial.status = trial_module.TrialStatus.COMPLETED
+    oracle.update_trial(trial.trial_id, metrics={"val_loss": 0.5})
+
+    def thread_function_create():
+        oracle.create_trial(tuner_id="b")
+
+    def thread_function_end():
+        oracle.end_trial(trial)
+
+    thread_create = threading.Thread(target=thread_function_create)
+    thread_end = threading.Thread(target=thread_function_end)
+
+    thread_create.start()
+    thread_end.start()
+
+    thread_create.join()
+    thread_end.join()
+
+    for i in range(2):
+        # The same ID should be next to each other.
+        # No other thread interupting between start and end.
+        assert oracle.log[i * 2] == oracle.log[i * 2 + 1]
+
+
+def test_synchronized_functions_in_different_oracle_doesnt_block(tmp_path):
+    log = []
+
+    class MyOracle(OracleStub):
+        @oracle_module.synchronized
+        def create_trial(self, tuner_id):
+            # Log ID at the beginning.
+            log.append(tuner_id)
+            time.sleep(0.5)
+            # Log ID in the end.
+            log.append(tuner_id)
+            return super().create_trial(tuner_id)
+
+    def thread_function(i):
+        oracle = MyOracle(directory=tmp_path)
+        oracle.create_trial(tuner_id=str(i))
+
+    threads = []
+    for i in range(5):
+        thread = threading.Thread(target=thread_function, args=(i,))
+        threads.append(thread)
+        thread.start()
+
+    for thread in threads:
+        thread.join()
+
+    # All threads begin to sleep before anyone ends.
+    assert set(log[:5]) == set(log[5:])

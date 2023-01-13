@@ -19,6 +19,7 @@ import hashlib
 import json
 import os
 import random
+import threading
 import warnings
 
 import numpy as np
@@ -32,6 +33,70 @@ from keras_tuner.engine import trial as trial_module
 
 # For backward compatibility.
 Objective = obj_module.Objective
+
+# Map each `Oracle` instance to its `Lock`.
+LOCKS = collections.defaultdict(lambda: threading.Lock())
+# Map each `Oracle` instance to the thread name aquired the `Lock`.
+THREADS = collections.defaultdict(lambda: None)
+
+
+def synchronized(func, *args, **kwargs):
+    """Decorator to synchronize the multi-threaded calls to a `Oracle` functions.
+
+    In parallel tuning, there may be concurrent gRPC calls from multiple threads
+    to the `Oracle` methods like `create_trial()`, `update_trial()`, and
+    `end_trial()`. To avoid concurrent writing to the data, use `@synchronized`
+    to ensure the calls are synchronized, which only allows one call to run at a
+    time.
+
+    Concurrent calls to different `Oracle` objects would not block one another.
+    Concurrent calls to the same or different functions of the same `Oracle`
+    object would block one another.
+
+    You can decorate a subclass function, which overrides an already decorated
+    function in the base class, without worrying about creating a deadlock.
+    However, the decorator only support methods within classes, and cannot be
+    applied to standalone functions.
+
+    You do not need to decorate `Oracle.populate_space()`, which is only
+    called by `Oracle.create_trial()`, which is decorated.
+
+    Example:
+
+    ```py
+    class MyOracle(keras_tuner.Oracle):
+        @keras_tuner.synchronized
+        def create_trial(self, tuner_id):
+            super().create_trial(tuner_id)
+            ...
+
+        @keras_tuner.synchronized
+        def update_trial(self, trial_id, metrics, step=0):
+            super().update_trial(trial_id, metrics, step)
+            ...
+
+        @keras_tuner.synchronized
+        def end_trial(self, trial):
+            super().end_trial(trial)
+            ...
+    ```
+    """
+
+    def wrapped_func(*args, **kwargs):
+        oracle = args[0]
+        thread_name = threading.currentThread().getName()
+        need_acquire = THREADS[oracle] != thread_name
+
+        if need_acquire:
+            LOCKS[oracle].acquire()
+            THREADS[oracle] = thread_name
+        ret_val = func(*args, **kwargs)
+        if need_acquire:
+            THREADS[oracle] = None
+            LOCKS[oracle].release()
+        return ret_val
+
+    return wrapped_func
 
 
 class Oracle(stateful.Stateful):
@@ -198,6 +263,7 @@ class Oracle(stateful.Stateful):
         trial.score = trial.metrics.get_best_value(self.objective.name)
         trial.best_step = trial.metrics.get_best_step(self.objective.name)
 
+    @synchronized
     def create_trial(self, tuner_id):
         """Create a new `Trial` to be run by the `Tuner`.
 
@@ -258,6 +324,7 @@ class Oracle(stateful.Stateful):
 
         return trial
 
+    @synchronized
     def update_trial(self, trial_id, metrics, step=0):
         """Used by a worker to report the status of a trial.
 
@@ -301,6 +368,7 @@ class Oracle(stateful.Stateful):
                     f"of {self.max_consecutive_failed_trials}.\n" + trial.message
                 )
 
+    @synchronized
     def end_trial(self, trial):
         """Logistics when a `Trial` finished running.
 
