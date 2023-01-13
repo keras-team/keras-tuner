@@ -176,7 +176,10 @@ class Tuner(base_tuner.BaseTuner):
                 if self.loss:
                     compile_kwargs["loss"] = self.loss
                 if self.optimizer:
-                    compile_kwargs["optimizer"] = self.optimizer
+                    optimizer = keras.optimizers.deserialize(
+                        keras.optimizers.serialize(self.optimizer)
+                    )
+                    compile_kwargs["optimizer"] = optimizer
                 if self.metrics:
                     compile_kwargs["metrics"] = self.metrics
                 model.compile(**compile_kwargs)

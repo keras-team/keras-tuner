@@ -455,6 +455,22 @@ def test_override_compile(tmp_path):
     assert model.loss == "mse"
 
 
+def test_override_optimizer_with_actual_optimizer_object(tmp_path):
+    tuner = keras_tuner.tuners.RandomSearch(
+        build_model,
+        objective="val_loss",
+        max_trials=4,
+        optimizer=keras.optimizers.Adam(0.01),
+        directory=tmp_path,
+    )
+    tuner.search(
+        x=TRAIN_INPUTS,
+        y=TRAIN_TARGETS,
+        epochs=2,
+        validation_data=(VAL_INPUTS, VAL_TARGETS),
+    )
+
+
 def test_static_space(tmp_path):
     def build_model_static(hp):
         inputs = keras.Input(shape=(INPUT_DIM,))
