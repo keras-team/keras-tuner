@@ -82,7 +82,18 @@ def synchronized(func, *args, **kwargs):
     ```
     """
 
+    def backward_compatible_end_trial(self, trial_id, status):
+        trial = trial_module.Trial(self.get_space(), trial_id, status)
+        return [self, trial], {}
+
     def wrapped_func(*args, **kwargs):
+        # For backward compatible with the old end_trial signature:
+        # def end_trial(self, trial_id, status="COMPLETED"):
+        if func.__name__ == "end_trial" and (
+            "trial_id" in kwargs or "status" in kwargs or isinstance(args[1], str)
+        ):
+            args, kwargs = backward_compatible_end_trial(*args, **kwargs)
+
         oracle = args[0]
         thread_name = threading.currentThread().getName()
         need_acquire = THREADS[oracle] != thread_name

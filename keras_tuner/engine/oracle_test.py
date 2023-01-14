@@ -80,6 +80,13 @@ def test_duplicate(tmp_path):
     assert len(oracle.ongoing_trials) == 2
 
 
+def test_end_trial_backward_compatible(tmp_path):
+    oracle = OracleStub(directory=tmp_path, objective="val_loss")
+    trial = oracle.create_trial(tuner_id="a")
+    oracle.update_trial(trial.trial_id, {"val_loss": 1.0})
+    oracle.end_trial(trial.trial_id, "COMPLETE")
+
+
 def test_not_duplicate(tmp_path):
     class MyOracle(OracleStub):
         def populate_space(self, trial_id):
