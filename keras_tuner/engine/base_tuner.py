@@ -108,6 +108,9 @@ class BaseTuner(stateful.Stateful):
         if overwrite and tf.io.gfile.exists(self.project_dir):
             tf.io.gfile.rmtree(self.project_dir)
 
+        # To support tuning distribution.
+        self.tuner_id = os.environ.get("KERASTUNER_TUNER_ID", "tuner0")
+
         # Reloading state.
         if not overwrite and tf.io.gfile.exists(self._get_tuner_fname()):
             tf.get_logger().info(f"Reloading Tuner from {self._get_tuner_fname()}")
@@ -115,9 +118,6 @@ class BaseTuner(stateful.Stateful):
         else:
             # Only populate initial space if not reloading.
             self._populate_initial_space()
-
-        # To support tuning distribution.
-        self.tuner_id = os.environ.get("KERASTUNER_TUNER_ID", "single")
 
         # Run in distributed mode.
         if dist_utils.is_chief_oracle():
@@ -425,7 +425,7 @@ class BaseTuner(stateful.Stateful):
     def set_state(self, state):
         pass
 
-    def _is_worker():
+    def _is_worker(self):
         """Return true only if in parallel tuning and is a worker tuner."""
         return dist_utils.has_chief_oracle() and not dist_utils.is_chief_oracle()
 
