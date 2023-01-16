@@ -46,7 +46,6 @@ class OracleClient:
             "max_trials",
             "allow_new_entries",
             "tune_new_entries",
-            "trials",
         }
         if name in whitelisted_attrs:
             return getattr(self._oracle, name)
