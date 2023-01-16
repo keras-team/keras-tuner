@@ -89,21 +89,35 @@ class BaseTuner(stateful.Stateful):
         logger=None,
         overwrite=False,
     ):
-        # Ops and metadata
-        self.directory = directory or "."
-        self.project_name = project_name or "untitled_project"
-        if overwrite and tf.io.gfile.exists(self.project_dir):
-            tf.io.gfile.rmtree(self.project_dir)
-
         if not isinstance(oracle, oracle_module.Oracle):
             raise ValueError(
                 "Expected `oracle` argument to be an instance of `Oracle`. "
                 f"Received: oracle={oracle} (of type ({type(oracle)})."
             )
+
         self.oracle = oracle
-        self.oracle._set_project_dir(
-            self.directory, self.project_name, overwrite=overwrite
-        )
+        self.hypermodel = hm_module.get_hypermodel(hypermodel)
+
+        # Ops and metadata
+        self.directory = directory or "."
+        self.project_name = project_name or "untitled_project"
+        self.oracle._set_project_dir(self.directory, self.project_name)
+
+        self.logger = logger
+
+        if overwrite and tf.io.gfile.exists(self.project_dir):
+            tf.io.gfile.rmtree(self.project_dir)
+
+        # To support tuning distribution.
+        self.tuner_id = os.environ.get("KERASTUNER_TUNER_ID", "tuner0")
+
+        # Reloading state.
+        if not overwrite and tf.io.gfile.exists(self._get_tuner_fname()):
+            tf.get_logger().info(f"Reloading Tuner from {self._get_tuner_fname()}")
+            self.reload()
+        else:
+            # Only populate initial space if not reloading.
+            self._populate_initial_space()
 
         # Run in distributed mode.
         if dist_utils.is_chief_oracle():
@@ -113,21 +127,9 @@ class BaseTuner(stateful.Stateful):
             # Proxies requests to the chief oracle.
             self.oracle = oracle_client.OracleClient(self.oracle)
 
-        # To support tuning distribution.
-        self.tuner_id = os.environ.get("KERASTUNER_TUNER_ID", "tuner0")
-
-        self.hypermodel = hm_module.get_hypermodel(hypermodel)
-
+        # In parallel tuning, everything below in __init__() is for workers only.
         # Logs etc
-        self.logger = logger
         self._display = tuner_utils.Display(oracle=self.oracle)
-
-        if not overwrite and tf.io.gfile.exists(self._get_tuner_fname()):
-            tf.get_logger().info(f"Reloading Tuner from {self._get_tuner_fname()}")
-            self.reload()
-        else:
-            # Only populate initial space if not reloading.
-            self._populate_initial_space()
 
     def _activate_all_conditions(self):
         # Lists of stacks of conditions used during `explore_space()`.
@@ -423,15 +425,19 @@ class BaseTuner(stateful.Stateful):
     def set_state(self, state):
         pass
 
+    def _is_worker(self):
+        """Return true only if in parallel tuning and is a worker tuner."""
+        return dist_utils.has_chief_oracle() and not dist_utils.is_chief_oracle()
+
     def save(self):
         """Saves this object to its project directory."""
-        if not dist_utils.has_chief_oracle():
+        if not self._is_worker():
             self.oracle.save()
         super().save(self._get_tuner_fname())
 
     def reload(self):
         """Reloads this object from its project directory."""
-        if not dist_utils.has_chief_oracle():
+        if not self._is_worker():
             self.oracle.reload()
         super().reload(self._get_tuner_fname())
 

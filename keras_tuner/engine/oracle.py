@@ -302,6 +302,7 @@ class Oracle(stateful.Stateful):
             trial = self.trials[self._retry_queue.pop()]
             trial.status = trial_module.TrialStatus.RUNNING
             self.ongoing_trials[tuner_id] = trial
+            self.save()
             return trial
 
         # Make the trial_id the current number of trial, pre-padded with 0s
@@ -418,18 +419,17 @@ class Oracle(stateful.Stateful):
         # Record the values again in case of new hps appeared.
         self._record_values(trial)
 
-        # Check if need to retry the trial.
         self._run_times[trial.trial_id] += 1
-        if self._maybe_retry(trial):
-            return
 
-        # End the trial
-        self.end_order.append(trial.trial_id)
-        self._check_consecutive_failures()
+        # Check if need to retry the trial.
+        if not self._retry(trial):
+            self.end_order.append(trial.trial_id)
+            self._check_consecutive_failures()
+
         self._save_trial(trial)
         self.save()
 
-    def _maybe_retry(self, trial):
+    def _retry(self, trial):
         """Send the trial for retry if needed.
 
         Args:
@@ -550,15 +550,10 @@ class Oracle(stateful.Stateful):
         self._id_to_hash = collections.defaultdict(lambda: None)
         self._id_to_hash.update(state["id_to_hash"])
 
-    def _set_project_dir(self, directory, project_name, overwrite=False):
+    def _set_project_dir(self, directory, project_name):
         """Sets the project directory and reloads the Oracle."""
         self._directory = directory
         self._project_name = project_name
-        if not overwrite and tf.io.gfile.exists(self._get_oracle_fname()):
-            tf.get_logger().info(
-                f"Reloading Oracle from existing project {self._get_oracle_fname()}"
-            )
-            self.reload()
 
     @property
     def _project_dir(self):
@@ -591,6 +586,11 @@ class Oracle(stateful.Stateful):
                 "when creating the `Tuner`. Found existing "
                 f"project at: {self._project_dir}"
             ) from e
+
+        # Empty the ongoing_trials and send them for retry.
+        for _, trial_id in self.ongoing_trials.items():
+            self._retry_queue.append(trial_id)
+        self.ongoing_trials = {}
 
     def _get_oracle_fname(self):
         return os.path.join(self._project_dir, "oracle.json")
