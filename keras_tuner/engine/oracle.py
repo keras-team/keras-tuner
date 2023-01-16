@@ -220,9 +220,12 @@ class Oracle(stateful.Stateful):
         self.project_name = None
 
         # In multi-worker mode, only the chief of each cluster should report
-        # results and save trials.
+        # results. These 2 attributes exist in `Oracle` just make it consistent
+        # with `OracleClient`, in which the attributes are utilized.
         self.multi_worker = False
         self.should_report = True
+
+        # Handling the retries and failed trials.
         self.max_retries_per_trial = max_retries_per_trial
         self.max_consecutive_failed_trials = max_consecutive_failed_trials
 
@@ -359,8 +362,7 @@ class Oracle(stateful.Stateful):
                 )
                 trial.metrics.register(metric_name, direction=direction)
             trial.metrics.update(metric_name, metric_value, step=step)
-        if self.should_report:
-            self._save_trial(trial)
+        self._save_trial(trial)
         # TODO: To signal early stopping, set Trial.status to "STOPPED".
         return trial.status
 
@@ -565,9 +567,8 @@ class Oracle(stateful.Stateful):
         return dirname
 
     def save(self):
-        if self.should_report:
-            # `self.trials` are saved in their own, Oracle-agnostic files.
-            super().save(self._get_oracle_fname())
+        # `self.trials` are saved in their own, Oracle-agnostic files.
+        super().save(self._get_oracle_fname())
 
     def reload(self):
         # Reload trials from their own files.
@@ -620,10 +621,9 @@ class Oracle(stateful.Stateful):
         return dirname
 
     def _save_trial(self, trial):
-        if self.should_report:
-            # Write trial status to trial directory
-            trial_id = trial.trial_id
-            trial.save(os.path.join(self._get_trial_dir(trial_id), "trial.json"))
+        # Write trial status to trial directory
+        trial_id = trial.trial_id
+        trial.save(os.path.join(self._get_trial_dir(trial_id), "trial.json"))
 
     def _random_values(self):
         """Fills the hyperparameter space with random values.
