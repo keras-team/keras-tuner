@@ -105,6 +105,19 @@ class BaseTuner(stateful.Stateful):
             self.directory, self.project_name, overwrite=overwrite
         )
 
+        # To support tuning distribution.
+        self.tuner_id = os.environ.get("KERASTUNER_TUNER_ID", "single")
+
+        self.hypermodel = hm_module.get_hypermodel(hypermodel)
+
+        # Reloading state.
+        if not overwrite and tf.io.gfile.exists(self._get_tuner_fname()):
+            tf.get_logger().info(f"Reloading Tuner from {self._get_tuner_fname()}")
+            self.reload()
+        else:
+            # Only populate initial space if not reloading.
+            self._populate_initial_space()
+
         # Run in distributed mode.
         if dist_utils.is_chief_oracle():
             # Blocks forever.
@@ -113,21 +126,10 @@ class BaseTuner(stateful.Stateful):
             # Proxies requests to the chief oracle.
             self.oracle = oracle_client.OracleClient(self.oracle)
 
-        # To support tuning distribution.
-        self.tuner_id = os.environ.get("KERASTUNER_TUNER_ID", "tuner0")
-
-        self.hypermodel = hm_module.get_hypermodel(hypermodel)
-
+        # In parallel tuning, everything below in __init__() is for workers only.
         # Logs etc
         self.logger = logger
         self._display = tuner_utils.Display(oracle=self.oracle)
-
-        if not overwrite and tf.io.gfile.exists(self._get_tuner_fname()):
-            tf.get_logger().info(f"Reloading Tuner from {self._get_tuner_fname()}")
-            self.reload()
-        else:
-            # Only populate initial space if not reloading.
-            self._populate_initial_space()
 
     def _activate_all_conditions(self):
         # Lists of stacks of conditions used during `explore_space()`.
@@ -425,13 +427,13 @@ class BaseTuner(stateful.Stateful):
 
     def save(self):
         """Saves this object to its project directory."""
-        if not dist_utils.has_chief_oracle():
+        if dist_utils.is_chief_oracle() or not dist_utils.has_chief_oracle():
             self.oracle.save()
         super().save(self._get_tuner_fname())
 
     def reload(self):
         """Reloads this object from its project directory."""
-        if not dist_utils.has_chief_oracle():
+        if dist_utils.is_chief_oracle() or not dist_utils.has_chief_oracle():
             self.oracle.reload()
         super().reload(self._get_tuner_fname())
 
