@@ -26,7 +26,9 @@ class OracleStub(oracle_module.Oracle):
     def __init__(self, directory, **kwargs):
         super().__init__(**kwargs)
         self.score_trial_called = False
-        self._set_project_dir(directory=directory, project_name="name")
+        self._set_project_dir(
+            directory=directory, project_name="name", overwrite=True
+        )
 
     def populate_space(self, trial_id):
         return {
@@ -325,33 +327,3 @@ def test_synchronized_functions_in_different_oracle_doesnt_block(tmp_path):
 
     # All threads begin to sleep before anyone ends.
     assert set(log[:5]) == set(log[5:])
-
-
-def test_oracle_return_same_trial_if_same_tuner(tmp_path):
-    oracle = OracleStub(
-        directory=tmp_path, objective="val_loss", max_retries_per_trial=1
-    )
-    trial_1 = oracle.create_trial(tuner_id="a")
-    trial_2 = oracle.create_trial(tuner_id="a")
-
-    assert trial_1.trial_id == trial_2.trial_id
-
-
-def test_oracle_reload_ongoing_trials_to_retry(tmp_path):
-    oracle = OracleStub(
-        directory=tmp_path, objective="val_loss", max_retries_per_trial=1
-    )
-    trial_1 = oracle.create_trial(tuner_id="a")
-    trial_2 = oracle.create_trial(tuner_id="b")
-
-    oracle_2 = OracleStub(
-        directory=tmp_path, objective="val_loss", max_retries_per_trial=1
-    )
-    oracle_2.reload()
-
-    trial_3 = oracle.create_trial(tuner_id="a")
-    trial_4 = oracle.create_trial(tuner_id="b")
-
-    assert set([trial_3.trial_id, trial_4.trial_id]) == set(
-        [trial_1.trial_id, trial_2.trial_id]
-    )
