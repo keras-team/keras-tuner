@@ -15,6 +15,7 @@
 import threading
 import time
 
+import numpy as np
 import pytest
 
 import keras_tuner
@@ -355,3 +356,28 @@ def test_oracle_reload_ongoing_trials_to_retry(tmp_path):
     assert set([trial_3.trial_id, trial_4.trial_id]) == set(
         [trial_1.trial_id, trial_2.trial_id]
     )
+
+
+def test_get_best_trial_with_nans(tmp_path):
+    oracle = OracleStub(
+        directory=tmp_path, objective="val_loss", max_retries_per_trial=1
+    )
+
+    for i in range(10):
+        trial = oracle.create_trial(tuner_id="a")
+        oracle.update_trial(trial.trial_id, {"val_loss": np.random.rand()})
+        trial.status = trial_module.TrialStatus.COMPLETED
+        oracle.end_trial(trial)
+
+    best_trial = oracle.create_trial(tuner_id="a")
+    oracle.update_trial(best_trial.trial_id, {"val_loss": -0.1})
+    best_trial.status = trial_module.TrialStatus.COMPLETED
+    oracle.end_trial(best_trial)
+
+    trial = oracle.create_trial(tuner_id="a")
+    oracle.update_trial(trial.trial_id, {"val_loss": float("nan")})
+    trial.status = trial_module.TrialStatus.COMPLETED
+    oracle.end_trial(trial)
+
+    assert len(oracle.get_best_trials()) > 0
+    assert oracle.get_best_trials()[0].trial_id == best_trial.trial_id
