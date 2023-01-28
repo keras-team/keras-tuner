@@ -44,3 +44,5 @@
   dimension`, but it defaults to 2. This is now fixed.
 * It would through an error when using a concrete Keras optimizer object to
   override the `HyperModel` compile arg. This is now fixed.
+* Workers might crash due to `Oracle` reloading when running in parallel. This is
+  now fixed.
