@@ -118,7 +118,6 @@ class HyperEfficientNet(hypermodel.HyperModel):
         super().__init__(**kwargs)
 
     def build(self, hp):
-
         if self.input_tensor is not None:
             inputs = tf.keras.utils.get_source_inputs(self.input_tensor)
             x = self.input_tensor
