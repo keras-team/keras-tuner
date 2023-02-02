@@ -152,7 +152,6 @@ class SklearnTuner(base_tuner.BaseTuner):
         return super().search(X, y, sample_weight=sample_weight, groups=groups)
 
     def run_trial(self, trial, X, y, sample_weight=None, groups=None):
-
         metrics = collections.defaultdict(list)
         # For cross-validation methods that expect a `groups` argument.
         cv_kwargs = {"groups": groups} if groups is not None else {}

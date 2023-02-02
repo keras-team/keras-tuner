@@ -108,7 +108,6 @@ class Display:
 
     def on_trial_begin(self, trial):
         if self.verbose >= 1:
-
             self.trial_number = int(trial.trial_id) + 1
             print()
             print(f"Search: Running Trial #{self.trial_number}")

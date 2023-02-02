@@ -33,7 +33,7 @@ setup(
     ],
     extras_require={
         "tests": [
-            "black==22.8.0",
+            "black",
             "flake8",
             "isort",
             "pandas",

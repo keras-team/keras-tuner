@@ -110,7 +110,6 @@ class MockModel(keras.Model):
 
 
 class MockHyperModel(keras_tuner.HyperModel):
-
     mode_0 = [[10, 9, 8], [7, 6, 5], [4, 3, 2]]
     mode_1 = [[13, 13, 13], [12, 12, 12], [11, 11, 11]]
 
@@ -697,7 +696,6 @@ def test_get_best_models(tmp_path):
 
 
 def test_saving_and_reloading(tmp_path):
-
     tuner = keras_tuner.tuners.RandomSearch(
         build_model,
         objective="val_accuracy",

@@ -52,7 +52,6 @@ class HyperResNet(hypermodel.HyperModel):
         classes=None,
         **kwargs,
     ):
-
         super().__init__(**kwargs)
         if include_top and classes is None:
             raise ValueError("You must specify `classes` when " "`include_top=True`")

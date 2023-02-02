@@ -333,7 +333,6 @@ def test_float_optimization(tmp_path):
 
 
 def test_distributed_optimization(tmp_path):
-
     hps = hp_module.HyperParameters()
     hps.Int("a", 0, 10)
     hps.Float("b", -1, 1, step=0.1)

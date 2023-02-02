@@ -1,4 +1,3 @@
-pwd
 isort --sl --profile=black -c .
 if ! [ $? -eq 0 ]
 then
