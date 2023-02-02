@@ -27,6 +27,9 @@
 * Better fault tolerance during the search. Added two new arguments to `Tuner`
   and `Oracle` initializers, `max_retries_per_trial` and
   `max_consecutive_failed_trials`.
+* You can now mark a `Trial` as failed by
+  `raise keras_tuner.FailedTrialError("error message.")` in `HyperModel.build()`,
+  `HyperModel.fit()`, or your model build function.
 * Provides better error messages for invalid configs for `Int` and `Float` type
   hyperparameters.
 * A decorator `@keras_tuner.synchronized` is added to decorate the methods in
