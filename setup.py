@@ -41,6 +41,7 @@ setup(
             "pytest",
             "pytest-cov",
             "pytest-xdist",
+            "namex",
             "scikit-learn",
             "scipy",
         ],

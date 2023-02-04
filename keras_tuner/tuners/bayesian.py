@@ -31,8 +31,10 @@ from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine import oracle as oracle_module
 from keras_tuner.engine import trial as trial_module
 from keras_tuner.engine import tuner as tuner_module
+from keras_tuner.api_export import keras_tuner_export
 
 
+@keras_tuner_export("keras_tuner.oracles.BayesianOptimizationOracle")
 class BayesianOptimizationOracle(oracle_module.Oracle):
     """Bayesian optimization oracle.
 
@@ -147,9 +149,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             be created).
         """
         # Generate enough samples before training Gaussian process.
-        completed_trials = [
-            t for t in self.trials.values() if t.status == "COMPLETED"
-        ]
+        completed_trials = [t for t in self.trials.values() if t.status == "COMPLETED"]
 
         # Use 3 times the dimensionality of the space as the default number of
         # random points.
@@ -299,6 +299,9 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         return np.array(bounds)
 
 
+@keras_tuner_export(
+    ["keras_tuner.BayesianOptimization", "keras_tuner.tuners.BayesianOptimization"]
+)
 class BayesianOptimization(tuner_module.Tuner):
     """BayesianOptimization tuning with Gaussian process.
 

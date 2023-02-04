@@ -173,9 +173,7 @@ class Trial(stateful.Stateful):
 
     def to_proto(self):
         if self.score is not None:
-            score = keras_tuner_pb2.Trial.Score(
-                value=self.score, step=self.best_step
-            )
+            score = keras_tuner_pb2.Trial.Score(value=self.score, step=self.best_step)
         else:
             score = None
         proto = keras_tuner_pb2.Trial(

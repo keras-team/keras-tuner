@@ -72,9 +72,7 @@ class CloudLogger(Logger):
         self.api_key = api_key
         self.log_interval = 5
 
-        self._base_url = (
-            "https://us-central1-kerastuner-prod.cloudfunctions.net/api/"
-        )
+        self._base_url = "https://us-central1-kerastuner-prod.cloudfunctions.net/api/"
         self._last_update = -1
         self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
         self._search_id = None

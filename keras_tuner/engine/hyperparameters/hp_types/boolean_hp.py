@@ -50,9 +50,7 @@ class Boolean(hyperparameter.HyperParameter):
 
     @classmethod
     def from_proto(cls, proto):
-        conditions = [
-            conditions_mod.Condition.from_proto(c) for c in proto.conditions
-        ]
+        conditions = [conditions_mod.Condition.from_proto(c) for c in proto.conditions]
         return cls(name=proto.name, default=proto.default, conditions=conditions)
 
     def to_proto(self):

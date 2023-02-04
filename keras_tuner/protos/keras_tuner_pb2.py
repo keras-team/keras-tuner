@@ -1527,13 +1527,9 @@ _VALUE.fields_by_name["int_value"].containing_oneof = _VALUE.oneofs_by_name["kin
 _VALUE.oneofs_by_name["kind"].fields.append(_VALUE.fields_by_name["float_value"])
 _VALUE.fields_by_name["float_value"].containing_oneof = _VALUE.oneofs_by_name["kind"]
 _VALUE.oneofs_by_name["kind"].fields.append(_VALUE.fields_by_name["string_value"])
-_VALUE.fields_by_name["string_value"].containing_oneof = _VALUE.oneofs_by_name[
-    "kind"
-]
+_VALUE.fields_by_name["string_value"].containing_oneof = _VALUE.oneofs_by_name["kind"]
 _VALUE.oneofs_by_name["kind"].fields.append(_VALUE.fields_by_name["boolean_value"])
-_VALUE.fields_by_name["boolean_value"].containing_oneof = _VALUE.oneofs_by_name[
-    "kind"
-]
+_VALUE.fields_by_name["boolean_value"].containing_oneof = _VALUE.oneofs_by_name["kind"]
 _FLOAT.fields_by_name["sampling"].enum_type = _SAMPLING
 _FLOAT.fields_by_name["conditions"].message_type = _CONDITION
 _INT.fields_by_name["sampling"].enum_type = _SAMPLING
@@ -1571,9 +1567,7 @@ _CONDITION_PARENT.fields_by_name["values"].message_type = _VALUE
 _CONDITION_PARENT.containing_type = _CONDITION
 _CONDITION.fields_by_name["parent"].message_type = _CONDITION_PARENT
 _CONDITION.oneofs_by_name["kind"].fields.append(_CONDITION.fields_by_name["parent"])
-_CONDITION.fields_by_name["parent"].containing_oneof = _CONDITION.oneofs_by_name[
-    "kind"
-]
+_CONDITION.fields_by_name["parent"].containing_oneof = _CONDITION.oneofs_by_name["kind"]
 DESCRIPTOR.message_types_by_name["Value"] = _VALUE
 DESCRIPTOR.message_types_by_name["Float"] = _FLOAT
 DESCRIPTOR.message_types_by_name["Int"] = _INT

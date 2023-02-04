@@ -47,9 +47,7 @@ def build_model(hp):
     outputs = keras.layers.Dense(NUM_CLASSES, activation="softmax")(x)
     model = keras.Model(inputs, outputs)
     model.compile(
-        optimizer=keras.optimizers.Adam(
-            hp.Choice("learning_rate", [1e-2, 1e-3, 1e-4])
-        ),
+        optimizer=keras.optimizers.Adam(hp.Choice("learning_rate", [1e-2, 1e-3, 1e-4])),
         loss="sparse_categorical_crossentropy",
         metrics=["accuracy"],
     )
@@ -143,9 +141,7 @@ def build_subclass_model(hp):
 
     model = MyModel()
     model.compile(
-        optimizer=keras.optimizers.Adam(
-            hp.Choice("learning_rate", [1e-2, 1e-3, 1e-4])
-        ),
+        optimizer=keras.optimizers.Adam(hp.Choice("learning_rate", [1e-2, 1e-3, 1e-4])),
         loss="sparse_categorical_crossentropy",
         metrics=["accuracy"],
     )
@@ -475,9 +471,9 @@ def test_static_space(tmp_path):
         inputs = keras.Input(shape=(INPUT_DIM,))
         x = inputs
         for i in range(hp.get("num_layers")):
-            x = keras.layers.Dense(
-                units=hp.get(f"units_{str(i)}"), activation="relu"
-            )(x)
+            x = keras.layers.Dense(units=hp.get(f"units_{str(i)}"), activation="relu")(
+                x
+            )
         outputs = keras.layers.Dense(NUM_CLASSES, activation="softmax")(x)
         model = keras.Model(inputs, outputs)
         model.compile(
@@ -517,9 +513,9 @@ def test_static_space_errors(tmp_path):
         inputs = keras.Input(shape=(INPUT_DIM,))
         x = inputs
         for i in range(hp.get("num_layers")):
-            x = keras.layers.Dense(
-                units=hp.get(f"units_{str(i)}"), activation="relu"
-            )(x)
+            x = keras.layers.Dense(units=hp.get(f"units_{str(i)}"), activation="relu")(
+                x
+            )
         outputs = keras.layers.Dense(NUM_CLASSES, activation="softmax")(x)
         model = keras.Model(inputs, outputs)
         model.compile(
@@ -554,9 +550,9 @@ def test_static_space_errors(tmp_path):
         inputs = keras.Input(shape=(INPUT_DIM,))
         x = inputs
         for i in range(hp.get("num_layers")):
-            x = keras.layers.Dense(
-                units=hp.get(f"units_{str(i)}"), activation="relu"
-            )(x)
+            x = keras.layers.Dense(units=hp.get(f"units_{str(i)}"), activation="relu")(
+                x
+            )
         outputs = keras.layers.Dense(NUM_CLASSES, activation="softmax")(x)
         model = keras.Model(inputs, outputs)
         model.compile(
@@ -829,9 +825,7 @@ def test_tunable_false_hypermodel(tmp_path):
         model = tf.keras.Model(inputs, outputs)
 
         optimizer = tf.keras.optimizers.get(hp.Choice("optimizer", ["adam", "sgd"]))
-        optimizer.learning_rate = hp.Float(
-            "learning_rate", 1e-4, 1e-2, sampling="log"
-        )
+        optimizer.learning_rate = hp.Float("learning_rate", 1e-4, 1e-2, sampling="log")
 
         model.compile(optimizer, loss="sparse_categorical_crossentropy")
         return model
@@ -999,9 +993,7 @@ def test_convert_hyperparams_to_hparams():
         hparams_api.HParam("r", hparams_api.RealInterval(0.0, 1.0)): 0.0,
     }
     hparams_repr_list = [repr(hparams[x]) for x in hparams.keys()]
-    expected_hparams_repr_list = [
-        repr(expected_hparams[x]) for x in expected_hparams
-    ]
+    expected_hparams_repr_list = [repr(expected_hparams[x]) for x in expected_hparams]
 
     assert sorted(hparams_repr_list) == sorted(expected_hparams_repr_list)
 
@@ -1190,9 +1182,7 @@ def test_tuner_errors(tmp_path):
     with pytest.raises(
         ValueError, match="Expected `oracle` argument to be an instance of `Oracle`"
     ):
-        tuner_module.Tuner(
-            oracle="invalid", hypermodel=build_model, directory=tmp_path
-        )
+        tuner_module.Tuner(oracle="invalid", hypermodel=build_model, directory=tmp_path)
     # invalid hypermodel
     with pytest.raises(ValueError, match="`hypermodel` argument should be either"):
         tuner_module.Tuner(
@@ -1249,9 +1239,7 @@ def test_overwrite_true(tmp_path):
         max_trials=2,
         directory=tmp_path,
     )
-    tuner.search(
-        TRAIN_INPUTS, TRAIN_TARGETS, validation_data=(VAL_INPUTS, VAL_TARGETS)
-    )
+    tuner.search(TRAIN_INPUTS, TRAIN_TARGETS, validation_data=(VAL_INPUTS, VAL_TARGETS))
     assert len(tuner.oracle.trials) == 2
 
     new_tuner = keras_tuner.tuners.RandomSearch(
@@ -1271,9 +1259,7 @@ def test_correct_display_trial_number(tmp_path):
         max_trials=2,
         directory=tmp_path,
     )
-    tuner.search(
-        TRAIN_INPUTS, TRAIN_TARGETS, validation_data=(VAL_INPUTS, VAL_TARGETS)
-    )
+    tuner.search(TRAIN_INPUTS, TRAIN_TARGETS, validation_data=(VAL_INPUTS, VAL_TARGETS))
     new_tuner = keras_tuner.tuners.RandomSearch(
         hypermodel=build_model,
         objective="val_accuracy",

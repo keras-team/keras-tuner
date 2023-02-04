@@ -34,6 +34,7 @@ except ImportError:
     sklearn = None
 
 from keras_tuner.engine import base_tuner
+from keras_tuner.api_export import keras_tuner_export
 
 
 def split_data(data, indices):
@@ -45,6 +46,7 @@ def split_data(data, indices):
         raise TypeError()
 
 
+@keras_tuner_export(["keras_tuner.SklearnTuner", "keras_tuner.tuners.SklearnTuner"])
 class SklearnTuner(base_tuner.BaseTuner):
     """Tuner for Scikit-learn Models.
 
@@ -120,9 +122,7 @@ class SklearnTuner(base_tuner.BaseTuner):
         super().__init__(oracle=oracle, hypermodel=hypermodel, **kwargs)
 
         if sklearn is None:
-            raise ImportError(
-                "Please install sklearn before using the `SklearnTuner`."
-            )
+            raise ImportError("Please install sklearn before using the `SklearnTuner`.")
 
         self.scoring = scoring
 
@@ -132,9 +132,7 @@ class SklearnTuner(base_tuner.BaseTuner):
             metrics = [metrics]
         self.metrics = metrics
 
-        self.cv = cv or sklearn.model_selection.KFold(
-            5, shuffle=True, random_state=1
-        )
+        self.cv = cv or sklearn.model_selection.KFold(5, shuffle=True, random_state=1)
 
     def search(self, X, y, sample_weight=None, groups=None):
         """Performs hyperparameter search.

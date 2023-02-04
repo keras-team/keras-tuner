@@ -26,8 +26,10 @@ from tensorflow import keras
 from keras_tuner import errors
 from keras_tuner.engine import base_tuner
 from keras_tuner.engine import tuner_utils
+from keras_tuner.api_export import keras_tuner_export
 
 
+@keras_tuner_export(["keras_tuner.Tuner", "keras_tuner.tuners.Tuner"])
 class Tuner(base_tuner.BaseTuner):
     """Tuner class for Keras models.
 

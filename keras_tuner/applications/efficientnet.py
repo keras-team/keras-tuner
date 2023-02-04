@@ -171,9 +171,7 @@ class HyperEfficientNet(hypermodel.HyperModel):
         behavior of compiling.
         """
         learning_rate = hp.Choice("learning_rate", [0.1, 0.01, 0.001], default=0.01)
-        optimizer = tf.keras.optimizers.SGD(
-            momentum=0.1, learning_rate=learning_rate
-        )
+        optimizer = tf.keras.optimizers.SGD(momentum=0.1, learning_rate=learning_rate)
 
         model.compile(
             optimizer=optimizer,

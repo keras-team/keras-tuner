@@ -31,7 +31,14 @@ from keras_tuner.tuners import Hyperband
 from keras_tuner.tuners import RandomSearch
 from keras_tuner.tuners import SklearnTuner
 from keras_tuner.utils import check_tf_version
+from keras_tuner.api_export import keras_tuner_export
 
 check_tf_version()
 
-__version__ = "1.2.1dev"
+
+class Version(str):
+    __name__ = "Version"
+
+
+__version__ = Version("1.2.1dev")
+keras_tuner_export("keras_tuner.__version__")(__version__)

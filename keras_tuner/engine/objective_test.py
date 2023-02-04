@@ -39,9 +39,7 @@ def test_create_objective_with_multi_objective():
 def test_create_objective_with_multi_str():
     obj = objective.create_objective(["accuracy", "loss"])
     assert isinstance(obj, objective.MultiObjective)
-    assert (
-        obj.objectives[0].name == "accuracy" and obj.objectives[0].direction == "max"
-    )
+    assert obj.objectives[0].name == "accuracy" and obj.objectives[0].direction == "max"
     assert obj.objectives[1].name == "loss" and obj.objectives[1].direction == "min"
 
 
