@@ -72,7 +72,9 @@ class Fixed(hyperparameter.HyperParameter):
     @classmethod
     def from_proto(cls, proto):
         value = getattr(proto.value, proto.value.WhichOneof("kind"))
-        conditions = [conditions_mod.Condition.from_proto(c) for c in proto.conditions]
+        conditions = [
+            conditions_mod.Condition.from_proto(c) for c in proto.conditions
+        ]
         return cls(name=proto.name, value=value, conditions=conditions)
 
     def to_proto(self):

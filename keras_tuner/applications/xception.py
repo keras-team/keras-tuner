@@ -16,8 +16,8 @@ import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras import layers
 
-from keras_tuner.engine import hypermodel
 from keras_tuner.api_export import keras_tuner_export
+from keras_tuner.engine import hypermodel
 
 
 @keras_tuner_export("keras_tuner.applications.HyperXception")
@@ -77,7 +77,9 @@ class HyperXception(hypermodel.HyperModel):
             x = inputs
 
         # Initial conv2d.
-        conv2d_num_filters = hp.Choice("conv2d_num_filters", [32, 64, 128], default=64)
+        conv2d_num_filters = hp.Choice(
+            "conv2d_num_filters", [32, 64, 128], default=64
+        )
         kernel_size = hp.Choice("kernel_size", [3, 5])
         initial_strides = hp.Choice("initial_strides", [2])
         x = conv(
@@ -92,7 +94,9 @@ class HyperXception(hypermodel.HyperModel):
         sep_num_filters = hp.Int("sep_num_filters", 128, 768, step=128, default=256)
         num_residual_blocks = hp.Int("num_residual_blocks", 2, 8, default=4)
         for _ in range(num_residual_blocks):
-            x = residual(x, sep_num_filters, activation=activation, max_pooling=False)
+            x = residual(
+                x, sep_num_filters, activation=activation, max_pooling=False
+            )
         # Exit flow.
         x = residual(x, 2 * sep_num_filters, activation=activation, max_pooling=True)
 

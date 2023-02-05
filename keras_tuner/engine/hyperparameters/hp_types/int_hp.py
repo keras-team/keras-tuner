@@ -157,7 +157,9 @@ class Int(numerical.Numerical):
 
     @classmethod
     def from_proto(cls, proto):
-        conditions = [conditions_mod.Condition.from_proto(c) for c in proto.conditions]
+        conditions = [
+            conditions_mod.Condition.from_proto(c) for c in proto.conditions
+        ]
         return cls(
             name=proto.name,
             min_value=proto.min_value,

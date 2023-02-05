@@ -55,7 +55,9 @@ def build_model(hp):
     outputs = keras.layers.Dense(NUM_CLASSES, activation="softmax")(x)
     model = keras.Model(inputs, outputs)
     model.compile(
-        optimizer=keras.optimizers.Adam(hp.Choice("learning_rate", [1e-2, 1e-3, 1e-4])),
+        optimizer=keras.optimizers.Adam(
+            hp.Choice("learning_rate", [1e-2, 1e-3, 1e-4])
+        ),
         loss="sparse_categorical_crossentropy",
         metrics=["accuracy"],
     )

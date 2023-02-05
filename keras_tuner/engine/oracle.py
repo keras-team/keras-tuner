@@ -26,11 +26,11 @@ import numpy as np
 import tensorflow as tf
 
 from keras_tuner import utils
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine import objective as obj_module
 from keras_tuner.engine import stateful
 from keras_tuner.engine import trial as trial_module
-from keras_tuner.api_export import keras_tuner_export
 
 # For backward compatibility.
 Objective = obj_module.Objective
@@ -473,7 +473,9 @@ class Oracle(stateful.Stateful):
         """
         hps = hyperparameters.space
         new_hps = [
-            hp for hp in hps if not self.hyperparameters._exists(hp.name, hp.conditions)
+            hp
+            for hp in hps
+            if not self.hyperparameters._exists(hp.name, hp.conditions)
         ]
 
         if new_hps and not self.allow_new_entries:
@@ -505,7 +507,9 @@ class Oracle(stateful.Stateful):
         return sorted_trials[:num_trials]
 
     def remaining_trials(self):
-        return self.max_trials - len(self.trials.items()) if self.max_trials else None
+        return (
+            self.max_trials - len(self.trials.items()) if self.max_trials else None
+        )
 
     def get_state(self):
         # `self.trials` are saved in their own, Oracle-agnostic files.
@@ -676,4 +680,6 @@ class Oracle(stateful.Stateful):
 def _maybe_infer_direction_from_objective(objective, metric_name):
     if isinstance(objective, obj_module.Objective):
         objective = [objective]
-    return next((obj.direction for obj in objective if obj.name == metric_name), None)
+    return next(
+        (obj.direction for obj in objective if obj.name == metric_name), None
+    )

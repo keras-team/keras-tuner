@@ -113,7 +113,9 @@ class Choice(hyperparameter.HyperParameter):
     def from_proto(cls, proto):
         values = [getattr(val, val.WhichOneof("kind")) for val in proto.values]
         default = getattr(proto.default, proto.default.WhichOneof("kind"), None)
-        conditions = [conditions_mod.Condition.from_proto(c) for c in proto.conditions]
+        conditions = [
+            conditions_mod.Condition.from_proto(c) for c in proto.conditions
+        ]
         return cls(
             name=proto.name,
             values=values,

@@ -49,7 +49,9 @@ def test_float_linear_value_to_prob_no_step():
 
 
 def test_float_log_with_step():
-    rg = hp_module.Float("rg", min_value=0.01, max_value=100, step=10, sampling="log")
+    rg = hp_module.Float(
+        "rg", min_value=0.01, max_value=100, step=10, sampling="log"
+    )
     for _ in range(10):
         assert rg.random_sample() in [0.01, 0.1, 1.0, 10.0, 100.0]
     assert abs(rg.value_to_prob(0.1) - 0.3) < 1e-4
@@ -66,7 +68,9 @@ def test_float_reverse_log_with_step():
         # [0.09, 0.9, 9, 90]
         # [90, 9, 0.9, 0.09]
         sample = rg.random_sample()
-        assert any(abs(sample - x) < 1e-4 for x in [0.01, 90.01, 99.01, 99.91, 100.0])
+        assert any(
+            abs(sample - x) < 1e-4 for x in [0.01, 90.01, 99.01, 99.91, 100.0]
+        )
     assert abs(rg.value_to_prob(99.91) - 0.3) < 1e-4
     assert abs(rg.prob_to_value(0.3) - 99.91) < 1e-4
 

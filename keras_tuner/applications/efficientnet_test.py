@@ -60,7 +60,9 @@ def test_tf_version_too_low_error():
 )
 def test_hyperparameter_existence_and_defaults():
     hp = hp_module.HyperParameters()
-    hypermodel = efficientnet.HyperEfficientNet(input_shape=(224, 224, 3), classes=10)
+    hypermodel = efficientnet.HyperEfficientNet(
+        input_shape=(224, 224, 3), classes=10
+    )
     hypermodel.build(hp)
     assert hp.get("version") == "B0"
     assert hp.get("top_dropout_rate") == 0.2
@@ -77,7 +79,9 @@ def test_hyperparameter_override():
     hp = hp_module.HyperParameters()
     hp.Choice("version", ["B1"])
     hp.Fixed("top_dropout_rate", 0.5)
-    hypermodel = efficientnet.HyperEfficientNet(input_shape=(256, 256, 3), classes=10)
+    hypermodel = efficientnet.HyperEfficientNet(
+        input_shape=(256, 256, 3), classes=10
+    )
     hypermodel.build(hp)
     assert hp.get("version") == "B1"
     assert hp.get("top_dropout_rate") == 0.5

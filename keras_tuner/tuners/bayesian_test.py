@@ -404,7 +404,9 @@ def test_interleaved_distributed_optimization(tmp_path):
     trial_2 = oracle.create_trial("tuner_1")
 
     # tuner_0 finishes trial_1 before tuner_1 finishes
-    oracle.update_trial(trial_1.trial_id, {"score": evaluate(trial_1.hyperparameters)})
+    oracle.update_trial(
+        trial_1.trial_id, {"score": evaluate(trial_1.hyperparameters)}
+    )
     trial_1.status = "COMPLETED"
     oracle.end_trial(trial_1)
 
@@ -412,7 +414,9 @@ def test_interleaved_distributed_optimization(tmp_path):
     trial_3 = oracle.create_trial("tuner_0")
 
     # tuner_1 finishes trial_2
-    oracle.update_trial(trial_2.trial_id, {"score": evaluate(trial_2.hyperparameters)})
+    oracle.update_trial(
+        trial_2.trial_id, {"score": evaluate(trial_2.hyperparameters)}
+    )
     trial_2.status = "COMPLETED"
     oracle.end_trial(trial_2)
 
@@ -421,12 +425,16 @@ def test_interleaved_distributed_optimization(tmp_path):
     trial_4 = oracle.create_trial("tuner_1")
 
     # tuner_0 finishes trial_3
-    oracle.update_trial(trial_3.trial_id, {"score": evaluate(trial_3.hyperparameters)})
+    oracle.update_trial(
+        trial_3.trial_id, {"score": evaluate(trial_3.hyperparameters)}
+    )
     trial_3.status = "COMPLETED"
     oracle.end_trial(trial_3)
 
     # tuner_1 finishes trial_4
-    oracle.update_trial(trial_4.trial_id, {"score": evaluate(trial_4.hyperparameters)})
+    oracle.update_trial(
+        trial_4.trial_id, {"score": evaluate(trial_4.hyperparameters)}
+    )
     trial_4.status = "COMPLETED"
     oracle.end_trial(trial_4)
 

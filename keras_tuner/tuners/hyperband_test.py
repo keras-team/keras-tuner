@@ -259,7 +259,9 @@ def test_hyperband_load_weights(tmp_path):
     best_trial_round_0_id = hp["tuner/trial_id"]
     best_hp_round_0 = tuner.oracle.trials[best_trial_round_0_id].hyperparameters
     best_model_round_0 = tuner._try_build(best_hp_round_0)
-    best_model_round_0.load_weights(tuner._get_checkpoint_fname(best_trial_round_0_id))
+    best_model_round_0.load_weights(
+        tuner._get_checkpoint_fname(best_trial_round_0_id)
+    )
     assert best_model_round_0.predict(x).shape == y.shape
     best_model_round_0_weights = best_model_round_0.weights.copy()
     # compare the weights

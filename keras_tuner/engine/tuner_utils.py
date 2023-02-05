@@ -274,7 +274,9 @@ def convert_to_metrics_dict(results, objective):
 
     # A History.
     if isinstance(results, keras.callbacks.History):
-        best_value, _ = _get_best_value_and_best_epoch_from_history(results, objective)
+        best_value, _ = _get_best_value_and_best_epoch_from_history(
+            results, objective
+        )
         return best_value
 
 
@@ -339,7 +341,9 @@ def get_best_step(results, objective):
 
     # A History.
     if isinstance(results, keras.callbacks.History):
-        _, best_epoch = _get_best_value_and_best_epoch_from_history(results, objective)
+        _, best_epoch = _get_best_value_and_best_epoch_from_history(
+            results, objective
+        )
         return best_epoch
 
     return 0

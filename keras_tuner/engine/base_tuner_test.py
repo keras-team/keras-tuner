@@ -99,7 +99,9 @@ def test_simple_sklearn_tuner(tmp_path):
         hypermodel=sklearn_build_fn,
         directory=tmp_path,
     )
-    tuner.search(TRAIN_INPUTS, TRAIN_TARGETS, validation_data=(VAL_INPUTS, VAL_TARGETS))
+    tuner.search(
+        TRAIN_INPUTS, TRAIN_TARGETS, validation_data=(VAL_INPUTS, VAL_TARGETS)
+    )
     models = tuner.get_best_models(2)
     score0 = models[0].score(VAL_INPUTS, VAL_TARGETS)
     score1 = models[1].score(VAL_INPUTS, VAL_TARGETS)

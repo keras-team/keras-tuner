@@ -15,10 +15,10 @@
 "Basic random search tuner."
 
 
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import oracle as oracle_module
 from keras_tuner.engine import trial as trial_module
 from keras_tuner.engine import tuner as tuner_module
-from keras_tuner.api_export import keras_tuner_export
 
 
 @keras_tuner_export("keras_tuner.oracles.RandomSearchOracle")

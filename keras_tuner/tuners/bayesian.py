@@ -27,11 +27,11 @@ try:
 except ImportError:  # pragma: no cover
     scipy = None  # pragma: no cover
 
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine import oracle as oracle_module
 from keras_tuner.engine import trial as trial_module
 from keras_tuner.engine import tuner as tuner_module
-from keras_tuner.api_export import keras_tuner_export
 
 
 @keras_tuner_export("keras_tuner.oracles.BayesianOptimizationOracle")
@@ -149,7 +149,9 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             be created).
         """
         # Generate enough samples before training Gaussian process.
-        completed_trials = [t for t in self.trials.values() if t.status == "COMPLETED"]
+        completed_trials = [
+            t for t in self.trials.values() if t.status == "COMPLETED"
+        ]
 
         # Use 3 times the dimensionality of the space as the default number of
         # random points.

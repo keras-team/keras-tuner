@@ -33,8 +33,8 @@ try:
 except ImportError:
     sklearn = None
 
-from keras_tuner.engine import base_tuner
 from keras_tuner.api_export import keras_tuner_export
+from keras_tuner.engine import base_tuner
 
 
 def split_data(data, indices):
@@ -122,7 +122,9 @@ class SklearnTuner(base_tuner.BaseTuner):
         super().__init__(oracle=oracle, hypermodel=hypermodel, **kwargs)
 
         if sklearn is None:
-            raise ImportError("Please install sklearn before using the `SklearnTuner`.")
+            raise ImportError(
+                "Please install sklearn before using the `SklearnTuner`."
+            )
 
         self.scoring = scoring
 
@@ -132,7 +134,9 @@ class SklearnTuner(base_tuner.BaseTuner):
             metrics = [metrics]
         self.metrics = metrics
 
-        self.cv = cv or sklearn.model_selection.KFold(5, shuffle=True, random_state=1)
+        self.cv = cv or sklearn.model_selection.KFold(
+            5, shuffle=True, random_state=1
+        )
 
     def search(self, X, y, sample_weight=None, groups=None):
         """Performs hyperparameter search.

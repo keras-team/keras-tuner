@@ -13,9 +13,9 @@
 # limitations under the License.
 import math
 
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import oracle as oracle_module
 from keras_tuner.engine import tuner as tuner_module
-from keras_tuner.api_export import keras_tuner_export
 
 
 @keras_tuner_export("keras_tuner.oracles.HyperbandOracle")
@@ -194,7 +194,9 @@ class HyperbandOracle(oracle_module.Oracle):
                     values["tuner/bracket"] = self._current_bracket
                     values["tuner/round"] = round_num
 
-                    round_info.append({"past_id": best_trial.trial_id, "id": trial_id})
+                    round_info.append(
+                        {"past_id": best_trial.trial_id, "id": trial_id}
+                    )
                     return {"status": "RUNNING", "values": values}
 
         # This is reached if no trials from current brackets can be run.

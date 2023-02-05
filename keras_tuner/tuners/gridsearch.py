@@ -18,10 +18,10 @@
 import collections
 import copy
 
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import oracle as oracle_module
 from keras_tuner.engine import trial as trial_module
 from keras_tuner.engine import tuner as tuner_module
-from keras_tuner.api_export import keras_tuner_export
 
 
 class LinkedList:
@@ -55,7 +55,9 @@ class LinkedList:
         new_index = len(self._memory) - 1
         self._data_to_index[data] = new_index
 
-        index = self._last_index if data_pre is None else self._data_to_index[data_pre]
+        index = (
+            self._last_index if data_pre is None else self._data_to_index[data_pre]
+        )
 
         self._next_index[new_index] = self._next_index[index]
         self._next_index[index] = new_index

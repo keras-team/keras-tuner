@@ -16,6 +16,7 @@
 from keras_tuner import applications
 from keras_tuner import oracles
 from keras_tuner import tuners
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine.hypermodel import HyperModel
 from keras_tuner.engine.hyperparameters import HyperParameter
 from keras_tuner.engine.hyperparameters import HyperParameters
@@ -31,7 +32,6 @@ from keras_tuner.tuners import Hyperband
 from keras_tuner.tuners import RandomSearch
 from keras_tuner.tuners import SklearnTuner
 from keras_tuner.utils import check_tf_version
-from keras_tuner.api_export import keras_tuner_export
 
 check_tf_version()
 
