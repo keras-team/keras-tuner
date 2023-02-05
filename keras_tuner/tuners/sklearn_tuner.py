@@ -33,6 +33,7 @@ try:
 except ImportError:
     sklearn = None
 
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import base_tuner
 
 
@@ -45,6 +46,7 @@ def split_data(data, indices):
         raise TypeError()
 
 
+@keras_tuner_export(["keras_tuner.SklearnTuner", "keras_tuner.tuners.SklearnTuner"])
 class SklearnTuner(base_tuner.BaseTuner):
     """Tuner for Scikit-learn Models.
 

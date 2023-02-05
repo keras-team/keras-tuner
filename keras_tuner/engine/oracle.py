@@ -26,6 +26,7 @@ import numpy as np
 import tensorflow as tf
 
 from keras_tuner import utils
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine import objective as obj_module
 from keras_tuner.engine import stateful
@@ -110,6 +111,7 @@ def synchronized(func, *args, **kwargs):
     return wrapped_func
 
 
+@keras_tuner_export("keras_tuner.Oracle")
 class Oracle(stateful.Stateful):
     """Implements a hyperparameter optimization algorithm.
 

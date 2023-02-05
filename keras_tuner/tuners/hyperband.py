@@ -13,10 +13,12 @@
 # limitations under the License.
 import math
 
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import oracle as oracle_module
 from keras_tuner.engine import tuner as tuner_module
 
 
+@keras_tuner_export("keras_tuner.oracles.HyperbandOracle")
 class HyperbandOracle(oracle_module.Oracle):
     """Oracle class for Hyperband.
 
@@ -305,6 +307,7 @@ class HyperbandOracle(oracle_module.Oracle):
         self._current_iteration = state["current_iteration"]
 
 
+@keras_tuner_export(["keras_tuner.Hyperband", "keras_tuner.tuners.Hyperband"])
 class Hyperband(tuner_module.Tuner):
     """Variation of HyperBand algorithm.
 

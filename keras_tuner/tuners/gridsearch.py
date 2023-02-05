@@ -18,6 +18,7 @@
 import collections
 import copy
 
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import oracle as oracle_module
 from keras_tuner.engine import trial as trial_module
 from keras_tuner.engine import tuner as tuner_module
@@ -81,6 +82,7 @@ class LinkedList:
         return self._memory[next_index]
 
 
+@keras_tuner_export("keras_tuner.oracles.GridSearchOracle")
 class GridSearchOracle(oracle_module.Oracle):
     """Grid search oracle.
 
@@ -318,6 +320,7 @@ class GridSearchOracle(oracle_module.Oracle):
         self._populate_next.append(trial.trial_id)
 
 
+@keras_tuner_export(["keras_tuner.GridSearch", "keras_tuner.tuners.GridSearch"])
 class GridSearch(tuner_module.Tuner):
     """The grid search tuner.
 

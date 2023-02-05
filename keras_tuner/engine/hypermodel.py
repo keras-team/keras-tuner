@@ -14,8 +14,10 @@
 "HyperModel base class."
 
 from keras_tuner import errors
+from keras_tuner.api_export import keras_tuner_export
 
 
+@keras_tuner_export("keras_tuner.HyperModel")
 class HyperModel:
     """Defines a search space of models.
 

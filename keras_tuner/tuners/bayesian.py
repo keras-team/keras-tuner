@@ -27,12 +27,14 @@ try:
 except ImportError:  # pragma: no cover
     scipy = None  # pragma: no cover
 
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine import oracle as oracle_module
 from keras_tuner.engine import trial as trial_module
 from keras_tuner.engine import tuner as tuner_module
 
 
+@keras_tuner_export("keras_tuner.oracles.BayesianOptimizationOracle")
 class BayesianOptimizationOracle(oracle_module.Oracle):
     """Bayesian optimization oracle.
 
@@ -299,6 +301,9 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         return np.array(bounds)
 
 
+@keras_tuner_export(
+    ["keras_tuner.BayesianOptimization", "keras_tuner.tuners.BayesianOptimization"]
+)
 class BayesianOptimization(tuner_module.Tuner):
     """BayesianOptimization tuning with Gaussian process.
 

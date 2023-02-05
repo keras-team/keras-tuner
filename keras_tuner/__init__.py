@@ -16,6 +16,7 @@
 from keras_tuner import applications
 from keras_tuner import oracles
 from keras_tuner import tuners
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine.hypermodel import HyperModel
 from keras_tuner.engine.hyperparameters import HyperParameter
 from keras_tuner.engine.hyperparameters import HyperParameters
@@ -34,4 +35,10 @@ from keras_tuner.utils import check_tf_version
 
 check_tf_version()
 
-__version__ = "1.2.1dev"
+
+class Version(str):
+    __name__ = "Version"
+
+
+__version__ = Version("1.2.1dev")
+keras_tuner_export("keras_tuner.__version__")(__version__)

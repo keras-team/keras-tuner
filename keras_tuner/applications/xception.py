@@ -16,9 +16,11 @@ import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras import layers
 
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import hypermodel
 
 
+@keras_tuner_export("keras_tuner.applications.HyperXception")
 class HyperXception(hypermodel.HyperModel):
     """An Xception hypermodel.
 

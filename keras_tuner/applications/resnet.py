@@ -19,9 +19,11 @@ import tensorflow.keras as keras
 from tensorflow.keras import backend
 from tensorflow.keras import layers
 
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import hypermodel
 
 
+@keras_tuner_export("keras_tuner.applications.HyperResNet")
 class HyperResNet(hypermodel.HyperModel):
     """A ResNet hypermodel.
 
