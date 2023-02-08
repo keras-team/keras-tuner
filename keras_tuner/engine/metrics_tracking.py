@@ -333,13 +333,13 @@ def infer_metric_direction(metric):
 
         try:
             metric = keras.metrics.deserialize(
-				metric_name, use_legacy_format=True
-			)
+                         metric_name, use_legacy_format=True
+                     )
         except ValueError:
             try:
                 metric = keras.losses.deserialize(
-					metric_name, use_legacy_format=True
-				)
+                             metric_name, use_legacy_format=True
+                         )
             except Exception:
                 # Direction can't be inferred.
                 return None

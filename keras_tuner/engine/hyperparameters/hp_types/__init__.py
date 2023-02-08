@@ -33,8 +33,8 @@ ALL_CLASSES = {cls.__name__: cls for cls in OBJECTS}
 
 def deserialize(config):
     return keras.utils.legacy.deserialize_keras_object(
-		config, module_objects=ALL_CLASSES
-	)
+            config, module_objects=ALL_CLASSES
+        )
 
 
 def serialize(obj):
