@@ -17,7 +17,6 @@
 import abc
 
 import six
-from tensorflow import keras
 
 from keras_tuner import utils
 from keras_tuner.protos import keras_tuner_pb2
