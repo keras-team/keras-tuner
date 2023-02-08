@@ -332,10 +332,14 @@ def infer_metric_direction(metric):
             return "max"
 
         try:
-            metric = keras.metrics.get(metric_name)
+            metric = keras.metrics.deserialize(
+				metric_name, use_legacy_format=True
+			)
         except ValueError:
             try:
-                metric = keras.losses.get(metric_name)
+                metric = keras.losses.deserialize(
+					metric_name, use_legacy_format=True
+				)
             except Exception:
                 # Direction can't be inferred.
                 return None
