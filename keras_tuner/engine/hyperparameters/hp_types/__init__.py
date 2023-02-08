@@ -14,6 +14,7 @@
 
 from tensorflow import keras
 
+from keras_tuner import utils
 from keras_tuner.engine.hyperparameters.hp_types.boolean_hp import Boolean
 from keras_tuner.engine.hyperparameters.hp_types.choice_hp import Choice
 from keras_tuner.engine.hyperparameters.hp_types.fixed_hp import Fixed
@@ -32,10 +33,8 @@ ALL_CLASSES = {cls.__name__: cls for cls in OBJECTS}
 
 
 def deserialize(config):
-    return keras.utils.legacy.deserialize_keras_object(
-            config, module_objects=ALL_CLASSES
-        )
+    return utils.deserialize_keras_object(config, module_objects=ALL_CLASSES)
 
 
 def serialize(obj):
-    return keras.utils.legacy.serialize_keras_object(obj)
+    return utils.serialize_keras_object(obj)
