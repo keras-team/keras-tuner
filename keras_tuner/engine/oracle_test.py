@@ -381,3 +381,29 @@ def test_get_best_trial_with_nans(tmp_path):
 
     assert len(oracle.get_best_trials()) > 0
     assert oracle.get_best_trials()[0].trial_id == best_trial.trial_id
+
+
+def test_overwrite_false_resume(tmp_path):
+    oracle = OracleStub(
+        directory=tmp_path, objective="val_loss", max_retries_per_trial=1
+    )
+    for i in range(10):
+        trial = oracle.create_trial(tuner_id="a")
+        oracle.update_trial(trial.trial_id, {"val_loss": np.random.rand()})
+        trial.status = trial_module.TrialStatus.COMPLETED
+        oracle.end_trial(trial)
+
+    trial = oracle.create_trial(tuner_id="a")
+    trial_id = trial.trial_id
+    oracle = OracleStub(
+        directory=tmp_path, objective="val_loss", max_retries_per_trial=1
+    )
+    oracle.reload()
+
+    trial = oracle.create_trial(tuner_id="a")
+    oracle.update_trial(trial.trial_id, {"val_loss": np.random.rand()})
+    trial.status = trial_module.TrialStatus.COMPLETED
+    oracle.end_trial(trial)
+
+    assert trial.trial_id == trial_id
+    assert oracle.get_trial(trial_id).status == trial_module.TrialStatus.COMPLETED
