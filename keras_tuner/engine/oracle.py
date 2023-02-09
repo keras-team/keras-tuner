@@ -590,8 +590,8 @@ class Oracle(stateful.Stateful):
             ) from e
 
         # Empty the ongoing_trials and send them for retry.
-        for _, trial_id in self.ongoing_trials.items():
-            self._retry_queue.append(trial_id)
+        for _, trial in self.ongoing_trials.items():
+            self._retry_queue.append(trial.trial_id)
         self.ongoing_trials = {}
 
     def _get_oracle_fname(self):
