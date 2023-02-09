@@ -17,7 +17,6 @@
 import abc
 
 import six
-from tensorflow import keras
 
 from keras_tuner import utils
 from keras_tuner.protos import keras_tuner_pb2
@@ -145,8 +144,8 @@ ALL_CLASSES = {cls.__name__: cls for cls in OBJECTS}
 
 
 def deserialize(config):
-    return keras.utils.deserialize_keras_object(config, module_objects=ALL_CLASSES)
+    return utils.deserialize_keras_object(config, module_objects=ALL_CLASSES)
 
 
 def serialize(obj):
-    return keras.utils.serialize_keras_object(obj)
+    return utils.serialize_keras_object(obj)
