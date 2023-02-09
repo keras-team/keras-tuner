@@ -1,3 +1,8 @@
+# Release v1.2.1
+
+## Bug fixes
+* The resume feature (`overwrite=False`) would crash in 1.2.0. This is now fixed.
+
 # Release v1.2.0
 
 ## Breaking changes
