@@ -40,5 +40,5 @@ class Version(str):
     __name__ = "Version"
 
 
-__version__ = Version("1.2.1dev")
+__version__ = Version("1.2.1")
 keras_tuner_export("keras_tuner.__version__")(__version__)
