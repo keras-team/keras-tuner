@@ -48,6 +48,7 @@ setup(
         ],
         "build": [
             "namex",
+            "build",
         ],
     },
     classifiers=[
