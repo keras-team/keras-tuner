@@ -24,7 +24,7 @@ setup(
     author="The KerasTuner authors",
     author_email="kerastuner@google.com",
     license="Apache License 2.0",
-    version="1.2.1",
+    version="1.2.2dev",
     install_requires=[
         "packaging",
         "tensorflow>=2.0",
