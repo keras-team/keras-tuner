@@ -15,7 +15,7 @@
 """Hypertunable version of EfficientNet based on Keras.applications."""
 
 import tensorflow as tf
-import tensorflow.keras as keras
+from tensorflow import keras
 from tensorflow.keras import layers
 
 from keras_tuner.engine import hypermodel

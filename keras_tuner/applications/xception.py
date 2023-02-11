@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import tensorflow as tf
-import tensorflow.keras as keras
+from tensorflow import keras
 from tensorflow.keras import layers
 
 from keras_tuner.api_export import keras_tuner_export
