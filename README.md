@@ -31,6 +31,13 @@ Install the latest release:
 pip install keras-tuner --upgrade
 ```
 
+Install _optional_ dependencies for the `Bayesian` tuner:
+
+```
+pip install keras-tuner[bayesian]
+```
+
+
 You can also check out other versions in our
 [GitHub repository](https://github.com/keras-team/keras-tuner).
 

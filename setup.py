@@ -46,6 +46,10 @@ setup(
             "scikit-learn",
             "scipy",
         ],
+        "bayesian": [
+            "scikit-learn",
+            "scipy",
+        ],
         "build": [
             "namex",
             "build",
