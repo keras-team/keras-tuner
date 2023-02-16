@@ -17,14 +17,15 @@
 from setuptools import find_packages
 from setuptools import setup
 
+__version__ = "1.2.2dev"
+
 setup(
     name="keras-tuner",
     description="A Hyperparameter Tuning Library for Keras",
     url="https://github.com/keras-team/keras-tuner",
     author="The KerasTuner authors",
-    author_email="kerastuner@google.com",
     license="Apache License 2.0",
-    version="1.2.2dev",
+    version=__version__,
     install_requires=[
         "packaging",
         "tensorflow>=2.0",
