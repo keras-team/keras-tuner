@@ -69,8 +69,6 @@ class BaseTuner(stateful.Stateful):
         directory: A string, the relative path to the working directory.
         project_name: A string, the name to use as prefix for files saved by
             this Tuner.
-        logger: Optional instance of `kerastuner.Logger` class for
-            streaming logs for monitoring.
         overwrite: Boolean, defaults to `False`. If `False`, reloads an
             existing project of the same name if one is found. Otherwise,
             overwrites the project.
@@ -86,7 +84,6 @@ class BaseTuner(stateful.Stateful):
         hypermodel=None,
         directory=None,
         project_name=None,
-        logger=None,
         overwrite=False,
     ):
         if not isinstance(oracle, oracle_module.Oracle):
@@ -102,8 +99,6 @@ class BaseTuner(stateful.Stateful):
         self.directory = directory or "."
         self.project_name = project_name or "untitled_project"
         self.oracle._set_project_dir(self.directory, self.project_name)
-
-        self.logger = logger
 
         if overwrite and tf.io.gfile.exists(self.project_dir):
             tf.io.gfile.rmtree(self.project_dir)
@@ -304,8 +299,6 @@ class BaseTuner(stateful.Stateful):
         Args:
             trial: A `Trial` instance.
         """
-        if self.logger:
-            self.logger.register_trial(trial.trial_id, trial.get_state())
         self._display.on_trial_begin(self.oracle.get_trial(trial.trial_id))
 
     def on_trial_end(self, trial):
@@ -314,10 +307,6 @@ class BaseTuner(stateful.Stateful):
         Args:
             trial: A `Trial` instance.
         """
-        # Send status to Logger
-        if self.logger:
-            self.logger.report_trial_state(trial.trial_id, trial.get_state())
-
         self.oracle.end_trial(trial)
         # Display needs the updated trial scored by the Oracle.
         self._display.on_trial_end(self.oracle.get_trial(trial.trial_id))
@@ -325,13 +314,11 @@ class BaseTuner(stateful.Stateful):
 
     def on_search_begin(self):
         """Called at the beginning of the `search` method."""
-        if self.logger:
-            self.logger.register_tuner(self.get_state())
+        pass
 
     def on_search_end(self):
         """Called at the end of the `search` method."""
-        if self.logger:
-            self.logger.exit()
+        pass
 
     def get_best_models(self, num_models=1):
         """Returns the best model(s), as determined by the objective.

@@ -20,8 +20,6 @@ from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine.hypermodel import HyperModel
 from keras_tuner.engine.hyperparameters import HyperParameter
 from keras_tuner.engine.hyperparameters import HyperParameters
-from keras_tuner.engine.logger import CloudLogger
-from keras_tuner.engine.logger import Logger
 from keras_tuner.engine.objective import Objective
 from keras_tuner.engine.oracle import Oracle
 from keras_tuner.engine.oracle import synchronized
