@@ -101,13 +101,14 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
     ):
         if scipy is None:
             raise ImportError(
-                "Please install scipy before using the `BayesianOptimization`."
+                "Please install scipy before using the `BayesianOptimization` "
+                "with `pip install keras-tuner[bayesian]`."
             )
 
         if sklearn is None:
             raise ImportError(
                 "Please install scikit-learn (sklearn) before using the "
-                "`BayesianOptimization`."
+                "`BayesianOptimization` with `pip install keras-tuner[bayesian]`."
             )
         super().__init__(
             objective=objective,
