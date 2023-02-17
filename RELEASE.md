@@ -1,5 +1,9 @@
 # Release v1.2.2
 
+## Breaking changes
+* Removed `Logger` and `CloudLogger` and the related arguments in
+  `BaseTuner.__init__(logger=...)`.
+
 # Release v1.2.1
 
 ## Bug fixes
