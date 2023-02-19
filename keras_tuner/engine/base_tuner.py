@@ -69,6 +69,7 @@ class BaseTuner(stateful.Stateful):
         directory: A string, the relative path to the working directory.
         project_name: A string, the name to use as prefix for files saved by
             this Tuner.
+        logger: Deprecated.
         overwrite: Boolean, defaults to `False`. If `False`, reloads an
             existing project of the same name if one is found. Otherwise,
             overwrites the project.
@@ -84,12 +85,20 @@ class BaseTuner(stateful.Stateful):
         hypermodel=None,
         directory=None,
         project_name=None,
+        logger=None,
         overwrite=False,
     ):
         if not isinstance(oracle, oracle_module.Oracle):
             raise ValueError(
                 "Expected `oracle` argument to be an instance of `Oracle`. "
                 f"Received: oracle={oracle} (of type ({type(oracle)})."
+            )
+
+        if logger is not None:
+            warnings.warn(
+                "The `logger` argument in `Tuner.__init__() is deprecated.",
+                DeprecationWarning,
+                stacklevel=2,
             )
 
         self.oracle = oracle
@@ -99,6 +108,8 @@ class BaseTuner(stateful.Stateful):
         self.directory = directory or "."
         self.project_name = project_name or "untitled_project"
         self.oracle._set_project_dir(self.directory, self.project_name)
+
+        self.logger = logger
 
         if overwrite and tf.io.gfile.exists(self.project_dir):
             tf.io.gfile.rmtree(self.project_dir)

@@ -163,3 +163,16 @@ def test_remaining_trials(tmp_path):
 
     tuner = MyTuner(directory=tmp_path, max_retries_per_trial=2, max_trials=200)
     assert tuner.remaining_trials == 200
+
+
+def test_logger_deprecated(tmp_path):
+    def build_model(hp):
+        hp.Boolean("a")
+
+    with pytest.deprecated_call(match="logger"):
+        gridsearch.GridSearch(
+            directory=tmp_path,
+            hypermodel=build_model,
+            max_trials=200,
+            logger=1,
+        )

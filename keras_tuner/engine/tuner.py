@@ -68,6 +68,7 @@ class Tuner(base_tuner.BaseTuner):
         directory: A string, the relative path to the working directory.
         project_name: A string, the name to use as prefix for files saved by
             this `Tuner`.
+        logger: Deprecated.
         tuner_id: Optional string, used as the ID of this `Tuner`.
         overwrite: Boolean, defaults to `False`. If `False`, reloads an
             existing project of the same name if one is found. Otherwise,
@@ -95,6 +96,7 @@ class Tuner(base_tuner.BaseTuner):
         distribution_strategy=None,
         directory=None,
         project_name=None,
+        logger=None,
         tuner_id=None,
         overwrite=False,
         executions_per_trial=1,
@@ -112,6 +114,7 @@ class Tuner(base_tuner.BaseTuner):
             hypermodel=hypermodel,
             directory=directory,
             project_name=project_name,
+            logger=logger,
             overwrite=overwrite,
         )
 
