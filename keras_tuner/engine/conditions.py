@@ -125,14 +125,18 @@ class Parent(Condition):
 
     def to_proto(self):
         if isinstance(self.values[0], six.string_types):
-            values = [keras_tuner_pb2.Value(string_value=v) for v in self.values]
+            values = [
+                keras_tuner_pb2.Value(string_value=v) for v in self.values
+            ]
         elif isinstance(self.values[0], six.integer_types):
             values = [keras_tuner_pb2.Value(int_value=v) for v in self.values]
         else:
             values = [keras_tuner_pb2.Value(float_value=v) for v in self.values]
 
         return keras_tuner_pb2.Condition(
-            parent=keras_tuner_pb2.Condition.Parent(name=self.name, values=values)
+            parent=keras_tuner_pb2.Condition.Parent(
+                name=self.name, values=values
+            )
         )
 
 

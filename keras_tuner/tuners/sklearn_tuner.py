@@ -46,7 +46,9 @@ def split_data(data, indices):
         raise TypeError()
 
 
-@keras_tuner_export(["keras_tuner.SklearnTuner", "keras_tuner.tuners.SklearnTuner"])
+@keras_tuner_export(
+    ["keras_tuner.SklearnTuner", "keras_tuner.tuners.SklearnTuner"]
+)
 class SklearnTuner(base_tuner.BaseTuner):
     """Tuner for Scikit-learn Models.
 
@@ -107,8 +109,8 @@ class SklearnTuner(base_tuner.BaseTuner):
             these Models will often be different. In this case you should
             supply `scoring` here in order to make sure your Models are being
             scored on the same metric.
-        metrics: Additional `sklearn.metrics` functions to monitor during search.
-            Note that these metrics do not affect the search process.
+        metrics: Additional `sklearn.metrics` functions to monitor during
+            search. Note that these metrics do not affect the search process.
         cv: An `sklearn.model_selection` Splitter class. Used to
             determine how samples are split up into groups for
             cross-validation.
@@ -142,8 +144,10 @@ class SklearnTuner(base_tuner.BaseTuner):
         """Performs hyperparameter search.
 
         Args:
-            X: See docstring for `model.fit` for the `sklearn` Models being tuned.
-            y: See docstring for `model.fit` for the `sklearn` Models being tuned.
+            X: See docstring for `model.fit` for the `sklearn` Models being
+                tuned.
+            y: See docstring for `model.fit` for the `sklearn` Models being
+                tuned.
             sample_weight: Optional. See docstring for `model.fit` for the
                 `sklearn` Models being tuned.
             groups: Optional. Required for `sklearn.model_selection` Splitter
@@ -164,23 +168,31 @@ class SklearnTuner(base_tuner.BaseTuner):
             y_test = split_data(y, test_indices)
 
             sample_weight_train = (
-                sample_weight[train_indices] if sample_weight is not None else None
+                sample_weight[train_indices]
+                if sample_weight is not None
+                else None
             )
 
             model = self.hypermodel.build(trial.hyperparameters)
 
-            supports_sw = "sample_weight" in inspect.getfullargspec(model.fit).args
+            supports_sw = (
+                "sample_weight" in inspect.getfullargspec(model.fit).args
+            )
             if isinstance(model, sklearn.pipeline.Pipeline) or not supports_sw:
                 model.fit(X_train, y_train)
             else:
                 model.fit(X_train, y_train, sample_weight=sample_weight_train)
 
             sample_weight_test = (
-                sample_weight[test_indices] if sample_weight is not None else None
+                sample_weight[test_indices]
+                if sample_weight is not None
+                else None
             )
 
             if self.scoring is None:
-                score = model.score(X_test, y_test, sample_weight=sample_weight_test)
+                score = model.score(
+                    X_test, y_test, sample_weight=sample_weight_test
+                )
             else:
                 score = self.scoring(
                     model, X_test, y_test, sample_weight=sample_weight_test

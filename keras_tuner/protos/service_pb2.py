@@ -666,7 +666,9 @@ DESCRIPTOR.message_types_by_name["UpdateTrialResponse"] = _UPDATETRIALRESPONSE
 DESCRIPTOR.message_types_by_name["EndTrialRequest"] = _ENDTRIALREQUEST
 DESCRIPTOR.message_types_by_name["EndTrialResponse"] = _ENDTRIALRESPONSE
 DESCRIPTOR.message_types_by_name["GetBestTrialsRequest"] = _GETBESTTRIALSREQUEST
-DESCRIPTOR.message_types_by_name["GetBestTrialsResponse"] = _GETBESTTRIALSRESPONSE
+DESCRIPTOR.message_types_by_name[
+    "GetBestTrialsResponse"
+] = _GETBESTTRIALSRESPONSE
 DESCRIPTOR.message_types_by_name["GetTrialRequest"] = _GETTRIALREQUEST
 DESCRIPTOR.message_types_by_name["GetTrialResponse"] = _GETTRIALRESPONSE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)

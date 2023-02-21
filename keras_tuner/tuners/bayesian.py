@@ -78,11 +78,12 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             request hyperparameter entries not listed in `hyperparameters`.
             Defaults to True.
         max_retries_per_trial: Integer. Defaults to 0. The maximum number of
-            times to retry a `Trial` if the trial crashed or the results are invalid.
-        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum number of
-            consecutive failed `Trial`s. When this number is reached, the search
-            will be stopped. A `Trial` is marked as failed when none of the
-            retries succeeded.
+            times to retry a `Trial` if the trial crashed or the results are
+            invalid.
+        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum
+            number of consecutive failed `Trial`s. When this number is reached,
+            the search will be stopped. A `Trial` is marked as failed when none
+            of the retries succeeded.
     """
 
     def __init__(
@@ -108,7 +109,8 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         if sklearn is None:
             raise ImportError(
                 "Please install scikit-learn (sklearn) before using the "
-                "`BayesianOptimization` with `pip install keras-tuner[bayesian]`."
+                "`BayesianOptimization` with "
+                "`pip install keras-tuner[bayesian]`."
             )
         super().__init__(
             objective=objective,
@@ -161,7 +163,8 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         if len(completed_trials) < num_initial_points:
             return self._random_populate_space()
 
-        # Fit a GPR to the completed trials and return the predicted optimum values.
+        # Fit a GPR to the completed trials and return the predicted optimum
+        # values.
         x, y = self._vectorize_trials()
 
         # Ensure no nan, inf in x, y. GPR cannot process nan or inf.
@@ -185,9 +188,14 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         for x_try in x_seeds:
             # Sign of score is flipped when maximizing.
             result = scipy.optimize.minimize(
-                _upper_confidence_bound, x0=x_try, bounds=bounds, method="L-BFGS-B"
+                _upper_confidence_bound,
+                x0=x_try,
+                bounds=bounds,
+                method="L-BFGS-B",
             )
-            result_fun = result.fun if np.isscalar(result.fun) else result.fun[0]
+            result_fun = (
+                result.fun if np.isscalar(result.fun) else result.fun[0]
+            )
             if result_fun < optimal_val:
                 optimal_val = result_fun
                 optimal_x = result.x
@@ -228,8 +236,9 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             trial_hps = trial.hyperparameters
             vector = []
             for hp in self._nonfixed_space():
-                # For hyperparameters not present in the trial (either added after
-                # the trial or inactive in the trial), set to default value.
+                # For hyperparameters not present in the trial (either added
+                # after the trial or inactive in the trial), set to default
+                # value.
                 if (
                     trial_hps.is_active(hp)  # inactive
                     and hp.name in trial_hps.values  # added after the trial
@@ -251,7 +260,8 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                 score = y_h_mean[0] + y_h_std[0]
             elif trial.status == "COMPLETED":
                 score = trial.score
-                # Always frame the optimization as a minimization for scipy.minimize.
+                # Always frame the optimization as a minimization for
+                # scipy.minimize.
                 if self.objective.direction == "max":
                     score = -1 * score
             else:
@@ -303,7 +313,10 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
 
 
 @keras_tuner_export(
-    ["keras_tuner.BayesianOptimization", "keras_tuner.tuners.BayesianOptimization"]
+    [
+        "keras_tuner.BayesianOptimization",
+        "keras_tuner.tuners.BayesianOptimization",
+    ]
 )
 class BayesianOptimization(tuner_module.Tuner):
     """BayesianOptimization tuning with Gaussian process.
@@ -347,11 +360,12 @@ class BayesianOptimization(tuner_module.Tuner):
             request hyperparameter entries not listed in `hyperparameters`.
             Defaults to True.
         max_retries_per_trial: Integer. Defaults to 0. The maximum number of
-            times to retry a `Trial` if the trial crashed or the results are invalid.
-        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum number of
-            consecutive failed `Trial`s. When this number is reached, the search
-            will be stopped. A `Trial` is marked as failed when none of the
-            retries succeeded.
+            times to retry a `Trial` if the trial crashed or the results are
+            invalid.
+        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum
+            number of consecutive failed `Trial`s. When this number is reached,
+            the search will be stopped. A `Trial` is marked as failed when none
+            of the retries succeeded.
         **kwargs: Keyword arguments relevant to all `Tuner` subclasses. Please
             see the docstring for `Tuner`.
     """

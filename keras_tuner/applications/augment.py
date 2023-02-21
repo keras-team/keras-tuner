@@ -55,30 +55,30 @@ class HyperImageAugment(hypermodel.HyperModel):
             rotation transform in the augmentation. A factor is chosen for each
             trial. It sets maximum of clockwise and counterclockwise rotation
             in terms of fraction of pi, among all samples in the trial.
-            Default is 0.5. When `rotate` is a single number, the search range is
-            [0, `rotate`].
+            Default is 0.5. When `rotate` is a single number, the search range
+            is [0, `rotate`].
             The transform is off when set to None.
-        translate_x: A number between [0, 1], a list of two numbers between [0, 1]
-            or None. Configures the search space of the factor of random
+        translate_x: A number between [0, 1], a list of two numbers between
+            [0, 1] or None. Configures the search space of the factor of random
             horizontal translation transform in the augmentation. A factor is
             chosen for each trial. It sets maximum of horizontal translation in
             terms of ratio over the width among all samples in the trial.
-            Default is 0.4. When `translate_x` is a single number, the search range
-            is [0, `translate_x`].
+            Default is 0.4. When `translate_x` is a single number, the search
+            range is [0, `translate_x`].
             The transform is off when set to None.
-        translate_y: A number between [0, 1], a list of two numbers between [0, 1]
-            or None. Configures the search space of the factor of random vertical
-            translation transform in the augmentation. A factor is chosen for each
-            trial. It sets maximum of vertical translation in terms of ratio over
-            the height among all samples in the trial. Default is 0.4. When
-            `translate_y` is a single number ,the search range is [0, `translate_y`].
-            The transform is off when set to None.
+        translate_y: A number between [0, 1], a list of two numbers between
+            [0, 1] or None. Configures the search space of the factor of random
+            vertical translation transform in the augmentation. A factor is
+            chosen for each trial. It sets maximum of vertical translation in
+            terms of ratio over the height among all samples in the trial.
+            Default is 0.4. When `translate_y` is a single number ,the search
+            range is [0, `translate_y`].  The transform is off when set to None.
         contrast: A number between [0, 1], a list of two numbers between [0, 1]
-            or None. Configures the search space of the factor of random contrast
-            transform in the augmentation. A factor is chosen for each trial. It
-            sets maximum ratio of contrast change among all samples in the trial.
-            Default is 0.3. When `contrast` is a single number, the search rnage is
-            [0, `contrast`].
+            or None. Configures the search space of the factor of random
+            contrast transform in the augmentation. A factor is chosen for each
+            trial. It sets maximum ratio of contrast change among all samples in
+            the trial. Default is 0.3. When `contrast` is a single number, the
+            search rnage is [0, `contrast`].
             The transform is off when set to None.
         augment_layers: None, int or list of two ints, controlling the number
             of augment applied. Default is 3.
@@ -208,12 +208,16 @@ class HyperImageAugment(hypermodel.HyperModel):
             # selection tensor determines operation for each sample.
             batch_size = tf.shape(x)[0]
             selection = tf.random.uniform(
-                [batch_size, 1, 1, 1], maxval=len(self.transforms), dtype="int32"
+                [batch_size, 1, 1, 1],
+                maxval=len(self.transforms),
+                dtype="int32",
             )
 
             for i, (transform, (f_min, f_max)) in enumerate(self.transforms):
                 # Factor for each transform is determined per each trial.
-                factor = hp.Float(f"factor_{transform}", f_min, f_max, default=f_min)
+                factor = hp.Float(
+                    f"factor_{transform}", f_min, f_max, default=f_min
+                )
                 if factor == 0:
                     continue
                 transform_layer = TRANSFORMS[transform](factor)
@@ -259,7 +263,8 @@ class HyperImageAugment(hypermodel.HyperModel):
             transform_factor_max = transform_params[1]
             if len(transform_params) > 2:
                 raise ValueError(
-                    f"Length of keyword argument {transform_name} must not exceed 2."
+                    "Length of keyword argument "
+                    f"{transform_name} must not exceed 2."
                 )
         except TypeError:
             transform_factor_min = 0

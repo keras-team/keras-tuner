@@ -65,7 +65,8 @@ class HyperParameters:
         # each of which is a list of condtions.
         # Used by BaseTuner to activate all conditions.
         # No need to empty these after builds since when building the model, hp
-        # is copied from the Oracle's hp, which always have these 2 fields empty.
+        # is copied from the Oracle's hp, which always have these 2 fields
+        # empty.
         self.active_scopes = []
         # Similar for inactive `conditional_scope`s.
         self.inactive_scopes = []
@@ -129,7 +130,9 @@ class HyperParameters:
         """
         parent_name = self._get_name(parent_name)  # Add name_scopes.
         if not self._exists(parent_name):
-            raise ValueError(f"`HyperParameter` named: {parent_name} not defined.")
+            raise ValueError(
+                f"`HyperParameter` named: {parent_name} not defined."
+            )
 
         condition = conditions_mod.Parent(parent_name, parent_values)
         self._conditions.append(condition)
@@ -485,7 +488,9 @@ class HyperParameters:
             )
             return self._retrieve(hp)
 
-    def Boolean(self, name, default=False, parent_name=None, parent_values=None):
+    def Boolean(
+        self, name, default=False, parent_name=None, parent_values=None
+    ):
         """Choice between True and False.
 
         Args:
@@ -705,7 +710,11 @@ class HyperParameters:
         if name_scopes is None:
             name_scopes = self._name_scopes
 
-        return "/".join(name_scopes) + "/" + str(name) if name_scopes else str(name)
+        return (
+            "/".join(name_scopes) + "/" + str(name)
+            if name_scopes
+            else str(name)
+        )
 
     def _validate_name(self, name):
         for condition in self._conditions:

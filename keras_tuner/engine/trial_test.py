@@ -59,7 +59,9 @@ def test_trial_proto():
 
 def test_trial_status_proto():
     assert (
-        trial_module.TrialStatus.from_proto(trial_module.TrialStatus.to_proto(None))
+        trial_module.TrialStatus.from_proto(
+            trial_module.TrialStatus.to_proto(None)
+        )
         is None
     )
     assert (

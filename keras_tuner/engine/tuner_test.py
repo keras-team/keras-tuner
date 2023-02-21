@@ -41,7 +41,8 @@ def build_model(hp):
     x = inputs
     for i in range(hp.Int("num_layers", 1, 4)):
         x = keras.layers.Dense(
-            units=hp.Int(f"units_{str(i)}", 5, 9, 1, default=6), activation="relu"
+            units=hp.Int(f"units_{str(i)}", 5, 9, 1, default=6),
+            activation="relu",
         )(x)
 
     outputs = keras.layers.Dense(NUM_CLASSES, activation="softmax")(x)
@@ -98,7 +99,9 @@ class MockModel(keras.Model):
             self.on_epoch_end(epoch)
         history = keras.callbacks.History()
         history.history = {
-            "loss": [np.average(epoch_values) for epoch_values in self.full_history]
+            "loss": [
+                np.average(epoch_values) for epoch_values in self.full_history
+            ]
         }
         return history
 
@@ -334,7 +337,9 @@ def test_no_objective_fit_return_not_float(tmp_path):
         directory=tmp_path,
     )
 
-    with pytest.raises(TypeError, match="HyperModel\.fit\(\) to be a single float"):
+    with pytest.raises(
+        TypeError, match="HyperModel\.fit\(\) to be a single float"
+    ):
         tuner.search()
 
 
@@ -349,7 +354,9 @@ def test_no_objective_run_trial_return_not_float(tmp_path):
         directory=tmp_path,
     )
 
-    with pytest.raises(TypeError, match="Tuner\.run_trial\(\) to be a single float"):
+    with pytest.raises(
+        TypeError, match="Tuner\.run_trial\(\) to be a single float"
+    ):
         tuner.search()
 
 
@@ -423,7 +430,9 @@ def test_override_compile(tmp_path):
             assert model.loss == "mse"
             assert len(model.metrics) >= 2
             assert model.metrics[-2]._fn.__name__ == "mean_squared_error"
-            assert model.metrics[-1]._fn.__name__ == "sparse_categorical_accuracy"
+            assert (
+                model.metrics[-1]._fn.__name__ == "sparse_categorical_accuracy"
+            )
             return history
 
     tuner = keras_tuner.tuners.RandomSearch(
@@ -523,7 +532,9 @@ def test_static_space_errors(tmp_path):
         outputs = keras.layers.Dense(NUM_CLASSES, activation="softmax")(x)
         model = keras.Model(inputs, outputs)
         model.compile(
-            optimizer=keras.optimizers.Adam(hp.Float("learning_rate", 1e-5, 1e-2)),
+            optimizer=keras.optimizers.Adam(
+                hp.Float("learning_rate", 1e-5, 1e-2)
+            ),
             loss="sparse_categorical_crossentropy",
             metrics=["accuracy"],
         )
@@ -602,7 +613,9 @@ def test_restricted_space_using_defaults(tmp_path):
 
     assert len(tuner.oracle.hyperparameters.space) == 2
     new_lr = [
-        p for p in tuner.oracle.hyperparameters.space if p.name == "learning_rate"
+        p
+        for p in tuner.oracle.hyperparameters.space
+        if p.name == "learning_rate"
     ][0]
     assert new_lr.values == [0.01, 0.001, 0.0001]
 
@@ -780,7 +793,9 @@ def test_update_trial(tmp_path):
     # Test stop the oracle in update_trial.
     class MyOracle(keras_tuner.Oracle):
         def populate_space(self, _):
-            values = {p.name: p.random_sample() for p in self.hyperparameters.space}
+            values = {
+                p.name: p.random_sample() for p in self.hyperparameters.space
+            }
             return {"values": values, "status": "RUNNING"}
 
         def update_trial(self, trial_id, metrics, step=0):
@@ -828,7 +843,9 @@ def test_tunable_false_hypermodel(tmp_path):
 
         model = tf.keras.Model(inputs, outputs)
 
-        optimizer = tf.keras.optimizers.get(hp.Choice("optimizer", ["adam", "sgd"]))
+        optimizer = tf.keras.optimizers.get(
+            hp.Choice("optimizer", ["adam", "sgd"])
+        )
         optimizer.learning_rate = hp.Float(
             "learning_rate", 1e-4, 1e-2, sampling="log"
         )
@@ -936,7 +953,9 @@ def test_convert_hyperparams_to_hparams():
     def _check_hparams_equal(hp1, hp2):
         assert (
             hparams_api.hparams_pb(hp1, start_time_secs=0).SerializeToString()
-            == hparams_api.hparams_pb(hp2, start_time_secs=0).SerializeToString()
+            == hparams_api.hparams_pb(
+                hp2, start_time_secs=0
+            ).SerializeToString()
         )
 
     hps = keras_tuner.engine.hyperparameters.HyperParameters()
@@ -955,7 +974,8 @@ def test_convert_hyperparams_to_hparams():
     hps.Int("units", min_value=2, max_value=16)
     hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
     _check_hparams_equal(
-        hparams, {hparams_api.HParam("units", hparams_api.IntInterval(2, 16)): 2}
+        hparams,
+        {hparams_api.HParam("units", hparams_api.IntInterval(2, 16)): 2},
     )
 
     hps = keras_tuner.engine.hyperparameters.HyperParameters()
@@ -963,7 +983,11 @@ def test_convert_hyperparams_to_hparams():
     hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
     _check_hparams_equal(
         hparams,
-        {hparams_api.HParam("units", hparams_api.Discrete([32, 64, 96, 128])): 32},
+        {
+            hparams_api.HParam(
+                "units", hparams_api.Discrete([32, 64, 96, 128])
+            ): 32
+        },
     )
 
     hps = keras_tuner.engine.hyperparameters.HyperParameters()
@@ -1010,7 +1034,11 @@ def test_convert_hyperparams_to_hparams():
     hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
     _check_hparams_equal(
         hparams,
-        {hparams_api.HParam("has_beta", hparams_api.Discrete([True, False])): False},
+        {
+            hparams_api.HParam(
+                "has_beta", hparams_api.Discrete([True, False])
+            ): False
+        },
     )
 
     hps = keras_tuner.engine.hyperparameters.HyperParameters()
@@ -1044,7 +1072,8 @@ def test_convert_hyperparams_to_hparams():
     hps.Fixed("num_layers", 2)
     hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
     _check_hparams_equal(
-        hparams, {hparams_api.HParam("num_layers", hparams_api.Discrete([2])): 2}
+        hparams,
+        {hparams_api.HParam("num_layers", hparams_api.Discrete([2])): 2},
     )
 
 
@@ -1071,7 +1100,9 @@ def test_tuning_correctness(tmp_path):
     assert tuner.oracle.get_best_trials(1)[0].trial_id == first_trial.trial_id
 
 
-def assert_found_best_score(tmp_path, hypermodel, tuner_class=keras_tuner.Tuner):
+def assert_found_best_score(
+    tmp_path, hypermodel, tuner_class=keras_tuner.Tuner
+):
     tuner = tuner_class(
         oracle=keras_tuner.tuners.randomsearch.RandomSearchOracle(
             objective="loss", max_trials=2, seed=1337
@@ -1116,7 +1147,9 @@ def test_hypermodel_fit_return_an_int(tmp_path):
 def test_run_trial_return_none_without_update_trial(tmp_path):
     class MyTuner(keras_tuner.Tuner):
         def run_trial(self, trial, *fit_args, **fit_kwargs):
-            self.hypermodel.build(trial.hyperparameters).fit(*fit_args, **fit_kwargs)
+            self.hypermodel.build(trial.hyperparameters).fit(
+                *fit_args, **fit_kwargs
+            )
 
     with pytest.raises(
         errors.FatalTypeError,
@@ -1188,13 +1221,16 @@ def test_run_trial_return_float_list(tmp_path):
 def test_tuner_errors(tmp_path):
     # invalid oracle
     with pytest.raises(
-        ValueError, match="Expected `oracle` argument to be an instance of `Oracle`"
+        ValueError,
+        match="Expected `oracle` argument to be an instance of `Oracle`",
     ):
         tuner_module.Tuner(
             oracle="invalid", hypermodel=build_model, directory=tmp_path
         )
     # invalid hypermodel
-    with pytest.raises(ValueError, match="`hypermodel` argument should be either"):
+    with pytest.raises(
+        ValueError, match="`hypermodel` argument should be either"
+    ):
         tuner_module.Tuner(
             oracle=keras_tuner.tuners.randomsearch.RandomSearchOracle(
                 objective="val_accuracy", max_trials=3
@@ -1213,7 +1249,9 @@ def test_tuner_errors(tmp_path):
             directory=tmp_path,
         )
         tuner.search(
-            TRAIN_INPUTS, TRAIN_TARGETS, validation_data=(VAL_INPUTS, VAL_TARGETS)
+            TRAIN_INPUTS,
+            TRAIN_TARGETS,
+            validation_data=(VAL_INPUTS, VAL_TARGETS),
         )
     # TODO: test no optimizer
 
@@ -1288,7 +1326,9 @@ def test_correct_display_trial_number(tmp_path):
 
 
 def test_error_on_unknown_objective_direction(tmp_path):
-    with pytest.raises(ValueError, match="Could not infer optimization direction"):
+    with pytest.raises(
+        ValueError, match="Could not infer optimization direction"
+    ):
         keras_tuner.tuners.RandomSearch(
             hypermodel=build_model,
             objective="custom_metric",

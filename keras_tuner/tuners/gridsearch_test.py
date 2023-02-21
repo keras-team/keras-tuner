@@ -59,7 +59,9 @@ def test_that_exhaustive_space_is_explored(tmp_path):
     expected_hyperparameter_space = 24
     assert len(tuner.oracle.trials) == expected_hyperparameter_space
 
-    trials = tuner.oracle.get_best_trials(num_trials=expected_hyperparameter_space)
+    trials = tuner.oracle.get_best_trials(
+        num_trials=expected_hyperparameter_space
+    )
     explored_space = [trial.hyperparameters.values for trial in trials]
     for want_unit_1 in want_units_1:
         for want_unit_2 in want_units_2:
@@ -168,7 +170,8 @@ def test_exhaust_trials_in_between_before_the_latter_finishes(tmp_path):
     def end_trial(trial):
         run(trial)
         oracle.update_trial(
-            trial_id=trial.trial_id, metrics={oracle.objective.name: random.random()}
+            trial_id=trial.trial_id,
+            metrics={oracle.objective.name: random.random()},
         )
         trial.status = trial_module.TrialStatus.COMPLETED
         oracle.end_trial(trial)
@@ -183,11 +186,12 @@ def test_exhaust_trials_in_between_before_the_latter_finishes(tmp_path):
     assert trial_3.status == trial_module.TrialStatus.IDLE
 
     end_trial(trial_1)
-    # Discovered bool2 in trial_1, so new value of bool2 for trial_3 after trial_1.
+    # Discovered bool2 in trial_1, so new value of bool2 for trial_3 after
+    # trial_1.
     trial_3 = oracle.create_trial(tuner_id="3")
     assert trial_3.status == trial_module.TrialStatus.RUNNING
-    # Exhausted all possible combinations whose order is between trial_1 and trial_2.
-    # So idle.
+    # Exhausted all possible combinations whose order is between trial_1 and
+    # trial_2.  So idle.
     trial_4 = oracle.create_trial(tuner_id="4")
     assert trial_4.status == trial_module.TrialStatus.IDLE
 

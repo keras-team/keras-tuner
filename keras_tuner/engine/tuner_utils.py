@@ -136,7 +136,9 @@ class Display:
         best_score = best_trials[0].score if len(best_trials) > 0 else None
         print(f"Best {self.oracle.objective.name} So Far: {best_score}")
 
-        time_elapsed_str = self.format_duration(datetime.now() - self.search_start)
+        time_elapsed_str = self.format_duration(
+            datetime.now() - self.search_start
+        )
         print(f"Total elapsed time: {time_elapsed_str}")
 
     def show_hyperparameter_table(self, trial):
@@ -144,10 +146,14 @@ class Display:
         best_trials = self.oracle.get_best_trials()
         best_trial = best_trials[0] if len(best_trials) > 0 else None
         if trial.hyperparameters.values:
-            print(template.format("Value", "Best Value So Far", "Hyperparameter"))
+            print(
+                template.format("Value", "Best Value So Far", "Hyperparameter")
+            )
             for hp, value in trial.hyperparameters.values.items():
                 best_value = (
-                    best_trial.hyperparameters.values.get(hp) if best_trial else "?"
+                    best_trial.hyperparameters.values.get(hp)
+                    if best_trial
+                    else "?"
                 )
                 print(
                     template.format(
@@ -336,7 +342,9 @@ def get_best_step(results, objective):
     # Average the best epochs if multiple executions.
     if isinstance(results, list):
         return int(
-            statistics.mean([get_best_step(elem, objective) for elem in results])
+            statistics.mean(
+                [get_best_step(elem, objective) for elem in results]
+            )
         )
 
     # A History.
@@ -369,7 +377,9 @@ def convert_hyperparams_to_hparams(hyperparams):
                 values = list(range(hp.min_value, hp.max_value + 1, hp.step))
                 hparams_domain = hparams_api.Discrete(values)
             else:
-                hparams_domain = hparams_api.IntInterval(hp.min_value, hp.max_value)
+                hparams_domain = hparams_api.IntInterval(
+                    hp.min_value, hp.max_value
+                )
         elif isinstance(hp, hp_module.Float):
             if hp.step is not None:
                 # Note: `hp.max_value` is inclusive, unlike the end index
@@ -379,7 +389,9 @@ def convert_hyperparams_to_hparams(hyperparams):
                 ).tolist()
                 hparams_domain = hparams_api.Discrete(values)
             else:
-                hparams_domain = hparams_api.RealInterval(hp.min_value, hp.max_value)
+                hparams_domain = hparams_api.RealInterval(
+                    hp.min_value, hp.max_value
+                )
         elif isinstance(hp, hp_module.Boolean):
             hparams_domain = hparams_api.Discrete([True, False])
         elif isinstance(hp, hp_module.Fixed):

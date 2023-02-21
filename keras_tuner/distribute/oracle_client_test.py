@@ -119,7 +119,8 @@ def test_random_search(tmp_path):
 
         tuner.search(x, y, validation_data=(x, y), epochs=1, batch_size=2)
 
-        # Suppress warnings about optimizer state not being restored by tf.keras.
+        # Suppress warnings about optimizer state not being restored by
+        # tf.keras.
         tf.get_logger().setLevel(logging.ERROR)
 
         trials = tuner.oracle.get_best_trials(2)

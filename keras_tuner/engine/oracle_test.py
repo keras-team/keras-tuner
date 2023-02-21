@@ -162,7 +162,9 @@ def test_is_nan_mark_as_invalid(tmp_path):
     trial.status = trial_module.TrialStatus.COMPLETED
     trial.message = "error1"
     oracle.end_trial(trial)
-    assert oracle.trials[trial.trial_id].status == trial_module.TrialStatus.INVALID
+    assert (
+        oracle.trials[trial.trial_id].status == trial_module.TrialStatus.INVALID
+    )
 
 
 def test_no_retry_for_failed_trial(tmp_path):
@@ -406,4 +408,6 @@ def test_overwrite_false_resume(tmp_path):
     oracle.end_trial(trial)
 
     assert trial.trial_id == trial_id
-    assert oracle.get_trial(trial_id).status == trial_module.TrialStatus.COMPLETED
+    assert (
+        oracle.get_trial(trial_id).status == trial_module.TrialStatus.COMPLETED
+    )

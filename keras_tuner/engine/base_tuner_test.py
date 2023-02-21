@@ -43,7 +43,9 @@ def test_base_tuner(tmp_path):
 
         def get_best_models(self, num_models=1):
             best_trials = self.oracle.get_best_trials(num_models)
-            models = [self.hypermodel.build(t.hyperparameters) for t in best_trials]
+            models = [
+                self.hypermodel.build(t.hyperparameters) for t in best_trials
+            ]
             return models
 
     def build_model(hp):
@@ -84,7 +86,9 @@ def test_simple_sklearn_tuner(tmp_path):
                 pickle.dump(model, f)
 
         def load_model(self, trial):
-            fname = os.path.join(self.get_trial_dir(trial.trial_id), "model.pickle")
+            fname = os.path.join(
+                self.get_trial_dir(trial.trial_id), "model.pickle"
+            )
             with open(fname, "rb") as f:
                 return pickle.load(f)
 

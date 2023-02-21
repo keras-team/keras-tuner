@@ -126,7 +126,9 @@ class BaseTuner(stateful.Stateful):
 
         # Reloading state.
         if not overwrite and tf.io.gfile.exists(self._get_tuner_fname()):
-            tf.get_logger().info(f"Reloading Tuner from {self._get_tuner_fname()}")
+            tf.get_logger().info(
+                f"Reloading Tuner from {self._get_tuner_fname()}"
+            )
             self.reload()
         else:
             # Only populate initial space if not reloading.
@@ -140,7 +142,8 @@ class BaseTuner(stateful.Stateful):
             # Proxies requests to the chief oracle.
             self.oracle = oracle_client.OracleClient(self.oracle)
 
-        # In parallel tuning, everything below in __init__() is for workers only.
+        # In parallel tuning, everything below in __init__() is for workers
+        # only.
         # Logs etc
         self._display = tuner_utils.Display(oracle=self.oracle)
 
@@ -290,8 +293,8 @@ class BaseTuner(stateful.Stateful):
             trial_id: The ID of the `Trial` corresponding to this Model.
             model: The trained model.
             step: Integer, for models that report intermediate results to the
-                `Oracle`, the step the saved file correspond to. For example, for
-                Keras models this is the number of epochs trained.
+                `Oracle`, the step the saved file correspond to. For example,
+                for Keras models this is the number of epochs trained.
         """
         raise NotImplementedError
 
@@ -376,7 +379,9 @@ class BaseTuner(stateful.Stateful):
         Returns:
             List of `HyperParameter` objects sorted from the best to the worst.
         """
-        return [t.hyperparameters for t in self.oracle.get_best_trials(num_trials)]
+        return [
+            t.hyperparameters for t in self.oracle.get_best_trials(num_trials)
+        ]
 
     def search_space_summary(self, extended=False):
         """Print search space summary.
@@ -432,7 +437,9 @@ class BaseTuner(stateful.Stateful):
 
     def _is_worker(self):
         """Return true only if in parallel tuning and is a worker tuner."""
-        return dist_utils.has_chief_oracle() and not dist_utils.is_chief_oracle()
+        return (
+            dist_utils.has_chief_oracle() and not dist_utils.is_chief_oracle()
+        )
 
     def save(self):
         """Saves this object to its project directory."""

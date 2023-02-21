@@ -77,11 +77,11 @@ class Int(numerical.Numerical):
             `HyperParameter` instance in the search space.
         min_value: Integer, the lower limit of range, inclusive.
         max_value: Integer, the upper limit of range, inclusive.
-        step: Optional integer, the distance between two consecutive samples in the
-            range. If left unspecified, it is possible to sample any integers in
-            the interval. If `sampling="linear"`, it will be the minimum additve
-            between two samples. If `sampling="log"`, it will be the minimum
-            multiplier between two samples.
+        step: Optional integer, the distance between two consecutive samples in
+            the range. If left unspecified, it is possible to sample any
+            integers in the interval. If `sampling="linear"`, it will be the
+            minimum additve between two samples. If `sampling="log"`, it will be
+            the minimum multiplier between two samples.
         sampling: String. One of "linear", "log", "reverse_log". Defaults to
             "linear". When sampling value, it always start from a value in range
             [0.0, 1.0). The `sampling` argument decides how the value is
@@ -89,7 +89,7 @@ class Int(numerical.Numerical):
             "linear": min_value + value * (max_value - min_value)
             "log": min_value * (max_value / min_value) ^ value
             "reverse_log":
-                max_value - min_value * ((max_value / min_value) ^ (1 - value) - 1)
+                max_value - min_value * ((max_value/min_value)^(1-value) - 1)
         default: Integer, default value to return for the parameter. If
             unspecified, the default value will be `min_value`.
     """

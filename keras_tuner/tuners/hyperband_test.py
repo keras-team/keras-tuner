@@ -26,11 +26,15 @@ def build_model(hp):
     model = tf.keras.Sequential()
     for i in range(hp.Int("layers", 1, 3)):
         model.add(
-            tf.keras.layers.Dense(hp.Int(f"units{str(i)}", 1, 5), activation="relu")
+            tf.keras.layers.Dense(
+                hp.Int(f"units{str(i)}", 1, 5), activation="relu"
+            )
         )
 
         model.add(
-            tf.keras.layers.Lambda(lambda x: x + hp.Float(f"bias{str(i)}", -1, 1))
+            tf.keras.layers.Lambda(
+                lambda x: x + hp.Float(f"bias{str(i)}", -1, 1)
+            )
         )
 
     model.add(tf.keras.layers.Dense(1, activation="sigmoid"))
@@ -84,9 +88,9 @@ def test_hyperband_oracle_one_sweep_single_thread(tmp_path):
                 oracle.update_trial(trial.trial_id, {"score": score})
                 trial.status = "COMPLETED"
                 oracle.end_trial(trial)
-            assert len(oracle._brackets[0]["rounds"][round_num]) == oracle._get_size(
-                bracket_num, round_num
-            )
+            assert len(
+                oracle._brackets[0]["rounds"][round_num]
+            ) == oracle._get_size(bracket_num, round_num)
         assert len(oracle._brackets) == 1
 
     # Iteration should now be complete.
