@@ -94,15 +94,15 @@ class BaseTuner(stateful.Stateful):
                 f"Received: oracle={oracle} (of type ({type(oracle)})."
             )
 
-        self.logger = None
-        if "logger" in kwargs:
+        logger = kwargs.pop("logger", None)
+        if logger is not None:
             warnings.warn(
                 "The `logger` argument in `BaseTuner.__init__() is "
                 "no longer supported and will be ignored.",
                 DeprecationWarning,
                 stacklevel=2,
             )
-            self.logger = kwargs["logger"]
+        self.logger = logger
 
         if len(kwargs) > 0:
             raise ValueError(
