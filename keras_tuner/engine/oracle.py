@@ -42,7 +42,7 @@ THREADS = collections.defaultdict(lambda: None)
 
 
 def synchronized(func, *args, **kwargs):
-    """Decorator to synchronize the multi-threaded calls to a `Oracle` functions.
+    """Decorator to synchronize the multi-threaded calls to `Oracle` functions.
 
     In parallel tuning, there may be concurrent gRPC calls from multiple threads
     to the `Oracle` methods like `create_trial()`, `update_trial()`, and
@@ -91,7 +91,9 @@ def synchronized(func, *args, **kwargs):
         # For backward compatible with the old end_trial signature:
         # def end_trial(self, trial_id, status="COMPLETED"):
         if func.__name__ == "end_trial" and (
-            "trial_id" in kwargs or "status" in kwargs or isinstance(args[1], str)
+            "trial_id" in kwargs
+            or "status" in kwargs
+            or isinstance(args[1], str)
         ):
             args, kwargs = backward_compatible_end_trial(*args, **kwargs)
 
@@ -155,11 +157,12 @@ class Oracle(stateful.Stateful):
             Defaults to True.
         seed: Int. Random seed.
         max_retries_per_trial: Integer. Defaults to 0. The maximum number of
-            times to retry a `Trial` if the trial crashed or the results are invalid.
-        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum number of
-            consecutive failed `Trial`s. When this number is reached, the search
-            will be stopped. A `Trial` is marked as failed when none of the
-            retries succeeded.
+            times to retry a `Trial` if the trial crashed or the results are
+            invalid.
+        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum
+            number of consecutive failed `Trial`s. When this number is reached,
+            the search will be stopped. A `Trial` is marked as failed when none
+            of the retries succeeded.
     """
 
     def __init__(
@@ -261,7 +264,8 @@ class Oracle(stateful.Stateful):
 
     def _score_trial(self, trial):
         warnings.warn(
-            "The `_score_trial` method is deprecated, please use `score_trial`.",
+            "The `_score_trial` method is deprecated, "
+            "please use `score_trial`.",
             DeprecationWarning,
         )
         self.score_trial(trial)
@@ -381,7 +385,8 @@ class Oracle(stateful.Stateful):
             if consecutive_failures == self.max_consecutive_failed_trials:
                 raise RuntimeError(
                     "Number of consecutive failures excceeded the limit "
-                    f"of {self.max_consecutive_failed_trials}.\n" + trial.message
+                    f"of {self.max_consecutive_failed_trials}.\n"
+                    + trial.message
                 )
 
     @synchronized
@@ -480,7 +485,8 @@ class Oracle(stateful.Stateful):
 
         if new_hps and not self.allow_new_entries:
             raise RuntimeError(
-                f"`allow_new_entries` is `False`, but found new entries {new_hps}"
+                "`allow_new_entries` is `False`, "
+                f"but found new entries {new_hps}"
             )
         if not self.tune_new_entries:
             # New entries should always use the default value.
@@ -508,7 +514,9 @@ class Oracle(stateful.Stateful):
 
     def remaining_trials(self):
         return (
-            self.max_trials - len(self.trials.items()) if self.max_trials else None
+            self.max_trials - len(self.trials.items())
+            if self.max_trials
+            else None
         )
 
     def get_state(self):

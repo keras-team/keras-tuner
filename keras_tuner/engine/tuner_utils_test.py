@@ -63,9 +63,9 @@ def test_save_best_epoch_with_multi_objective(tmp_path):
 
     model.load_weights(filepath)
 
-    assert min(history.history["val_loss"]) + min(history.history["val_mae"]) == sum(
-        model.evaluate(val_x, val_y)
-    )
+    assert min(history.history["val_loss"]) + min(
+        history.history["val_mae"]
+    ) == sum(model.evaluate(val_x, val_y))
 
 
 def test_save_best_epoch_with_default_objective(tmp_path):

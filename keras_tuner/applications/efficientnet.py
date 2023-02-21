@@ -134,10 +134,14 @@ class HyperEfficientNet(hypermodel.HyperModel):
             x = augmentation_model(x)
 
         # Select one of pre-trained EfficientNet as feature extractor
-        version = hp.Choice("version", [f"B{i}" for i in range(8)], default="B0")
+        version = hp.Choice(
+            "version", [f"B{i}" for i in range(8)], default="B0"
+        )
         img_size = EFFICIENTNET_IMG_SIZE[version]
 
-        x = preprocessing.Resizing(img_size, img_size, interpolation="bilinear")(x)
+        x = preprocessing.Resizing(
+            img_size, img_size, interpolation="bilinear"
+        )(x)
         efficientnet_model = EFFICIENTNET_MODELS[version](
             include_top=False, input_tensor=x
         )
@@ -152,7 +156,11 @@ class HyperEfficientNet(hypermodel.HyperModel):
             x = layers.GlobalMaxPooling2D(name="max_pool")(x)
 
         top_dropout_rate = hp.Float(
-            "top_dropout_rate", min_value=0.2, max_value=0.8, step=0.2, default=0.2
+            "top_dropout_rate",
+            min_value=0.2,
+            max_value=0.8,
+            step=0.2,
+            default=0.2,
         )
         x = layers.Dropout(top_dropout_rate, name="top_dropout")(x)
 
@@ -170,7 +178,9 @@ class HyperEfficientNet(hypermodel.HyperModel):
         When subclassing the hypermodel, this may be overridden to change
         behavior of compiling.
         """
-        learning_rate = hp.Choice("learning_rate", [0.1, 0.01, 0.001], default=0.01)
+        learning_rate = hp.Choice(
+            "learning_rate", [0.1, 0.01, 0.001], default=0.01
+        )
         optimizer = tf.keras.optimizers.SGD(
             momentum=0.1, learning_rate=learning_rate
         )

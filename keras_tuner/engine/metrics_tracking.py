@@ -67,7 +67,9 @@ class MetricObservation:
         return f"MetricObservation(value={self.value}, step={self.step})"
 
     def to_proto(self):
-        return keras_tuner_pb2.MetricObservation(value=self.value, step=self.step)
+        return keras_tuner_pb2.MetricObservation(
+            value=self.value, step=self.step
+        )
 
     @classmethod
     def from_proto(cls, proto):
@@ -104,7 +106,9 @@ class MetricHistory:
         values = [obs.mean() for obs in self._observations.values()]
         if not values:
             return None
-        return np.nanmin(values) if self.direction == "min" else np.nanmax(values)
+        return (
+            np.nanmin(values) if self.direction == "min" else np.nanmax(values)
+        )
 
     def get_best_step(self):
         best_value = self.get_best_value()
@@ -157,7 +161,10 @@ class MetricHistory:
     def from_config(cls, config):
         instance = cls(config["direction"])
         instance.set_history(
-            [MetricObservation.from_config(obs) for obs in config["observations"]]
+            [
+                MetricObservation.from_config(obs)
+                for obs in config["observations"]
+            ]
         )
         return instance
 

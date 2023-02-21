@@ -88,10 +88,10 @@ class Trial(stateful.Stateful):
     """The runs with the same set of hyperparameter values.
 
     `Trial` objects are managed by the `Oracle`. A `Trial` object contains all
-    the information related to the executions with the same set of hyperparameter
-    values. A `Trial` may be executed multiple times for more accurate results
-    or for retrying when failed. The related information includes
-    hyperparameter values, the Trial ID, and the trial results.
+    the information related to the executions with the same set of
+    hyperparameter values. A `Trial` may be executed multiple times for more
+    accurate results or for retrying when failed. The related information
+    includes hyperparameter values, the Trial ID, and the trial results.
 
     Args:
         hyperparameters: HyperParameters. It contains the hyperparameter values
@@ -153,7 +153,9 @@ class Trial(stateful.Stateful):
         self.trial_id = state["trial_id"]
         hp = hp_module.HyperParameters.from_config(state["hyperparameters"])
         self.hyperparameters = hp
-        self.metrics = metrics_tracking.MetricsTracker.from_config(state["metrics"])
+        self.metrics = metrics_tracking.MetricsTracker.from_config(
+            state["metrics"]
+        )
         self.score = state["score"]
         self.best_step = state["best_step"]
         self.status = state["status"]
@@ -197,7 +199,9 @@ class Trial(stateful.Stateful):
         if proto.HasField("score"):
             instance.score = proto.score.value
             instance.best_step = proto.score.step
-        instance.metrics = metrics_tracking.MetricsTracker.from_proto(proto.metrics)
+        instance.metrics = metrics_tracking.MetricsTracker.from_proto(
+            proto.metrics
+        )
         return instance
 
 

@@ -101,7 +101,9 @@ class Choice(hyperparameter.HyperParameter):
         return self._values[hp_utils.prob_to_index(prob, len(self._values))]
 
     def value_to_prob(self, value):
-        return hp_utils.index_to_prob(self._values.index(value), len(self._values))
+        return hp_utils.index_to_prob(
+            self._values.index(value), len(self._values)
+        )
 
     def get_config(self):
         config = super().get_config()
@@ -126,7 +128,9 @@ class Choice(hyperparameter.HyperParameter):
 
     def to_proto(self):
         if isinstance(self.values[0], six.string_types):
-            values = [keras_tuner_pb2.Value(string_value=v) for v in self.values]
+            values = [
+                keras_tuner_pb2.Value(string_value=v) for v in self.values
+            ]
             default = keras_tuner_pb2.Value(string_value=self.default)
         elif isinstance(self.values[0], six.integer_types):
             values = [keras_tuner_pb2.Value(int_value=v) for v in self.values]

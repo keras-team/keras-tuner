@@ -31,7 +31,8 @@ class Boolean(hyperparameter.HyperParameter):
         super().__init__(name=name, default=default, **kwargs)
         if default not in {True, False}:
             raise ValueError(
-                f"`default` must be a Python boolean. You passed: default={default}"
+                "`default` must be a Python boolean. "
+                f"You passed: default={default}"
             )
 
     def __repr__(self):
@@ -53,7 +54,9 @@ class Boolean(hyperparameter.HyperParameter):
         conditions = [
             conditions_mod.Condition.from_proto(c) for c in proto.conditions
         ]
-        return cls(name=proto.name, default=proto.default, conditions=conditions)
+        return cls(
+            name=proto.name, default=proto.default, conditions=conditions
+        )
 
     def to_proto(self):
         return keras_tuner_pb2.Boolean(

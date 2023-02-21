@@ -56,7 +56,9 @@ class LinkedList:
         self._data_to_index[data] = new_index
 
         index = (
-            self._last_index if data_pre is None else self._data_to_index[data_pre]
+            self._last_index
+            if data_pre is None
+            else self._data_to_index[data_pre]
         )
 
         self._next_index[new_index] = self._next_index[index]
@@ -113,11 +115,12 @@ class GridSearchOracle(oracle_module.Oracle):
             request hyperparameter entries not listed in `hyperparameters`.
             Defaults to True.
         max_retries_per_trial: Integer. Defaults to 0. The maximum number of
-            times to retry a `Trial` if the trial crashed or the results are invalid.
-        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum number of
-            consecutive failed `Trial`s. When this number is reached, the search
-            will be stopped. A `Trial` is marked as failed when none of the
-            retries succeeded.
+            times to retry a `Trial` if the trial crashed or the results are
+            invalid.
+        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum
+            number of consecutive failed `Trial`s. When this number is reached,
+            the search will be stopped. A `Trial` is marked as failed when none
+            of the retries succeeded.
     """
 
     def __init__(
@@ -220,9 +223,10 @@ class GridSearchOracle(oracle_module.Oracle):
         """Compare two `HyperParameters`' values.
 
         The smallest index where a differs from b decides which one is larger.
-        In the values of one `HyperParameter`, the default value is the smallest.
-        The rest are sorted according to their order in `HyperParameter.values`.
-        If one value is the prefix of another, the longer one is larger.
+        In the values of one `HyperParameter`, the default value is the
+        smallest. The rest are sorted according to their order in
+        `HyperParameter.values`.  If one value is the prefix of another, the
+        longer one is larger.
 
         Args:
             a: Dict. HyperParameters values. Only active values are included.
@@ -344,9 +348,9 @@ class GridSearch(tuner_module.Tuner):
     * `hp.Int()` with `sampling` set to `"log"` or `"reverse_log"`, and `step`
         is left unspecified.
 
-    For these cases, KerasTuner will pick 10 samples in the range evenly by default.
-    To configure the granularity of sampling for `hp.Float()` and `hp.Int()`,
-    please use the `step` argument in their initializers.
+    For these cases, KerasTuner will pick 10 samples in the range evenly by
+    default. To configure the granularity of sampling for `hp.Float()` and
+    `hp.Int()`, please use the `step` argument in their initializers.
 
     Args:
         hypermodel: Instance of `HyperModel` class (or callable that takes
@@ -379,11 +383,12 @@ class GridSearch(tuner_module.Tuner):
             request hyperparameter entries not listed in `hyperparameters`.
             Defaults to True.
         max_retries_per_trial: Integer. Defaults to 0. The maximum number of
-            times to retry a `Trial` if the trial crashed or the results are invalid.
-        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum number of
-            consecutive failed `Trial`s. When this number is reached, the search
-            will be stopped. A `Trial` is marked as failed when none of the
-            retries succeeded.
+            times to retry a `Trial` if the trial crashed or the results are
+            invalid.
+        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum
+            number of consecutive failed `Trial`s. When this number is reached,
+            the search will be stopped. A `Trial` is marked as failed when none
+            of the retries succeeded.
         **kwargs: Keyword arguments relevant to all `Tuner` subclasses.
             Please see the docstring for `Tuner`.
     """

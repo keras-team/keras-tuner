@@ -23,15 +23,15 @@ class HyperbandOracle(oracle_module.Oracle):
     """Oracle class for Hyperband.
 
     Note that to use this Oracle with your own subclassed Tuner, your Tuner
-    class must be able to handle in `Tuner.run_trial` three special hyperparameters
-    that will be set by this Tuner:
+    class must be able to handle in `Tuner.run_trial` three special
+    hyperparameters that will be set by this Tuner:
 
-    - "tuner/trial_id": String, optionally set. The trial_id of the Trial to load
-      from when starting this trial.
-    - "tuner/initial_epoch": Int, always set. The initial epoch the Trial should be
-      started from.
-    - "tuner/epochs": Int, always set. The cumulative number of epochs this Trial
-      should be trained.
+    - "tuner/trial_id": String, optionally set. The trial_id of the Trial to
+        load from when starting this trial.
+    - "tuner/initial_epoch": Int, always set. The initial epoch the Trial should
+        be started from.
+    - "tuner/epochs": Int, always set. The cumulative number of epochs this
+        Trial should be trained.
 
     These hyperparameters will be set during the "successive halving" portion
     of the Hyperband algorithm.
@@ -92,11 +92,12 @@ class HyperbandOracle(oracle_module.Oracle):
             request hyperparameter entries not listed in `hyperparameters`.
             Defaults to True.
         max_retries_per_trial: Integer. Defaults to 0. The maximum number of
-            times to retry a `Trial` if the trial crashed or the results are invalid.
-        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum number of
-            consecutive failed `Trial`s. When this number is reached, the search
-            will be stopped. A `Trial` is marked as failed when none of the
-            retries succeeded.
+            times to retry a `Trial` if the trial crashed or the results are
+            invalid.
+        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum
+            number of consecutive failed `Trial`s. When this number is reached,
+            the search will be stopped. A `Trial` is marked as failed when none
+            of the retries succeeded.
     """
 
     def __init__(
@@ -126,8 +127,8 @@ class HyperbandOracle(oracle_module.Oracle):
 
         self.hyperband_iterations = hyperband_iterations or float("inf")
         self.max_epochs = max_epochs
-        # Minimum epochs before successive halving, Hyperband sweeps through varying
-        # degress of aggressiveness.
+        # Minimum epochs before successive halving, Hyperband sweeps through
+        # varying degress of aggressiveness.
         self.min_epochs = 1
         self.factor = factor
 
@@ -187,7 +188,9 @@ class HyperbandOracle(oracle_module.Oracle):
 
                     values = best_trial.hyperparameters.values.copy()
                     values["tuner/trial_id"] = best_trial.trial_id
-                    values["tuner/epochs"] = self._get_epochs(bracket_num, round_num)
+                    values["tuner/epochs"] = self._get_epochs(
+                        bracket_num, round_num
+                    )
                     values["tuner/initial_epoch"] = self._get_epochs(
                         bracket_num, round_num - 1
                     )
@@ -219,7 +222,9 @@ class HyperbandOracle(oracle_module.Oracle):
 
     def _start_new_bracket(self):
         rounds = []
-        rounds.extend([] for _ in range(self._get_num_rounds(self._current_bracket)))
+        rounds.extend(
+            [] for _ in range(self._get_num_rounds(self._current_bracket))
+        )
         bracket = {"bracket_num": self._current_bracket, "rounds": rounds}
         self._brackets.append(bracket)
 
@@ -237,7 +242,9 @@ class HyperbandOracle(oracle_module.Oracle):
             bracket_num = bracket["bracket_num"]
             rounds = bracket["rounds"]
             last_round = len(rounds) - 1
-            return len(rounds[last_round]) != self._get_size(bracket_num, last_round)
+            return len(rounds[last_round]) != self._get_size(
+                bracket_num, last_round
+            )
 
         self._brackets = list(filter(_bracket_is_incomplete, self._brackets))
 
@@ -261,13 +268,20 @@ class HyperbandOracle(oracle_module.Oracle):
             return {"status": "STOPPED"}
 
     def _get_size(self, bracket_num, round_num):
-        # Set up so that each bracket takes approx. the same amount of resources.
-        bracket0_end_size = math.ceil(1 + math.log(self.max_epochs, self.factor))
+        # Set up so that each bracket takes approx. the same amount of
+        # resources.
+        bracket0_end_size = math.ceil(
+            1 + math.log(self.max_epochs, self.factor)
+        )
         bracket_end_size = bracket0_end_size / (bracket_num + 1)
-        return math.ceil(bracket_end_size * self.factor ** (bracket_num - round_num))
+        return math.ceil(
+            bracket_end_size * self.factor ** (bracket_num - round_num)
+        )
 
     def _get_epochs(self, bracket_num, round_num):
-        return math.ceil(self.max_epochs / self.factor ** (bracket_num - round_num))
+        return math.ceil(
+            self.max_epochs / self.factor ** (bracket_num - round_num)
+        )
 
     def _get_num_rounds(self, bracket_num):
         # Bracket 0 just runs random search, others do successive halving.
@@ -358,11 +372,12 @@ class Hyperband(tuner_module.Tuner):
             request hyperparameter entries not listed in `hyperparameters`.
             Defaults to True.
         max_retries_per_trial: Integer. Defaults to 0. The maximum number of
-            times to retry a `Trial` if the trial crashed or the results are invalid.
-        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum number of
-            consecutive failed `Trial`s. When this number is reached, the search
-            will be stopped. A `Trial` is marked as failed when none of the
-            retries succeeded.
+            times to retry a `Trial` if the trial crashed or the results are
+            invalid.
+        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum
+            number of consecutive failed `Trial`s. When this number is reached,
+            the search will be stopped. A `Trial` is marked as failed when none
+            of the retries succeeded.
         **kwargs: Keyword arguments relevant to all `Tuner` subclasses.
             Please see the docstring for `Tuner`.
     """

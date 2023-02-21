@@ -88,7 +88,8 @@ def start_server(oracle):
                 "Oracle server on chief is exiting in 40s."
                 "The chief will go on with post-search code."
             )
-            # Wait for another 30s for all the subsequent calls from workers to come
+            # Wait for another 30s for all the subsequent calls from workers to
+            # come
             time.sleep(30)
             server.stop(10)
             break

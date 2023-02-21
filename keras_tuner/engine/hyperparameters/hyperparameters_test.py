@@ -332,7 +332,9 @@ def test_return_populated_value_for_new_hp():
     hp.values["hp_name"] = "hp_value"
     assert (
         hp.Choice(
-            "hp_name", ["hp_value", "hp_value_default"], default="hp_value_default"
+            "hp_name",
+            ["hp_value", "hp_value_default"],
+            default="hp_value_default",
         )
         == "hp_value"
     )
@@ -343,7 +345,9 @@ def test_return_default_value_if_not_populated():
 
     assert (
         hp.Choice(
-            "hp_name", ["hp_value", "hp_value_default"], default="hp_value_default"
+            "hp_name",
+            ["hp_value", "hp_value_default"],
+            default="hp_value_default",
         )
         == "hp_value_default"
     )

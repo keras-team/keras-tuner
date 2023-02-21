@@ -90,7 +90,8 @@ class Numerical(hyperparameter.HyperParameter):
             return (
                 max_value
                 + self.min_value
-                - self.min_value * math.pow(max_value / self.min_value, 1 - prob)
+                - self.min_value
+                * math.pow(max_value / self.min_value, 1 - prob)
             )
 
     def _numerical_to_prob(self, value, max_value=None):
@@ -118,7 +119,9 @@ class Numerical(hyperparameter.HyperParameter):
             return int((self.max_value - self.min_value) // self.step + 1)
         # For log and reverse_log
         # +1 so that max_value may be sampled.
-        return int(math.log(self.max_value / self.min_value, self.step) + 1e-8) + 1
+        return (
+            int(math.log(self.max_value / self.min_value, self.step) + 1e-8) + 1
+        )
 
     def _get_value_by_index(self, index):
         """Get the index-th value in the range given step."""
@@ -136,9 +139,9 @@ class Numerical(hyperparameter.HyperParameter):
     def _sample_with_step(self, prob):
         """Sample a value with the cumulative prob in the given range.
 
-        The range is divided evenly by `step`. So only sampling from a finite set of
-        values. When calling the function, no need to use (max_value + 1) since the
-        function takes care of the inclusion of max_value.
+        The range is divided evenly by `step`. So only sampling from a finite
+        set of values. When calling the function, no need to use (max_value + 1)
+        since the function takes care of the inclusion of max_value.
         """
         n_values = self._get_n_values()
         index = hp_utils.prob_to_index(prob, n_values)
@@ -148,15 +151,17 @@ class Numerical(hyperparameter.HyperParameter):
     def values(self):
         if self.step is None:
             # Evenly select 10 samples as the values.
-            return tuple({self.prob_to_value(i * 0.1 + 0.05) for i in range(10)})
+            return tuple(
+                {self.prob_to_value(i * 0.1 + 0.05) for i in range(10)}
+            )
         n_values = self._get_n_values()
         return (self._get_value_by_index(i) for i in range(n_values))
 
     def _to_prob_with_step(self, value):
         """Convert to cumulative prob with step specified.
 
-        When calling the function, no need to use (max_value + 1) since the function
-        takes care of the inclusion of max_value.
+        When calling the function, no need to use (max_value + 1) since the
+        function takes care of the inclusion of max_value.
         """
         if self.sampling == "linear":
             index = (value - self.min_value) // self.step
@@ -164,7 +169,8 @@ class Numerical(hyperparameter.HyperParameter):
             index = math.log(value / self.min_value, self.step)
         if self.sampling == "reverse_log":
             index = math.log(
-                (self.max_value - value + self.min_value) / self.min_value, self.step
+                (self.max_value - value + self.min_value) / self.min_value,
+                self.step,
             )
         n_values = self._get_n_values()
         return hp_utils.index_to_prob(index, n_values)

@@ -156,8 +156,8 @@ class Tuner(base_tuner.BaseTuner):
         # Stop if `build()` does not return a valid model.
         if not isinstance(model, keras.models.Model):
             raise errors.FatalTypeError(
-                "Expected the model-building function, or HyperModel.build() to "
-                "return a valid Keras Model instance. "
+                "Expected the model-building function, or HyperModel.build() "
+                "to return a valid Keras Model instance. "
                 f"Received: {model} of type {type(model)}."
             )
         # Check model size.
@@ -395,7 +395,9 @@ class Tuner(base_tuner.BaseTuner):
                 )
 
     def _get_tensorboard_dir(self, logdir, trial_id, execution):
-        return os.path.join(str(logdir), str(trial_id), f"execution{str(execution)}")
+        return os.path.join(
+            str(logdir), str(trial_id), f"execution{str(execution)}"
+        )
 
     def _get_checkpoint_fname(self, trial_id):
         return os.path.join(
@@ -408,7 +410,9 @@ class Tuner(base_tuner.BaseTuner):
 def maybe_compute_model_size(model):
     """Compute the size of a given model, if it has been built."""
     if model.built:
-        params = [keras.backend.count_params(p) for p in model.trainable_weights]
+        params = [
+            keras.backend.count_params(p) for p in model.trainable_weights
+        ]
         return int(np.sum(params))
     return 0
 

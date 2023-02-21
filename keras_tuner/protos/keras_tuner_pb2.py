@@ -56,7 +56,11 @@ _SAMPLING = _descriptor.EnumDescriptor(
             name="LOG", index=2, number=2, serialized_options=None, type=None
         ),
         _descriptor.EnumValueDescriptor(
-            name="REVERSE_LOG", index=3, number=3, serialized_options=None, type=None
+            name="REVERSE_LOG",
+            index=3,
+            number=3,
+            serialized_options=None,
+            type=None,
         ),
     ],
     containing_type=None,
@@ -74,22 +78,42 @@ _TRIALSTATUS = _descriptor.EnumDescriptor(
     file=DESCRIPTOR,
     values=[
         _descriptor.EnumValueDescriptor(
-            name="UNKNOWN", index=0, number=0, serialized_options=None, type=None
+            name="UNKNOWN",
+            index=0,
+            number=0,
+            serialized_options=None,
+            type=None,
         ),
         _descriptor.EnumValueDescriptor(
-            name="RUNNING", index=1, number=1, serialized_options=None, type=None
+            name="RUNNING",
+            index=1,
+            number=1,
+            serialized_options=None,
+            type=None,
         ),
         _descriptor.EnumValueDescriptor(
             name="IDLE", index=2, number=2, serialized_options=None, type=None
         ),
         _descriptor.EnumValueDescriptor(
-            name="INVALID", index=3, number=3, serialized_options=None, type=None
+            name="INVALID",
+            index=3,
+            number=3,
+            serialized_options=None,
+            type=None,
         ),
         _descriptor.EnumValueDescriptor(
-            name="STOPPED", index=4, number=4, serialized_options=None, type=None
+            name="STOPPED",
+            index=4,
+            number=4,
+            serialized_options=None,
+            type=None,
         ),
         _descriptor.EnumValueDescriptor(
-            name="COMPLETED", index=5, number=5, serialized_options=None, type=None
+            name="COMPLETED",
+            index=5,
+            number=5,
+            serialized_options=None,
+            type=None,
         ),
         _descriptor.EnumValueDescriptor(
             name="FAILED", index=6, number=6, serialized_options=None, type=None
@@ -1523,14 +1547,24 @@ _CONDITION = _descriptor.Descriptor(
 )
 
 _VALUE.oneofs_by_name["kind"].fields.append(_VALUE.fields_by_name["int_value"])
-_VALUE.fields_by_name["int_value"].containing_oneof = _VALUE.oneofs_by_name["kind"]
-_VALUE.oneofs_by_name["kind"].fields.append(_VALUE.fields_by_name["float_value"])
-_VALUE.fields_by_name["float_value"].containing_oneof = _VALUE.oneofs_by_name["kind"]
-_VALUE.oneofs_by_name["kind"].fields.append(_VALUE.fields_by_name["string_value"])
+_VALUE.fields_by_name["int_value"].containing_oneof = _VALUE.oneofs_by_name[
+    "kind"
+]
+_VALUE.oneofs_by_name["kind"].fields.append(
+    _VALUE.fields_by_name["float_value"]
+)
+_VALUE.fields_by_name["float_value"].containing_oneof = _VALUE.oneofs_by_name[
+    "kind"
+]
+_VALUE.oneofs_by_name["kind"].fields.append(
+    _VALUE.fields_by_name["string_value"]
+)
 _VALUE.fields_by_name["string_value"].containing_oneof = _VALUE.oneofs_by_name[
     "kind"
 ]
-_VALUE.oneofs_by_name["kind"].fields.append(_VALUE.fields_by_name["boolean_value"])
+_VALUE.oneofs_by_name["kind"].fields.append(
+    _VALUE.fields_by_name["boolean_value"]
+)
 _VALUE.fields_by_name["boolean_value"].containing_oneof = _VALUE.oneofs_by_name[
     "kind"
 ]
@@ -1550,7 +1584,9 @@ _HYPERPARAMETERS_SPACE.fields_by_name["choice_space"].message_type = _CHOICE
 _HYPERPARAMETERS_SPACE.fields_by_name["boolean_space"].message_type = _BOOLEAN
 _HYPERPARAMETERS_SPACE.fields_by_name["fixed_space"].message_type = _FIXED
 _HYPERPARAMETERS_SPACE.containing_type = _HYPERPARAMETERS
-_HYPERPARAMETERS_VALUES_VALUESENTRY.fields_by_name["value"].message_type = _VALUE
+_HYPERPARAMETERS_VALUES_VALUESENTRY.fields_by_name[
+    "value"
+].message_type = _VALUE
 _HYPERPARAMETERS_VALUES_VALUESENTRY.containing_type = _HYPERPARAMETERS_VALUES
 _HYPERPARAMETERS_VALUES.fields_by_name[
     "values"
@@ -1559,9 +1595,13 @@ _HYPERPARAMETERS_VALUES.containing_type = _HYPERPARAMETERS
 _HYPERPARAMETERS.fields_by_name["space"].message_type = _HYPERPARAMETERS_SPACE
 _HYPERPARAMETERS.fields_by_name["values"].message_type = _HYPERPARAMETERS_VALUES
 _METRICHISTORY.fields_by_name["observations"].message_type = _METRICOBSERVATION
-_METRICSTRACKER_METRICSENTRY.fields_by_name["value"].message_type = _METRICHISTORY
+_METRICSTRACKER_METRICSENTRY.fields_by_name[
+    "value"
+].message_type = _METRICHISTORY
 _METRICSTRACKER_METRICSENTRY.containing_type = _METRICSTRACKER
-_METRICSTRACKER.fields_by_name["metrics"].message_type = _METRICSTRACKER_METRICSENTRY
+_METRICSTRACKER.fields_by_name[
+    "metrics"
+].message_type = _METRICSTRACKER_METRICSENTRY
 _TRIAL_SCORE.containing_type = _TRIAL
 _TRIAL.fields_by_name["hyperparameters"].message_type = _HYPERPARAMETERS
 _TRIAL.fields_by_name["status"].enum_type = _TRIALSTATUS
@@ -1570,10 +1610,12 @@ _TRIAL.fields_by_name["score"].message_type = _TRIAL_SCORE
 _CONDITION_PARENT.fields_by_name["values"].message_type = _VALUE
 _CONDITION_PARENT.containing_type = _CONDITION
 _CONDITION.fields_by_name["parent"].message_type = _CONDITION_PARENT
-_CONDITION.oneofs_by_name["kind"].fields.append(_CONDITION.fields_by_name["parent"])
-_CONDITION.fields_by_name["parent"].containing_oneof = _CONDITION.oneofs_by_name[
-    "kind"
-]
+_CONDITION.oneofs_by_name["kind"].fields.append(
+    _CONDITION.fields_by_name["parent"]
+)
+_CONDITION.fields_by_name[
+    "parent"
+].containing_oneof = _CONDITION.oneofs_by_name["kind"]
 DESCRIPTOR.message_types_by_name["Value"] = _VALUE
 DESCRIPTOR.message_types_by_name["Float"] = _FLOAT
 DESCRIPTOR.message_types_by_name["Int"] = _INT

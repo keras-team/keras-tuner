@@ -44,7 +44,7 @@ def sampling_to_proto(sampling):
 
 
 def prob_to_index(prob, n_index):
-    """Convert a cumulative probability to a 0-based index in the given range."""
+    """Convert cumulative probability to 0-based index in the given range."""
     ele_prob = 1 / n_index
     index = int(math.floor(prob / ele_prob))
     # Can happen when `prob` is very close to 1.
@@ -54,7 +54,7 @@ def prob_to_index(prob, n_index):
 
 
 def index_to_prob(index, n_index):
-    """Convert a 0-based index in the given range to cumulative probability."""
+    """Convert 0-based index in the given range to cumulative probability."""
     ele_prob = 1 / n_index
     # Center the value in its probability bucket.
     return (index + 0.5) * ele_prob

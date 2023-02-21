@@ -122,7 +122,8 @@ def test_get_best_value():
 def test_get_statistics():
     tracker = metrics_tracking.MetricsTracker()
     history = [
-        metrics_tracking.MetricObservation(random.random(), i) for i in range(10)
+        metrics_tracking.MetricObservation(random.random(), i)
+        for i in range(10)
     ]
     tracker.set_history("new_metric", history)
     stats = tracker.get_statistics("new_metric")
@@ -172,7 +173,9 @@ def test_serialization():
         ],
     )
 
-    new_tracker = metrics_tracking.MetricsTracker.from_config(tracker.get_config())
+    new_tracker = metrics_tracking.MetricsTracker.from_config(
+        tracker.get_config()
+    )
     assert new_tracker.metrics.keys() == tracker.metrics.keys()
 
 
@@ -232,15 +235,21 @@ def test_metric_direction_inference():
     # Test min metrics.
     assert metrics_tracking.infer_metric_direction("MAE") == "min"
     assert (
-        metrics_tracking.infer_metric_direction(metrics.binary_crossentropy) == "min"
+        metrics_tracking.infer_metric_direction(metrics.binary_crossentropy)
+        == "min"
     )
-    assert metrics_tracking.infer_metric_direction(metrics.FalsePositives()) == "min"
+    assert (
+        metrics_tracking.infer_metric_direction(metrics.FalsePositives())
+        == "min"
+    )
 
     # All losses in keras.losses are considered as 'min'.
     assert metrics_tracking.infer_metric_direction("squared_hinge") == "min"
     assert metrics_tracking.infer_metric_direction(losses.hinge) == "min"
     assert (
-        metrics_tracking.infer_metric_direction(losses.CategoricalCrossentropy())
+        metrics_tracking.infer_metric_direction(
+            losses.CategoricalCrossentropy()
+        )
         == "min"
     )
 
@@ -278,5 +287,6 @@ def test_metric_direction_inference():
     assert metrics_tracking.infer_metric_direction("weighted_acc") == "max"
     assert metrics_tracking.infer_metric_direction("val_weighted_ce") == "min"
     assert (
-        metrics_tracking.infer_metric_direction("weighted_binary_accuracy") == "max"
+        metrics_tracking.infer_metric_direction("weighted_binary_accuracy")
+        == "max"
     )

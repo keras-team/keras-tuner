@@ -43,7 +43,11 @@ class HyperParameter:
 
     def get_config(self):
         conditions = [conditions_mod.serialize(c) for c in self.conditions]
-        return {"name": self.name, "default": self.default, "conditions": conditions}
+        return {
+            "name": self.name,
+            "default": self.default,
+            "conditions": conditions,
+        }
 
     @property
     def default(self):

@@ -32,7 +32,9 @@ from keras_tuner.engine import hyperparameters as hp_module
 def test_model_construction(version):
     hp = hp_module.HyperParameters()
     hp.Choice("version", [version])
-    hypermodel = efficientnet.HyperEfficientNet(input_shape=(32, 32, 3), classes=10)
+    hypermodel = efficientnet.HyperEfficientNet(
+        input_shape=(32, 32, 3), classes=10
+    )
     model = hypermodel.build(hp)
     assert hp.values["version"] == version
     assert model.layers
@@ -109,13 +111,17 @@ def test_override_compiling_phase():
     class MyHyperEfficientNet(efficientnet.HyperEfficientNet):
         def _compile(self, model, hp):
             learning_rate = 0.1
-            optimizer_name = hp.Choice("optimizer", ["adam", "sgd"], default="adam")
+            optimizer_name = hp.Choice(
+                "optimizer", ["adam", "sgd"], default="adam"
+            )
             if optimizer_name == "sgd":
                 optimizer = tf.keras.optimizers.SGD(
                     momentum=0.1, learning_rate=learning_rate
                 )
             elif optimizer_name == "adam":
-                optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
+                optimizer = tf.keras.optimizers.Adam(
+                    learning_rate=learning_rate
+                )
             model.compile(
                 optimizer=optimizer,
                 loss="categorical_crossentropy",

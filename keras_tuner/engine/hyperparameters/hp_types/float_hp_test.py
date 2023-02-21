@@ -30,7 +30,9 @@ def test_float():
     assert linear.random_sample(123) == linear.random_sample(123)
 
     # Test without step arg
-    linear = hp_module.Float("linear", min_value=0.5, max_value=6.5, default=2.0)
+    linear = hp_module.Float(
+        "linear", min_value=0.5, max_value=6.5, default=2.0
+    )
     linear = hp_module.Float.from_config(linear.get_config())
     assert linear.default == 2.0
     assert 0.5 <= linear.random_sample() < 6.5
@@ -151,9 +153,16 @@ def test_float_proto():
 
 
 def test_float_values_property_with_step():
-    assert list(hp_module.Float("float", 2, 8, 2).values) == [2.0, 4.0, 6.0, 8.0]
+    assert list(hp_module.Float("float", 2, 8, 2).values) == [
+        2.0,
+        4.0,
+        6.0,
+        8.0,
+    ]
     assert isinstance(list(hp_module.Float("float", 2, 8, 2).values)[0], float)
-    assert list(hp_module.Float("float", 0.1, 100.0, 10, sampling="log").values) == [
+    assert list(
+        hp_module.Float("float", 0.1, 100.0, 10, sampling="log").values
+    ) == [
         0.1,
         1.0,
         10.0,
@@ -164,4 +173,7 @@ def test_float_values_property_with_step():
 def test_float_values_property_without_step():
     assert len(list(hp_module.Float("float", 2, 4).values)) == 10
     assert len(list(hp_module.Float("float", 2, 20).values)) == 10
-    assert len(list(hp_module.Float("float", 2, 1024, sampling="log").values)) == 10
+    assert (
+        len(list(hp_module.Float("float", 2, 1024, sampling="log").values))
+        == 10
+    )

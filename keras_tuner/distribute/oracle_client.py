@@ -68,7 +68,8 @@ class OracleClient:
 
     def create_trial(self, tuner_id):
         response = self.stub.CreateTrial(
-            service_pb2.CreateTrialRequest(tuner_id=tuner_id), wait_for_ready=True
+            service_pb2.CreateTrialRequest(tuner_id=tuner_id),
+            wait_for_ready=True,
         )
         return trial_module.Trial.from_proto(response.trial)
 
@@ -103,4 +104,6 @@ class OracleClient:
             service_pb2.GetBestTrialsRequest(num_trials=num_trials),
             wait_for_ready=True,
         )
-        return [trial_module.Trial.from_proto(trial) for trial in response.trials]
+        return [
+            trial_module.Trial.from_proto(trial) for trial in response.trials
+        ]

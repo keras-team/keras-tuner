@@ -56,7 +56,9 @@ class HyperResNet(hypermodel.HyperModel):
     ):
         super().__init__(**kwargs)
         if include_top and classes is None:
-            raise ValueError("You must specify `classes` when " "`include_top=True`")
+            raise ValueError(
+                "You must specify `classes` when " "`include_top=True`"
+            )
 
         if input_shape is None and input_tensor is None:
             raise ValueError(
@@ -89,7 +91,9 @@ class HyperResNet(hypermodel.HyperModel):
 
         # Initial conv2d block.
         x = layers.ZeroPadding2D(padding=((3, 3), (3, 3)), name="conv1_pad")(x)
-        x = layers.Conv2D(64, 7, strides=2, use_bias=use_bias, name="conv1_conv")(x)
+        x = layers.Conv2D(
+            64, 7, strides=2, use_bias=use_bias, name="conv1_conv"
+        )(x)
         if not preact:
             x = layers.BatchNormalization(
                 axis=bn_axis, epsilon=1.001e-5, name="conv1_bn"
@@ -183,7 +187,9 @@ def block1(x, filters, kernel_size=3, stride=1, conv_shortcut=True, name=None):
 
     x = layers.Activation("relu", name=f"{name}_1_relu")(x)
 
-    x = layers.Conv2D(filters, kernel_size, padding="same", name=f"{name}_2_conv")(x)
+    x = layers.Conv2D(
+        filters, kernel_size, padding="same", name=f"{name}_2_conv"
+    )(x)
 
     x = layers.BatchNormalization(
         axis=bn_axis, epsilon=1.001e-5, name=f"{name}_2_bn"
@@ -216,7 +222,9 @@ def stack1(x, filters, blocks, stride1=2, name=None):
     """
     x = block1(x, filters, stride=stride1, name=f"{name}_block1")
     for i in range(2, blocks + 1):
-        x = block1(x, filters, conv_shortcut=False, name=f"{name}_block{str(i)}")
+        x = block1(
+            x, filters, conv_shortcut=False, name=f"{name}_block{str(i)}"
+        )
     return x
 
 
@@ -249,11 +257,13 @@ def block2(x, filters, kernel_size=3, stride=1, conv_shortcut=False, name=None):
         )(preact)
 
     else:
-        shortcut = layers.MaxPooling2D(1, strides=stride)(x) if stride > 1 else x
+        shortcut = (
+            layers.MaxPooling2D(1, strides=stride)(x) if stride > 1 else x
+        )
 
-    x = layers.Conv2D(filters, 1, strides=1, use_bias=False, name=f"{name}_1_conv")(
-        preact
-    )
+    x = layers.Conv2D(
+        filters, 1, strides=1, use_bias=False, name=f"{name}_1_conv"
+    )(preact)
 
     x = layers.BatchNormalization(
         axis=bn_axis, epsilon=1.001e-5, name=f"{name}_1_bn"
@@ -263,7 +273,11 @@ def block2(x, filters, kernel_size=3, stride=1, conv_shortcut=False, name=None):
 
     x = layers.ZeroPadding2D(padding=((1, 1), (1, 1)), name=f"{name}_2_pad")(x)
     x = layers.Conv2D(
-        filters, kernel_size, strides=stride, use_bias=False, name=f"{name}_2_conv"
+        filters,
+        kernel_size,
+        strides=stride,
+        use_bias=False,
+        name=f"{name}_2_conv",
     )(x)
 
     x = layers.BatchNormalization(
@@ -298,7 +312,13 @@ def stack2(x, filters, blocks, stride1=2, name=None):
 
 
 def block3(
-    x, filters, kernel_size=3, stride=1, groups=32, conv_shortcut=True, name=None
+    x,
+    filters,
+    kernel_size=3,
+    stride=1,
+    groups=32,
+    conv_shortcut=True,
+    name=None,
 ):
     """A residual block.
 
@@ -352,7 +372,9 @@ def block3(
 
     x_shape = backend.int_shape(x)[1:-1]
     x = layers.Reshape(x_shape + (groups, c, c))(x)
-    output_shape = x_shape + (groups, c) if backend.backend() == "theano" else None
+    output_shape = (
+        x_shape + (groups, c) if backend.backend() == "theano" else None
+    )
 
     x = layers.Lambda(
         lambda x: sum(x[:, :, :, :, i] for i in range(c)),
