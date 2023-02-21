@@ -176,3 +176,16 @@ def test_logger_deprecated(tmp_path):
             max_trials=200,
             logger=1,
         )
+
+
+def test_unrecognized_arguments_raise_value_error(tmp_path):
+    def build_model(hp):
+        hp.Boolean("a")
+
+    with pytest.raises(ValueError, match="Unrecognized arguments"):
+        gridsearch.GridSearch(
+            directory=tmp_path,
+            hypermodel=build_model,
+            max_trials=200,
+            unrecognized=3,
+        )
