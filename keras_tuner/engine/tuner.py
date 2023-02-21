@@ -68,8 +68,6 @@ class Tuner(base_tuner.BaseTuner):
         directory: A string, the relative path to the working directory.
         project_name: A string, the name to use as prefix for files saved by
             this `Tuner`.
-        logger: Optional instance of `kerastuner.Logger` class for
-            streaming logs for monitoring.
         tuner_id: Optional string, used as the ID of this `Tuner`.
         overwrite: Boolean, defaults to `False`. If `False`, reloads an
             existing project of the same name if one is found. Otherwise,
@@ -80,6 +78,7 @@ class Tuner(base_tuner.BaseTuner):
             depending on random initialization, hence it is often a good idea
             to run several executions per trial in order to evaluate the
             performance of a given set of hyperparameter values.
+        **kwargs: Arguments for `BaseTuner`.
 
     Attributes:
         remaining_trials: Number of trials remaining, `None` if `max_trials` is
@@ -101,6 +100,7 @@ class Tuner(base_tuner.BaseTuner):
         tuner_id=None,
         overwrite=False,
         executions_per_trial=1,
+        **kwargs,
     ):
         if hypermodel is None and self.__class__.run_trial is Tuner.run_trial:
             raise ValueError(
@@ -117,6 +117,7 @@ class Tuner(base_tuner.BaseTuner):
             project_name=project_name,
             logger=logger,
             overwrite=overwrite,
+            **kwargs,
         )
 
         self.max_model_size = max_model_size

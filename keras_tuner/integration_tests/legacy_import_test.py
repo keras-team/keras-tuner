@@ -30,8 +30,6 @@ def test_kerastuner_same_as_keras_tuner():
         from kerastuner.engine.hypermodel import HyperModel  # noqa: F401
         from kerastuner.engine.hyperparameters import HyperParameter  # noqa: F401
         from kerastuner.engine.hyperparameters import HyperParameters  # noqa: F401
-        from kerastuner.engine.logger import CloudLogger  # noqa: F401
-        from kerastuner.engine.logger import Logger  # noqa: F401
         from kerastuner.engine.metrics_tracking import (  # noqa: F401
             MetricObservation,
         )
