@@ -33,10 +33,4 @@ from keras_tuner.utils import check_tf_version
 
 check_tf_version()
 
-
-class Version(str):
-    __name__ = "Version"
-
-
-__version__ = Version("1.2.2dev")
-keras_tuner_export("keras_tuner.__version__")(__version__)
+__version__ = "1.2.2dev"
