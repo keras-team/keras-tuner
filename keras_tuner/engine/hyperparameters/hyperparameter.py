@@ -15,9 +15,11 @@
 import random
 
 from keras_tuner import utils
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import conditions as conditions_mod
 
 
+@keras_tuner_export("keras_tuner.engine.hyperparameters.HyperParameter")
 class HyperParameter:
     """Hyperparameter base class.
 

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import conditions as conditions_mod
 from keras_tuner.engine.hyperparameters import hp_utils
 from keras_tuner.engine.hyperparameters.hp_types import numerical
@@ -27,6 +28,7 @@ def _check_int(val, arg):
     return int_val
 
 
+@keras_tuner_export("keras_tuner.engine.hyperparameters.Int")
 class Int(numerical.Numerical):
     """Integer hyperparameter.
 

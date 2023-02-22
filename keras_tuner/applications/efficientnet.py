@@ -18,6 +18,7 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import hypermodel
 
 try:
@@ -58,6 +59,7 @@ EFFICIENTNET_IMG_SIZE = {
 }
 
 
+@keras_tuner_export("keras_tuner.applications.HyperEfficientNet")
 class HyperEfficientNet(hypermodel.HyperModel):
     """An EfficientNet hypermodel.
 
