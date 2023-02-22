@@ -9,6 +9,7 @@
   use`keras_tuner.oracles.BayesianOptimizationOracle`,
   `keras_tuner.oracles.HyperbandOracle`,
   `keras_tuner.oracles.RandomSearchOracle` instead.
+* Removed `keras_tuner.Sklearn`. Please use `keras_tuner.SklearnTuner` instead.
 
 # Release v1.2.1
 
