@@ -16,7 +16,6 @@ import collections
 import inspect
 import os
 import pickle
-import warnings
 
 import numpy as np
 import tensorflow as tf
@@ -219,12 +218,3 @@ class SklearnTuner(base_tuner.BaseTuner):
         fname = os.path.join(self.get_trial_dir(trial.trial_id), "model.pickle")
         with tf.io.gfile.GFile(fname, "rb") as f:
             return pickle.load(f)
-
-
-class Sklearn(SklearnTuner):
-    def __init__(self, *args, **kwargs):
-        warnings.warn(
-            "The `Sklearn` class is deprecated, please use `SklearnTuner`.",
-            DeprecationWarning,
-        )
-        super().__init__(*args, **kwargs)
