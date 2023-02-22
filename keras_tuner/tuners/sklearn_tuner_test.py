@@ -310,14 +310,3 @@ def test_sklearn_not_install_error(tmp_path):
         )
 
     keras_tuner.tuners.sklearn_tuner.sklearn = sklearn_module
-
-
-def test_sklearn_deprecation_warning(tmp_path):
-    with pytest.deprecated_call():
-        keras_tuner.tuners.SklearnTuner(
-            oracle=keras_tuner.oracles.BayesianOptimizationOracle(
-                objective=keras_tuner.Objective("score", "max"), max_trials=10
-            ),
-            hypermodel=build_model,
-            directory=tmp_path,
-        )
