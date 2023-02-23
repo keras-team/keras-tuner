@@ -1,4 +1,4 @@
-# Release v1.2.2
+# Release v1.3.0
 
 ## Breaking changes
 * Removed `Logger` and `CloudLogger` and the related arguments in
@@ -10,6 +10,10 @@
   `keras_tuner.oracles.HyperbandOracle`,
   `keras_tuner.oracles.RandomSearchOracle` instead.
 * Removed `keras_tuner.Sklearn`. Please use `keras_tuner.SklearnTuner` instead.
+
+## New features
+* `keras_tuner.oracles.GridSearchOracle` is now available as a standalone
+  `Oracle` to be used with custom tuners.
 
 # Release v1.2.1
 
