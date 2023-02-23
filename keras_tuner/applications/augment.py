@@ -17,6 +17,8 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 
+from keras_tuner.api_export import keras_tuner_export
+
 try:
     from tensorflow.keras.layers.experimental import (  # isort:skip
         preprocessing,
@@ -38,6 +40,7 @@ if preprocessing is not None:
     }
 
 
+@keras_tuner_export("keras_tuner.applications.HyperImageAugment")
 class HyperImageAugment(hypermodel.HyperModel):
     """A image augmentation hypermodel.
 

@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import metrics_tracking
 
 
+@keras_tuner_export("keras_tuner.Objective")
 class Objective:
     """The objective for optimization during tuning.
 

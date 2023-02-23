@@ -41,6 +41,7 @@ LOCKS = collections.defaultdict(lambda: threading.Lock())
 THREADS = collections.defaultdict(lambda: None)
 
 
+@keras_tuner_export("keras_tuner.synchronized")
 def synchronized(func, *args, **kwargs):
     """Decorator to synchronize the multi-threaded calls to `Oracle` functions.
 
