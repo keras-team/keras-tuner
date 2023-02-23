@@ -57,7 +57,7 @@ def test_base_tuner_distribution(tmp_path):
             return hp.Int("a", 1, 100)
 
         tuner = SimpleTuner(
-            oracle=keras_tuner.oracles.RandomSearch(
+            oracle=keras_tuner.oracles.RandomSearchOracle(
                 objective=keras_tuner.Objective("score", "max"), max_trials=10
             ),
             hypermodel=build_model,

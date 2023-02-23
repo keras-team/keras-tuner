@@ -3,6 +3,13 @@
 ## Breaking changes
 * Removed `Logger` and `CloudLogger` and the related arguments in
   `BaseTuner.__init__(logger=...)`.
+* Removed `keras_tuner.oracles.BayesianOptimization`,
+  `keras_tuner.oracles.Hyperband`, `keras_tuner.oracles.RandomSearch`, which
+  were actually `Oracle`s instead of `Tuner`s. Please
+  use`keras_tuner.oracles.BayesianOptimizationOracle`,
+  `keras_tuner.oracles.HyperbandOracle`,
+  `keras_tuner.oracles.RandomSearchOracle` instead.
+* Removed `keras_tuner.Sklearn`. Please use `keras_tuner.SklearnTuner` instead.
 
 # Release v1.2.1
 

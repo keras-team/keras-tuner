@@ -311,7 +311,7 @@ def test_float_optimization(tmp_path):
     hps.Float("d", -1, 1)
 
     tuner = PolynomialTuner(
-        oracle=keras_tuner.oracles.BayesianOptimization(
+        oracle=keras_tuner.oracles.BayesianOptimizationOracle(
             objective=keras_tuner.Objective("score", "max"),
             hyperparameters=hps,
             max_trials=50,
