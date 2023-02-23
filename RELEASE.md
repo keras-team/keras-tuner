@@ -1,3 +1,5 @@
+# Release v1.3.1
+
 # Release v1.3.0
 
 ## Breaking changes
