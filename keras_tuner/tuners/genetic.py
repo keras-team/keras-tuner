@@ -55,7 +55,9 @@ class GeneticEvolutionaryProcess(object):
         """
         return self._mutate(life.copy(), mutate_force=True)
 
-    def _mutate(self, chromosome: hp_module.HyperParameters, mutate_force=False):
+    def _mutate(
+        self, chromosome: hp_module.HyperParameters, mutate_force=False
+    ):
         """Mutate a chromosome by sampling from the hyperparameter space.
 
         Args:
@@ -91,7 +93,6 @@ class GeneticEvolutionaryProcess(object):
              A Tuple of two `HyperParameters` instances.
         """
         if random.random() < self.crossover_factor:
-
             # Select a random crossover point.
             crossover_point = random.randint(0, len(parent_1.space) - 1)
             parent_1_cross = parent_1.copy()
@@ -137,7 +138,9 @@ class GeneticEvolutionaryProcess(object):
             List of two `HyperParameters` instances.
         """
         # Generate two tournament indices.
-        parent_index_1, parent_index_2 = random.choices(range(len(population)), k=2)
+        parent_index_1, parent_index_2 = random.choices(
+            range(len(population)), k=2
+        )
         if scores[parent_index_1] > scores[parent_index_2]:
             return population[parent_index_1], population[parent_index_2]
         return population[parent_index_2], population[parent_index_1]
@@ -265,7 +268,10 @@ class GeneticOptimizationOracle(oracle_module.Oracle):
     @property
     def _make_max_trials(self):
         """Calculate the maximum number of trials."""
-        return self.population_size + self.generation_size * 2 * self.offspring_size
+        return (
+            self.population_size
+            + self.generation_size * 2 * self.offspring_size
+        )
 
     @property
     def _make_ranges(self):
@@ -370,7 +376,9 @@ class GeneticOptimizationOracle(oracle_module.Oracle):
         if len(self.start_order) > 0:
             # Start with population
             if int(self.start_order[-1]) in self.ranges["population"]:
-                population = self.gep._initialize_population(self.hyperparameters)
+                population = self.gep._initialize_population(
+                    self.hyperparameters
+                )
                 self.values = population.values
                 self.population["hyperparameters"].append(population)
                 score = self._get_current_score
@@ -380,7 +388,10 @@ class GeneticOptimizationOracle(oracle_module.Oracle):
             # Start with generation and offspring
             if int(self.start_order[-1]) in self.ranges["first_parent"]:
                 if self.selection_type == "tournament":
-                    self.parent_1, self.parent_2 = self.gep._tournament_selection(
+                    (
+                        self.parent_1,
+                        self.parent_2,
+                    ) = self.gep._tournament_selection(
                         scores=self.population["scores"],
                         population=self.population["hyperparameters"],
                     )
@@ -419,7 +430,10 @@ class GeneticOptimizationOracle(oracle_module.Oracle):
 
         if self.values is None:
             return {"status": trial_module.TrialStatus.STOPPED, "values": None}
-        return {"status": trial_module.TrialStatus.RUNNING, "values": self.values}
+        return {
+            "status": trial_module.TrialStatus.RUNNING,
+            "values": self.values,
+        }
 
     def get_state(self):
         """Get the state of the genetic algorithm."""
@@ -508,7 +522,6 @@ class GeneticOptimization(tuner_module.Tuner):
         allow_new_entries=True,
         **kwargs
     ):
-
         oracle = GeneticOptimizationOracle(
             objective=objective,
             generation_size=generation_size,

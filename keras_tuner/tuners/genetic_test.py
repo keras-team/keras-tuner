@@ -203,7 +203,9 @@ def test_roulette_wheel_selection():
     hps.Int("c", 0, 10)
     hps.Fixed("d", 1)
 
-    gep = ge_module.GeneticEvolutionaryProcess(mutation_factor=1, crossover_factor=0)
+    gep = ge_module.GeneticEvolutionaryProcess(
+        mutation_factor=1, crossover_factor=0
+    )
     population = [gep._mutate(hps) for _ in range(5)]
 
     parent_1, parent_2 = gep._roulette_wheel_selection(
@@ -227,7 +229,9 @@ def test_tournament_selection():
     hps.Int("c", 0, 10)
     hps.Fixed("d", 1)
 
-    gep = ge_module.GeneticEvolutionaryProcess(mutation_factor=1, crossover_factor=0)
+    gep = ge_module.GeneticEvolutionaryProcess(
+        mutation_factor=1, crossover_factor=0
+    )
     population = [gep._mutate(hps) for _ in range(5)]
 
     parent_1, parent_2 = gep._tournament_selection(
@@ -499,7 +503,9 @@ def test_genetic_minimize_tournament(tmp_path):
     # unless you use them in run_trial().
     tuner.search()
     assert tuner.oracle.selection_type == "tournament"
-    assert np.isclose(tuner.get_best_hyperparameters()[0].get("x"), 0.0, atol=1e-1)
+    assert np.isclose(
+        tuner.get_best_hyperparameters()[0].get("x"), 0.0, atol=1e-1
+    )
 
 
 def test_genetic_minimize_roulette(tmp_path):
@@ -532,7 +538,9 @@ def test_genetic_minimize_roulette(tmp_path):
     # unless you use them in run_trial().
     tuner.search()
     assert tuner.oracle.selection_type == "roulette_wheel"
-    assert np.isclose(tuner.get_best_hyperparameters()[0].get("x"), 0.0, atol=1e-1)
+    assert np.isclose(
+        tuner.get_best_hyperparameters()[0].get("x"), 0.0, atol=1e-1
+    )
 
 
 def test_genetic_maximize_tournament(tmp_path):
@@ -565,7 +573,9 @@ def test_genetic_maximize_tournament(tmp_path):
     # unless you use them in run_trial().
     tuner.search()
     assert tuner.oracle.selection_type == "tournament"
-    assert np.isclose(tuner.get_best_hyperparameters()[0].get("x"), -1.0, atol=1e-1)
+    assert np.isclose(
+        tuner.get_best_hyperparameters()[0].get("x"), -1.0, atol=1e-1
+    )
 
 
 def test_genetic_maximize_roulette(tmp_path):
@@ -598,7 +608,9 @@ def test_genetic_maximize_roulette(tmp_path):
     # unless you use them in run_trial().
     tuner.search()
     assert tuner.oracle.selection_type == "roulette_wheel"
-    assert np.isclose(tuner.get_best_hyperparameters()[0].get("x"), -1.0, atol=1e-1)
+    assert np.isclose(
+        tuner.get_best_hyperparameters()[0].get("x"), -1.0, atol=1e-1
+    )
 
 
 def test_genetic_minimize_tournament_with_hypermodel(tmp_path):
