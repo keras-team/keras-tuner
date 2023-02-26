@@ -1,4 +1,4 @@
-# Copyright 2019 The KerasTuner Authors
+# Copyright 2023 The KerasTuner Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,10 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+try:
+    import namex
+except ImportError:
+    namex = None
 
-from keras_tuner.tuners.bayesian import BayesianOptimization
-from keras_tuner.tuners.genetic import GeneticOptimization
-from keras_tuner.tuners.gridsearch import GridSearch
-from keras_tuner.tuners.hyperband import Hyperband
-from keras_tuner.tuners.randomsearch import RandomSearch
-from keras_tuner.tuners.sklearn_tuner import SklearnTuner
+if namex:
+
+    class keras_tuner_export(namex.export):
+        def __init__(self, path):
+            super().__init__(package="keras_tuner", path=path)
+
+else:
+
+    class keras_tuner_export:
+        def __init__(self, path):
+            pass
+
+        def __call__(self, symbol):
+            return symbol

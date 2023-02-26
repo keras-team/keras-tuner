@@ -30,9 +30,10 @@ def build_model(hp):
     for i in range(3):
         model.add(
             tf.keras.layers.Dense(
-                units=hp.Int("units_" + str(i), 2, 4, 2), activation="relu"
+                units=hp.Int(f"units_{str(i)}", 2, 4, 2), activation="relu"
             )
         )
+
     model.add(tf.keras.layers.Dense(2, activation="softmax"))
     model.compile(
         optimizer=tf.keras.optimizers.Adam(
@@ -57,18 +58,17 @@ def test_scipy_not_install_error(tmp_path):
     keras_tuner.tuners.bayesian.scipy = scipy_module
 
 
-def test_gpr_mse_is_small():
-    x_train = np.random.rand(1000, 2)
-    y_train = np.multiply(x_train, x_train).mean(axis=-1)
-    x_test = np.random.rand(1000, 2)
-    y_test = np.multiply(x_test, x_test).mean(axis=-1)
+def test_sklearn_not_install_error(tmp_path):
+    sklearn_module = keras_tuner.tuners.bayesian.sklearn
+    keras_tuner.tuners.bayesian.sklearn = None
 
-    gpr = bo_module.GaussianProcessRegressor(alpha=1e-4, seed=3)
-    gpr.fit(x_train, y_train)
-    y_predict_mean, y_predict_std = gpr.predict(x_test)
+    with pytest.raises(ImportError, match="Please install scikit-learn"):
+        keras_tuner.BayesianOptimization(
+            hypermodel=build_model,
+            directory=tmp_path,
+        )
 
-    assert ((y_predict_mean - y_test) ** 2).mean(axis=0) < 1e-8
-    assert y_predict_std.shape == (1000,)
+    keras_tuner.tuners.bayesian.sklearn = sklearn_module
 
 
 def test_bayesian_oracle(tmp_path):
@@ -88,7 +88,8 @@ def test_bayesian_oracle(tmp_path):
     for i in range(5):
         trial = oracle.create_trial(str(i))
         oracle.update_trial(trial.trial_id, {"score": i})
-        oracle.end_trial(trial.trial_id, "COMPLETED")
+        trial.status = "COMPLETED"
+        oracle.end_trial(trial)
 
 
 def test_bayesian_oracle_with_zero_y(tmp_path):
@@ -108,7 +109,8 @@ def test_bayesian_oracle_with_zero_y(tmp_path):
     for i in range(5):
         trial = oracle.create_trial(str(i))
         oracle.update_trial(trial.trial_id, {"score": 0})
-        oracle.end_trial(trial.trial_id, "COMPLETED")
+        trial.status = "COMPLETED"
+        oracle.end_trial(trial)
 
 
 def test_bayesian_dynamic_space(tmp_path):
@@ -148,7 +150,8 @@ def test_bayesian_save_reload(tmp_path):
     for _ in range(3):
         trial = oracle.create_trial("tuner_id")
         oracle.update_trial(trial.trial_id, {"score": 1.0})
-        oracle.end_trial(trial.trial_id, "COMPLETED")
+        trial.status = "COMPLETED"
+        oracle.end_trial(trial)
 
     oracle.save()
     oracle = bo_module.BayesianOptimizationOracle(
@@ -159,10 +162,11 @@ def test_bayesian_save_reload(tmp_path):
     oracle._set_project_dir(tmp_path, "untitled")
     oracle.reload()
 
-    for trial_id in range(3):
+    for _ in range(3):
         trial = oracle.create_trial("tuner_id")
         oracle.update_trial(trial.trial_id, {"score": 1.0})
-        oracle.end_trial(trial.trial_id, "COMPLETED")
+        trial.status = "COMPLETED"
+        oracle.end_trial(trial)
 
     assert len(oracle.trials) == 6
 
@@ -307,7 +311,7 @@ def test_float_optimization(tmp_path):
     hps.Float("d", -1, 1)
 
     tuner = PolynomialTuner(
-        oracle=keras_tuner.oracles.BayesianOptimization(
+        oracle=keras_tuner.oracles.BayesianOptimizationOracle(
             objective=keras_tuner.Objective("score", "max"),
             hyperparameters=hps,
             max_trials=50,
@@ -329,7 +333,6 @@ def test_float_optimization(tmp_path):
 
 
 def test_distributed_optimization(tmp_path):
-
     hps = hp_module.HyperParameters()
     hps.Int("a", 0, 10)
     hps.Float("b", -1, 1, step=0.1)
@@ -351,14 +354,15 @@ def test_distributed_optimization(tmp_path):
     for _ in range(10):
         trials = []
         for i in range(tuners):
-            trial = oracle.create_trial("tuner_" + str(i))
+            trial = oracle.create_trial(f"tuner_{str(i)}")
             trials.append(trial)
         for trial in trials:
             oracle.update_trial(
                 trial.trial_id, {"score": evaluate(trial.hyperparameters)}
             )
         for trial in trials:
-            oracle.end_trial(trial.trial_id, "COMPLETED")
+            trial.status = "COMPLETED"
+            oracle.end_trial(trial)
 
     atol, rtol = 1e-1, 1e-1
     best_trial = oracle.get_best_trials()[0]
@@ -403,7 +407,8 @@ def test_interleaved_distributed_optimization(tmp_path):
     oracle.update_trial(
         trial_1.trial_id, {"score": evaluate(trial_1.hyperparameters)}
     )
-    oracle.end_trial(trial_1.trial_id, "COMPLETED")
+    trial_1.status = "COMPLETED"
+    oracle.end_trial(trial_1)
 
     # tuner_0 request a new trial (trial_3)
     trial_3 = oracle.create_trial("tuner_0")
@@ -412,7 +417,8 @@ def test_interleaved_distributed_optimization(tmp_path):
     oracle.update_trial(
         trial_2.trial_id, {"score": evaluate(trial_2.hyperparameters)}
     )
-    oracle.end_trial(trial_2.trial_id, "COMPLETED")
+    trial_2.status = "COMPLETED"
+    oracle.end_trial(trial_2)
 
     # tuner_1 requests the final new trial (trial_4)
     # the Bayesian optimizer will use ongoing trial_3 to hallucinate
@@ -422,12 +428,14 @@ def test_interleaved_distributed_optimization(tmp_path):
     oracle.update_trial(
         trial_3.trial_id, {"score": evaluate(trial_3.hyperparameters)}
     )
-    oracle.end_trial(trial_3.trial_id, "COMPLETED")
+    trial_3.status = "COMPLETED"
+    oracle.end_trial(trial_3)
 
     # tuner_1 finishes trial_4
     oracle.update_trial(
         trial_4.trial_id, {"score": evaluate(trial_4.hyperparameters)}
     )
-    oracle.end_trial(trial_4.trial_id, "COMPLETED")
+    trial_4.status = "COMPLETED"
+    oracle.end_trial(trial_4)
 
     assert True

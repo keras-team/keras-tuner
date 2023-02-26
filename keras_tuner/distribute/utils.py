@@ -87,7 +87,7 @@ Experimental. API is subject to change.
 
 def _get_base_dirpath(strategy):
     task_id = strategy.extended._task_id  # pylint: disable=protected-access
-    return "workertemp_" + str(task_id)
+    return f"workertemp_{str(task_id)}"
 
 
 def _is_temp_dir(dirpath, strategy):
@@ -119,8 +119,8 @@ def write_dirpath(dirpath, strategy):
         # Infer strategy if not given.
         strategy = tf.distribute.get_strategy()
     if strategy is None:
-        # If strategy is still not available, this is not in distributed training.
-        # Fallback to original dirpath.
+        # If strategy is still not available, this is not in distributed
+        # training. Fallback to original dirpath.
         return dirpath
     if (
         not strategy.extended._in_multi_worker_mode()
@@ -145,11 +145,11 @@ def remove_temp_dirpath(dirpath, strategy):
         # Infer strategy if not given.
         strategy = tf.distribute.get_strategy()
     if strategy is None:
-        # If strategy is still not available, this is not in distributed training.
-        # Fallback to no-op.
+        # If strategy is still not available, this is not in distributed
+        # training. Fallback to no-op.
         return
-    # TODO(anjalisridhar): Consider removing the check for multi worker mode since
-    # it is redundant when used with the should_checkpoint property.
+    # TODO(anjalisridhar): Consider removing the check for multi worker mode
+    # since it is redundant when used with the should_checkpoint property.
     if (
         strategy.extended._in_multi_worker_mode()
         and not strategy.extended.should_checkpoint

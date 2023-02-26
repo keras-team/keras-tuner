@@ -14,9 +14,11 @@
 "HyperModel base class."
 
 from keras_tuner import errors
+from keras_tuner.api_export import keras_tuner_export
 
 
-class HyperModel(object):
+@keras_tuner_export("keras_tuner.HyperModel")
+class HyperModel:
     """Defines a search space of models.
 
     A search space is a collection of models. The `build` function will build
@@ -113,7 +115,7 @@ class HyperModel(object):
         return self._build(hp, *args, **kwargs)
 
     def declare_hyperparameters(self, hp):
-        raise NotImplementedError
+        pass
 
     def fit(self, hp, model, *args, **kwargs):
         """Train the model.
@@ -146,7 +148,7 @@ class DefaultHyperModel(HyperModel):
     """Produces HyperModel from a model building function."""
 
     def __init__(self, build, name=None, tunable=True):
-        super(DefaultHyperModel, self).__init__(name=name)
+        super().__init__(name=name)
         self.build = build
 
 

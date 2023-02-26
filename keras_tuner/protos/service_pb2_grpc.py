@@ -20,7 +20,7 @@ from keras_tuner.protos import (
 )
 
 
-class OracleStub(object):
+class OracleStub:
     # missing associated documentation comment in .proto file
     pass
 
@@ -67,7 +67,7 @@ class OracleStub(object):
         )
 
 
-class OracleServicer(object):
+class OracleServicer:
     # missing associated documentation comment in .proto file
     pass
 

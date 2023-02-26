@@ -88,7 +88,7 @@ def build_pipeline(hp):
 
 def test_sklearn_tuner_simple_with_np(tmp_path):
     tuner = keras_tuner.SklearnTuner(
-        oracle=keras_tuner.oracles.BayesianOptimization(
+        oracle=keras_tuner.oracles.BayesianOptimizationOracle(
             objective=keras_tuner.Objective("score", "max"), max_trials=10
         ),
         hypermodel=build_model,
@@ -115,7 +115,7 @@ def test_sklearn_tuner_simple_with_np(tmp_path):
 @pytest.mark.filterwarnings("ignore:.*column-vector")
 def test_sklearn_tuner_with_df(tmp_path):
     tuner = keras_tuner.SklearnTuner(
-        oracle=keras_tuner.oracles.BayesianOptimization(
+        oracle=keras_tuner.oracles.BayesianOptimizationOracle(
             objective=keras_tuner.Objective("score", "max"), max_trials=10
         ),
         hypermodel=build_model,
@@ -131,7 +131,7 @@ def test_sklearn_tuner_with_df(tmp_path):
 
 def test_sklearn_custom_scoring_and_cv(tmp_path):
     tuner = keras_tuner.SklearnTuner(
-        oracle=keras_tuner.oracles.BayesianOptimization(
+        oracle=keras_tuner.oracles.BayesianOptimizationOracle(
             objective=keras_tuner.Objective("score", "max"), max_trials=10
         ),
         hypermodel=build_model,
@@ -159,7 +159,7 @@ def test_sklearn_custom_scoring_and_cv(tmp_path):
 
 def test_sklearn_additional_metrics(tmp_path):
     tuner = keras_tuner.SklearnTuner(
-        oracle=keras_tuner.oracles.BayesianOptimization(
+        oracle=keras_tuner.oracles.BayesianOptimizationOracle(
             objective=keras_tuner.Objective("score", "max"), max_trials=10
         ),
         hypermodel=build_model,
@@ -188,7 +188,7 @@ def test_sklearn_additional_metrics(tmp_path):
 
 def test_sklearn_sample_weight(tmp_path):
     tuner = keras_tuner.SklearnTuner(
-        oracle=keras_tuner.oracles.BayesianOptimization(
+        oracle=keras_tuner.oracles.BayesianOptimizationOracle(
             objective=keras_tuner.Objective("score", "max"), max_trials=10
         ),
         hypermodel=build_model,
@@ -215,7 +215,7 @@ def test_sklearn_sample_weight(tmp_path):
 
 def test_sklearn_pipeline(tmp_path):
     tuner = keras_tuner.SklearnTuner(
-        oracle=keras_tuner.oracles.BayesianOptimization(
+        oracle=keras_tuner.oracles.BayesianOptimizationOracle(
             objective=keras_tuner.Objective("score", "max"), max_trials=10
         ),
         hypermodel=build_pipeline,
@@ -242,7 +242,7 @@ def test_sklearn_pipeline(tmp_path):
 
 def test_sklearn_cv_with_groups(tmp_path):
     tuner = keras_tuner.SklearnTuner(
-        oracle=keras_tuner.oracles.BayesianOptimization(
+        oracle=keras_tuner.oracles.BayesianOptimizationOracle(
             objective=keras_tuner.Objective("score", "max"), max_trials=10
         ),
         hypermodel=build_model,
@@ -270,7 +270,7 @@ def test_sklearn_cv_with_groups(tmp_path):
 
 def test_sklearn_real_data(tmp_path):
     tuner = keras_tuner.SklearnTuner(
-        oracle=keras_tuner.oracles.BayesianOptimization(
+        oracle=keras_tuner.oracles.BayesianOptimizationOracle(
             objective=keras_tuner.Objective("score", "max"), max_trials=10
         ),
         hypermodel=build_model,
@@ -302,7 +302,7 @@ def test_sklearn_not_install_error(tmp_path):
 
     with pytest.raises(ImportError, match="Please install sklearn"):
         keras_tuner.SklearnTuner(
-            oracle=keras_tuner.oracles.BayesianOptimization(
+            oracle=keras_tuner.oracles.BayesianOptimizationOracle(
                 objective=keras_tuner.Objective("score", "max"), max_trials=10
             ),
             hypermodel=build_model,
@@ -310,14 +310,3 @@ def test_sklearn_not_install_error(tmp_path):
         )
 
     keras_tuner.tuners.sklearn_tuner.sklearn = sklearn_module
-
-
-def test_sklearn_deprecation_warning(tmp_path):
-    with pytest.deprecated_call():
-        keras_tuner.tuners.Sklearn(
-            oracle=keras_tuner.oracles.BayesianOptimization(
-                objective=keras_tuner.Objective("score", "max"), max_trials=10
-            ),
-            hypermodel=build_model,
-            directory=tmp_path,
-        )

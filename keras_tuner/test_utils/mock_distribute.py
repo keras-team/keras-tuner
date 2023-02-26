@@ -26,7 +26,7 @@ class ExceptionStoringThread(threading.Thread):
     def run(self):
         self.raised_exception = None
         try:
-            super(ExceptionStoringThread, self).run()
+            super().run()
         except BaseException:
             self.raised_exception = sys.exc_info()
 
@@ -71,7 +71,8 @@ def mock_distribute(fn, num_workers=2):
             os.environ["KERASTUNER_ORACLE_IP"] = "127.0.0.1"
             # The port of the chief Oracle.
             os.environ["KERASTUNER_ORACLE_PORT"] = port
-            # The ID of this process. 'chief' will run the OracleServicer server.
+            # The ID of this process. 'chief' will run the OracleServicer
+            # server.
             os.environ["KERASTUNER_TUNER_ID"] = "chief"
             fn()
 

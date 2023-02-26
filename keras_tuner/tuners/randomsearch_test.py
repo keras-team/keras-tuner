@@ -27,16 +27,17 @@ def test_update_space(tmp_path):
         for i in range(hp.Int("layers", 0, 2)):
             model.add(
                 tf.keras.layers.Dense(
-                    units=hp.Int("units_" + str(i), 2, 4, 2), activation="relu"
+                    units=hp.Int(f"units_{str(i)}", 2, 4, 2), activation="relu"
                 )
             )
+
         model.add(tf.keras.layers.Dense(1, activation="sigmoid"))
         model.compile("adam", loss="binary_crossentropy", metrics=["accuracy"])
         return model
 
     class MyRandomSearch(randomsearch.RandomSearchOracle):
         def populate_space(self, trial_id):
-            result = super(MyRandomSearch, self).populate_space(trial_id)
+            result = super().populate_space(trial_id)
             if "values" in result:
                 result["values"]["layers"] = 2
             return result

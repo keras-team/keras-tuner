@@ -16,13 +16,13 @@
 from keras_tuner import applications
 from keras_tuner import oracles
 from keras_tuner import tuners
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine.hypermodel import HyperModel
 from keras_tuner.engine.hyperparameters import HyperParameter
 from keras_tuner.engine.hyperparameters import HyperParameters
-from keras_tuner.engine.logger import CloudLogger
-from keras_tuner.engine.logger import Logger
 from keras_tuner.engine.objective import Objective
 from keras_tuner.engine.oracle import Oracle
+from keras_tuner.engine.oracle import synchronized
 from keras_tuner.engine.tuner import Tuner
 from keras_tuner.tuners import BayesianOptimization
 from keras_tuner.tuners import GeneticOptimization
@@ -34,4 +34,4 @@ from keras_tuner.utils import check_tf_version
 
 check_tf_version()
 
-__version__ = "1.2.0dev"
+__version__ = "1.3.1dev"

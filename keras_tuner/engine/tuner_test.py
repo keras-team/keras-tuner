@@ -41,8 +41,10 @@ def build_model(hp):
     x = inputs
     for i in range(hp.Int("num_layers", 1, 4)):
         x = keras.layers.Dense(
-            units=hp.Int("units_" + str(i), 5, 9, 1, default=6), activation="relu"
+            units=hp.Int(f"units_{str(i)}", 5, 9, 1, default=6),
+            activation="relu",
         )(x)
+
     outputs = keras.layers.Dense(NUM_CLASSES, activation="softmax")(x)
     model = keras.Model(inputs, outputs)
     model.compile(
@@ -57,7 +59,7 @@ def build_model(hp):
 
 class MockModel(keras.Model):
     def __init__(self, full_history):
-        super(MockModel, self).__init__()
+        super().__init__()
         self.full_history = full_history
         self.callbacks = []
         self.optimizer = True
@@ -97,7 +99,9 @@ class MockModel(keras.Model):
             self.on_epoch_end(epoch)
         history = keras.callbacks.History()
         history.history = {
-            "loss": [np.average(epoch_values) for epoch_values in self.full_history]
+            "loss": [
+                np.average(epoch_values) for epoch_values in self.full_history
+            ]
         }
         return history
 
@@ -109,7 +113,6 @@ class MockModel(keras.Model):
 
 
 class MockHyperModel(keras_tuner.HyperModel):
-
     mode_0 = [[10, 9, 8], [7, 6, 5], [4, 3, 2]]
     mode_1 = [[13, 13, 13], [12, 12, 12], [11, 11, 11]]
 
@@ -158,9 +161,10 @@ class ExampleHyperModel(keras_tuner.HyperModel):
         x = inputs
         for i in range(hp.Int("num_layers", 1, 4)):
             x = keras.layers.Dense(
-                units=hp.Int("units_" + str(i), 5, 9, 1, default=6),
+                units=hp.Int(f"units_{str(i)}", 5, 9, 1, default=6),
                 activation="relu",
             )(x)
+
         outputs = keras.layers.Dense(NUM_CLASSES, activation="softmax")(x)
         model = keras.Model(inputs, outputs)
         model.compile(
@@ -333,7 +337,9 @@ def test_no_objective_fit_return_not_float(tmp_path):
         directory=tmp_path,
     )
 
-    with pytest.raises(TypeError, match="HyperModel\.fit\(\) to be a single float"):
+    with pytest.raises(
+        TypeError, match="HyperModel\.fit\(\) to be a single float"
+    ):
         tuner.search()
 
 
@@ -348,7 +354,9 @@ def test_no_objective_run_trial_return_not_float(tmp_path):
         directory=tmp_path,
     )
 
-    with pytest.raises(TypeError, match="Tuner\.run_trial\(\) to be a single float"):
+    with pytest.raises(
+        TypeError, match="Tuner\.run_trial\(\) to be a single float"
+    ):
         tuner.search()
 
 
@@ -422,7 +430,9 @@ def test_override_compile(tmp_path):
             assert model.loss == "mse"
             assert len(model.metrics) >= 2
             assert model.metrics[-2]._fn.__name__ == "mean_squared_error"
-            assert model.metrics[-1]._fn.__name__ == "sparse_categorical_accuracy"
+            assert (
+                model.metrics[-1]._fn.__name__ == "sparse_categorical_accuracy"
+            )
             return history
 
     tuner = keras_tuner.tuners.RandomSearch(
@@ -453,13 +463,29 @@ def test_override_compile(tmp_path):
     assert model.loss == "mse"
 
 
+def test_override_optimizer_with_actual_optimizer_object(tmp_path):
+    tuner = keras_tuner.tuners.RandomSearch(
+        build_model,
+        objective="val_loss",
+        max_trials=4,
+        optimizer=keras.optimizers.Adam(0.01),
+        directory=tmp_path,
+    )
+    tuner.search(
+        x=TRAIN_INPUTS,
+        y=TRAIN_TARGETS,
+        epochs=2,
+        validation_data=(VAL_INPUTS, VAL_TARGETS),
+    )
+
+
 def test_static_space(tmp_path):
     def build_model_static(hp):
         inputs = keras.Input(shape=(INPUT_DIM,))
         x = inputs
         for i in range(hp.get("num_layers")):
             x = keras.layers.Dense(
-                units=hp.get("units_" + str(i)), activation="relu"
+                units=hp.get(f"units_{str(i)}"), activation="relu"
             )(x)
         outputs = keras.layers.Dense(NUM_CLASSES, activation="softmax")(x)
         model = keras.Model(inputs, outputs)
@@ -501,12 +527,14 @@ def test_static_space_errors(tmp_path):
         x = inputs
         for i in range(hp.get("num_layers")):
             x = keras.layers.Dense(
-                units=hp.get("units_" + str(i)), activation="relu"
+                units=hp.get(f"units_{str(i)}"), activation="relu"
             )(x)
         outputs = keras.layers.Dense(NUM_CLASSES, activation="softmax")(x)
         model = keras.Model(inputs, outputs)
         model.compile(
-            optimizer=keras.optimizers.Adam(hp.Float("learning_rate", 1e-5, 1e-2)),
+            optimizer=keras.optimizers.Adam(
+                hp.Float("learning_rate", 1e-5, 1e-2)
+            ),
             loss="sparse_categorical_crossentropy",
             metrics=["accuracy"],
         )
@@ -538,7 +566,7 @@ def test_static_space_errors(tmp_path):
         x = inputs
         for i in range(hp.get("num_layers")):
             x = keras.layers.Dense(
-                units=hp.get("units_" + str(i)), activation="relu"
+                units=hp.get(f"units_{str(i)}"), activation="relu"
             )(x)
         outputs = keras.layers.Dense(NUM_CLASSES, activation="softmax")(x)
         model = keras.Model(inputs, outputs)
@@ -585,7 +613,9 @@ def test_restricted_space_using_defaults(tmp_path):
 
     assert len(tuner.oracle.hyperparameters.space) == 2
     new_lr = [
-        p for p in tuner.oracle.hyperparameters.space if p.name == "learning_rate"
+        p
+        for p in tuner.oracle.hyperparameters.space
+        if p.name == "learning_rate"
     ][0]
     assert new_lr.values == [0.01, 0.001, 0.0001]
 
@@ -679,7 +709,6 @@ def test_get_best_models(tmp_path):
 
 
 def test_saving_and_reloading(tmp_path):
-
     tuner = keras_tuner.tuners.RandomSearch(
         build_model,
         objective="val_accuracy",
@@ -764,7 +793,9 @@ def test_update_trial(tmp_path):
     # Test stop the oracle in update_trial.
     class MyOracle(keras_tuner.Oracle):
         def populate_space(self, _):
-            values = {p.name: p.random_sample() for p in self.hyperparameters.space}
+            values = {
+                p.name: p.random_sample() for p in self.hyperparameters.space
+            }
             return {"values": values, "status": "RUNNING"}
 
         def update_trial(self, trial_id, metrics, step=0):
@@ -812,7 +843,9 @@ def test_tunable_false_hypermodel(tmp_path):
 
         model = tf.keras.Model(inputs, outputs)
 
-        optimizer = tf.keras.optimizers.get(hp.Choice("optimizer", ["adam", "sgd"]))
+        optimizer = tf.keras.optimizers.get(
+            hp.Choice("optimizer", ["adam", "sgd"])
+        )
         optimizer.learning_rate = hp.Float(
             "learning_rate", 1e-4, 1e-2, sampling="log"
         )
@@ -920,7 +953,9 @@ def test_convert_hyperparams_to_hparams():
     def _check_hparams_equal(hp1, hp2):
         assert (
             hparams_api.hparams_pb(hp1, start_time_secs=0).SerializeToString()
-            == hparams_api.hparams_pb(hp2, start_time_secs=0).SerializeToString()
+            == hparams_api.hparams_pb(
+                hp2, start_time_secs=0
+            ).SerializeToString()
         )
 
     hps = keras_tuner.engine.hyperparameters.HyperParameters()
@@ -939,7 +974,8 @@ def test_convert_hyperparams_to_hparams():
     hps.Int("units", min_value=2, max_value=16)
     hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
     _check_hparams_equal(
-        hparams, {hparams_api.HParam("units", hparams_api.IntInterval(2, 16)): 2}
+        hparams,
+        {hparams_api.HParam("units", hparams_api.IntInterval(2, 16)): 2},
     )
 
     hps = keras_tuner.engine.hyperparameters.HyperParameters()
@@ -947,7 +983,11 @@ def test_convert_hyperparams_to_hparams():
     hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
     _check_hparams_equal(
         hparams,
-        {hparams_api.HParam("units", hparams_api.Discrete([32, 64, 96, 128])): 32},
+        {
+            hparams_api.HParam(
+                "units", hparams_api.Discrete([32, 64, 96, 128])
+            ): 32
+        },
     )
 
     hps = keras_tuner.engine.hyperparameters.HyperParameters()
@@ -984,8 +1024,9 @@ def test_convert_hyperparams_to_hparams():
     }
     hparams_repr_list = [repr(hparams[x]) for x in hparams.keys()]
     expected_hparams_repr_list = [
-        repr(expected_hparams[x]) for x in expected_hparams.keys()
+        repr(expected_hparams[x]) for x in expected_hparams
     ]
+
     assert sorted(hparams_repr_list) == sorted(expected_hparams_repr_list)
 
     hps = keras_tuner.engine.hyperparameters.HyperParameters()
@@ -993,7 +1034,11 @@ def test_convert_hyperparams_to_hparams():
     hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
     _check_hparams_equal(
         hparams,
-        {hparams_api.HParam("has_beta", hparams_api.Discrete([True, False])): False},
+        {
+            hparams_api.HParam(
+                "has_beta", hparams_api.Discrete([True, False])
+            ): False
+        },
     )
 
     hps = keras_tuner.engine.hyperparameters.HyperParameters()
@@ -1027,7 +1072,8 @@ def test_convert_hyperparams_to_hparams():
     hps.Fixed("num_layers", 2)
     hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
     _check_hparams_equal(
-        hparams, {hparams_api.HParam("num_layers", hparams_api.Discrete([2])): 2}
+        hparams,
+        {hparams_api.HParam("num_layers", hparams_api.Discrete([2])): 2},
     )
 
 
@@ -1054,7 +1100,9 @@ def test_tuning_correctness(tmp_path):
     assert tuner.oracle.get_best_trials(1)[0].trial_id == first_trial.trial_id
 
 
-def assert_found_best_score(tmp_path, hypermodel, tuner_class=keras_tuner.Tuner):
+def assert_found_best_score(
+    tmp_path, hypermodel, tuner_class=keras_tuner.Tuner
+):
     tuner = tuner_class(
         oracle=keras_tuner.tuners.randomsearch.RandomSearchOracle(
             objective="loss", max_trials=2, seed=1337
@@ -1096,7 +1144,21 @@ def test_hypermodel_fit_return_an_int(tmp_path):
     assert_found_best_score(tmp_path, MyHyperModel())
 
 
-def test_run_trial_return_none(tmp_path):
+def test_run_trial_return_none_without_update_trial(tmp_path):
+    class MyTuner(keras_tuner.Tuner):
+        def run_trial(self, trial, *fit_args, **fit_kwargs):
+            self.hypermodel.build(trial.hyperparameters).fit(
+                *fit_args, **fit_kwargs
+            )
+
+    with pytest.raises(
+        errors.FatalTypeError,
+        match="Did you forget",
+    ):
+        assert_found_best_score(tmp_path, MockHyperModel(), MyTuner)
+
+
+def test_run_trial_return_none_with_update_trial(tmp_path):
     class MyTuner(keras_tuner.Tuner):
         def run_trial(self, trial, *fit_args, **fit_kwargs):
             history = self.hypermodel.build(trial.hyperparameters).fit(
@@ -1106,10 +1168,7 @@ def test_run_trial_return_none(tmp_path):
                 trial.trial_id, {"loss": min(history.history["loss"])}
             )
 
-    with pytest.raises(
-        errors.FatalTypeError,
-        match="`self\.oracle\.update_trial\(trial_id, metrics\)`",
-    ):
+    with pytest.deprecated_call(match="Please remove the call"):
         assert_found_best_score(tmp_path, MockHyperModel(), MyTuner)
 
 
@@ -1162,13 +1221,16 @@ def test_run_trial_return_float_list(tmp_path):
 def test_tuner_errors(tmp_path):
     # invalid oracle
     with pytest.raises(
-        ValueError, match="Expected `oracle` argument to be an instance of `Oracle`"
+        ValueError,
+        match="Expected `oracle` argument to be an instance of `Oracle`",
     ):
         tuner_module.Tuner(
             oracle="invalid", hypermodel=build_model, directory=tmp_path
         )
     # invalid hypermodel
-    with pytest.raises(ValueError, match="`hypermodel` argument should be either"):
+    with pytest.raises(
+        ValueError, match="`hypermodel` argument should be either"
+    ):
         tuner_module.Tuner(
             oracle=keras_tuner.tuners.randomsearch.RandomSearchOracle(
                 objective="val_accuracy", max_trials=3
@@ -1187,7 +1249,9 @@ def test_tuner_errors(tmp_path):
             directory=tmp_path,
         )
         tuner.search(
-            TRAIN_INPUTS, TRAIN_TARGETS, validation_data=(VAL_INPUTS, VAL_TARGETS)
+            TRAIN_INPUTS,
+            TRAIN_TARGETS,
+            validation_data=(VAL_INPUTS, VAL_TARGETS),
         )
     # TODO: test no optimizer
 
@@ -1262,7 +1326,9 @@ def test_correct_display_trial_number(tmp_path):
 
 
 def test_error_on_unknown_objective_direction(tmp_path):
-    with pytest.raises(ValueError, match="Could not infer optimization direction"):
+    with pytest.raises(
+        ValueError, match="Could not infer optimization direction"
+    ):
         keras_tuner.tuners.RandomSearch(
             hypermodel=build_model,
             objective="custom_metric",
@@ -1295,7 +1361,7 @@ def test_callbacks_run_each_execution(tmp_path):
 
     # Unknown reason cause the callback to run 5 times sometime.
     # Make 5 & 6 both pass the test before found the reason.
-    assert len(callback_instances) in (5, 6)
+    assert len(callback_instances) in {5, 6}
 
 
 def test_build_and_fit_model(tmp_path):
@@ -1376,7 +1442,7 @@ def test_init_build_all_hps_in_all_conditions(tmp_path):
             return super().build(hp)
 
     def name_in_hp(name, hp):
-        return any([name == single_hp.name for single_hp in hp.space])
+        return any(name == single_hp.name for single_hp in hp.space)
 
     class MyTuner(tuner_module.Tuner):
         def _populate_initial_space(self):
@@ -1398,6 +1464,40 @@ def test_init_build_all_hps_in_all_conditions(tmp_path):
         ),
         hypermodel=ConditionalHyperModel(),
         directory=tmp_path,
+    )
+
+
+def test_populate_initial_space_with_hp_parent_arg(tmp_path):
+    def build_model(hp):
+        hp.Boolean("parent", default=True)
+        hp.Boolean(
+            "child",
+            parent_name="parent",
+            parent_values=[False],
+        )
+        return keras.Sequential()
+
+    keras_tuner.RandomSearch(
+        build_model,
+        objective="val_accuracy",
+        directory=tmp_path,
+        max_trials=1,
+    )
+
+
+def test_populate_initial_space_with_declare_hp(tmp_path):
+    class MyHyperModel(keras_tuner.HyperModel):
+        def declare_hyperparameters(self, hp):
+            hp.Boolean("bool")
+
+        def build(self, hp):
+            return keras.Sequential()
+
+    keras_tuner.RandomSearch(
+        MyHyperModel(),
+        objective="val_accuracy",
+        directory=tmp_path,
+        max_trials=1,
     )
 
 

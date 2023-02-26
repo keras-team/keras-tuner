@@ -31,7 +31,7 @@ from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine import objective as obj_module
 
 
-class TunerStats(object):
+class TunerStats:
     """Track tuner statistics."""
 
     def __init__(self):
@@ -42,7 +42,7 @@ class TunerStats(object):
     def summary(self, extended=False):
         print("Tuning stats")
         for setting, value in self.get_config():
-            print(setting + ":", value)
+            print(f"{setting}:", value)
 
     def get_config(self):
         return {
@@ -76,7 +76,7 @@ def get_max_epochs_and_steps(fit_args, fit_kwargs):
 
 class TunerCallback(keras.callbacks.Callback):
     def __init__(self, tuner, trial):
-        super(TunerCallback, self).__init__()
+        super().__init__()
         self.tuner = tuner
         self.trial = trial
 
@@ -94,7 +94,7 @@ class TunerCallback(keras.callbacks.Callback):
 
 
 # TODO: Add more extensive display.
-class Display(object):
+class Display:
     def __init__(self, oracle, verbose=1):
         self.verbose = verbose
         self.oracle = oracle
@@ -108,7 +108,6 @@ class Display(object):
 
     def on_trial_begin(self, trial):
         if self.verbose >= 1:
-
             self.trial_number = int(trial.trial_id) + 1
             print()
             print(f"Search: Running Trial #{self.trial_number}")
@@ -137,23 +136,25 @@ class Display(object):
         best_score = best_trials[0].score if len(best_trials) > 0 else None
         print(f"Best {self.oracle.objective.name} So Far: {best_score}")
 
-        time_elapsed_str = self.format_duration(datetime.now() - self.search_start)
+        time_elapsed_str = self.format_duration(
+            datetime.now() - self.search_start
+        )
         print(f"Total elapsed time: {time_elapsed_str}")
 
     def show_hyperparameter_table(self, trial):
         template = "{{0:{0}}}|{{1:{0}}}|{{2}}".format(self.col_width)
         best_trials = self.oracle.get_best_trials()
-        if len(best_trials) > 0:
-            best_trial = best_trials[0]
-        else:
-            best_trial = None
+        best_trial = best_trials[0] if len(best_trials) > 0 else None
         if trial.hyperparameters.values:
-            print(template.format("Value", "Best Value So Far", "Hyperparameter"))
+            print(
+                template.format("Value", "Best Value So Far", "Hyperparameter")
+            )
             for hp, value in trial.hyperparameters.values.items():
-                if best_trial:
-                    best_value = best_trial.hyperparameters.values.get(hp)
-                else:
-                    best_value = "?"
+                best_value = (
+                    best_trial.hyperparameters.values.get(hp)
+                    if best_trial
+                    else "?"
+                )
                 print(
                     template.format(
                         self.format_value(value),
@@ -169,7 +170,7 @@ class Display(object):
             return f"{val:.5g}"
         val_str = str(val)
         if len(val_str) > self.col_width:
-            val_str = val_str[: self.col_width - 3] + "..."
+            val_str = f"{val_str[:self.col_width - 3]}..."
         return val_str
 
     def format_duration(self, d):
@@ -233,9 +234,11 @@ def average_metrics_dicts(metrics_dicts):
     for metrics_dict in metrics_dicts:
         for metric_name, metric_value in metrics_dict.items():
             metrics[metric_name].append(metric_value)
-    averaged_metrics = {}
-    for metric_name, metric_values in metrics.items():
-        averaged_metrics[metric_name] = np.mean(metric_values)
+    averaged_metrics = {
+        metric_name: np.mean(metric_values)
+        for metric_name, metric_values in metrics.items()
+    }
+
     return averaged_metrics
 
 
@@ -295,19 +298,10 @@ def validate_trial_results(results, objective, func_name):
 
     # None
     if results is None:
-        error_message = (
+        raise errors.FatalTypeError(
             f"The return value of {func_name} is None. "
             "Did you forget to return the metrics? "
         )
-        if func_name == "Tuner.run_trial()":
-            error_message += (
-                "\nIf you are calling "
-                "`self.oracle.update_trial(trial_id, metrics)` "
-                "in `Tuner.run_trial()` to report the metrics, "
-                "please remove the call and `return metrics` "
-                "in `Tuner.run_trial()` instead."
-            )
-        raise errors.FatalTypeError(error_message)
 
     # objective left unspecified,
     # and objective value is not a single float.
@@ -348,7 +342,9 @@ def get_best_step(results, objective):
     # Average the best epochs if multiple executions.
     if isinstance(results, list):
         return int(
-            statistics.mean([get_best_step(elem, objective) for elem in results])
+            statistics.mean(
+                [get_best_step(elem, objective) for elem in results]
+            )
         )
 
     # A History.
@@ -381,7 +377,9 @@ def convert_hyperparams_to_hparams(hyperparams):
                 values = list(range(hp.min_value, hp.max_value + 1, hp.step))
                 hparams_domain = hparams_api.Discrete(values)
             else:
-                hparams_domain = hparams_api.IntInterval(hp.min_value, hp.max_value)
+                hparams_domain = hparams_api.IntInterval(
+                    hp.min_value, hp.max_value
+                )
         elif isinstance(hp, hp_module.Float):
             if hp.step is not None:
                 # Note: `hp.max_value` is inclusive, unlike the end index
@@ -391,7 +389,9 @@ def convert_hyperparams_to_hparams(hyperparams):
                 ).tolist()
                 hparams_domain = hparams_api.Discrete(values)
             else:
-                hparams_domain = hparams_api.RealInterval(hp.min_value, hp.max_value)
+                hparams_domain = hparams_api.RealInterval(
+                    hp.min_value, hp.max_value
+                )
         elif isinstance(hp, hp_module.Boolean):
             hparams_domain = hparams_api.Discrete([True, False])
         elif isinstance(hp, hp_module.Fixed):

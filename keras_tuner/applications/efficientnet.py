@@ -15,9 +15,10 @@
 """Hypertunable version of EfficientNet based on Keras.applications."""
 
 import tensorflow as tf
-import tensorflow.keras as keras
+from tensorflow import keras
 from tensorflow.keras import layers
 
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import hypermodel
 
 try:
@@ -58,6 +59,7 @@ EFFICIENTNET_IMG_SIZE = {
 }
 
 
+@keras_tuner_export("keras_tuner.applications.HyperEfficientNet")
 class HyperEfficientNet(hypermodel.HyperModel):
     """An EfficientNet hypermodel.
 
@@ -98,8 +100,8 @@ class HyperEfficientNet(hypermodel.HyperModel):
         ):
             raise ValueError(
                 "Keyword augmentation_model should be "
-                "a `HyperModel`, a Keras `Model` or empty. "
-                "Received {}.".format(augmentation_model)
+                "a `HyperModel`, a Keras `Model` or "
+                f"empty. Received {augmentation_model}."
             )
 
         if not classes:
@@ -115,10 +117,9 @@ class HyperEfficientNet(hypermodel.HyperModel):
         self.classes = classes
         self.augmentation_model = augmentation_model
 
-        super(HyperEfficientNet, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def build(self, hp):
-
         if self.input_tensor is not None:
             inputs = tf.keras.utils.get_source_inputs(self.input_tensor)
             x = self.input_tensor
@@ -135,10 +136,14 @@ class HyperEfficientNet(hypermodel.HyperModel):
             x = augmentation_model(x)
 
         # Select one of pre-trained EfficientNet as feature extractor
-        version = hp.Choice("version", [f"B{i}" for i in range(8)], default="B0")
+        version = hp.Choice(
+            "version", [f"B{i}" for i in range(8)], default="B0"
+        )
         img_size = EFFICIENTNET_IMG_SIZE[version]
 
-        x = preprocessing.Resizing(img_size, img_size, interpolation="bilinear")(x)
+        x = preprocessing.Resizing(
+            img_size, img_size, interpolation="bilinear"
+        )(x)
         efficientnet_model = EFFICIENTNET_MODELS[version](
             include_top=False, input_tensor=x
         )
@@ -153,7 +158,11 @@ class HyperEfficientNet(hypermodel.HyperModel):
             x = layers.GlobalMaxPooling2D(name="max_pool")(x)
 
         top_dropout_rate = hp.Float(
-            "top_dropout_rate", min_value=0.2, max_value=0.8, step=0.2, default=0.2
+            "top_dropout_rate",
+            min_value=0.2,
+            max_value=0.8,
+            step=0.2,
+            default=0.2,
         )
         x = layers.Dropout(top_dropout_rate, name="top_dropout")(x)
 
@@ -171,7 +180,9 @@ class HyperEfficientNet(hypermodel.HyperModel):
         When subclassing the hypermodel, this may be overridden to change
         behavior of compiling.
         """
-        learning_rate = hp.Choice("learning_rate", [0.1, 0.01, 0.001], default=0.01)
+        learning_rate = hp.Choice(
+            "learning_rate", [0.1, 0.01, 0.001], default=0.01
+        )
         optimizer = tf.keras.optimizers.SGD(
             momentum=0.1, learning_rate=learning_rate
         )

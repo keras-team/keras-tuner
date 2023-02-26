@@ -23,7 +23,7 @@ from keras_tuner.protos import service_pb2
 from keras_tuner.protos import service_pb2_grpc
 
 
-class OracleClient(object):
+class OracleClient:
     """Wraps an `Oracle` on a worker to send requests to the chief."""
 
     def __init__(self, oracle):
@@ -46,7 +46,6 @@ class OracleClient(object):
             "max_trials",
             "allow_new_entries",
             "tune_new_entries",
-            "trials",
         }
         if name in whitelisted_attrs:
             return getattr(self._oracle, name)
@@ -69,7 +68,8 @@ class OracleClient(object):
 
     def create_trial(self, tuner_id):
         response = self.stub.CreateTrial(
-            service_pb2.CreateTrialRequest(tuner_id=tuner_id), wait_for_ready=True
+            service_pb2.CreateTrialRequest(tuner_id=tuner_id),
+            wait_for_ready=True,
         )
         return trial_module.Trial.from_proto(response.trial)
 
@@ -86,13 +86,10 @@ class OracleClient(object):
                 return trial_module.TrialStatus.from_proto(response.status)
         return "RUNNING"
 
-    def end_trial(self, trial_id, status="COMPLETED", message=None):
+    def end_trial(self, trial):
         if self.should_report:
-            status = trial_module.TrialStatus.to_proto(status)
             self.stub.EndTrial(
-                service_pb2.EndTrialRequest(
-                    trial_id=trial_id, status=status, message=message
-                ),
+                service_pb2.EndTrialRequest(trial=trial.to_proto()),
                 wait_for_ready=True,
             )
 
@@ -107,4 +104,6 @@ class OracleClient(object):
             service_pb2.GetBestTrialsRequest(num_trials=num_trials),
             wait_for_ready=True,
         )
-        return [trial_module.Trial.from_proto(trial) for trial in response.trials]
+        return [
+            trial_module.Trial.from_proto(trial) for trial in response.trials
+        ]

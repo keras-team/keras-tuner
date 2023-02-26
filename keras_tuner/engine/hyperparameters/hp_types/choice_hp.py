@@ -14,12 +14,14 @@
 
 import six
 
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import conditions as conditions_mod
 from keras_tuner.engine.hyperparameters import hp_utils
 from keras_tuner.engine.hyperparameters import hyperparameter
 from keras_tuner.protos import keras_tuner_pb2
 
 
+@keras_tuner_export("keras_tuner.engine.hyperparameters.Choice")
 class Choice(hyperparameter.HyperParameter):
     """Choice of one value among a predefined set of possible values.
 
@@ -38,16 +40,16 @@ class Choice(hyperparameter.HyperParameter):
     """
 
     def __init__(self, name, values, ordered=None, default=None, **kwargs):
-        super(Choice, self).__init__(name=name, default=default, **kwargs)
+        super().__init__(name=name, default=default, **kwargs)
         if not values:
             raise ValueError("`values` must be provided for `Choice`.")
 
         # Type checking.
-        types = set(type(v) for v in values)
+        types = {type(v) for v in values}
         if len(types) > 1:
             raise TypeError(
-                "A `Choice` can contain only one type of value, found "
-                f"values: {str(values)} with types {str(types)}."
+                "A `Choice` can contain only one type of value, "
+                f"found values: {str(values)} with types {types}."
             )
 
         # Standardize on str, int, float, bool.
@@ -95,18 +97,18 @@ class Choice(hyperparameter.HyperParameter):
 
     @property
     def default(self):
-        if self._default is None:
-            return self._values[0]
-        return self._default
+        return self._values[0] if self._default is None else self._default
 
     def prob_to_value(self, prob):
         return self._values[hp_utils.prob_to_index(prob, len(self._values))]
 
     def value_to_prob(self, value):
-        return hp_utils.index_to_prob(self._values.index(value), len(self._values))
+        return hp_utils.index_to_prob(
+            self._values.index(value), len(self._values)
+        )
 
     def get_config(self):
-        config = super(Choice, self).get_config()
+        config = super().get_config()
         config["values"] = self._values
         config["ordered"] = self.ordered
         return config
@@ -128,7 +130,9 @@ class Choice(hyperparameter.HyperParameter):
 
     def to_proto(self):
         if isinstance(self.values[0], six.string_types):
-            values = [keras_tuner_pb2.Value(string_value=v) for v in self.values]
+            values = [
+                keras_tuner_pb2.Value(string_value=v) for v in self.values
+            ]
             default = keras_tuner_pb2.Value(string_value=self.default)
         elif isinstance(self.values[0], six.integer_types):
             values = [keras_tuner_pb2.Value(int_value=v) for v in self.values]

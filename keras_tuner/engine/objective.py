@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import metrics_tracking
 
 
+@keras_tuner_export("keras_tuner.Objective")
 class Objective:
     """The objective for optimization during tuning.
 
@@ -95,7 +97,7 @@ class MultiObjective(Objective):
         }
 
     def has_value(self, logs):
-        return all([key in logs for key in self.name_to_direction])
+        return all(key in logs for key in self.name_to_direction)
 
     def get_value(self, logs):
         obj_value = 0
@@ -126,7 +128,7 @@ def create_objective(objective):
     if not isinstance(objective, str):
         raise ValueError(
             "`objective` not understood, expected str or "
-            "`Objective` object, found: {}".format(objective)
+            f"`Objective` object, found: {objective}"
         )
 
     direction = metrics_tracking.infer_metric_direction(objective)

@@ -12,145 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import math
-import random
-
 import numpy as np
-import tensorflow as tf
+
+try:
+    import sklearn
+    import sklearn.exceptions
+    import sklearn.gaussian_process
+except ImportError:  # pragma: no cover
+    sklearn = None  # pragma: no cover
 
 try:
     import scipy
     import scipy.optimize
-except ImportError:
-    scipy = None
+except ImportError:  # pragma: no cover
+    scipy = None  # pragma: no cover
 
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine import oracle as oracle_module
 from keras_tuner.engine import trial as trial_module
 from keras_tuner.engine import tuner as tuner_module
 
 
-def cdist(x, y=None):
-    if y is None:
-        y = x
-    return np.linalg.norm(x[:, None, :] - y[None, :, :], axis=-1)
-
-
-def solve_triangular(a, b, lower):
-    if np.isfinite(a).all() and np.isfinite(b).all():
-        a = tf.constant(a, dtype=tf.float32)
-        b = tf.constant(b, dtype=tf.float32)
-        return tf.linalg.triangular_solve(a, b, lower=lower).numpy()
-    else:
-        raise ValueError("array must not contain infs or NaNs")
-
-
-def cho_solve(l_matrix, b):
-    # Ax=b LL^T=A => Ly=b L^Tx=y
-    y = solve_triangular(l_matrix, b.reshape(-1, 1), lower=True)
-    return solve_triangular(l_matrix.T, y.reshape(-1, 1), lower=False)
-
-
-def matern_kernel(x, y=None):
-    # nu = 2.5
-    dists = cdist(x, y)
-    dists *= math.sqrt(5)
-    kernel_matrix = (1.0 + dists + dists**2 / 3.0) * np.exp(-dists)
-    return kernel_matrix
-
-
-class GaussianProcessRegressor(object):
-    """A Gaussian process regressor.
-
-    Args:
-        alpha: Float, the value added to the diagonal of the kernel matrix
-            during fitting. It represents the expected amount of noise in the
-            observed performances in Bayesian optimization.
-        seed: Optional int, the random seed.
-    """
-
-    def __init__(self, alpha, seed=None):
-        self.kernel = matern_kernel
-        self.n_restarts_optimizer = 20
-        self.normalize_y = True
-        self.alpha = alpha
-        self.seed = seed
-        self._x = None
-        self._y = None
-
-    def fit(self, x, y):
-        """Fit the Gaussian process regressor.
-
-        Args:
-            x: np.ndarray with shape (samples, features).
-            y: np.ndarray with shape (samples,).
-        """
-        self._x_train = np.copy(x)
-        self._y_train = np.copy(y)
-
-        # Normalize y.
-        self._y_train_mean = np.mean(self._y_train, axis=0)
-        self._y_train_std = np.std(self._y_train, axis=0)
-        self._y_train = (self._y_train - self._y_train_mean) / self._y_train_std
-
-        # TODO: choose a theta for the kernel.
-        kernel_matrix = self.kernel(self._x_train)
-        kernel_matrix[np.diag_indices_from(kernel_matrix)] += self.alpha
-
-        # l_matrix * l_matrix^T == kernel_matrix
-        self._l_matrix = np.linalg.cholesky(kernel_matrix)
-        self._alpha_vector = cho_solve(self._l_matrix, self._y_train)
-
-    def predict(self, x):
-        """Predict the mean and standard deviation of the target.
-
-        Args:
-            x: np.ndarray with shape (samples, features).
-
-        Returns:
-            Two 1-D vectors, the mean vector and standard deviation vector.
-        """
-        # Compute the mean.
-        kernel_trans = self.kernel(x, self._x_train)
-        y_mean = kernel_trans.dot(self._alpha_vector)
-
-        # Compute the variance.
-        l_inv = solve_triangular(
-            self._l_matrix.T, np.eye(self._l_matrix.shape[0]), lower=False
-        )
-        kernel_inv = l_inv.dot(l_inv.T)
-
-        y_var = np.ones(len(x), dtype=np.float)
-        y_var -= np.einsum(
-            "ij,ij->i", np.dot(kernel_trans, kernel_inv), kernel_trans
-        )
-        y_var[y_var < 0] = 0.0
-
-        # Undo normalize y.
-        y_var *= self._y_train_std**2
-        y_mean = self._y_train_std * y_mean + self._y_train_mean
-
-        return y_mean.flatten(), np.sqrt(y_var)
-
-    def can_predict(self) -> bool:
-        """Checks if predict can be called without raising exceptions.
-
-        Returns:
-            A bool indicates whether all required attributes are present.
-        """
-        for attribute in [
-            "_x_train",
-            "_alpha_vector",
-            "_l_matrix",
-            "_y_train_std",
-            "_y_train_mean",
-        ]:
-            if not hasattr(self, attribute):
-                return False
-
-        return True
-
-
+@keras_tuner_export("keras_tuner.oracles.BayesianOptimizationOracle")
 class BayesianOptimizationOracle(oracle_module.Oracle):
     """Bayesian optimization oracle.
 
@@ -194,11 +78,12 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             request hyperparameter entries not listed in `hyperparameters`.
             Defaults to True.
         max_retries_per_trial: Integer. Defaults to 0. The maximum number of
-            times to retry a `Trial` if the trial crashed or the results are invalid.
-        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum number of
-            consecutive failed `Trial`s. When this number is reached, the search
-            will be stopped. A `Trial` is marked as failed when none of the
-            retries succeeded.
+            times to retry a `Trial` if the trial crashed or the results are
+            invalid.
+        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum
+            number of consecutive failed `Trial`s. When this number is reached,
+            the search will be stopped. A `Trial` is marked as failed when none
+            of the retries succeeded.
     """
 
     def __init__(
@@ -215,7 +100,19 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         max_retries_per_trial=0,
         max_consecutive_failed_trials=3,
     ):
-        super(BayesianOptimizationOracle, self).__init__(
+        if scipy is None:
+            raise ImportError(
+                "Please install scipy before using the `BayesianOptimization` "
+                "with `pip install keras-tuner[bayesian]`."
+            )
+
+        if sklearn is None:
+            raise ImportError(
+                "Please install scikit-learn (sklearn) before using the "
+                "`BayesianOptimization` with "
+                "`pip install keras-tuner[bayesian]`."
+            )
+        super().__init__(
             objective=objective,
             max_trials=max_trials,
             hyperparameters=hyperparameters,
@@ -228,17 +125,16 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         self.num_initial_points = num_initial_points
         self.alpha = alpha
         self.beta = beta
-        self.seed = seed or random.randint(1, int(1e4))
-        self._seed_state = self.seed
-        self._tried_so_far = set()
-        self._max_collisions = 20
         self._random_state = np.random.RandomState(self.seed)
         self.gpr = self._make_gpr()
 
     def _make_gpr(self):
-        return GaussianProcessRegressor(
+        return sklearn.gaussian_process.GaussianProcessRegressor(
+            kernel=sklearn.gaussian_process.kernels.Matern(nu=2.5),
+            n_restarts_optimizer=20,
+            normalize_y=True,
             alpha=self.alpha,
-            seed=self.seed,
+            random_state=self.seed,
         )
 
     def populate_space(self, trial_id):
@@ -267,18 +163,19 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         if len(completed_trials) < num_initial_points:
             return self._random_populate_space()
 
-        # Fit a GPR to the completed trials and return the predicted optimum values.
+        # Fit a GPR to the completed trials and return the predicted optimum
+        # values.
         x, y = self._vectorize_trials()
-        try:
-            self.gpr.fit(x, y)
-        except ValueError as e:
-            if "array must not contain infs or NaNs" in str(e):
-                return self._random_populate_space()
-            raise e
+
+        # Ensure no nan, inf in x, y. GPR cannot process nan or inf.
+        x = np.nan_to_num(x, posinf=0, neginf=0)
+        y = np.nan_to_num(y, posinf=0, neginf=0)
+
+        self.gpr.fit(x, y)
 
         def _upper_confidence_bound(x):
             x = x.reshape(1, -1)
-            mu, sigma = self.gpr.predict(x)
+            mu, sigma = self.gpr.predict(x, return_std=True)
             return mu - self.beta * sigma
 
         optimal_val = float("inf")
@@ -291,9 +188,14 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         for x_try in x_seeds:
             # Sign of score is flipped when maximizing.
             result = scipy.optimize.minimize(
-                _upper_confidence_bound, x0=x_try, bounds=bounds, method="L-BFGS-B"
+                _upper_confidence_bound,
+                x0=x_try,
+                bounds=bounds,
+                method="L-BFGS-B",
             )
-            result_fun = result.fun if np.isscalar(result.fun) else result.fun[0]
+            result_fun = (
+                result.fun if np.isscalar(result.fun) else result.fun[0]
+            )
             if result_fun < optimal_val:
                 optimal_val = result_fun
                 optimal_x = result.x
@@ -308,7 +210,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         return {"status": trial_module.TrialStatus.RUNNING, "values": values}
 
     def get_state(self):
-        state = super(BayesianOptimizationOracle, self).get_state()
+        state = super().get_state()
         state.update(
             {
                 "num_initial_points": self.num_initial_points,
@@ -319,7 +221,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         return state
 
     def set_state(self, state):
-        super(BayesianOptimizationOracle, self).set_state(state)
+        super().set_state(state)
         self.num_initial_points = state["num_initial_points"]
         self.alpha = state["alpha"]
         self.beta = state["beta"]
@@ -334,8 +236,9 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             trial_hps = trial.hyperparameters
             vector = []
             for hp in self._nonfixed_space():
-                # For hyperparameters not present in the trial (either added after
-                # the trial or inactive in the trial), set to default value.
+                # For hyperparameters not present in the trial (either added
+                # after the trial or inactive in the trial), set to default
+                # value.
                 if (
                     trial_hps.is_active(hp)  # inactive
                     and hp.name in trial_hps.values  # added after the trial
@@ -348,20 +251,21 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                 prob = hp.value_to_prob(trial_value)
                 vector.append(prob)
 
-            if trial in ongoing_trials and self.gpr.can_predict():
-                # Check if self.gpr.predict can be called and then
-                # "hallucinate" the results of ongoing trials. This ensures that
+            if trial in ongoing_trials:
+                # "Hallucinate" the results of ongoing trials. This ensures that
                 # repeat trials are not selected when running distributed.
                 x_h = np.array(vector).reshape((1, -1))
-                y_h_mean, y_h_std = self.gpr.predict(x_h)
+                y_h_mean, y_h_std = self.gpr.predict(x_h, return_std=True)
                 # Give a pessimistic estimate of the ongoing trial.
                 score = y_h_mean[0] + y_h_std[0]
             elif trial.status == "COMPLETED":
                 score = trial.score
-                # Always frame the optimization as a minimization for scipy.minimize.
+                # Always frame the optimization as a minimization for
+                # scipy.minimize.
                 if self.objective.direction == "max":
                     score = -1 * score
             else:
+                # Skip the failed and invalid trials.
                 continue
 
             x.append(vector)
@@ -404,12 +308,16 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         ]
 
     def _get_hp_bounds(self):
-        bounds = []
-        for hp in self._nonfixed_space():
-            bounds.append([0, 1])
+        bounds = [[0, 1] for _ in self._nonfixed_space()]
         return np.array(bounds)
 
 
+@keras_tuner_export(
+    [
+        "keras_tuner.BayesianOptimization",
+        "keras_tuner.tuners.BayesianOptimization",
+    ]
+)
 class BayesianOptimization(tuner_module.Tuner):
     """BayesianOptimization tuning with Gaussian process.
 
@@ -452,11 +360,12 @@ class BayesianOptimization(tuner_module.Tuner):
             request hyperparameter entries not listed in `hyperparameters`.
             Defaults to True.
         max_retries_per_trial: Integer. Defaults to 0. The maximum number of
-            times to retry a `Trial` if the trial crashed or the results are invalid.
-        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum number of
-            consecutive failed `Trial`s. When this number is reached, the search
-            will be stopped. A `Trial` is marked as failed when none of the
-            retries succeeded.
+            times to retry a `Trial` if the trial crashed or the results are
+            invalid.
+        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum
+            number of consecutive failed `Trial`s. When this number is reached,
+            the search will be stopped. A `Trial` is marked as failed when none
+            of the retries succeeded.
         **kwargs: Keyword arguments relevant to all `Tuner` subclasses. Please
             see the docstring for `Tuner`.
     """
@@ -466,7 +375,7 @@ class BayesianOptimization(tuner_module.Tuner):
         hypermodel=None,
         objective=None,
         max_trials=10,
-        num_initial_points=2,
+        num_initial_points=None,
         alpha=1e-4,
         beta=2.6,
         seed=None,
@@ -490,11 +399,4 @@ class BayesianOptimization(tuner_module.Tuner):
             max_retries_per_trial=max_retries_per_trial,
             max_consecutive_failed_trials=max_consecutive_failed_trials,
         )
-        super(
-            BayesianOptimization,
-            self,
-        ).__init__(oracle=oracle, hypermodel=hypermodel, **kwargs)
-        if scipy is None:
-            raise ImportError(
-                "Please install scipy before using the `BayesianOptimization`."
-            )
+        super().__init__(oracle=oracle, hypermodel=hypermodel, **kwargs)

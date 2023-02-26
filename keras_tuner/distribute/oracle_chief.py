@@ -52,8 +52,8 @@ class OracleServicer(service_pb2_grpc.OracleServicer):
         return service_pb2.UpdateTrialResponse(status=status_proto)
 
     def EndTrial(self, request, context):
-        status = trial_module.TrialStatus.from_proto(request.status)
-        self.oracle.end_trial(request.trial_id, status, request.message)
+        trial = trial_module.Trial.from_proto(request.trial)
+        self.oracle.end_trial(trial)
         return service_pb2.EndTrialResponse()
 
     def GetTrial(self, request, context):
@@ -88,7 +88,8 @@ def start_server(oracle):
                 "Oracle server on chief is exiting in 40s."
                 "The chief will go on with post-search code."
             )
-            # Wait for another 30s for all the subsequent calls from workers to come
+            # Wait for another 30s for all the subsequent calls from workers to
+            # come
             time.sleep(30)
             server.stop(10)
             break

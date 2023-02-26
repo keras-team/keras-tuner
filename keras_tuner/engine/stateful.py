@@ -19,8 +19,19 @@ import json
 import tensorflow as tf
 
 
-class Stateful(object):
-    """The base class for saving and restoring the state."""
+class Stateful:
+    """The base class for saving and restoring the state.
+
+    The functionalities in this class is for the user to resume a previously
+    stopped program by runing the same code again.
+
+    Usually, the arguments in `__init__()` should not be added to the state. The
+    `Stateful` objects can get the arguments again just by running the same code
+    even without loading the previous states.
+
+    The state of an object here is the results produced during running the
+    program, which can save time for the user if restored.
+    """
 
     def get_state(self):
         """Returns the current state of this object.
@@ -47,6 +58,9 @@ class Stateful(object):
 
         Args:
             fname: A string, the file name to save to.
+
+        Returns:
+            String. The serialized state of the object.
         """
         state = self.get_state()
         state_json = json.dumps(state)

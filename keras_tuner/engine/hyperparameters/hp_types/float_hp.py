@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import conditions as conditions_mod
 from keras_tuner.engine.hyperparameters import hp_utils
 from keras_tuner.engine.hyperparameters.hp_types import numerical
 from keras_tuner.protos import keras_tuner_pb2
 
 
+@keras_tuner_export("keras_tuner.engine.hyperparameters.Float")
 class Float(numerical.Numerical):
     """Floating point value hyperparameter.
 
@@ -64,11 +66,11 @@ class Float(numerical.Numerical):
             `HyperParameter` instance in the search space.
         min_value: Float, the lower bound of the range.
         max_value: Float, the upper bound of the range.
-        step: Optional float, the distance between two consecutive samples in the
-            range. If left unspecified, it is possible to sample any value in
-            the interval. If `sampling="linear"`, it will be the minimum additve
-            between two samples. If `sampling="log"`, it will be the minimum
-            multiplier between two samples.
+        step: Optional float, the distance between two consecutive samples in
+            the range. If left unspecified, it is possible to sample any value
+            in the interval. If `sampling="linear"`, it will be the minimum
+            additve between two samples. If `sampling="log"`, it will be the
+            minimum multiplier between two samples.
         sampling: String. One of "linear", "log", "reverse_log". Defaults to
             "linear". When sampling value, it always start from a value in range
             [0.0, 1.0). The `sampling` argument decides how the value is
@@ -76,7 +78,7 @@ class Float(numerical.Numerical):
             "linear": min_value + value * (max_value - min_value)
             "log": min_value * (max_value / min_value) ^ value
             "reverse_log":
-                max_value - min_value * ((max_value / min_value) ^ (1 - value) - 1)
+                max_value - min_value * ((max_value/min_value)^(1 - value) - 1)
         default: Float, the default value to return for the parameter. If
             unspecified, the default value will be `min_value`.
     """
@@ -105,22 +107,14 @@ class Float(numerical.Numerical):
 
     def __repr__(self):
         return (
-            'Float(name: "{}", min_value: {}, max_value: {}, step: {}, '
-            "sampling: {}, default: {})"
-        ).format(
-            self.name,
-            self.min_value,
-            self.max_value,
-            self.step,
-            self.sampling,
-            self.default,
+            f"Float(name: '{self.name}', min_value: '{self.min_value}', "
+            f"max_value: '{self.max_value}', step: '{self.step}', "
+            f"sampling: '{self.sampling}', default: '{self.default}')"
         )
 
     @property
     def default(self):
-        if self._default is not None:
-            return self._default
-        return self.min_value
+        return self._default if self._default is not None else self.min_value
 
     def prob_to_value(self, prob):
         if self.step is None:
@@ -133,7 +127,7 @@ class Float(numerical.Numerical):
         return self._to_prob_with_step(value)
 
     def get_config(self):
-        config = super(Float, self).get_config()
+        config = super().get_config()
         config["min_value"] = self.min_value
         config["max_value"] = self.max_value
         config["step"] = self.step
@@ -149,7 +143,7 @@ class Float(numerical.Numerical):
             name=proto.name,
             min_value=proto.min_value,
             max_value=proto.max_value,
-            step=proto.step if proto.step else None,
+            step=proto.step or None,
             sampling=hp_utils.sampling_from_proto(proto.sampling),
             default=proto.default,
             conditions=conditions,

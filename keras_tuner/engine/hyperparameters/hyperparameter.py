@@ -15,10 +15,12 @@
 import random
 
 from keras_tuner import utils
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import conditions as conditions_mod
 
 
-class HyperParameter(object):
+@keras_tuner_export("keras_tuner.engine.hyperparameters.HyperParameter")
+class HyperParameter:
     """Hyperparameter base class.
 
     A `HyperParameter` instance is uniquely identified by its `name` and
@@ -43,7 +45,11 @@ class HyperParameter(object):
 
     def get_config(self):
         conditions = [conditions_mod.serialize(c) for c in self.conditions]
-        return {"name": self.name, "default": self.default, "conditions": conditions}
+        return {
+            "name": self.name,
+            "default": self.default,
+            "conditions": conditions,
+        }
 
     @property
     def default(self):

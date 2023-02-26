@@ -12,25 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import math
-import random
 
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import oracle as oracle_module
 from keras_tuner.engine import tuner as tuner_module
 
 
+@keras_tuner_export("keras_tuner.oracles.HyperbandOracle")
 class HyperbandOracle(oracle_module.Oracle):
     """Oracle class for Hyperband.
 
     Note that to use this Oracle with your own subclassed Tuner, your Tuner
-    class must be able to handle in `Tuner.run_trial` three special hyperparameters
-    that will be set by this Tuner:
+    class must be able to handle in `Tuner.run_trial` three special
+    hyperparameters that will be set by this Tuner:
 
-    - "tuner/trial_id": String, optionally set. The trial_id of the Trial to load
-      from when starting this trial.
-    - "tuner/initial_epoch": Int, always set. The initial epoch the Trial should be
-      started from.
-    - "tuner/epochs": Int, always set. The cumulative number of epochs this Trial
-      should be trained.
+    - "tuner/trial_id": String, optionally set. The trial_id of the Trial to
+        load from when starting this trial.
+    - "tuner/initial_epoch": Int, always set. The initial epoch the Trial should
+        be started from.
+    - "tuner/epochs": Int, always set. The cumulative number of epochs this
+        Trial should be trained.
 
     These hyperparameters will be set during the "successive halving" portion
     of the Hyperband algorithm.
@@ -91,11 +92,12 @@ class HyperbandOracle(oracle_module.Oracle):
             request hyperparameter entries not listed in `hyperparameters`.
             Defaults to True.
         max_retries_per_trial: Integer. Defaults to 0. The maximum number of
-            times to retry a `Trial` if the trial crashed or the results are invalid.
-        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum number of
-            consecutive failed `Trial`s. When this number is reached, the search
-            will be stopped. A `Trial` is marked as failed when none of the
-            retries succeeded.
+            times to retry a `Trial` if the trial crashed or the results are
+            invalid.
+        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum
+            number of consecutive failed `Trial`s. When this number is reached,
+            the search will be stopped. A `Trial` is marked as failed when none
+            of the retries succeeded.
     """
 
     def __init__(
@@ -111,7 +113,7 @@ class HyperbandOracle(oracle_module.Oracle):
         max_retries_per_trial=0,
         max_consecutive_failed_trials=3,
     ):
-        super(HyperbandOracle, self).__init__(
+        super().__init__(
             objective=objective,
             hyperparameters=hyperparameters,
             allow_new_entries=allow_new_entries,
@@ -125,15 +127,10 @@ class HyperbandOracle(oracle_module.Oracle):
 
         self.hyperband_iterations = hyperband_iterations or float("inf")
         self.max_epochs = max_epochs
-        # Minimum epochs before successive halving, Hyperband sweeps through varying
-        # degress of aggressiveness.
+        # Minimum epochs before successive halving, Hyperband sweeps through
+        # varying degress of aggressiveness.
         self.min_epochs = 1
         self.factor = factor
-
-        self.seed = seed or random.randint(1, 10000)
-        self._max_collisions = 20
-        self._seed_state = self.seed
-        self._tried_so_far = set()
 
         self._current_iteration = 0
         # Start with most aggressively halving bracket.
@@ -165,46 +162,45 @@ class HyperbandOracle(oracle_module.Oracle):
             if len(rounds[0]) < self._get_size(bracket_num, round_num=0):
                 # Populate the initial random trials for this bracket.
                 return self._random_trial(trial_id, bracket)
-            else:
-                # Try to populate incomplete rounds for this bracket.
-                for round_num in range(1, len(rounds)):
-                    round_info = rounds[round_num]
-                    past_round_info = rounds[round_num - 1]
-                    size = self._get_size(bracket_num, round_num)
-                    past_size = self._get_size(bracket_num, round_num - 1)
+            # Try to populate incomplete rounds for this bracket.
+            for round_num in range(1, len(rounds)):
+                round_info = rounds[round_num]
+                past_round_info = rounds[round_num - 1]
+                size = self._get_size(bracket_num, round_num)
+                past_size = self._get_size(bracket_num, round_num - 1)
 
-                    # If more trials from the last round are ready than will be
-                    # thrown out, we can select the best to run for the next round.
-                    already_selected = [info["past_id"] for info in round_info]
-                    candidates = [
-                        self.trials[info["id"]]
-                        for info in past_round_info
-                        if info["id"] not in already_selected
-                    ]
-                    candidates = [t for t in candidates if t.status == "COMPLETED"]
-                    if len(candidates) > past_size - size:
-                        sorted_candidates = sorted(
-                            candidates,
-                            key=lambda t: t.score,
-                            reverse=self.objective.direction == "max",
-                        )
-                        best_trial = sorted_candidates[0]
+                # If more trials from the last round are ready than will be
+                # thrown out, we can select the best to run for the next round.
+                already_selected = [info["past_id"] for info in round_info]
+                candidates = [
+                    self.trials[info["id"]]
+                    for info in past_round_info
+                    if info["id"] not in already_selected
+                ]
+                candidates = [t for t in candidates if t.status == "COMPLETED"]
+                if len(candidates) > past_size - size:
+                    sorted_candidates = sorted(
+                        candidates,
+                        key=lambda t: t.score,
+                        reverse=self.objective.direction == "max",
+                    )
+                    best_trial = sorted_candidates[0]
 
-                        values = best_trial.hyperparameters.values.copy()
-                        values["tuner/trial_id"] = best_trial.trial_id
-                        values["tuner/epochs"] = self._get_epochs(
-                            bracket_num, round_num
-                        )
-                        values["tuner/initial_epoch"] = self._get_epochs(
-                            bracket_num, round_num - 1
-                        )
-                        values["tuner/bracket"] = self._current_bracket
-                        values["tuner/round"] = round_num
+                    values = best_trial.hyperparameters.values.copy()
+                    values["tuner/trial_id"] = best_trial.trial_id
+                    values["tuner/epochs"] = self._get_epochs(
+                        bracket_num, round_num
+                    )
+                    values["tuner/initial_epoch"] = self._get_epochs(
+                        bracket_num, round_num - 1
+                    )
+                    values["tuner/bracket"] = self._current_bracket
+                    values["tuner/round"] = round_num
 
-                        round_info.append(
-                            {"past_id": best_trial.trial_id, "id": trial_id}
-                        )
-                        return {"status": "RUNNING", "values": values}
+                    round_info.append(
+                        {"past_id": best_trial.trial_id, "id": trial_id}
+                    )
+                    return {"status": "RUNNING", "values": values}
 
         # This is reached if no trials from current brackets can be run.
 
@@ -216,9 +212,8 @@ class HyperbandOracle(oracle_module.Oracle):
             # Stop creating new brackets, but wait to complete other brackets.
             if self.ongoing_trials:
                 return {"status": "IDLE"}
-            else:
-                self._increment_bracket_num()
-                return {"status": "STOPPED"}
+            self._increment_bracket_num()
+            return {"status": "STOPPED"}
         # Create a new bracket.
         else:
             self._increment_bracket_num()
@@ -227,8 +222,9 @@ class HyperbandOracle(oracle_module.Oracle):
 
     def _start_new_bracket(self):
         rounds = []
-        for _ in range(self._get_num_rounds(self._current_bracket)):
-            rounds.append([])
+        rounds.extend(
+            [] for _ in range(self._get_num_rounds(self._current_bracket))
+        )
         bracket = {"bracket_num": self._current_bracket, "rounds": rounds}
         self._brackets.append(bracket)
 
@@ -246,10 +242,9 @@ class HyperbandOracle(oracle_module.Oracle):
             bracket_num = bracket["bracket_num"]
             rounds = bracket["rounds"]
             last_round = len(rounds) - 1
-            if len(rounds[last_round]) == self._get_size(bracket_num, last_round):
-                # All trials have been created for the current bracket.
-                return False
-            return True
+            return len(rounds[last_round]) != self._get_size(
+                bracket_num, last_round
+            )
 
         self._brackets = list(filter(_bracket_is_incomplete, self._brackets))
 
@@ -273,13 +268,20 @@ class HyperbandOracle(oracle_module.Oracle):
             return {"status": "STOPPED"}
 
     def _get_size(self, bracket_num, round_num):
-        # Set up so that each bracket takes approx. the same amount of resources.
-        bracket0_end_size = math.ceil(1 + math.log(self.max_epochs, self.factor))
+        # Set up so that each bracket takes approx. the same amount of
+        # resources.
+        bracket0_end_size = math.ceil(
+            1 + math.log(self.max_epochs, self.factor)
+        )
         bracket_end_size = bracket0_end_size / (bracket_num + 1)
-        return math.ceil(bracket_end_size * self.factor ** (bracket_num - round_num))
+        return math.ceil(
+            bracket_end_size * self.factor ** (bracket_num - round_num)
+        )
 
     def _get_epochs(self, bracket_num, round_num):
-        return math.ceil(self.max_epochs / self.factor ** (bracket_num - round_num))
+        return math.ceil(
+            self.max_epochs / self.factor ** (bracket_num - round_num)
+        )
 
     def _get_num_rounds(self, bracket_num):
         # Bracket 0 just runs random search, others do successive halving.
@@ -294,7 +296,7 @@ class HyperbandOracle(oracle_module.Oracle):
         return brackets
 
     def get_state(self):
-        state = super(HyperbandOracle, self).get_state()
+        state = super().get_state()
         state.update(
             {
                 "hyperband_iterations": self.hyperband_iterations,
@@ -309,7 +311,7 @@ class HyperbandOracle(oracle_module.Oracle):
         return state
 
     def set_state(self, state):
-        super(HyperbandOracle, self).set_state(state)
+        super().set_state(state)
         self.hyperband_iterations = state["hyperband_iterations"]
         self.max_epochs = state["max_epochs"]
         self.min_epochs = state["min_epochs"]
@@ -319,6 +321,7 @@ class HyperbandOracle(oracle_module.Oracle):
         self._current_iteration = state["current_iteration"]
 
 
+@keras_tuner_export(["keras_tuner.Hyperband", "keras_tuner.tuners.Hyperband"])
 class Hyperband(tuner_module.Tuner):
     """Variation of HyperBand algorithm.
 
@@ -369,11 +372,12 @@ class Hyperband(tuner_module.Tuner):
             request hyperparameter entries not listed in `hyperparameters`.
             Defaults to True.
         max_retries_per_trial: Integer. Defaults to 0. The maximum number of
-            times to retry a `Trial` if the trial crashed or the results are invalid.
-        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum number of
-            consecutive failed `Trial`s. When this number is reached, the search
-            will be stopped. A `Trial` is marked as failed when none of the
-            retries succeeded.
+            times to retry a `Trial` if the trial crashed or the results are
+            invalid.
+        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum
+            number of consecutive failed `Trial`s. When this number is reached,
+            the search will be stopped. A `Trial` is marked as failed when none
+            of the retries succeeded.
         **kwargs: Keyword arguments relevant to all `Tuner` subclasses.
             Please see the docstring for `Tuner`.
     """
@@ -405,19 +409,17 @@ class Hyperband(tuner_module.Tuner):
             max_retries_per_trial=max_retries_per_trial,
             max_consecutive_failed_trials=max_consecutive_failed_trials,
         )
-        super(Hyperband, self).__init__(
-            oracle=oracle, hypermodel=hypermodel, **kwargs
-        )
+        super().__init__(oracle=oracle, hypermodel=hypermodel, **kwargs)
 
     def run_trial(self, trial, *fit_args, **fit_kwargs):
         hp = trial.hyperparameters
         if "tuner/epochs" in hp.values:
             fit_kwargs["epochs"] = hp.values["tuner/epochs"]
             fit_kwargs["initial_epoch"] = hp.values["tuner/initial_epoch"]
-        return super(Hyperband, self).run_trial(trial, *fit_args, **fit_kwargs)
+        return super().run_trial(trial, *fit_args, **fit_kwargs)
 
     def _build_hypermodel(self, hp):
-        model = super(Hyperband, self)._build_hypermodel(hp)
+        model = super()._build_hypermodel(hp)
         if "tuner/trial_id" in hp.values:
             trial_id = hp.values["tuner/trial_id"]
             # Load best checkpoint from this trial.

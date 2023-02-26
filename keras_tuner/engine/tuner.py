@@ -24,10 +24,12 @@ from tensorboard.plugins.hparams import api as hparams_api
 from tensorflow import keras
 
 from keras_tuner import errors
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import base_tuner
 from keras_tuner.engine import tuner_utils
 
 
+@keras_tuner_export(["keras_tuner.Tuner", "keras_tuner.tuners.Tuner"])
 class Tuner(base_tuner.BaseTuner):
     """Tuner class for Keras models.
 
@@ -47,10 +49,10 @@ class Tuner(base_tuner.BaseTuner):
             `self.hypermodel`.
         max_model_size: Integer, maximum number of scalars in the parameters of
             a model. Models larger than this are rejected.
-        optimizer: Optional `Optimizer` instance.  May be used to override the
-            `optimizer` argument in the `compile` step for the models. If the
-            hypermodel does not compile the models it generates, then this
-            argument must be specified.
+        optimizer: Optional optimizer. It is used to override the `optimizer`
+            argument in the `compile` step for the models. If the hypermodel
+            does not compile the models it generates, then this argument must be
+            specified.
         loss: Optional loss. May be used to override the `loss` argument in the
             `compile` step for the models. If the hypermodel does not compile
             the models it generates, then this argument must be specified.
@@ -66,8 +68,6 @@ class Tuner(base_tuner.BaseTuner):
         directory: A string, the relative path to the working directory.
         project_name: A string, the name to use as prefix for files saved by
             this `Tuner`.
-        logger: Optional instance of `kerastuner.Logger` class for
-            streaming logs for monitoring.
         tuner_id: Optional string, used as the ID of this `Tuner`.
         overwrite: Boolean, defaults to `False`. If `False`, reloads an
             existing project of the same name if one is found. Otherwise,
@@ -78,6 +78,7 @@ class Tuner(base_tuner.BaseTuner):
             depending on random initialization, hence it is often a good idea
             to run several executions per trial in order to evaluate the
             performance of a given set of hyperparameter values.
+        **kwargs: Arguments for `BaseTuner`.
 
     Attributes:
         remaining_trials: Number of trials remaining, `None` if `max_trials` is
@@ -99,6 +100,7 @@ class Tuner(base_tuner.BaseTuner):
         tuner_id=None,
         overwrite=False,
         executions_per_trial=1,
+        **kwargs,
     ):
         if hypermodel is None and self.__class__.run_trial is Tuner.run_trial:
             raise ValueError(
@@ -108,13 +110,14 @@ class Tuner(base_tuner.BaseTuner):
                 "using a `HyperModel` instance."
             )
 
-        super(Tuner, self).__init__(
+        super().__init__(
             oracle=oracle,
             hypermodel=hypermodel,
             directory=directory,
             project_name=project_name,
             logger=logger,
             overwrite=overwrite,
+            **kwargs,
         )
 
         self.max_model_size = max_model_size
@@ -153,8 +156,8 @@ class Tuner(base_tuner.BaseTuner):
         # Stop if `build()` does not return a valid model.
         if not isinstance(model, keras.models.Model):
             raise errors.FatalTypeError(
-                "Expected the model-building function, or HyperModel.build() to "
-                "return a valid Keras Model instance. "
+                "Expected the model-building function, or HyperModel.build() "
+                "to return a valid Keras Model instance. "
                 f"Received: {model} of type {type(model)}."
             )
         # Check model size.
@@ -176,7 +179,14 @@ class Tuner(base_tuner.BaseTuner):
                 if self.loss:
                     compile_kwargs["loss"] = self.loss
                 if self.optimizer:
-                    compile_kwargs["optimizer"] = self.optimizer
+                    optimizer = (
+                        self.optimizer
+                        if isinstance(self.optimizer, str)
+                        else keras.optimizers.deserialize(
+                            keras.optimizers.serialize(self.optimizer)
+                        )
+                    )
+                    compile_kwargs["optimizer"] = optimizer
                 if self.metrics:
                     compile_kwargs["metrics"] = self.metrics
                 model.compile(**compile_kwargs)
@@ -353,7 +363,7 @@ class Tuner(base_tuner.BaseTuner):
             List of trained model instances sorted from the best to the worst.
         """
         # Method only exists in this class for the docstring override.
-        return super(Tuner, self).get_best_models(num_models)
+        return super().get_best_models(num_models)
 
     def _deepcopy_callbacks(self, callbacks):
         try:
@@ -385,7 +395,9 @@ class Tuner(base_tuner.BaseTuner):
                 )
 
     def _get_tensorboard_dir(self, logdir, trial_id, execution):
-        return os.path.join(str(logdir), str(trial_id), "execution" + str(execution))
+        return os.path.join(
+            str(logdir), str(trial_id), f"execution{str(execution)}"
+        )
 
     def _get_checkpoint_fname(self, trial_id):
         return os.path.join(
@@ -398,7 +410,9 @@ class Tuner(base_tuner.BaseTuner):
 def maybe_compute_model_size(model):
     """Compute the size of a given model, if it has been built."""
     if model.built:
-        params = [keras.backend.count_params(p) for p in model.trainable_weights]
+        params = [
+            keras.backend.count_params(p) for p in model.trainable_weights
+        ]
         return int(np.sum(params))
     return 0
 

@@ -13,12 +13,14 @@
 # limitations under the License.
 
 import tensorflow as tf
-import tensorflow.keras as keras
+from tensorflow import keras
 from tensorflow.keras import layers
 
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import hypermodel
 
 
+@keras_tuner_export("keras_tuner.applications.HyperXception")
 class HyperXception(hypermodel.HyperModel):
     """An Xception hypermodel.
 
@@ -49,9 +51,11 @@ class HyperXception(hypermodel.HyperModel):
         classes=None,
         **kwargs,
     ):
-        super(HyperXception, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         if include_top and classes is None:
-            raise ValueError("You must specify `classes` when " "`include_top=True`")
+            raise ValueError(
+                "You must specify `classes` when " "`include_top=True`"
+            )
 
         if input_shape is None and input_tensor is None:
             raise ValueError(
@@ -89,14 +93,18 @@ class HyperXception(hypermodel.HyperModel):
         )
 
         # Separable convs.
-        sep_num_filters = hp.Int("sep_num_filters", 128, 768, step=128, default=256)
+        sep_num_filters = hp.Int(
+            "sep_num_filters", 128, 768, step=128, default=256
+        )
         num_residual_blocks = hp.Int("num_residual_blocks", 2, 8, default=4)
         for _ in range(num_residual_blocks):
             x = residual(
                 x, sep_num_filters, activation=activation, max_pooling=False
             )
         # Exit flow.
-        x = residual(x, 2 * sep_num_filters, activation=activation, max_pooling=True)
+        x = residual(
+            x, 2 * sep_num_filters, activation=activation, max_pooling=True
+        )
 
         pooling = hp.Choice("pooling", ["avg", "flatten", "max"])
         if pooling == "flatten":
@@ -106,32 +114,31 @@ class HyperXception(hypermodel.HyperModel):
         else:
             x = layers.GlobalMaxPooling2D()(x)
 
-        if self.include_top:
-            # Dense
-            num_dense_layers = hp.Int("num_dense_layers", 1, 3)
-            dropout_rate = hp.Float("dropout_rate", 0.0, 0.6, step=0.1, default=0.5)
-            dense_use_bn = hp.Choice("dense_use_bn", [True, False])
-            for _ in range(num_dense_layers):
-                x = dense(
-                    x,
-                    self.classes,
-                    activation=activation,
-                    batchnorm=dense_use_bn,
-                    dropout_rate=dropout_rate,
-                )
-            output = layers.Dense(self.classes, activation="softmax")(x)
-            model = keras.Model(inputs, output, name="Xception")
-
-            model.compile(
-                optimizer=keras.optimizers.Adam(
-                    hp.Choice("learning_rate", [1e-3, 1e-4, 1e-5])
-                ),
-                loss="categorical_crossentropy",
-                metrics=["accuracy"],
-            )
-            return model
-        else:
+        if not self.include_top:
             return keras.Model(inputs, x, name="Xception")
+        # Dense
+        num_dense_layers = hp.Int("num_dense_layers", 1, 3)
+        dropout_rate = hp.Float("dropout_rate", 0.0, 0.6, step=0.1, default=0.5)
+        dense_use_bn = hp.Choice("dense_use_bn", [True, False])
+        for _ in range(num_dense_layers):
+            x = dense(
+                x,
+                self.classes,
+                activation=activation,
+                batchnorm=dense_use_bn,
+                dropout_rate=dropout_rate,
+            )
+        output = layers.Dense(self.classes, activation="softmax")(x)
+        model = keras.Model(inputs, output, name="Xception")
+
+        model.compile(
+            optimizer=keras.optimizers.Adam(
+                hp.Choice("learning_rate", [1e-3, 1e-4, 1e-5])
+            ),
+            loss="categorical_crossentropy",
+            metrics=["accuracy"],
+        )
+        return model
 
 
 def sep_conv(x, num_filters, kernel_size=(3, 3), activation="relu"):
@@ -165,7 +172,10 @@ def residual(
     "Residual block."
     if max_pooling:
         res = layers.Conv2D(
-            num_filters, kernel_size=(1, 1), strides=pool_strides, padding="same"
+            num_filters,
+            kernel_size=(1, 1),
+            strides=pool_strides,
+            padding="same",
         )(x)
     elif num_filters != keras.backend.int_shape(x)[-1]:
         res = layers.Conv2D(num_filters, kernel_size=(1, 1), padding="same")(x)
@@ -175,7 +185,9 @@ def residual(
     x = sep_conv(x, num_filters, kernel_size, activation)
     x = sep_conv(x, num_filters, kernel_size, activation)
     if max_pooling:
-        x = layers.MaxPooling2D(kernel_size, strides=pool_strides, padding="same")(x)
+        x = layers.MaxPooling2D(
+            kernel_size, strides=pool_strides, padding="same"
+        )(x)
 
     x = layers.add([x, res])
     return x
@@ -195,7 +207,11 @@ def conv(x, num_filters, kernel_size=(3, 3), activation="relu", strides=(2, 2)):
         )(x)
     elif activation == "relu":
         x = layers.Conv2D(
-            num_filters, kernel_size, strides=strides, padding="same", use_bias=False
+            num_filters,
+            kernel_size,
+            strides=strides,
+            padding="same",
+            use_bias=False,
         )(x)
         x = layers.BatchNormalization()(x)
         x = layers.Activation("relu")(x)

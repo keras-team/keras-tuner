@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import conditions as conditions_mod
 from keras_tuner.engine.hyperparameters import hyperparameter
 from keras_tuner.protos import keras_tuner_pb2
 
 
+@keras_tuner_export("keras_tuner.engine.hyperparameters.Boolean")
 class Boolean(hyperparameter.HyperParameter):
     """Choice between True and False.
 
@@ -28,10 +30,11 @@ class Boolean(hyperparameter.HyperParameter):
     """
 
     def __init__(self, name, default=False, **kwargs):
-        super(Boolean, self).__init__(name=name, default=default, **kwargs)
+        super().__init__(name=name, default=default, **kwargs)
         if default not in {True, False}:
             raise ValueError(
-                f"`default` must be a Python boolean. You passed: default={default}"
+                "`default` must be a Python boolean. "
+                f"You passed: default={default}"
             )
 
     def __repr__(self):
@@ -46,16 +49,16 @@ class Boolean(hyperparameter.HyperParameter):
 
     def value_to_prob(self, value):
         # Center the value in its probability bucket.
-        if value:
-            return 0.75
-        return 0.25
+        return 0.75 if value else 0.25
 
     @classmethod
     def from_proto(cls, proto):
         conditions = [
             conditions_mod.Condition.from_proto(c) for c in proto.conditions
         ]
-        return cls(name=proto.name, default=proto.default, conditions=conditions)
+        return cls(
+            name=proto.name, default=proto.default, conditions=conditions
+        )
 
     def to_proto(self):
         return keras_tuner_pb2.Boolean(

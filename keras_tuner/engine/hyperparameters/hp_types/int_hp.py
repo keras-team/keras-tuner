@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import conditions as conditions_mod
 from keras_tuner.engine.hyperparameters import hp_utils
 from keras_tuner.engine.hyperparameters.hp_types import numerical
@@ -27,6 +28,7 @@ def _check_int(val, arg):
     return int_val
 
 
+@keras_tuner_export("keras_tuner.engine.hyperparameters.Int")
 class Int(numerical.Numerical):
     """Integer hyperparameter.
 
@@ -77,11 +79,11 @@ class Int(numerical.Numerical):
             `HyperParameter` instance in the search space.
         min_value: Integer, the lower limit of range, inclusive.
         max_value: Integer, the upper limit of range, inclusive.
-        step: Optional integer, the distance between two consecutive samples in the
-            range. If left unspecified, it is possible to sample any integers in
-            the interval. If `sampling="linear"`, it will be the minimum additve
-            between two samples. If `sampling="log"`, it will be the minimum
-            multiplier between two samples.
+        step: Optional integer, the distance between two consecutive samples in
+            the range. If left unspecified, it is possible to sample any
+            integers in the interval. If `sampling="linear"`, it will be the
+            minimum additve between two samples. If `sampling="log"`, it will be
+            the minimum multiplier between two samples.
         sampling: String. One of "linear", "log", "reverse_log". Defaults to
             "linear". When sampling value, it always start from a value in range
             [0.0, 1.0). The `sampling` argument decides how the value is
@@ -89,7 +91,7 @@ class Int(numerical.Numerical):
             "linear": min_value + value * (max_value - min_value)
             "log": min_value * (max_value / min_value) ^ value
             "reverse_log":
-                max_value - min_value * ((max_value / min_value) ^ (1 - value) - 1)
+                max_value - min_value * ((max_value/min_value)^(1-value) - 1)
         default: Integer, default value to return for the parameter. If
             unspecified, the default value will be `min_value`.
     """
@@ -144,12 +146,10 @@ class Int(numerical.Numerical):
 
     @property
     def default(self):
-        if self._default is not None:
-            return self._default
-        return self.min_value
+        return self._default if self._default is not None else self.min_value
 
     def get_config(self):
-        config = super(Int, self).get_config()
+        config = super().get_config()
         config["min_value"] = self.min_value
         config["max_value"] = self.max_value
         config["step"] = self.step
@@ -166,7 +166,7 @@ class Int(numerical.Numerical):
             name=proto.name,
             min_value=proto.min_value,
             max_value=proto.max_value,
-            step=proto.step if proto.step else None,
+            step=proto.step or None,
             sampling=hp_utils.sampling_from_proto(proto.sampling),
             default=proto.default,
             conditions=conditions,

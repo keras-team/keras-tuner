@@ -19,19 +19,25 @@ import copy
 
 import six
 
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import conditions as conditions_mod
 from keras_tuner.engine.hyperparameters import hp_types
 from keras_tuner.engine.hyperparameters import hyperparameter as hp_module
 from keras_tuner.protos import keras_tuner_pb2
 
 
-class HyperParameters(object):
+@keras_tuner_export("keras_tuner.HyperParameters")
+class HyperParameters:
     """Container for both a hyperparameter space, and current values.
 
     A `HyperParameters` instance can be pass to `HyperModel.build(hp)` as an
     argument to build a model.
 
+    To prevent the users from depending on inactive hyperparameter values, only
+    active hyperparameters should have values in `HyperParameters.values`.
+
     Attributes:
+        space: A list of `HyperParameter` objects.
         values: A dict mapping hyperparameter names to current values.
     """
 
@@ -57,6 +63,10 @@ class HyperParameters(object):
 
         # A list of active `conditional_scope`s in a build,
         # each of which is a list of condtions.
+        # Used by BaseTuner to activate all conditions.
+        # No need to empty these after builds since when building the model, hp
+        # is copied from the Oracle's hp, which always have these 2 fields
+        # empty.
         self.active_scopes = []
         # Similar for inactive `conditional_scope`s.
         self.inactive_scopes = []
@@ -120,7 +130,9 @@ class HyperParameters(object):
         """
         parent_name = self._get_name(parent_name)  # Add name_scopes.
         if not self._exists(parent_name):
-            raise ValueError(f"`HyperParameter` named: {parent_name} not defined.")
+            raise ValueError(
+                f"`HyperParameter` named: {parent_name} not defined."
+            )
 
         condition = conditions_mod.Parent(parent_name, parent_values)
         self._conditions.append(condition)
@@ -156,16 +168,13 @@ class HyperParameters(object):
         if isinstance(hp, hp_module.HyperParameter):
             return self._conditions_are_active(hp.conditions)
         hp_name = str(hp)
-        for temp_hp in self._hps[hp_name]:
-            if self._conditions_are_active(temp_hp.conditions):
-                return True
-        return False
+        return any(
+            self._conditions_are_active(temp_hp.conditions)
+            for temp_hp in self._hps[hp_name]
+        )
 
     def _conditions_are_active(self, conditions):
-        for condition in conditions:
-            if not condition.is_active(self.values):
-                return False
-        return True
+        return all(condition.is_active(self.values) for condition in conditions)
 
     def _exists(self, name, conditions=None):
         """Checks for a hyperparameter with the same name and conditions."""
@@ -190,7 +199,7 @@ class HyperParameters(object):
             not active.
         """
         if self._exists(hp.name, hp.conditions):
-            if self._conditions_are_active(hp.conditions):
+            if self.is_active(hp):
                 return self.values[hp.name]
             return None  # Ensures inactive values are not relied on by user.
         return self._register(hp)
@@ -214,7 +223,7 @@ class HyperParameters(object):
         self._hps[hp.name].append(hp)
         self._space.append(hp)
         # Only add active values to `self.values`.
-        if self._conditions_are_active(hp.conditions):
+        if self.is_active(hp):
             # Use the default value only if not populated.
             if overwrite or hp.name not in self.values:
                 self.values[hp.name] = hp.default
@@ -479,7 +488,9 @@ class HyperParameters(object):
             )
             return self._retrieve(hp)
 
-    def Boolean(self, name, default=False, parent_name=None, parent_values=None):
+    def Boolean(
+        self, name, default=False, parent_name=None, parent_values=None
+    ):
         """Choice between True and False.
 
         Args:
@@ -542,7 +553,7 @@ class HyperParameters(object):
                 {"class_name": p.__class__.__name__, "config": p.get_config()}
                 for p in self.space
             ],
-            "values": dict((k, v) for (k, v) in self.values.items()),
+            "values": dict(self.values.items()),
         }
 
     @classmethod
@@ -552,7 +563,7 @@ class HyperParameters(object):
             p = hp_types.deserialize(p)
             hps._hps[p.name].append(p)
             hps._space.append(p)
-        hps.values = dict((k, v) for (k, v) in config["values"].items())
+        hps.values = dict(config["values"].items())
         return hps
 
     def copy(self):
@@ -576,6 +587,22 @@ class HyperParameters(object):
         for hp in hps:
             self._register(hp, overwrite)
 
+    def ensure_active_values(self):
+        """Add and remove values if necessary.
+
+        KerasTuner requires only active values to be populated. This function
+        removes the inactive values and add the missing active values.
+
+        Args:
+            hps: HyperParameters, whose values to be ensured.
+        """
+        for hp in self.space:
+            if self.is_active(hp):
+                if hp.name not in self.values:
+                    self.values[hp.name] = hp.random_sample()
+            else:
+                self.values.pop(hp.name, None)
+
     @classmethod
     def from_proto(cls, proto):
         hps = cls()
@@ -583,21 +610,36 @@ class HyperParameters(object):
         space = []
         if isinstance(proto, keras_tuner_pb2.HyperParameters.Values):
             # Allows passing in only values, space becomes `Fixed`.
-            for name, value in proto.values.items():
-                space.append(
-                    hp_types.Fixed(name, getattr(value, value.WhichOneof("kind")))
-                )
+            space.extend(
+                hp_types.Fixed(name, getattr(value, value.WhichOneof("kind")))
+                for name, value in proto.values.items()
+            )
+
         else:
-            for fixed_proto in proto.space.fixed_space:
-                space.append(hp_types.Fixed.from_proto(fixed_proto))
-            for float_proto in proto.space.float_space:
-                space.append(hp_types.Float.from_proto(float_proto))
-            for int_proto in proto.space.int_space:
-                space.append(hp_types.Int.from_proto(int_proto))
-            for choice_proto in proto.space.choice_space:
-                space.append(hp_types.Choice.from_proto(choice_proto))
-            for boolean_proto in proto.space.boolean_space:
-                space.append(hp_types.Boolean.from_proto(boolean_proto))
+            space.extend(
+                hp_types.Fixed.from_proto(fixed_proto)
+                for fixed_proto in proto.space.fixed_space
+            )
+
+            space.extend(
+                hp_types.Float.from_proto(float_proto)
+                for float_proto in proto.space.float_space
+            )
+
+            space.extend(
+                hp_types.Int.from_proto(int_proto)
+                for int_proto in proto.space.int_space
+            )
+
+            space.extend(
+                hp_types.Choice.from_proto(choice_proto)
+                for choice_proto in proto.space.choice_space
+            )
+
+            space.extend(
+                hp_types.Boolean.from_proto(boolean_proto)
+                for boolean_proto in proto.space.boolean_space
+            )
 
         hps.merge(space)
 
@@ -668,9 +710,11 @@ class HyperParameters(object):
         if name_scopes is None:
             name_scopes = self._name_scopes
 
-        if name_scopes:
-            return "/".join(name_scopes) + "/" + str(name)
-        return str(name)
+        return (
+            "/".join(name_scopes) + "/" + str(name)
+            if name_scopes
+            else str(name)
+        )
 
     def _validate_name(self, name):
         for condition in self._conditions:

@@ -17,14 +17,13 @@
 import abc
 
 import six
-from tensorflow import keras
 
 from keras_tuner import utils
 from keras_tuner.protos import keras_tuner_pb2
 
 
 @six.add_metaclass(abc.ABCMeta)
-class Condition(object):
+class Condition:
     """Abstract condition for a conditional hyperparameter.
 
     Subclasses of this object can be passed to a `HyperParameter` to specify
@@ -60,7 +59,7 @@ class Condition(object):
         return cls(**config)  # pytype: disable=not-instantiable
 
     @classmethod
-    def from_proto(self, proto):
+    def from_proto(cls, proto):
         kind = proto.WhichOneof("kind")
         if kind == "parent":
             parent = getattr(proto, kind)
@@ -126,14 +125,18 @@ class Parent(Condition):
 
     def to_proto(self):
         if isinstance(self.values[0], six.string_types):
-            values = [keras_tuner_pb2.Value(string_value=v) for v in self.values]
+            values = [
+                keras_tuner_pb2.Value(string_value=v) for v in self.values
+            ]
         elif isinstance(self.values[0], six.integer_types):
             values = [keras_tuner_pb2.Value(int_value=v) for v in self.values]
         else:
             values = [keras_tuner_pb2.Value(float_value=v) for v in self.values]
 
         return keras_tuner_pb2.Condition(
-            parent=keras_tuner_pb2.Condition.Parent(name=self.name, values=values)
+            parent=keras_tuner_pb2.Condition.Parent(
+                name=self.name, values=values
+            )
         )
 
 
@@ -145,8 +148,8 @@ ALL_CLASSES = {cls.__name__: cls for cls in OBJECTS}
 
 
 def deserialize(config):
-    return keras.utils.deserialize_keras_object(config, module_objects=ALL_CLASSES)
+    return utils.deserialize_keras_object(config, module_objects=ALL_CLASSES)
 
 
 def serialize(obj):
-    return keras.utils.serialize_keras_object(obj)
+    return utils.serialize_keras_object(obj)

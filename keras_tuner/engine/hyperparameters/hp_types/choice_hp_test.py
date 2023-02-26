@@ -105,7 +105,9 @@ def test_choice_proto():
     assert int_choice.get_config() == new_int_choice.get_config()
 
     # Test float values.
-    float_choice = hp_module.Choice("b", [0.5, 2.5, 4.0], ordered=False, default=2.5)
+    float_choice = hp_module.Choice(
+        "b", [0.5, 2.5, 4.0], ordered=False, default=2.5
+    )
     new_float_choice = hp_module.Choice.from_proto(float_choice.to_proto())
     assert float_choice.get_config() == new_float_choice.get_config()
 

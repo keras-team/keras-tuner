@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import inspect
 
 import numpy as np
 import six
@@ -20,7 +21,7 @@ from tensorflow import keras
 from keras_tuner.protos import keras_tuner_pb2
 
 
-class MetricObservation(object):
+class MetricObservation:
     """Metric value at a given step of training across multiple executions.
 
     If the model is trained multiple
@@ -56,22 +57,26 @@ class MetricObservation(object):
         return cls(**config)
 
     def __eq__(self, other):
-        if not isinstance(other, MetricObservation):
-            return False
-        return other.value == self.value and other.step == self.step
+        return (
+            other.value == self.value and other.step == self.step
+            if isinstance(other, MetricObservation)
+            else False
+        )
 
     def __repr__(self):
         return f"MetricObservation(value={self.value}, step={self.step})"
 
     def to_proto(self):
-        return keras_tuner_pb2.MetricObservation(value=self.value, step=self.step)
+        return keras_tuner_pb2.MetricObservation(
+            value=self.value, step=self.step
+        )
 
     @classmethod
     def from_proto(cls, proto):
         return cls(value=list(proto.value), step=proto.step)
 
 
-class MetricHistory(object):
+class MetricHistory:
     """Record of multiple executions of a single metric.
 
     It contains a collection of `MetricObservation` instances.
@@ -98,12 +103,12 @@ class MetricHistory(object):
             self._observations[step] = MetricObservation(value, step=step)
 
     def get_best_value(self):
-        values = list(obs.mean() for obs in self._observations.values())
+        values = [obs.mean() for obs in self._observations.values()]
         if not values:
             return None
-        if self.direction == "min":
-            return np.nanmin(values)
-        return np.nanmax(values)
+        return (
+            np.nanmin(values) if self.direction == "min" else np.nanmax(values)
+        )
 
     def get_best_step(self):
         best_value = self.get_best_value()
@@ -123,16 +128,18 @@ class MetricHistory(object):
     def get_statistics(self):
         history = self.get_history()
         history_values = [obs.mean() for obs in history]
-        if not len(history_values):
-            return {}
-        return {
-            "min": float(np.nanmin(history_values)),
-            "max": float(np.nanmax(history_values)),
-            "mean": float(np.nanmean(history_values)),
-            "median": float(np.nanmedian(history_values)),
-            "var": float(np.nanvar(history_values)),
-            "std": float(np.nanstd(history_values)),
-        }
+        return (
+            {
+                "min": float(np.nanmin(history_values)),
+                "max": float(np.nanmax(history_values)),
+                "mean": float(np.nanmean(history_values)),
+                "median": float(np.nanmedian(history_values)),
+                "var": float(np.nanvar(history_values)),
+                "std": float(np.nanstd(history_values)),
+            }
+            if len(history_values)
+            else {}
+        )
 
     def get_last_value(self):
         history = self.get_history()
@@ -143,16 +150,21 @@ class MetricHistory(object):
             return None
 
     def get_config(self):
-        config = {}
-        config["direction"] = self.direction
-        config["observations"] = [obs.get_config() for obs in self.get_history()]
+        config = {
+            "direction": self.direction,
+            "observations": [obs.get_config() for obs in self.get_history()],
+        }
+
         return config
 
     @classmethod
     def from_config(cls, config):
         instance = cls(config["direction"])
         instance.set_history(
-            [MetricObservation.from_config(obs) for obs in config["observations"]]
+            [
+                MetricObservation.from_config(obs)
+                for obs in config["observations"]
+            ]
         )
         return instance
 
@@ -172,7 +184,7 @@ class MetricHistory(object):
         return instance
 
 
-class MetricsTracker(object):
+class MetricsTracker:
     """Record of the values of multiple executions of all metrics.
 
     It contains `MetricHistory` instances for the metrics.
@@ -328,11 +340,27 @@ def infer_metric_direction(metric):
             return "max"
 
         try:
-            metric = keras.metrics.get(metric_name)
+            if (
+                "use_legacy_format"
+                in inspect.getargspec(keras.metrics.deserialize).args
+            ):
+                metric = keras.metrics.deserialize(
+                    metric_name, use_legacy_format=True
+                )
+            else:
+                metric = keras.metrics.deserialize(metric_name)
         except ValueError:
             try:
-                metric = keras.losses.get(metric_name)
-            except:
+                if (
+                    "use_legacy_format"
+                    in inspect.getargspec(keras.losses.deserialize).args
+                ):
+                    metric = keras.losses.deserialize(
+                        metric_name, use_legacy_format=True
+                    )
+                else:
+                    metric = keras.losses.deserialize(metric_name)
+            except Exception:
                 # Direction can't be inferred.
                 return None
 

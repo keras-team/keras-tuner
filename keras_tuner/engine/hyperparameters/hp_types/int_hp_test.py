@@ -67,7 +67,7 @@ def test_int():
 
 def test_int_log_with_step():
     rg = hp_module.Int("rg", min_value=2, max_value=32, step=2, sampling="log")
-    for i in range(10):
+    for _ in range(10):
         assert rg.random_sample() in [2, 4, 8, 16, 32]
     assert abs(rg.value_to_prob(4) - 0.3) < 1e-4
     assert rg.prob_to_value(0.3) == 4
@@ -118,7 +118,11 @@ def test_serialize_deserialize_int():
 def test_int_values_property_with_step():
     assert list(hp_module.Int("int", 2, 8, 2).values) == [2, 4, 6, 8]
     assert isinstance(list(hp_module.Int("int", 2, 8, 2).values)[0], int)
-    assert list(hp_module.Int("int", 2, 8, 2, sampling="log").values) == [2, 4, 8]
+    assert list(hp_module.Int("int", 2, 8, 2, sampling="log").values) == [
+        2,
+        4,
+        8,
+    ]
 
 
 def test_int_values_property_without_step():

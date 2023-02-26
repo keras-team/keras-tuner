@@ -30,7 +30,9 @@ def test_float():
     assert linear.random_sample(123) == linear.random_sample(123)
 
     # Test without step arg
-    linear = hp_module.Float("linear", min_value=0.5, max_value=6.5, default=2.0)
+    linear = hp_module.Float(
+        "linear", min_value=0.5, max_value=6.5, default=2.0
+    )
     linear = hp_module.Float.from_config(linear.get_config())
     assert linear.default == 2.0
     assert 0.5 <= linear.random_sample() < 6.5
@@ -52,7 +54,7 @@ def test_float_log_with_step():
     rg = hp_module.Float(
         "rg", min_value=0.01, max_value=100, step=10, sampling="log"
     )
-    for i in range(10):
+    for _ in range(10):
         assert rg.random_sample() in [0.01, 0.1, 1.0, 10.0, 100.0]
     assert abs(rg.value_to_prob(0.1) - 0.3) < 1e-4
     assert rg.prob_to_value(0.3) == 0.1
@@ -62,14 +64,14 @@ def test_float_reverse_log_with_step():
     rg = hp_module.Float(
         "rg", min_value=0.01, max_value=100, step=10, sampling="reverse_log"
     )
-    for i in range(10):
+    for _ in range(10):
         # print(rg.random_sample())
         # assert rg.random_sample() in [0.01, 0.1, 1.0, 10.0, 100.0]
         # [0.09, 0.9, 9, 90]
         # [90, 9, 0.9, 0.09]
         sample = rg.random_sample()
         assert any(
-            [abs(sample - x) < 1e-4 for x in [0.01, 90.01, 99.01, 99.91, 100.0]]
+            abs(sample - x) < 1e-4 for x in [0.01, 90.01, 99.01, 99.91, 100.0]
         )
     assert abs(rg.value_to_prob(99.91) - 0.3) < 1e-4
     assert abs(rg.prob_to_value(0.3) - 99.91) < 1e-4
@@ -151,9 +153,16 @@ def test_float_proto():
 
 
 def test_float_values_property_with_step():
-    assert list(hp_module.Float("float", 2, 8, 2).values) == [2.0, 4.0, 6.0, 8.0]
+    assert list(hp_module.Float("float", 2, 8, 2).values) == [
+        2.0,
+        4.0,
+        6.0,
+        8.0,
+    ]
     assert isinstance(list(hp_module.Float("float", 2, 8, 2).values)[0], float)
-    assert list(hp_module.Float("float", 0.1, 100.0, 10, sampling="log").values) == [
+    assert list(
+        hp_module.Float("float", 0.1, 100.0, 10, sampling="log").values
+    ) == [
         0.1,
         1.0,
         10.0,
@@ -164,4 +173,7 @@ def test_float_values_property_with_step():
 def test_float_values_property_without_step():
     assert len(list(hp_module.Float("float", 2, 4).values)) == 10
     assert len(list(hp_module.Float("float", 2, 20).values)) == 10
-    assert len(list(hp_module.Float("float", 2, 1024, sampling="log").values)) == 10
+    assert (
+        len(list(hp_module.Float("float", 2, 1024, sampling="log").values))
+        == 10
+    )

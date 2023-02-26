@@ -12,14 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Keep the name of `BayesianOptimization`, `Hyperband` and `RandomSearch`
-# for backward compatibility for 1.0.2 or earlier.
 from keras_tuner.tuners.bayesian import BayesianOptimizationOracle
+from keras_tuner.tuners.gridsearch import GridSearchOracle
 from keras_tuner.tuners.hyperband import HyperbandOracle
-from keras_tuner.tuners.hyperband import HyperbandOracle as Hyperband
 from keras_tuner.tuners.randomsearch import RandomSearchOracle
-from keras_tuner.tuners.randomsearch import RandomSearchOracle as RandomSearch
-
-from keras_tuner.tuners.bayesian import (  # isort:skip
-    BayesianOptimizationOracle as BayesianOptimization,
-)

@@ -1,3 +1,27 @@
+# Release v1.3.1
+
+# Release v1.3.0
+
+## Breaking changes
+* Removed `Logger` and `CloudLogger` and the related arguments in
+  `BaseTuner.__init__(logger=...)`.
+* Removed `keras_tuner.oracles.BayesianOptimization`,
+  `keras_tuner.oracles.Hyperband`, `keras_tuner.oracles.RandomSearch`, which
+  were actually `Oracle`s instead of `Tuner`s. Please
+  use`keras_tuner.oracles.BayesianOptimizationOracle`,
+  `keras_tuner.oracles.HyperbandOracle`,
+  `keras_tuner.oracles.RandomSearchOracle` instead.
+* Removed `keras_tuner.Sklearn`. Please use `keras_tuner.SklearnTuner` instead.
+
+## New features
+* `keras_tuner.oracles.GridSearchOracle` is now available as a standalone
+  `Oracle` to be used with custom tuners.
+
+# Release v1.2.1
+
+## Bug fixes
+* The resume feature (`overwrite=False`) would crash in 1.2.0. This is now fixed.
+
 # Release v1.2.0
 
 ## Breaking changes
@@ -5,8 +29,8 @@
   with `Oracle.update_trial()` in `Tuner.run_trial()` is deprecated. Please
   return the metrics in `Tuner.run_trial()` instead.
 * If you implemented your own `Oracle` and overrided `Oracle.end_trial()`, you
-  need to change the signature of the function to
-  `Oracle.end_trial(trial_id, status, message)`.
+  need to change the signature of the function from
+  `Oracle.end_trial(trial.trial_id, trial.status)` to `Oracle.end_trial(trial)`.
 * The default value of the `step` argument in `keras_tuner.HyperParameters.Int()` is
   changed to `None`, which was `1` before. No change in default behavior.
 * The default value of the `sampling` argument in
@@ -27,11 +51,25 @@
 * Better fault tolerance during the search. Added two new arguments to `Tuner`
   and `Oracle` initializers, `max_retries_per_trial` and
   `max_consecutive_failed_trials`.
+* You can now mark a `Trial` as failed by
+  `raise keras_tuner.FailedTrialError("error message.")` in `HyperModel.build()`,
+  `HyperModel.fit()`, or your model build function.
 * Provides better error messages for invalid configs for `Int` and `Float` type
   hyperparameters.
+* A decorator `@keras_tuner.synchronized` is added to decorate the methods in
+  `Oracle` and its subclasses to synchronize the concurrent calls to ensure
+  thread safety in parallel tuning.
 
 ## Bug fixes
 * Protobuf was not converting Boolean type hyperparameter correctly. This is now
   fixed.
 * Hyperband was not loading the weights correctly for half-trained models. This
   is now fixed.
+* `KeyError` may occur if using `hp.conditional_scope()`, or the `parent`
+  argument for hyperparameters. This is now fixed.
+* `num_initial_points` of the `BayesianOptimization` should defaults to `3 *
+  dimension`, but it defaults to 2. This is now fixed.
+* It would through an error when using a concrete Keras optimizer object to
+  override the `HyperModel` compile arg. This is now fixed.
+* Workers might crash due to `Oracle` reloading when running in parallel. This is
+  now fixed.

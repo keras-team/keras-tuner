@@ -17,6 +17,7 @@
 import copy
 import os
 import traceback
+import warnings
 
 import tensorflow as tf
 
@@ -68,11 +69,10 @@ class BaseTuner(stateful.Stateful):
         directory: A string, the relative path to the working directory.
         project_name: A string, the name to use as prefix for files saved by
             this Tuner.
-        logger: Optional instance of `kerastuner.Logger` class for
-            streaming logs for monitoring.
         overwrite: Boolean, defaults to `False`. If `False`, reloads an
             existing project of the same name if one is found. Otherwise,
             overwrites the project.
+        **kwargs: Arguments for backward compatibility.
 
     Attributes:
         remaining_trials: Number of trials remaining, `None` if `max_trials` is
@@ -85,24 +85,54 @@ class BaseTuner(stateful.Stateful):
         hypermodel=None,
         directory=None,
         project_name=None,
-        logger=None,
         overwrite=False,
+        **kwargs,
     ):
-        # Ops and metadata
-        self.directory = directory or "."
-        self.project_name = project_name or "untitled_project"
-        if overwrite and tf.io.gfile.exists(self.project_dir):
-            tf.io.gfile.rmtree(self.project_dir)
-
         if not isinstance(oracle, oracle_module.Oracle):
             raise ValueError(
                 "Expected `oracle` argument to be an instance of `Oracle`. "
                 f"Received: oracle={oracle} (of type ({type(oracle)})."
             )
+
+        logger = kwargs.pop("logger", None)
+        if logger is not None:
+            warnings.warn(
+                "The `logger` argument in `BaseTuner.__init__() is "
+                "no longer supported and will be ignored.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        self.logger = logger
+
+        if len(kwargs) > 0:
+            raise ValueError(
+                f"Unrecognized arguments {list(kwargs.keys())} "
+                "for `BaseTuner.__init__()`."
+            )
+
         self.oracle = oracle
-        self.oracle._set_project_dir(
-            self.directory, self.project_name, overwrite=overwrite
-        )
+        self.hypermodel = hm_module.get_hypermodel(hypermodel)
+
+        # Ops and metadata
+        self.directory = directory or "."
+        self.project_name = project_name or "untitled_project"
+        self.oracle._set_project_dir(self.directory, self.project_name)
+
+        if overwrite and tf.io.gfile.exists(self.project_dir):
+            tf.io.gfile.rmtree(self.project_dir)
+
+        # To support tuning distribution.
+        self.tuner_id = os.environ.get("KERASTUNER_TUNER_ID", "tuner0")
+
+        # Reloading state.
+        if not overwrite and tf.io.gfile.exists(self._get_tuner_fname()):
+            tf.get_logger().info(
+                f"Reloading Tuner from {self._get_tuner_fname()}"
+            )
+            self.reload()
+        else:
+            # Only populate initial space if not reloading.
+            self._populate_initial_space()
 
         # Run in distributed mode.
         if dist_utils.is_chief_oracle():
@@ -112,21 +142,42 @@ class BaseTuner(stateful.Stateful):
             # Proxies requests to the chief oracle.
             self.oracle = oracle_client.OracleClient(self.oracle)
 
-        # To support tuning distribution.
-        self.tuner_id = os.environ.get("KERASTUNER_TUNER_ID", "tuner0")
-
-        self.hypermodel = hm_module.get_hypermodel(hypermodel)
-
+        # In parallel tuning, everything below in __init__() is for workers
+        # only.
         # Logs etc
-        self.logger = logger
         self._display = tuner_utils.Display(oracle=self.oracle)
 
-        if not overwrite and tf.io.gfile.exists(self._get_tuner_fname()):
-            tf.get_logger().info(f"Reloading Tuner from {self._get_tuner_fname()}")
-            self.reload()
-        else:
-            # Only populate initial space if not reloading.
-            self._populate_initial_space()
+    def _activate_all_conditions(self):
+        # Lists of stacks of conditions used during `explore_space()`.
+        scopes_never_active = []
+        scopes_once_active = []
+
+        hp = self.oracle.get_space()
+        while True:
+            self.hypermodel.build(hp)
+            self.oracle.update_space(hp)
+
+            # Update the recorded scopes.
+            for conditions in hp.active_scopes:
+                if conditions not in scopes_once_active:
+                    scopes_once_active.append(copy.deepcopy(conditions))
+                if conditions in scopes_never_active:
+                    scopes_never_active.remove(conditions)
+            for conditions in hp.inactive_scopes:
+                if conditions not in scopes_once_active:
+                    scopes_never_active.append(copy.deepcopy(conditions))
+
+            # All conditional scopes are activated.
+            if not scopes_never_active:
+                break
+
+            # Generate new values to activate new conditions.
+            hp = self.oracle.get_space()
+            conditions = scopes_never_active[0]
+            for condition in conditions:
+                hp.values[condition.name] = condition.values[0]
+
+            hp.ensure_active_values()
 
     def _populate_initial_space(self):
         """Populate initial search space for oracle.
@@ -142,39 +193,11 @@ class BaseTuner(stateful.Stateful):
         if self.hypermodel is None:
             return
 
+        # declare_hyperparameters is not overriden.
         hp = self.oracle.get_space()
-
-        try:
-            self.hypermodel.declare_hyperparameters(hp)
-        except NotImplementedError:
-            # Lists of stacks of conditions used during `explore_space()`.
-            scopes_never_active = []
-            scopes_once_active = []
-
-            while True:
-                self.hypermodel.build(hp)
-
-                # Update the recored scopes.
-                for conditions in hp.active_scopes:
-                    if conditions not in scopes_once_active:
-                        scopes_once_active.append(copy.deepcopy(conditions))
-                    if conditions in scopes_never_active:
-                        scopes_never_active.remove(conditions)
-
-                for conditions in hp.inactive_scopes:
-                    if conditions not in scopes_once_active:
-                        scopes_never_active.append(copy.deepcopy(conditions))
-
-                # All conditional scopes are activated.
-                if len(scopes_never_active) == 0:
-                    break
-
-                # Generate new values to activate new conditions.
-                conditions = scopes_never_active[0]
-                for condition in conditions:
-                    hp.values[condition.name] = condition.values[0]
-
+        self.hypermodel.declare_hyperparameters(hp)
         self.oracle.update_space(hp)
+        self._activate_all_conditions()
 
     def search(self, *fit_args, **fit_kwargs):
         """Performs a search for best hyperparameter configuations.
@@ -206,6 +229,24 @@ class BaseTuner(stateful.Stateful):
 
     def _run_and_update_trial(self, trial, *fit_args, **fit_kwargs):
         results = self.run_trial(trial, *fit_args, **fit_kwargs)
+        if self.oracle.get_trial(trial.trial_id).metrics.exists(
+            self.oracle.objective.name
+        ):
+            # The oracle is updated by calling `self.oracle.update_trial()` in
+            # `Tuner.run_trial()`. For backward compatibility, we support this
+            # use case. No further action needed in this case.
+            warnings.warn(
+                "The use case of calling "
+                "`self.oracle.update_trial(trial_id, metrics)` "
+                "in `Tuner.run_trial()` to report the metrics is deprecated, "
+                "and will be removed in the future."
+                "Please remove the call and do 'return metrics' "
+                "in `Tuner.run_trial()` instead. ",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            return
+
         tuner_utils.validate_trial_results(
             results, self.oracle.objective, "Tuner.run_trial()"
         ),
@@ -252,8 +293,8 @@ class BaseTuner(stateful.Stateful):
             trial_id: The ID of the `Trial` corresponding to this Model.
             model: The trained model.
             step: Integer, for models that report intermediate results to the
-                `Oracle`, the step the saved file correspond to. For example, for
-                Keras models this is the number of epochs trained.
+                `Oracle`, the step the saved file correspond to. For example,
+                for Keras models this is the number of epochs trained.
         """
         raise NotImplementedError
 
@@ -279,8 +320,6 @@ class BaseTuner(stateful.Stateful):
         Args:
             trial: A `Trial` instance.
         """
-        if self.logger:
-            self.logger.register_trial(trial.trial_id, trial.get_state())
         self._display.on_trial_begin(self.oracle.get_trial(trial.trial_id))
 
     def on_trial_end(self, trial):
@@ -289,25 +328,18 @@ class BaseTuner(stateful.Stateful):
         Args:
             trial: A `Trial` instance.
         """
-        # Send status to Logger
-        if self.logger:
-            self.logger.report_trial_state(trial.trial_id, trial.get_state())
-
-        self.oracle.end_trial(trial.trial_id, trial.status, trial.message)
-        self.oracle.update_space(trial.hyperparameters)
+        self.oracle.end_trial(trial)
         # Display needs the updated trial scored by the Oracle.
         self._display.on_trial_end(self.oracle.get_trial(trial.trial_id))
         self.save()
 
     def on_search_begin(self):
         """Called at the beginning of the `search` method."""
-        if self.logger:
-            self.logger.register_tuner(self.get_state())
+        pass
 
     def on_search_end(self):
         """Called at the end of the `search` method."""
-        if self.logger:
-            self.logger.exit()
+        pass
 
     def get_best_models(self, num_models=1):
         """Returns the best model(s), as determined by the objective.
@@ -347,7 +379,9 @@ class BaseTuner(stateful.Stateful):
         Returns:
             List of `HyperParameter` objects sorted from the best to the worst.
         """
-        return [t.hyperparameters for t in self.oracle.get_best_trials(num_trials)]
+        return [
+            t.hyperparameters for t in self.oracle.get_best_trials(num_trials)
+        ]
 
     def search_space_summary(self, extended=False):
         """Print search space summary.
@@ -401,17 +435,23 @@ class BaseTuner(stateful.Stateful):
     def set_state(self, state):
         pass
 
+    def _is_worker(self):
+        """Return true only if in parallel tuning and is a worker tuner."""
+        return (
+            dist_utils.has_chief_oracle() and not dist_utils.is_chief_oracle()
+        )
+
     def save(self):
         """Saves this object to its project directory."""
-        if not dist_utils.has_chief_oracle():
+        if not self._is_worker():
             self.oracle.save()
-        super(BaseTuner, self).save(self._get_tuner_fname())
+        super().save(self._get_tuner_fname())
 
     def reload(self):
         """Reloads this object from its project directory."""
-        if not dist_utils.has_chief_oracle():
+        if not self._is_worker():
             self.oracle.reload()
-        super(BaseTuner, self).reload(self._get_tuner_fname())
+        super().reload(self._get_tuner_fname())
 
     @property
     def project_dir(self):
@@ -420,9 +460,9 @@ class BaseTuner(stateful.Stateful):
         return dirname
 
     def get_trial_dir(self, trial_id):
-        dirname = os.path.join(str(self.project_dir), "trial_" + str(trial_id))
+        dirname = os.path.join(str(self.project_dir), f"trial_{str(trial_id)}")
         utils.create_directory(dirname)
         return dirname
 
     def _get_tuner_fname(self):
-        return os.path.join(str(self.project_dir), str(self.tuner_id) + ".json")
+        return os.path.join(str(self.project_dir), f"{str(self.tuner_id)}.json")

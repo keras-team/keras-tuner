@@ -15,11 +15,13 @@
 "Basic random search tuner."
 
 
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import oracle as oracle_module
 from keras_tuner.engine import trial as trial_module
 from keras_tuner.engine import tuner as tuner_module
 
 
+@keras_tuner_export("keras_tuner.oracles.RandomSearchOracle")
 class RandomSearchOracle(oracle_module.Oracle):
     """Random search oracle.
 
@@ -49,11 +51,12 @@ class RandomSearchOracle(oracle_module.Oracle):
             request hyperparameter entries not listed in `hyperparameters`.
             Defaults to True.
         max_retries_per_trial: Integer. Defaults to 0. The maximum number of
-            times to retry a `Trial` if the trial crashed or the results are invalid.
-        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum number of
-            consecutive failed `Trial`s. When this number is reached, the search
-            will be stopped. A `Trial` is marked as failed when none of the
-            retries succeeded.
+            times to retry a `Trial` if the trial crashed or the results are
+            invalid.
+        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum
+            number of consecutive failed `Trial`s. When this number is reached,
+            the search will be stopped. A `Trial` is marked as failed when none
+            of the retries succeeded.
     """
 
     def __init__(
@@ -67,7 +70,7 @@ class RandomSearchOracle(oracle_module.Oracle):
         max_retries_per_trial=0,
         max_consecutive_failed_trials=3,
     ):
-        super(RandomSearchOracle, self).__init__(
+        super().__init__(
             objective=objective,
             max_trials=max_trials,
             hyperparameters=hyperparameters,
@@ -98,6 +101,9 @@ class RandomSearchOracle(oracle_module.Oracle):
         return {"status": trial_module.TrialStatus.RUNNING, "values": values}
 
 
+@keras_tuner_export(
+    ["keras_tuner.RandomSearch", "keras_tuner.tuners.RandomSearch"]
+)
 class RandomSearch(tuner_module.Tuner):
     """Random search tuner.
 
@@ -131,11 +137,12 @@ class RandomSearch(tuner_module.Tuner):
             request hyperparameter entries not listed in `hyperparameters`.
             Defaults to True.
         max_retries_per_trial: Integer. Defaults to 0. The maximum number of
-            times to retry a `Trial` if the trial crashed or the results are invalid.
-        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum number of
-            consecutive failed `Trial`s. When this number is reached, the search
-            will be stopped. A `Trial` is marked as failed when none of the
-            retries succeeded.
+            times to retry a `Trial` if the trial crashed or the results are
+            invalid.
+        max_consecutive_failed_trials: Integer. Defaults to 3. The maximum
+            number of consecutive failed `Trial`s. When this number is reached,
+            the search will be stopped. A `Trial` is marked as failed when none
+            of the retries succeeded.
         **kwargs: Keyword arguments relevant to all `Tuner` subclasses.
             Please see the docstring for `Tuner`.
     """
@@ -164,4 +171,4 @@ class RandomSearch(tuner_module.Tuner):
             max_retries_per_trial=max_retries_per_trial,
             max_consecutive_failed_trials=max_consecutive_failed_trials,
         )
-        super(RandomSearch, self).__init__(oracle, hypermodel, **kwargs)
+        super().__init__(oracle, hypermodel, **kwargs)

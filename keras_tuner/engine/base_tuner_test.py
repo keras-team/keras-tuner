@@ -43,11 +43,13 @@ def test_base_tuner(tmp_path):
 
         def get_best_models(self, num_models=1):
             best_trials = self.oracle.get_best_trials(num_models)
-            models = [self.hypermodel.build(t.hyperparameters) for t in best_trials]
+            models = [
+                self.hypermodel.build(t.hyperparameters) for t in best_trials
+            ]
             return models
 
     def build_model(hp):
-        class MyModel(object):
+        class MyModel:
             def __init__(self):
                 self.factor = hp.Float("a", 0, 10)
 
@@ -84,7 +86,9 @@ def test_simple_sklearn_tuner(tmp_path):
                 pickle.dump(model, f)
 
         def load_model(self, trial):
-            fname = os.path.join(self.get_trial_dir(trial.trial_id), "model.pickle")
+            fname = os.path.join(
+                self.get_trial_dir(trial.trial_id), "model.pickle"
+            )
             with open(fname, "rb") as f:
                 return pickle.load(f)
 
@@ -163,3 +167,29 @@ def test_remaining_trials(tmp_path):
 
     tuner = MyTuner(directory=tmp_path, max_retries_per_trial=2, max_trials=200)
     assert tuner.remaining_trials == 200
+
+
+def test_logger_deprecated(tmp_path):
+    def build_model(hp):
+        hp.Boolean("a")
+
+    with pytest.deprecated_call(match="logger"):
+        gridsearch.GridSearch(
+            directory=tmp_path,
+            hypermodel=build_model,
+            max_trials=200,
+            logger=1,
+        )
+
+
+def test_unrecognized_arguments_raise_value_error(tmp_path):
+    def build_model(hp):
+        hp.Boolean("a")
+
+    with pytest.raises(ValueError, match="Unrecognized arguments"):
+        gridsearch.GridSearch(
+            directory=tmp_path,
+            hypermodel=build_model,
+            max_trials=200,
+            unrecognized=3,
+        )

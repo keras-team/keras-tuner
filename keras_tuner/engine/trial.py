@@ -43,6 +43,7 @@ class TrialStatus:
     # The Trial is failed. No more retries needed.
     FAILED = "FAILED"
 
+    @staticmethod
     def to_proto(status):
         ts = keras_tuner_pb2.TrialStatus
         if status is None:
@@ -62,6 +63,7 @@ class TrialStatus:
         else:
             raise ValueError(f"Unknown status {status}")
 
+    @staticmethod
     def from_proto(proto):
         ts = keras_tuner_pb2.TrialStatus
         if proto == ts.UNKNOWN:
@@ -84,6 +86,12 @@ class TrialStatus:
 
 class Trial(stateful.Stateful):
     """The runs with the same set of hyperparameter values.
+
+    `Trial` objects are managed by the `Oracle`. A `Trial` object contains all
+    the information related to the executions with the same set of
+    hyperparameter values. A `Trial` may be executed multiple times for more
+    accurate results or for retrying when failed. The related information
+    includes hyperparameter values, the Trial ID, and the trial results.
 
     Args:
         hyperparameters: HyperParameters. It contains the hyperparameter values
@@ -126,7 +134,7 @@ class Trial(stateful.Stateful):
     def display_hyperparameters(self):
         if self.hyperparameters.values:
             for hp, value in self.hyperparameters.values.items():
-                print(hp + ":", value)
+                print(f"{hp}:", value)
         else:
             print("default configuration")
 
@@ -138,16 +146,20 @@ class Trial(stateful.Stateful):
             "score": self.score,
             "best_step": self.best_step,
             "status": self.status,
+            "message": self.message,
         }
 
     def set_state(self, state):
         self.trial_id = state["trial_id"]
         hp = hp_module.HyperParameters.from_config(state["hyperparameters"])
         self.hyperparameters = hp
-        self.metrics = metrics_tracking.MetricsTracker.from_config(state["metrics"])
+        self.metrics = metrics_tracking.MetricsTracker.from_config(
+            state["metrics"]
+        )
         self.score = state["score"]
         self.best_step = state["best_step"]
         self.status = state["status"]
+        self.message = state["message"]
 
     @classmethod
     def from_state(cls, state):
@@ -187,7 +199,9 @@ class Trial(stateful.Stateful):
         if proto.HasField("score"):
             instance.score = proto.score.value
             instance.best_step = proto.score.step
-        instance.metrics = metrics_tracking.MetricsTracker.from_proto(proto.metrics)
+        instance.metrics = metrics_tracking.MetricsTracker.from_proto(
+            proto.metrics
+        )
         return instance
 
 

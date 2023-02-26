@@ -1,5 +1,5 @@
-isort --sl --profile=black .
-black --line-length 85 .
+isort .
+black .
 
 for i in $(find keras_tuner -name '*.py') # or whatever other pattern...
 do

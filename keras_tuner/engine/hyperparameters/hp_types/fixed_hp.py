@@ -14,11 +14,13 @@
 
 import six
 
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import conditions as conditions_mod
 from keras_tuner.engine.hyperparameters import hyperparameter
 from keras_tuner.protos import keras_tuner_pb2
 
 
+@keras_tuner_export("keras_tuner.engine.hyperparameters.Fixed")
 class Fixed(hyperparameter.HyperParameter):
     """Fixed, untunable value.
 
@@ -29,7 +31,7 @@ class Fixed(hyperparameter.HyperParameter):
     """
 
     def __init__(self, name, value, **kwargs):
-        super(Fixed, self).__init__(name=name, default=value, **kwargs)
+        super().__init__(name=name, default=value, **kwargs)
         self.name = name
 
         if isinstance(value, bool):
@@ -63,7 +65,7 @@ class Fixed(hyperparameter.HyperParameter):
         return self.value
 
     def get_config(self):
-        config = super(Fixed, self).get_config()
+        config = super().get_config()
         config["name"] = self.name
         config.pop("default")
         config["value"] = self.value

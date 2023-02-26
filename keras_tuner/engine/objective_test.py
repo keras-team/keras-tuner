@@ -29,20 +29,33 @@ def test_create_objective_with_objective():
 
 def test_create_objective_with_multi_objective():
     obj = objective.create_objective(
-        [keras_tuner.Objective("score", "max"), keras_tuner.Objective("loss", "min")]
+        [
+            keras_tuner.Objective("score", "max"),
+            keras_tuner.Objective("loss", "min"),
+        ]
     )
     assert isinstance(obj, objective.MultiObjective)
-    assert obj.objectives[0].name == "score" and obj.objectives[0].direction == "max"
-    assert obj.objectives[1].name == "loss" and obj.objectives[1].direction == "min"
+    assert (
+        obj.objectives[0].name == "score"
+        and obj.objectives[0].direction == "max"
+    )
+    assert (
+        obj.objectives[1].name == "loss"
+        and obj.objectives[1].direction == "min"
+    )
 
 
 def test_create_objective_with_multi_str():
     obj = objective.create_objective(["accuracy", "loss"])
     assert isinstance(obj, objective.MultiObjective)
     assert (
-        obj.objectives[0].name == "accuracy" and obj.objectives[0].direction == "max"
+        obj.objectives[0].name == "accuracy"
+        and obj.objectives[0].direction == "max"
     )
-    assert obj.objectives[1].name == "loss" and obj.objectives[1].direction == "min"
+    assert (
+        obj.objectives[1].name == "loss"
+        and obj.objectives[1].direction == "min"
+    )
 
 
 def test_objective_better_than_max():
