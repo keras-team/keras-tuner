@@ -122,3 +122,17 @@ def test_multi_objective_has_value():
     obj = objective.create_objective(["loss", "accuracy"])
     assert obj.has_value({"loss": 1.0, "accuracy": 1.0, "mse": 2.0})
     assert not obj.has_value({"accuracy": 1.0, "mse": 2.0})
+
+
+def test_objective_to_str():
+    obj = objective.Objective(name="accuracy", direction="min")
+    assert str(obj) == 'Objective(name="accuracy", direction="min")'
+
+
+def test_multi_objective_to_str():
+    obj = objective.create_objective(["loss", "accuracy"])
+    assert (
+        str(obj) == 'MultiObjective(name="multi_objective", direction="min"): '
+        '[Objective(name="loss", direction="min"), '
+        'Objective(name="accuracy", direction="max")]'
+    )
