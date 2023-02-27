@@ -13,11 +13,15 @@
 # limitations under the License.
 
 
-class FailedTrialError(Exception):
-    """Raise this error to mark a `Trial` as invalid.
+from keras_tuner.api_export import keras_tuner_export
 
-    When this error is raised, the `Tuner` would not retry the `Trial` but
-    directly mark it as `"INVALID"`.
+
+@keras_tuner_export(["keras_tuner.errors.FailedTrialError"])
+class FailedTrialError(Exception):
+    """Raise this error to mark a `Trial` as failed.
+
+    When this error is raised in a `Trial`, the `Tuner` would not retry the
+    `Trial` but directly mark it as `"FAILED"`.
 
     Example:
 
@@ -27,7 +31,7 @@ class FailedTrialError(Exception):
             # Build the model
             ...
             if too_slow(model):
-                # Mark the Trial as "INVALID" if the model is too slow.
+                # Mark the Trial as "FAILED" if the model is too slow.
                 raise keras_tuner.FailedTrialError("Model is too slow.")
             return model
     ```
@@ -36,28 +40,55 @@ class FailedTrialError(Exception):
     pass
 
 
+@keras_tuner_export(["keras_tuner.errors.FatalError"])
 class FatalError(Exception):
-    """Error specially to breakthrough try-except for `Tuner.run_trial()`.
+    """A fatal error during search to terminate the program.
 
-    This error will raised again after caught by the try-except around
-    `Tuner.run_trial()`. So, it should only be used in subroutines of
-    `Tuner.run_trial()`.
-
-    It is used to terminate the KerasTuner program for errors that need users
-    immediate attention.
-
+    It is used to terminate the KerasTuner program for errors that need
+    users immediate attention. When this error is raised in a `Trial`, it will
+    not be caught by KerasTuner.
     """
 
     pass
 
 
+@keras_tuner_export(["keras_tuner.errors.FatalValueError"])
 class FatalValueError(FatalError, ValueError):
+    """A fatal error during search to terminate the program.
+
+    It is a subclass of `FatalError` and `ValueError`.
+
+    It is used to terminate the KerasTuner program for errors that need
+    users immediate attention. When this error is raised in a `Trial`, it will
+    not be caught by KerasTuner.
+    """
+
     pass
 
 
+@keras_tuner_export(["keras_tuner.errors.FatalTypeError"])
 class FatalTypeError(FatalError, TypeError):
+    """A fatal error during search to terminate the program.
+
+    It is a subclass of `FatalError` and `TypeError`.
+
+    It is used to terminate the KerasTuner program for errors that need
+    users immediate attention. When this error is raised in a `Trial`, it will
+    not be caught by KerasTuner.
+    """
+
     pass
 
 
+@keras_tuner_export(["keras_tuner.errors.FatalRuntimeError"])
 class FatalRuntimeError(FatalError, RuntimeError):
+    """A fatal error during search to terminate the program.
+
+    It is a subclass of `FatalError` and `RuntimeError`.
+
+    It is used to terminate the KerasTuner program for errors that need
+    users immediate attention. When this error is raised in a `Trial`, it will
+    not be caught by KerasTuner.
+    """
+
     pass
