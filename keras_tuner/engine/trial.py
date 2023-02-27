@@ -120,7 +120,7 @@ class Trial(stateful.Stateful):
 
     def summary(self):
         """Displays a summary of this Trial."""
-        print("Trial summary")
+        print(f"Trial {self.trial_id} summary")
 
         print("Hyperparameters:")
         self.display_hyperparameters()

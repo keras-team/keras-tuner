@@ -418,6 +418,7 @@ class BaseTuner(stateful.Stateful):
 
         best_trials = self.oracle.get_best_trials(num_trials)
         for trial in best_trials:
+            print()
             trial.summary()
 
     @property

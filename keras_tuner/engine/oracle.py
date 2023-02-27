@@ -511,6 +511,13 @@ class Oracle(stateful.Stateful):
             key=lambda trial: trial.score,
             reverse=self.objective.direction == "max",
         )
+
+        if len(sorted_trials) < num_trials:
+            sorted_trials = sorted_trials + [
+                t
+                for t in self.trials.values()
+                if t.status != trial_module.TrialStatus.COMPLETED
+            ]
         return sorted_trials[:num_trials]
 
     def remaining_trials(self):

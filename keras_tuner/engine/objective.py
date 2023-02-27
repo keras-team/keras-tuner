@@ -74,6 +74,9 @@ class Objective:
     def __eq__(self, obj):
         return self.name == obj.name and self.direction == obj.direction
 
+    def __str__(self):
+        return f'Objective(name="{self.name}", direction="{self.direction}")'
+
 
 class DefaultObjective(Objective):
     """Default objective to minimize if not provided by the user."""
@@ -115,6 +118,13 @@ class MultiObjective(Objective):
             return False
         return sorted(self.objectives, key=lambda x: x.name) == sorted(
             obj.objectives, key=lambda x: x.name
+        )
+
+    def __str__(self):
+        return (
+            "Multi"
+            + super().__str__()
+            + f": [{', '.join(map(lambda x: str(x), self.objectives))}]"
         )
 
 
