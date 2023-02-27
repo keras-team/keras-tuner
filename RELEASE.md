@@ -1,5 +1,9 @@
 # Release v1.3.1
 
+## Bug fixes
+* The `Tuner.results_summary()` did not print error messages for failed trials
+  and did not display `Objective` information correctly. It is now fixed.
+
 # Release v1.3.0
 
 ## Breaking changes
