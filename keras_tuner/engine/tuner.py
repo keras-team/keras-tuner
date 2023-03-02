@@ -268,6 +268,7 @@ class Tuner(base_tuner.BaseTuner):
         """
         # Not using `ModelCheckpoint` to support MultiObjective.
         # It can only track one of the metrics to save the best model.
+        assert False
         model_checkpoint = tuner_utils.SaveBestEpoch(
             objective=self.oracle.objective,
             filepath=self._get_checkpoint_fname(trial.trial_id),
