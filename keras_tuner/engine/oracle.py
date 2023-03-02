@@ -687,10 +687,12 @@ class Oracle(stateful.Stateful):
 
         # In case of new hp appeared, remove the old hash value.
         old_hash_value = self._id_to_hash[trial.trial_id]
-        if old_hash_value is None:
+        if old_hash_value != new_hash_value:
             self._id_to_hash[trial.trial_id] = new_hash_value
-        elif old_hash_value != new_hash_value:
-            self._tried_so_far.remove(old_hash_value)
+            # Check before removing. If this is a retry run, the old value may
+            # have been removed already.
+            if old_hash_value in self._tried_so_far:
+                self._tried_so_far.remove(old_hash_value)
 
 
 def _maybe_infer_direction_from_objective(objective, metric_name):
