@@ -3,7 +3,6 @@ name: Integration tests using keras.io guides
 on:
   schedule:
     - cron: '0 0 * * 0'
-  pull_request:
   workflow_dispatch:
 
 jobs:
