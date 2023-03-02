@@ -31,6 +31,6 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -e ".[tests]" --progress-bar off --upgrade
-      - name: Test with pytest
+      - name: Run the guides
         run: |
-          shell/run_guides.sh
+          bash shell/run_guides.sh
