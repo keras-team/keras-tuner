@@ -15,12 +15,10 @@
 
 
 import collections
-import math
 import statistics
 from datetime import datetime
 
 import numpy as np
-import tensorflow as tf
 from tensorboard.plugins.hparams import api as hparams_api
 from tensorflow import keras
 
@@ -29,49 +27,6 @@ from keras_tuner import utils
 from keras_tuner.distribute import utils as ds_utils
 from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine import objective as obj_module
-
-
-class TunerStats:
-    """Track tuner statistics."""
-
-    def __init__(self):
-        self.num_generated_models = 0  # overall number of instances generated
-        self.num_invalid_models = 0  # how many models didn't work
-        self.num_oversized_models = 0  # num models with params> max_params
-
-    def summary(self, extended=False):
-        print("Tuning stats")
-        for setting, value in self.get_config():
-            print(f"{setting}:", value)
-
-    def get_config(self):
-        return {
-            "num_generated_models": self.num_generated_models,
-            "num_invalid_models": self.num_invalid_models,
-            "num_oversized_models": self.num_oversized_models,
-        }
-
-    @classmethod
-    def from_config(cls, config):
-        stats = cls()
-        stats.num_generated_models = config["num_generated_models"]
-        stats.num_invalid_models = config["num_invalid_models"]
-        stats.num_oversized_models = config["num_oversized_models"]
-        return stats
-
-
-def get_max_epochs_and_steps(fit_args, fit_kwargs):
-    if fit_args:
-        x = tf.nest.flatten(fit_args)[0]
-    else:
-        x = tf.nest.flatten(fit_kwargs.get("x"))[0]
-    batch_size = fit_kwargs.get("batch_size", 32)
-    if hasattr(x, "__len__"):
-        max_steps = math.ceil(float(len(x)) / batch_size)
-    else:
-        max_steps = fit_kwargs.get("steps")
-    max_epochs = fit_kwargs.get("epochs", 1)
-    return max_epochs, max_steps
 
 
 class TunerCallback(keras.callbacks.Callback):
