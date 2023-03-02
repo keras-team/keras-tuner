@@ -1,15 +1,12 @@
-name: Test TF Nightly
+name: Integration tests using keras.io guides
 
 on:
   schedule:
     - cron: '0 0 * * *'
-  push:
-    branches: [ master ]
-  pull_request:
   workflow_dispatch:
 
 jobs:
-  build:
+  guides:
     name: Run tests
     runs-on: ubuntu-latest
     steps:
@@ -30,8 +27,6 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('setup.py') }}
       - name: Install dependencies
         run: |
-          pip install tf-nightly --progress-bar off --upgrade
           pip install -e ".[tests]" --progress-bar off --upgrade
-      - name: Test with pytest
-        run: |
-          pytest
+      - name: Run the guides
+        run: bash shell/run_guides.sh
