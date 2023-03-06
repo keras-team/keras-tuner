@@ -342,7 +342,7 @@ def infer_metric_direction(metric):
         try:
             if (
                 "use_legacy_format"
-                in inspect.getargspec(keras.metrics.deserialize).args
+                in inspect.getfullargspec(keras.metrics.deserialize).args
             ):
                 metric = keras.metrics.deserialize(
                     metric_name, use_legacy_format=True
@@ -353,7 +353,7 @@ def infer_metric_direction(metric):
             try:
                 if (
                     "use_legacy_format"
-                    in inspect.getargspec(keras.losses.deserialize).args
+                    in inspect.getfullargspec(keras.losses.deserialize).args
                 ):
                     metric = keras.losses.deserialize(
                         metric_name, use_legacy_format=True
