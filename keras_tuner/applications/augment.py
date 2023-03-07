@@ -23,8 +23,8 @@ try:
     from tensorflow.keras.layers.experimental import (  # isort:skip
         preprocessing,
     )  # pytype: disable=import-error
-except ImportError:
-    preprocessing = None
+except ImportError:  # pragma: no cover
+    preprocessing = None  # pragma: no cover
 
 from keras_tuner.engine import hypermodel
 
