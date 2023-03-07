@@ -23,6 +23,7 @@ import keras_tuner
 from keras_tuner import errors
 from keras_tuner.engine import base_tuner
 from keras_tuner.tuners import gridsearch
+from keras_tuner.tuners import randomsearch
 
 INPUT_DIM = 2
 NUM_CLASSES = 3
@@ -58,7 +59,7 @@ def test_base_tuner(tmp_path):
 
         return MyModel()
 
-    oracle = keras_tuner.tuners.randomsearch.RandomSearchOracle(
+    oracle = randomsearch.RandomSearchOracle(
         objective=keras_tuner.Objective("score", "max"), max_trials=5
     )
     tuner = MyTuner(oracle=oracle, hypermodel=build_model, directory=tmp_path)
@@ -68,6 +69,31 @@ def test_base_tuner(tmp_path):
     # Check that scoring of the model was done correctly.
     models_by_factor = sorted(models, key=lambda m: m.factor, reverse=True)
     assert models[0] == models_by_factor[0]
+
+
+def test_oracle_idle(tmp_path):
+    class MyOracle(randomsearch.RandomSearchOracle):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self._first_trial = True
+
+        def create_trial(self, *args, **kwargs):
+            trial = super().create_trial(*args, **kwargs)
+            if self._first_trial:
+                self._first_trial = False
+                trial.status = "IDLE"
+            else:
+                trial.status = "STOPPED"
+            return trial
+
+    class MyTuner(base_tuner.BaseTuner):
+        def run_trial(self, trial, *args, **kwargs):
+            trial.hyperparameters.Boolean("foo")
+            trial.hyperparameters.Boolean("bar")
+            return np.random.rand()
+
+    tuner = MyTuner(oracle=MyOracle(max_trials=3), directory=tmp_path)
+    tuner.search()
 
 
 def test_simple_sklearn_tuner(tmp_path):
@@ -97,7 +123,7 @@ def test_simple_sklearn_tuner(tmp_path):
         return linear_model.LogisticRegression(C=c)
 
     tuner = SimpleSklearnTuner(
-        oracle=keras_tuner.tuners.randomsearch.RandomSearchOracle(
+        oracle=randomsearch.RandomSearchOracle(
             objective=keras_tuner.Objective("score", "max"), max_trials=2
         ),
         hypermodel=sklearn_build_fn,
