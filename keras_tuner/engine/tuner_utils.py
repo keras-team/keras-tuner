@@ -24,7 +24,7 @@ from tensorflow import keras
 
 from keras_tuner import errors
 from keras_tuner import utils
-from keras_tuner.distribute import utils as ds_utils
+from keras_tuner.distribute import file_utils
 from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine import objective as obj_module
 
@@ -173,12 +173,12 @@ class SaveBestEpoch(keras.callbacks.Callback):
 
     def _save_model(self):
         # Create temporary saved model files on non-chief workers.
-        write_filepath = ds_utils.write_filepath(
+        write_filepath = file_utils.write_filepath(
             self.filepath, self.model.distribute_strategy
         )
         self.model.save_weights(write_filepath)
         # Remove temporary saved model files on non-chief workers.
-        ds_utils.remove_temp_dir_with_filepath(
+        file_utils.remove_temp_dir_with_filepath(
             write_filepath, self.model.distribute_strategy
         )
 
