@@ -183,3 +183,37 @@ def test_augmentation_param_hyper_model():
     model = hypermodel.build(hp)
     assert model.layers[1].name == "aug"
     assert hp.values["scaling_factor"] == 1
+
+
+@pytest.mark.skipif(
+    parse(tf.__version__) < parse("2.3.0"),
+    reason="Preprocessing layers and "
+    "applications.efficientnet only exist in TF2.3+.",
+)
+def test_pooling_is_max():
+    hp = hp_module.HyperParameters()
+    hp.values["pooling"] = "max"
+    hypermodel = efficientnet.HyperEfficientNet(
+        input_shape=(32, 32, 3), classes=10
+    )
+    hypermodel.build(hp)
+
+
+@pytest.mark.skipif(
+    parse(tf.__version__) < parse("2.3.0"),
+    reason="Preprocessing layers and "
+    "applications.efficientnet only exist in TF2.3+.",
+)
+def test_no_classes_raise_error():
+    with pytest.raises(ValueError, match="classes"):
+        efficientnet.HyperEfficientNet(input_shape=(32, 32, 3))
+
+
+@pytest.mark.skipif(
+    parse(tf.__version__) < parse("2.3.0"),
+    reason="Preprocessing layers and "
+    "applications.efficientnet only exist in TF2.3+.",
+)
+def test_no_input_shape_tensor_raise_error():
+    with pytest.raises(ValueError, match="input_tensor"):
+        efficientnet.HyperEfficientNet(classes=10)

@@ -182,6 +182,57 @@ def test_hyperparameter_existence_and_hp_defaults_rand_aug():
     parse(tf.__version__) < parse("2.3.0"),
     reason="Preprocessing layers only exist in TF2.3+.",
 )
+def test_augment_layers_not_int():
+    with pytest.raises(ValueError, match="must be int"):
+        hp = hp_module.HyperParameters()
+        hm = aug_module.HyperImageAugment(
+            input_shape=(32, 32, 3), augment_layers=1.5
+        )
+        hm.build(hp)
+
+
+@pytest.mark.skipif(
+    parse(tf.__version__) < parse("2.3.0"),
+    reason="Preprocessing layers only exist in TF2.3+.",
+)
+def test_contrast_0_5_to_1():
+    hp = hp_module.HyperParameters()
+    hm = aug_module.HyperImageAugment(
+        input_shape=(32, 32, 3), augment_layers=[1, 2], contrast=[0.5, 1]
+    )
+    hm.build(hp)
+
+
+@pytest.mark.skipif(
+    parse(tf.__version__) < parse("2.3.0"),
+    reason="Preprocessing layers only exist in TF2.3+.",
+)
+def test_3_range_params_raise_error():
+    with pytest.raises(ValueError, match="exceed 2"):
+        hp = hp_module.HyperParameters()
+        hm = aug_module.HyperImageAugment(
+            input_shape=(32, 32, 3), augment_layers=[1, 2], contrast=[0.5, 1, 2]
+        )
+        hm.build(hp)
+
+
+@pytest.mark.skipif(
+    parse(tf.__version__) < parse("2.3.0"),
+    reason="Preprocessing layers only exist in TF2.3+.",
+)
+def test_contrast_range_receive_string_raise_error():
+    with pytest.raises(ValueError, match="must be int or float"):
+        hp = hp_module.HyperParameters()
+        hm = aug_module.HyperImageAugment(
+            input_shape=(32, 32, 3), augment_layers=[1, 2], contrast=[0.5, "a"]
+        )
+        hm.build(hp)
+
+
+@pytest.mark.skipif(
+    parse(tf.__version__) < parse("2.3.0"),
+    reason="Preprocessing layers only exist in TF2.3+.",
+)
 def test_hyperparameter_override_fixed_aug():
     hp = hp_module.HyperParameters()
     hp.Fixed("factor_rotate", 0.9)

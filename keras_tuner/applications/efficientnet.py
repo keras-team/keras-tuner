@@ -105,11 +105,11 @@ class HyperEfficientNet(hypermodel.HyperModel):
             )
 
         if not classes:
-            raise ValueError("You must specify `classes`")
+            raise ValueError("You must specify `classes`.")
 
         if input_shape is None and input_tensor is None:
             raise ValueError(
-                "You must specify either `input_shape` " "or `input_tensor`."
+                "You must specify either `input_shape` or `input_tensor`."
             )
 
         self.input_shape = input_shape
