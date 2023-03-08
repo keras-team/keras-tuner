@@ -100,9 +100,13 @@ class Parent(Condition):
         first_val = values[0]
         if isinstance(first_val, six.string_types):
             values = [str(v) for v in values]
+        elif isinstance(first_val, bool):
+            # Bool check needs to be before integer check to prevent bool falls
+            # into integer condition.
+            pass
         elif isinstance(first_val, six.integer_types):
             values = [int(v) for v in values]
-        elif not isinstance(first_val, (bool, float)):
+        elif not isinstance(first_val, float):
             raise TypeError(
                 "Can contain only `int`, `float`, `str`, or "
                 "`bool`, found values: " + str(values) + "with "
@@ -124,9 +128,14 @@ class Parent(Condition):
         return {"name": self.name, "values": self.values}
 
     def to_proto(self):
+        print(self.values[0])
         if isinstance(self.values[0], six.string_types):
             values = [
                 keras_tuner_pb2.Value(string_value=v) for v in self.values
+            ]
+        elif isinstance(self.values[0], bool):
+            values = [
+                keras_tuner_pb2.Value(boolean_value=v) for v in self.values
             ]
         elif isinstance(self.values[0], six.integer_types):
             values = [keras_tuner_pb2.Value(int_value=v) for v in self.values]
