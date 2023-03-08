@@ -615,10 +615,10 @@ class Oracle(stateful.Stateful):
         return hashlib.sha256(s.encode("utf-8")).hexdigest()[:32]
 
     def _check_objective_found(self, metrics):
-        if isinstance(self.objective, obj_module.Objective):
-            objective_names = [self.objective.name]
+        if isinstance(self.objective, obj_module.MultiObjective):
+            objective_names = list(self.objective.name_to_direction.keys())
         else:
-            objective_names = [obj.name for obj in self.objective]
+            objective_names = [self.objective.name]
         for metric_name in metrics.keys():
             if metric_name in objective_names:
                 objective_names.remove(metric_name)
