@@ -16,17 +16,20 @@
 import copy
 import logging
 import os
-import sys
 import threading
+from unittest import mock
 
 import numpy as np
+import portpicker
 import pytest
 import tensorflow as tf
 from tensorflow import keras
 
 import keras_tuner
+from keras_tuner.distribute import oracle_client
 from keras_tuner.distribute import utils as dist_utils
 from keras_tuner.test_utils import mock_distribute
+from keras_tuner.tuners import randomsearch
 
 
 class SimpleTuner(keras_tuner.engine.base_tuner.BaseTuner):
@@ -47,7 +50,6 @@ class SimpleTuner(keras_tuner.engine.base_tuner.BaseTuner):
         return score
 
 
-@pytest.mark.skipif(sys.version_info < (3, 0), reason="no Barrier in 2.7")
 def test_base_tuner_distribution(tmp_path):
     num_workers = 3
     barrier = threading.Barrier(num_workers)
@@ -130,3 +132,37 @@ def test_random_search(tmp_path):
         assert models[0].evaluate(x, y) <= models[1].evaluate(x, y)
 
     mock_distribute.mock_distribute(_test_random_search, num_workers)
+
+
+def test_client_no_attribute_error():
+    with mock.patch.object(os, "environ", mock_distribute.MockEnvVars()):
+        port = str(portpicker.pick_unused_port())
+        os.environ["KERASTUNER_ORACLE_IP"] = "127.0.0.1"
+        os.environ["KERASTUNER_ORACLE_PORT"] = port
+        os.environ["KERASTUNER_TUNER_ID"] = "worker0"
+        hps = keras_tuner.HyperParameters()
+        oracle = randomsearch.RandomSearchOracle(
+            objective=keras_tuner.Objective("score", "max"),
+            max_trials=10,
+            hyperparameters=hps,
+        )
+        client = oracle_client.OracleClient(oracle)
+        with pytest.raises(AttributeError, match="has no attribute"):
+            client.unknown_attribute
+
+
+def test_should_not_report_update_trial_return_running():
+    with mock.patch.object(os, "environ", mock_distribute.MockEnvVars()):
+        port = str(portpicker.pick_unused_port())
+        os.environ["KERASTUNER_ORACLE_IP"] = "127.0.0.1"
+        os.environ["KERASTUNER_ORACLE_PORT"] = port
+        os.environ["KERASTUNER_TUNER_ID"] = "worker0"
+        hps = keras_tuner.HyperParameters()
+        oracle = randomsearch.RandomSearchOracle(
+            objective=keras_tuner.Objective("score", "max"),
+            max_trials=10,
+            hyperparameters=hps,
+        )
+        client = oracle_client.OracleClient(oracle)
+        client.should_report = False
+        assert client.update_trial("a", {"score": 100}) == "RUNNING"
