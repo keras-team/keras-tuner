@@ -439,3 +439,45 @@ def test_interleaved_distributed_optimization(tmp_path):
     oracle.end_trial(trial_4)
 
     assert True
+
+
+def test_exhausted_search_space(tmp_path):
+    class MyTuner(bo_module.BayesianOptimization):
+        def run_trial(self, trial, *args, **kwargs):
+            hp = trial.hyperparameters
+            hp.Boolean("boolean")
+            hp.Boolean("boolean2")
+            return [np.random.rand()]
+
+    tuner = MyTuner(
+        alpha=1e-4,
+        beta=2.6,
+        max_trials=15,
+        directory=tmp_path,
+    )
+    tuner.search()
+    assert len(tuner.oracle.trials) == 4
+
+
+def test_skip_failed_trials(tmp_path):
+    class MyTuner(bo_module.BayesianOptimization):
+        def run_trial(self, trial, *args, **kwargs):
+            hp = trial.hyperparameters
+            hp.Boolean("boolean")
+            hp.Boolean("boolean2")
+            hp.Boolean("boolean3")
+            hp.Boolean("boolean4")
+            if len(self.oracle.start_order) == 1:
+                raise keras_tuner.errors.FailedTrialError()
+            return [np.random.rand()]
+
+    tuner = MyTuner(
+        alpha=1e-4,
+        beta=2.6,
+        max_trials=15,
+        directory=tmp_path,
+    )
+    tuner.search()
+    assert any(
+        map(lambda x: x.status == "FAILED", tuner.oracle.trials.values())
+    )

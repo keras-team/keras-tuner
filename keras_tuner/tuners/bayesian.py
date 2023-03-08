@@ -159,7 +159,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
         # Use 3 times the dimensionality of the space as the default number of
         # random points.
         dimensions = len(self.hyperparameters.space)
-        num_initial_points = self.num_initial_points or 3 * dimensions
+        num_initial_points = self.num_initial_points or max(3 * dimensions, 3)
         if len(completed_trials) < num_initial_points:
             return self._random_populate_space()
 
@@ -264,7 +264,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                 # scipy.minimize.
                 if self.objective.direction == "max":
                     score = -1 * score
-            else:
+            elif trial.status in ["FAILED", "INVALID"]:
                 # Skip the failed and invalid trials.
                 continue
 
@@ -290,15 +290,6 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
             if hps.is_active(hp):
                 hps.values[hp.name] = value
         return hps.values
-
-    def _find_closest(self, val, hp):
-        values = [hp.min_value]
-        while values[-1] + hp.step <= hp.max_value:
-            values.append(values[-1] + hp.step)
-
-        array = np.asarray(values)
-        index = (np.abs(values - val)).argmin()
-        return array[index]
 
     def _nonfixed_space(self):
         return [

@@ -15,6 +15,7 @@
 import logging
 
 import numpy as np
+import pytest
 import tensorflow as tf
 
 import keras_tuner
@@ -276,3 +277,47 @@ def test_hyperband_load_weights(tmp_path):
             new_model_weights, best_model_round_0_weights
         )
     )
+
+
+def test_factor_less_than_2_error():
+    with pytest.raises(ValueError, match="factor needs"):
+        hyperband_module.HyperbandOracle(
+            objective=keras_tuner.Objective("score", "max"),
+            hyperband_iterations=1,
+            max_epochs=8,
+            factor=1,
+        )
+
+
+def test_exhausted_values_during_init_bracket(tmp_path):
+    oracle = hyperband_module.HyperbandOracle(
+        objective=keras_tuner.Objective("score", "max"),
+        hyperband_iterations=1,
+        max_epochs=8,
+        factor=3,
+    )
+    oracle._set_project_dir(tmp_path, "untitled")
+    hp = oracle.get_space()
+    hp.Boolean("bool")
+    oracle.update_space(hp)
+
+    trial_1 = oracle.create_trial("a")
+    trial_2 = oracle.create_trial("b")
+    trial_3 = oracle.create_trial("c")
+    assert trial_3.status == "IDLE"
+    print(oracle.trials)
+
+    oracle.update_trial(
+        trial_id=trial_1.trial_id,
+        metrics={oracle.objective.name: np.random.rand()},
+    )
+    oracle.end_trial(trial_1)
+
+    oracle.update_trial(
+        trial_id=trial_2.trial_id,
+        metrics={oracle.objective.name: np.random.rand()},
+    )
+    oracle.end_trial(trial_2)
+
+    trial_1 = oracle.create_trial("a")
+    assert trial_1.status == "STOPPED"

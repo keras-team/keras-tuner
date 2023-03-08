@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import copy
 import math
 
 from keras_tuner.api_export import keras_tuner_export
@@ -247,6 +248,14 @@ class HyperbandOracle(oracle_module.Oracle):
             )
 
         self._brackets = list(filter(_bracket_is_incomplete, self._brackets))
+
+    def _compute_values_hash(self, values):
+        values = copy.copy(values)
+        values.pop("tuner/epochs", None)
+        values.pop("tuner/initial_epoch", None)
+        values.pop("tuner/bracket", None)
+        values.pop("tuner/round", None)
+        return super()._compute_values_hash(values)
 
     def _random_trial(self, trial_id, bracket):
         bracket_num = bracket["bracket_num"]
