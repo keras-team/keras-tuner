@@ -82,7 +82,7 @@ def start_server(oracle):
 
         if oracle_servicer.stop_triggered:
             while oracle.ongoing_trials:
-                time.sleep(10)
+                time.sleep(10)  # pragma: no cover
 
             print(
                 "Oracle server on chief is exiting in 40s."
