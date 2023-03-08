@@ -13,25 +13,25 @@
 # limitations under the License.
 
 import os
+from unittest import mock
 
 import pytest
 
 from keras_tuner.distribute import utils
+from keras_tuner.test_utils import mock_distribute
 
 
 def test_no_port_error():
-    os.environ["KERASTUNER_ORACLE_IP"] = "127.0.0.1"
-    if "KERASTUNER_ORACLE_PORT" in os.environ:
-        del os.environ["KERASTUNER_ORACLE_PORT"]
-    os.environ["KERASTUNER_TUNER_ID"] = "worker0"
-    with pytest.raises(RuntimeError, match="KERASTUNER_ORACLE_PORT"):
-        utils.has_chief_oracle()
+    with mock.patch.object(os, "environ", mock_distribute.MockEnvVars()):
+        os.environ["KERASTUNER_ORACLE_IP"] = "127.0.0.1"
+        os.environ["KERASTUNER_TUNER_ID"] = "worker0"
+        with pytest.raises(RuntimeError, match="KERASTUNER_ORACLE_PORT"):
+            utils.has_chief_oracle()
 
 
 def test_no_id_error():
-    os.environ["KERASTUNER_ORACLE_IP"] = "127.0.0.1"
-    os.environ["KERASTUNER_ORACLE_PORT"] = "80"
-    if "KERASTUNER_TUNER_ID" in os.environ:
-        del os.environ["KERASTUNER_TUNER_ID"]
-    with pytest.raises(RuntimeError, match="KERASTUNER_TUNER_ID"):
-        utils.has_chief_oracle()
+    with mock.patch.object(os, "environ", mock_distribute.MockEnvVars()):
+        os.environ["KERASTUNER_ORACLE_IP"] = "127.0.0.1"
+        os.environ["KERASTUNER_ORACLE_PORT"] = "80"
+        with pytest.raises(RuntimeError, match="KERASTUNER_TUNER_ID"):
+            utils.has_chief_oracle()

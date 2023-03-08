@@ -17,6 +17,7 @@ import copy
 import logging
 import os
 import threading
+from unittest import mock
 
 import numpy as np
 import portpicker
@@ -134,32 +135,34 @@ def test_random_search(tmp_path):
 
 
 def test_client_no_attribute_error():
-    port = str(portpicker.pick_unused_port())
-    os.environ["KERASTUNER_ORACLE_IP"] = "127.0.0.1"
-    os.environ["KERASTUNER_ORACLE_PORT"] = port
-    os.environ["KERASTUNER_TUNER_ID"] = "worker0"
-    hps = keras_tuner.HyperParameters()
-    oracle = randomsearch.RandomSearchOracle(
-        objective=keras_tuner.Objective("score", "max"),
-        max_trials=10,
-        hyperparameters=hps,
-    )
-    client = oracle_client.OracleClient(oracle)
-    with pytest.raises(AttributeError, match="has no attribute"):
-        client.unknown_attribute
+    with mock.patch.object(os, "environ", mock_distribute.MockEnvVars()):
+        port = str(portpicker.pick_unused_port())
+        os.environ["KERASTUNER_ORACLE_IP"] = "127.0.0.1"
+        os.environ["KERASTUNER_ORACLE_PORT"] = port
+        os.environ["KERASTUNER_TUNER_ID"] = "worker0"
+        hps = keras_tuner.HyperParameters()
+        oracle = randomsearch.RandomSearchOracle(
+            objective=keras_tuner.Objective("score", "max"),
+            max_trials=10,
+            hyperparameters=hps,
+        )
+        client = oracle_client.OracleClient(oracle)
+        with pytest.raises(AttributeError, match="has no attribute"):
+            client.unknown_attribute
 
 
 def test_should_not_report_update_trial_return_running():
-    port = str(portpicker.pick_unused_port())
-    os.environ["KERASTUNER_ORACLE_IP"] = "127.0.0.1"
-    os.environ["KERASTUNER_ORACLE_PORT"] = port
-    os.environ["KERASTUNER_TUNER_ID"] = "worker0"
-    hps = keras_tuner.HyperParameters()
-    oracle = randomsearch.RandomSearchOracle(
-        objective=keras_tuner.Objective("score", "max"),
-        max_trials=10,
-        hyperparameters=hps,
-    )
-    client = oracle_client.OracleClient(oracle)
-    client.should_report = False
-    assert client.update_trial("a", {"score": 100}) == "RUNNING"
+    with mock.patch.object(os, "environ", mock_distribute.MockEnvVars()):
+        port = str(portpicker.pick_unused_port())
+        os.environ["KERASTUNER_ORACLE_IP"] = "127.0.0.1"
+        os.environ["KERASTUNER_ORACLE_PORT"] = port
+        os.environ["KERASTUNER_TUNER_ID"] = "worker0"
+        hps = keras_tuner.HyperParameters()
+        oracle = randomsearch.RandomSearchOracle(
+            objective=keras_tuner.Objective("score", "max"),
+            max_trials=10,
+            hyperparameters=hps,
+        )
+        client = oracle_client.OracleClient(oracle)
+        client.should_report = False
+        assert client.update_trial("a", {"score": 100}) == "RUNNING"
