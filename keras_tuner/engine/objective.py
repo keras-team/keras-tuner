@@ -136,7 +136,7 @@ def create_objective(objective):
     if isinstance(objective, Objective):
         return objective
     if not isinstance(objective, str):
-        raise ValueError(
+        raise TypeError(
             "`objective` not understood, expected str or "
             f"`Objective` object, found: {objective}"
         )
