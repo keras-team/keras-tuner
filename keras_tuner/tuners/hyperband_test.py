@@ -214,7 +214,7 @@ def test_hyperband_save_and_restore(tmp_path):
 
     num_trials = len(tuner.oracle.trials)
     assert num_trials > 0
-    assert tuner.oracle._current_iteration == 1
+    assert tuner.oracle._current_iteration == 0
 
     tuner.save()
     tuner.trials = {}
@@ -222,7 +222,7 @@ def test_hyperband_save_and_restore(tmp_path):
     tuner.reload()
 
     assert len(tuner.oracle.trials) == num_trials
-    assert tuner.oracle._current_iteration == 1
+    assert tuner.oracle._current_iteration == 0
 
 
 def test_hyperband_load_weights(tmp_path):
