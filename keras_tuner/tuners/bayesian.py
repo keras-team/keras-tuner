@@ -264,7 +264,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                 # scipy.minimize.
                 if self.objective.direction == "max":
                     score = -1 * score
-            else:
+            elif trial.status in ["FAILED", "INVALID"]:
                 # Skip the failed and invalid trials.
                 continue
 

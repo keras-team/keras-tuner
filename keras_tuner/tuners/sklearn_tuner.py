@@ -42,7 +42,10 @@ def split_data(data, indices):
     elif pd is not None and isinstance(data, pd.DataFrame):
         return data.iloc[indices]
     else:
-        raise TypeError()
+        raise TypeError(
+            "Expected the data to be numpy.ndarray or pandas.DataFrame. "
+            f"Received: {data}."
+        )
 
 
 @keras_tuner_export(

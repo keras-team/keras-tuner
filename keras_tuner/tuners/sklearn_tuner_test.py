@@ -275,6 +275,7 @@ def test_sklearn_real_data(tmp_path):
         ),
         hypermodel=build_model,
         scoring=metrics.make_scorer(metrics.accuracy_score),
+        metrics=metrics.accuracy_score,
         cv=model_selection.StratifiedKFold(5),
         directory=tmp_path,
     )
@@ -310,3 +311,18 @@ def test_sklearn_not_install_error(tmp_path):
         )
 
     keras_tuner.tuners.sklearn_tuner.sklearn = sklearn_module
+
+
+def test_sklearn_wrong_data_type(tmp_path):
+    with pytest.raises(RuntimeError, match="Expected the data to be numpy"):
+        tuner = keras_tuner.SklearnTuner(
+            oracle=keras_tuner.oracles.BayesianOptimizationOracle(
+                objective=keras_tuner.Objective("score", "max"), max_trials=10
+            ),
+            hypermodel=build_model,
+            scoring=metrics.make_scorer(metrics.accuracy_score),
+            cv=model_selection.StratifiedKFold(3),
+            directory=tmp_path,
+        )
+
+        tuner.search([1, 2, 3, 4, 5, 6], [1, 1, 1, 2, 2, 2])
