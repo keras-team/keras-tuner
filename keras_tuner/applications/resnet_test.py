@@ -77,3 +77,20 @@ def test_input_tensor():
     hypermodel = resnet.HyperResNet(input_tensor=inputs, include_top=False)
     model = hypermodel.build(hp)
     assert model.inputs == [inputs]
+
+
+def test_pooling_is_max():
+    hp = hp_module.HyperParameters()
+    hp.values["pooling"] = "max"
+    hypermodel = resnet.HyperResNet(input_shape=(32, 32, 3), classes=10)
+    hypermodel.build(hp)
+
+
+def test_no_classes_raise_error():
+    with pytest.raises(ValueError, match="classes"):
+        resnet.HyperResNet(input_shape=(32, 32, 3))
+
+
+def test_no_input_shape_tensor_raise_error():
+    with pytest.raises(ValueError, match="input_tensor"):
+        resnet.HyperResNet(classes=10)

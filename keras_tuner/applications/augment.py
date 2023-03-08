@@ -23,8 +23,8 @@ try:
     from tensorflow.keras.layers.experimental import (  # isort:skip
         preprocessing,
     )  # pytype: disable=import-error
-except ImportError:
-    preprocessing = None
+except ImportError:  # pragma: no cover
+    preprocessing = None  # pragma: no cover
 
 from keras_tuner.engine import hypermodel
 
@@ -170,8 +170,8 @@ class HyperImageAugment(hypermodel.HyperModel):
                 and isinstance(augment_layers_max, int)
             ):
                 raise ValueError(
-                    "Keyword argument `augment_layers` must be "
-                    f"int,but received {augment_layers}."
+                    "Keyword argument `augment_layers` must be int, "
+                    f"but received {augment_layers}."
                 )
 
             self.augment_layers_min = augment_layers_min

@@ -54,12 +54,12 @@ class HyperXception(hypermodel.HyperModel):
         super().__init__(**kwargs)
         if include_top and classes is None:
             raise ValueError(
-                "You must specify `classes` when " "`include_top=True`"
+                "You must specify `classes` when `include_top=True`"
             )
 
         if input_shape is None and input_tensor is None:
             raise ValueError(
-                "You must specify either `input_shape` " "or `input_tensor`."
+                "You must specify either `input_shape` or `input_tensor`."
             )
 
         self.include_top = include_top
@@ -156,8 +156,6 @@ def sep_conv(x, num_filters, kernel_size=(3, 3), activation="relu"):
         )(x)
         x = layers.BatchNormalization()(x)
         x = layers.Activation("relu")(x)
-    else:
-        ValueError(f"Unknown activation function: {activation}")
     return x
 
 
@@ -215,9 +213,6 @@ def conv(x, num_filters, kernel_size=(3, 3), activation="relu", strides=(2, 2)):
         )(x)
         x = layers.BatchNormalization()(x)
         x = layers.Activation("relu")(x)
-    else:
-        msg = f"Unknown activation function: {activation}"
-        ValueError(msg)
     return x
 
 
@@ -237,7 +232,4 @@ def dense(x, dims, activation="relu", batchnorm=True, dropout_rate=0):
             x = layers.BatchNormalization()(x)
         if dropout_rate:
             x = layers.Dropout(dropout_rate)(x)
-    else:
-        msg = f"Unknown activation function: {activation}"
-        ValueError(msg)
     return x

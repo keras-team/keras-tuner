@@ -22,15 +22,15 @@ import tensorflow as tf
 
 try:
     import pandas as pd  # pytype: disable=import-error
-except ImportError:
-    pd = None
+except ImportError:  # pragma: no cover
+    pd = None  # pragma: no cover
 
 try:
     import sklearn  # pytype: disable=import-error
     import sklearn.model_selection
     import sklearn.pipeline
-except ImportError:
-    sklearn = None
+except ImportError:  # pragma: no cover
+    sklearn = None  # pragma: no cover
 
 from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import base_tuner

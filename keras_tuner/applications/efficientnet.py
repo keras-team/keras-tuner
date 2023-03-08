@@ -25,15 +25,15 @@ try:
     from tensorflow.keras.applications import (  # isort:skip
         efficientnet,
     )  # pytype: disable=import-error
-except ImportError:
-    efficientnet = None
+except ImportError:  # pragma: no cover
+    efficientnet = None  # pragma: no cover
 
 try:
     from tensorflow.keras.layers.experimental import (  # isort:skip
         preprocessing,
     )  # pytype: disable=import-error
-except ImportError:
-    preprocessing = None
+except ImportError:  # pragma: no cover
+    preprocessing = None  # pragma: no cover
 
 if efficientnet is not None:
     EFFICIENTNET_MODELS = {
@@ -105,11 +105,11 @@ class HyperEfficientNet(hypermodel.HyperModel):
             )
 
         if not classes:
-            raise ValueError("You must specify `classes`")
+            raise ValueError("You must specify `classes`.")
 
         if input_shape is None and input_tensor is None:
             raise ValueError(
-                "You must specify either `input_shape` " "or `input_tensor`."
+                "You must specify either `input_shape` or `input_tensor`."
             )
 
         self.input_shape = input_shape
