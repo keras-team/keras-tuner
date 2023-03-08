@@ -63,6 +63,13 @@ def test_update():
     ]
 
 
+def test_metric_observation_repr():
+    assert (
+        repr(metrics_tracking.MetricObservation(0.5, step=0))
+        == "MetricObservation(value=[0.5], step=0)"
+    )
+
+
 def test_get_history():
     tracker = metrics_tracking.MetricsTracker()
     tracker.update("new_metric", 0.5, step=0)
@@ -91,6 +98,12 @@ def test_set_history():
     steps = [obs.step for obs in tracker.get_history("new_metric")]
     assert values == [[0.5], [1.5], [2.0]]
     assert steps == [0, 1, 2]
+
+
+def test_get_best_step_value_none():
+    tracker = metrics_tracking.MetricsTracker()
+    tracker.register("val_loss", "min")
+    assert tracker.get_best_step("val_loss") is None
 
 
 def test_get_best_value():

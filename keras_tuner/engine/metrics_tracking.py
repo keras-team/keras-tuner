@@ -344,22 +344,26 @@ def infer_metric_direction(metric):
                 "use_legacy_format"
                 in inspect.getfullargspec(keras.metrics.deserialize).args
             ):
-                metric = keras.metrics.deserialize(
+                metric = keras.metrics.deserialize(  # pragma: no cover
                     metric_name, use_legacy_format=True
                 )
             else:
-                metric = keras.metrics.deserialize(metric_name)
+                metric = keras.metrics.deserialize(  # pragma: no cover
+                    metric_name
+                )
         except ValueError:
             try:
                 if (
                     "use_legacy_format"
                     in inspect.getfullargspec(keras.losses.deserialize).args
                 ):
-                    metric = keras.losses.deserialize(
+                    metric = keras.losses.deserialize(  # pragma: no cover
                         metric_name, use_legacy_format=True
                     )
                 else:
-                    metric = keras.losses.deserialize(metric_name)
+                    metric = keras.losses.deserialize(  # pragma: no cover
+                        metric_name
+                    )
             except Exception:
                 # Direction can't be inferred.
                 return None
@@ -368,7 +372,7 @@ def infer_metric_direction(metric):
     if isinstance(metric, (keras.metrics.Metric, keras.losses.Loss)):
         name = metric.__class__.__name__
         if name == "MeanMetricWrapper":
-            name = metric._fn.__name__
+            name = metric._fn.__name__  # pragma: no cover
     else:
         name = metric.__name__
 

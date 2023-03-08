@@ -40,6 +40,35 @@ class OracleStub(oracle_module.Oracle):
         self.score_trial_called = True
 
 
+def test_hp_not_provided_for_tune_new_entry_error(tmp_path):
+    with pytest.raises(ValueError, match="tune_new_entries=False"):
+        OracleStub(
+            directory=tmp_path, objective="val_loss", tune_new_entries=False
+        )
+
+
+def test_hp_not_provided_for_allow_new_entry_error(tmp_path):
+    with pytest.raises(ValueError, match="allow_new_entries=False"):
+        OracleStub(
+            directory=tmp_path, objective="val_loss", allow_new_entries=False
+        )
+
+
+def test_objective_not_found_error(tmp_path):
+    oracle = OracleStub(directory=tmp_path, objective="val_loss")
+    trial = oracle.create_trial(tuner_id="a")
+    with pytest.raises(ValueError, match="Objective value missing"):
+        oracle.update_trial(trial_id=trial.trial_id, metrics={"unknown": 0.5})
+
+
+def test_multi_objective_found(tmp_path):
+    oracle = OracleStub(directory=tmp_path, objective=["val_loss", "mse"])
+    trial = oracle.create_trial(tuner_id="a")
+    oracle.update_trial(
+        trial_id=trial.trial_id, metrics={"val_loss": 0.5, "mse": 0.1}
+    )
+
+
 def test_private_populate_space_deprecated_and_call_public(tmp_path):
     oracle = OracleStub(directory=tmp_path, objective="val_loss")
     with pytest.deprecated_call():

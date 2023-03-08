@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
+
 import keras_tuner
 from keras_tuner.engine import objective
 
@@ -136,3 +138,8 @@ def test_multi_objective_to_str():
         '[Objective(name="loss", direction="min"), '
         'Objective(name="accuracy", direction="max")]'
     )
+
+
+def test_unknow_objective_type_error():
+    with pytest.raises(TypeError, match="not understood, expected str"):
+        objective.create_objective([3, "accuracy"])
