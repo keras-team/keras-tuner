@@ -129,3 +129,8 @@ def test_int_values_property_without_step():
     assert list(hp_module.Int("int", 2, 4).values) == [2, 3, 4]
     assert list(hp_module.Int("int", 2, 20).values) == list(range(2, 21))
     assert len(list(hp_module.Int("int", 2, 1024, sampling="log").values)) == 10
+
+
+def test_sampling_none_is_linear():
+    # This is for backward compatibility
+    assert hp_module.Int("int", 2, 4, sampling=None).sampling == "linear"
