@@ -57,12 +57,12 @@ class HyperResNet(hypermodel.HyperModel):
         super().__init__(**kwargs)
         if include_top and classes is None:
             raise ValueError(
-                "You must specify `classes` when " "`include_top=True`"
+                "You must specify `classes` when `include_top=True`"
             )
 
         if input_shape is None and input_tensor is None:
             raise ValueError(
-                "You must specify either `input_shape` " "or `input_tensor`."
+                "You must specify either `input_shape` or `input_tensor`."
             )
 
         self.include_top = include_top

@@ -13,8 +13,6 @@
 # limitations under the License.
 """Tests for HyperXception Model."""
 
-import os
-
 import numpy as np
 import pytest
 import tensorflow as tf
@@ -23,7 +21,6 @@ from keras_tuner.applications import xception
 from keras_tuner.engine import hyperparameters as hp_module
 
 
-@pytest.mark.skipif("TRAVIS" in os.environ, reason="Causes CI to stall")
 @pytest.mark.parametrize("pooling", ["flatten", "avg", "max"])
 def test_model_construction(pooling):
     hp = hp_module.HyperParameters()
@@ -83,3 +80,20 @@ def test_input_tensor():
     hypermodel = xception.HyperXception(input_tensor=inputs, include_top=False)
     model = hypermodel.build(hp)
     assert model.inputs == [inputs]
+
+
+def test_activation_selu():
+    hp = hp_module.HyperParameters()
+    hp.values["activation"] = "selu"
+    hypermodel = xception.HyperXception(input_shape=(256, 256, 3), classes=10)
+    hypermodel.build(hp)
+
+
+def test_no_classes_raise_error():
+    with pytest.raises(ValueError, match="classes"):
+        xception.HyperXception(input_shape=(256, 256, 3))
+
+
+def test_no_input_shape_tensor_raise_error():
+    with pytest.raises(ValueError, match="input_tensor"):
+        xception.HyperXception(classes=10)
