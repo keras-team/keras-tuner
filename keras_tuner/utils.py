@@ -24,8 +24,8 @@ from packaging.version import parse
 try:
     class_name = IPython.get_ipython().__class__.__name__
     IS_NOTEBOOK = "Terminal" not in class_name
-except NameError:
-    IS_NOTEBOOK = False
+except NameError:  # pragma: no cover
+    IS_NOTEBOOK = False  # pragma: no cover
 
 
 if IS_NOTEBOOK:
