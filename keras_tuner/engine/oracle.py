@@ -16,7 +16,6 @@
 
 import collections
 import hashlib
-import json
 import os
 import random
 import threading
@@ -589,10 +588,7 @@ class Oracle(stateful.Stateful):
             os.path.join(self._project_dir, "trial_*", "trial.json")
         )
         for fname in trial_fnames:
-            with tf.io.gfile.GFile(fname, "r") as f:
-                trial_data = f.read()
-            trial_state = json.loads(trial_data)
-            trial = trial_module.Trial.from_state(trial_state)
+            trial = trial_module.Trial.load(fname)
             self.trials[trial.trial_id] = trial
         try:
             super().reload(self._get_oracle_fname())
