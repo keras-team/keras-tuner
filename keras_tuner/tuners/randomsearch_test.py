@@ -58,3 +58,19 @@ def test_update_space(tmp_path):
         "units_0",
         "units_1",
     }
+
+
+def test_exhausted_search_space(tmp_path):
+    class MyTuner(randomsearch.RandomSearch):
+        def run_trial(self, trial, *args, **kwargs):
+            hp = trial.hyperparameters
+            hp.Boolean("boolean")
+            hp.Boolean("boolean2")
+            return [np.random.rand()]
+
+    tuner = MyTuner(
+        max_trials=15,
+        directory=tmp_path,
+    )
+    tuner.search()
+    assert len(tuner.oracle.trials) == 4
