@@ -66,18 +66,22 @@ def check_tf_version():
 
 def serialize_keras_object(obj):
     if hasattr(tf.keras.utils, "legacy"):
-        return tf.keras.utils.legacy.serialize_keras_object(obj)
+        return tf.keras.utils.legacy.serialize_keras_object(  # pragma: no cover
+            obj
+        )
     else:
-        return tf.keras.utils.serialize_keras_object(obj)
+        return tf.keras.utils.serialize_keras_object(obj)  # pragma: no cover
 
 
 def deserialize_keras_object(config, module_objects=None, custom_objects=None):
     if hasattr(tf.keras.utils, "legacy"):
-        return tf.keras.utils.legacy.deserialize_keras_object(
-            config, custom_objects, module_objects
+        return (  # pragma: no cover
+            tf.keras.utils.legacy.deserialize_keras_object(
+                config, custom_objects, module_objects
+            )
         )
     else:
-        return tf.keras.utils.deserialize_keras_object(
+        return tf.keras.utils.deserialize_keras_object(  # pragma: no cover
             config, custom_objects, module_objects
         )
 

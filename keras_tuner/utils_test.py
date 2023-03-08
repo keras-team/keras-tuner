@@ -33,3 +33,14 @@ def test_to_list_with_tuple_return_list():
     result = utils.to_list((1, 2, 3))
     assert isinstance(result, list)
     assert result == [1, 2, 3]
+
+
+def test_try_clear_without_ipython():
+    is_notebook = utils.IS_NOTEBOOK
+    utils.IS_NOTEBOOK = False
+    utils.try_clear()
+    utils.IS_NOTEBOOK = is_notebook
+
+
+def test_create_directory_and_remove_existing(tmp_path):
+    utils.create_directory(tmp_path, remove_existing=True)
