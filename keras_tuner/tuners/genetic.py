@@ -242,9 +242,6 @@ class GeneticOptimizationOracle(oracle_module.Oracle):
         self.crossover_factor = crossover_factor
         self.threshold = threshold
         self.selection_type = selection_type
-        self.seed = seed or random.randint(1, int(1e4))
-        self._seed_state = self.seed
-        self._random_state = np.random.RandomState(self.seed)
 
         if self.mutation_factor + self.crossover_factor > 1.0:
             raise ValueError(
@@ -259,7 +256,7 @@ class GeneticOptimizationOracle(oracle_module.Oracle):
         self._tried_so_far = set()
         self._max_collisions = 20
         self.gep = self._make_gep()
-        self.ranges = self._make_ranges
+        self._make_ranges()
         self.population = {"hyperparameters": [], "scores": []}
         self.new_population = {"hyperparameters": [], "scores": []}
         self.values = {hp.name: hp.default for hp in self.get_space().space}
@@ -273,7 +270,6 @@ class GeneticOptimizationOracle(oracle_module.Oracle):
             + self.generation_size * 2 * self.offspring_size
         )
 
-    @property
     def _make_ranges(self):
         """Make the ranges for genetic optimization with respect to max trial.
 
@@ -293,14 +289,10 @@ class GeneticOptimizationOracle(oracle_module.Oracle):
         however, the second evaluation of the 'offspring_ranges' has
         to be calculated separately, because only one value can be
         returned once.
-
-        Returns:
-            A dict of four lists: 'population_range', 'generation_range',
-             'offspring_range', 'second_parent_range'.
         """
 
-        population_range = list(range(self.population_size))
-        generation_range = list(
+        self.population_range = list(range(self.population_size))
+        self.generation_range = list(
             range(
                 self.population_size + self.offspring_size * 2,
                 self.max_trials,
@@ -308,14 +300,8 @@ class GeneticOptimizationOracle(oracle_module.Oracle):
             )
         )
         offspring_range = list(range(self.population_size, self.max_trials))
-        first_parent_range = offspring_range[::2]
-        second_parent_range = offspring_range[1::2]
-        return {
-            "population": population_range,
-            "generation": generation_range,
-            "first_parent": first_parent_range,
-            "second_parent": second_parent_range,
-        }
+        self.first_parent_range = offspring_range[::2]
+        self.second_parent_range = offspring_range[1::2]
 
     def _make_gep(self):
         """Make a genetic evolutionary process.
@@ -344,12 +330,11 @@ class GeneticOptimizationOracle(oracle_module.Oracle):
                 "values": self.values,
             }
 
-    @property
     def _get_current_score(self):
         """Get the current score.
 
         Returns:
-            A integer value of the current score.
+            An integer value of the current score.
         """
         return self.trials[self.start_order[-1]].score
 
@@ -375,18 +360,18 @@ class GeneticOptimizationOracle(oracle_module.Oracle):
         """
         if len(self.start_order) > 0:
             # Start with population
-            if int(self.start_order[-1]) in self.ranges["population"]:
+            if int(self.start_order[-1]) in self.population_range:
                 population = self.gep._initialize_population(
                     self.hyperparameters
                 )
                 self.values = population.values
                 self.population["hyperparameters"].append(population)
-                score = self._get_current_score
+                score = self._get_current_score()
                 self.population["scores"].append(score)
                 self._check_score(score)
 
             # Start with generation and offspring
-            if int(self.start_order[-1]) in self.ranges["first_parent"]:
+            if int(self.start_order[-1]) in self.first_parent_range:
                 if self.selection_type == "tournament":
                     (
                         self.parent_1,
@@ -411,20 +396,20 @@ class GeneticOptimizationOracle(oracle_module.Oracle):
                 self.new_population["hyperparameters"].append(
                     self.gep._mutate(self.parent_1)
                 )
-                score = self._get_current_score
+                score = self._get_current_score()
                 self.new_population["scores"].append(score)
                 self._check_score(score)
             # Second parent for the offspring generation to be evaluated
-            elif int(self.start_order[-1]) in self.ranges["second_parent"]:
+            elif int(self.start_order[-1]) in self.second_parent_range:
                 self.values = self.parent_2.values
                 self.new_population["hyperparameters"].append(
                     self.gep._mutate(self.parent_2)
                 )
-                score = self._get_current_score
+                score = self._get_current_score()
                 self.new_population["scores"].append(score)
                 self._check_score(score)
 
-            if int(self.start_order[-1]) in self.ranges["generation"]:
+            if int(self.start_order[-1]) in self.generation_range:
                 self.population = deepcopy(self.new_population)
                 self.new_population = {"hyperparameters": [], "scores": []}
 

@@ -131,12 +131,12 @@ def test_make_ranges_without_offspring_size():
         offspring_size=None,
     )
 
-    ranges = goo._make_ranges
+    goo._make_ranges
     assert goo.max_trials == 10 + 2 * 10 * 2
-    assert ranges["population"] == list(range(10))
-    assert ranges["generation"] == list(range(30, 50, 19))
-    assert ranges["first_parent"] == list(range(10, 50))[::2]
-    assert ranges["second_parent"] == list(range(10, 50))[1::2]
+    assert goo.population_range == list(range(10))
+    assert goo.generation_range == list(range(30, 50, 19))
+    assert goo.first_parent_range == list(range(10, 50))[::2]
+    assert goo.second_parent_range == list(range(10, 50))[1::2]
 
 
 def test_make_with_offspring_size():
@@ -149,12 +149,12 @@ def test_make_with_offspring_size():
         offspring_size=5,
     )
 
-    ranges = goo._make_ranges
+    goo._make_ranges
     assert goo.max_trials == 10 + 2 * 5 * 2
-    assert ranges["population"] == list(range(10))
-    assert ranges["generation"] == list(range(20, 30, 9))
-    assert ranges["first_parent"] == list(range(10, 30))[::2]
-    assert ranges["second_parent"] == list(range(10, 30))[1::2]
+    assert goo.population_range == list(range(10))
+    assert goo.generation_range == list(range(20, 30, 9))
+    assert goo.first_parent_range == list(range(10, 30))[::2]
+    assert goo.second_parent_range == list(range(10, 30))[1::2]
 
 
 def test_raises_factor():
@@ -614,28 +614,23 @@ def test_genetic_maximize_roulette(tmp_path):
 
 
 def test_genetic_minimize_tournament_with_hypermodel(tmp_path):
-    """Test that the tournament selection works correctly for mandelbrot."""
+    """Test that the tournament selection works correctly for cubic parable."""
 
-    class MandelBrotTuner(keras_tuner.GeneticOptimization):
+    class DropWaveTuner(keras_tuner.GeneticOptimization):
         def run_trial(self, trial, *args, **kwargs):
             # Get the hp from trial.
             hp = trial.hyperparameters
             # Define "x" as a hyperparameter.
-            x = hp.Float("x", min_value=-2.0, max_value=2.0, step=0.001)
-            y = hp.Float("y", min_value=-2.0, max_value=2.0, step=0.001)
+            x = hp.Float("x", min_value=-2.2, max_value=2.2, step=0.01)
+            y = hp.Float("y", min_value=-2.2, max_value=2.2, step=0.01)
             # Return the objective value to minimize.
-            return self.mandelbrot(x, y)
+            return self.drop_wave(x, y)
 
-        def mandelbrot(self, x, y):
-            c = complex(x, y)
-            z = 0.0j
-            for i in range(1, 1000):
-                z = z**2 + c
-                if (z.real * z.real + z.imag * z.imag) >= 4:
-                    return i
-            return 0
+        def drop_wave(self, x, y):
+            # with global minima at -1, 2
+            return (x + 1) ** 2 + (y - 2) ** 2 + np.sin(x * y)
 
-    tuner = MandelBrotTuner(
+    tuner = DropWaveTuner(
         overwrite=True,
         directory=tmp_path,
         project_name="tune_anything",
@@ -643,16 +638,60 @@ def test_genetic_minimize_tournament_with_hypermodel(tmp_path):
         population_size=20,
         offspring_size=25,
         generation_size=50,
-        mutation_factor=0.9,
-        crossover_factor=0.1,
+        mutation_factor=0.8,
+        crossover_factor=0.2,
         selection_type="roulette_wheel",
         threshold=0.1,
     )
     tuner.search()
     assert tuner.oracle.selection_type == "roulette_wheel"
     assert np.isclose(
-        tuner.get_best_hyperparameters()[0].get("x"), -0.363, atol=1e-2
+        tuner.get_best_hyperparameters()[0].get("x"), -1.0, atol=1e-1
     )
     assert np.isclose(
-        tuner.get_best_hyperparameters()[0].get("y"), -0.363, atol=1e-2
+        tuner.get_best_hyperparameters()[0].get("y"), 2.0, atol=1e-1
+    )
+
+
+def test_genetic_minimize_roulette_with_hypermodel(tmp_path):
+    """Test the roulette selection works correctly for a drop wave."""
+
+    class TrigTuner(keras_tuner.GeneticOptimization):
+        def run_trial(self, trial, *args, **kwargs):
+            # Get the hp from trial.
+            hp = trial.hyperparameters
+            # Define "x" as a hyperparameter.
+            x = hp.Float("x", min_value=-0.5, max_value=0.5, step=0.01)
+            y = hp.Float("y", min_value=-0.5, max_value=0.5, step=0.01)
+            # Return the objective value to minimize.
+            return self.drop_wave(x, y)
+
+        def drop_wave(self, x, y):
+            # With global minima at 0 and 0
+            return -(
+                1
+                + np.cos(12 * np.sqrt(x**2 + y**2))
+                / (0.5 * (x**2 + y**2) + 2)
+            )
+
+    tuner = TrigTuner(
+        overwrite=True,
+        directory=tmp_path,
+        project_name="tune_anything",
+        objective=keras_tuner.Objective("score", "min"),
+        population_size=20,
+        offspring_size=35,
+        generation_size=50,
+        mutation_factor=0.6,
+        crossover_factor=0.4,
+        selection_type="roulette_wheel",
+        threshold=0.05,
+    )
+    tuner.search()
+    assert tuner.oracle.selection_type == "roulette_wheel"
+    assert np.isclose(
+        tuner.get_best_hyperparameters()[0].get("x"), 0.0, atol=1e-1
+    )
+    assert np.isclose(
+        tuner.get_best_hyperparameters()[0].get("y"), 0.0, atol=1e-1
     )
