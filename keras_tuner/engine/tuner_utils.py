@@ -319,8 +319,8 @@ def convert_hyperparams_to_hparams(hyperparams):
         hparams_value = {}
         try:
             hparams_value = hyperparams.get(hp.name)
-        except ValueError:
-            continue
+        except ValueError:  # pragma: no cover
+            continue  # pragma: no cover
 
         hparams_domain = {}
         if isinstance(hp, hp_module.Choice):
@@ -352,7 +352,9 @@ def convert_hyperparams_to_hparams(hyperparams):
         elif isinstance(hp, hp_module.Fixed):
             hparams_domain = hparams_api.Discrete([hp.value])
         else:
-            raise ValueError(f"`HyperParameter` type not recognized: {hp}")
+            raise ValueError(  # pragma: no cover
+                f"`HyperParameter` type not recognized: {hp}"
+            )
 
         hparams_key = hparams_api.HParam(hp.name, hparams_domain)
         hparams[hparams_key] = hparams_value
