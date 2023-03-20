@@ -30,7 +30,6 @@ setup(
         "packaging",
         "tensorflow>=2.0",
         "requests",
-        "ipython",
         "kt-legacy",
     ],
     extras_require={
@@ -38,6 +37,7 @@ setup(
             "black",
             "flake8",
             "isort",
+            "ipython",
             "pandas",
             "portpicker",
             "pytest",

@@ -16,15 +16,16 @@
 
 import warnings
 
-import IPython
 import tensorflow as tf
 from packaging.version import parse
 
 # Check if we are in a ipython/colab environement
 try:
+    import IPython
+
     class_name = IPython.get_ipython().__class__.__name__
     IS_NOTEBOOK = "Terminal" not in class_name
-except NameError:  # pragma: no cover
+except (NameError, ImportError):  # pragma: no cover
     IS_NOTEBOOK = False  # pragma: no cover
 
 
