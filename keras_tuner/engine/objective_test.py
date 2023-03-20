@@ -140,6 +140,6 @@ def test_multi_objective_to_str():
     )
 
 
-def test_unknow_objective_type_error():
+def test_unknown_objective_type_error():
     with pytest.raises(TypeError, match="not understood, expected str"):
         objective.create_objective([3, "accuracy"])
