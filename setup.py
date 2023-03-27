@@ -17,7 +17,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = "1.3.3dev"
+__version__ = "1.3.3"
 
 setup(
     name="keras-tuner",
@@ -31,7 +31,7 @@ setup(
         "tensorflow>=2.0",
         "requests",
         "kt-legacy",
-        "protobuf<=3.20",
+        "protobuf<=3.20.3",
     ],
     extras_require={
         "tests": [
