@@ -1,5 +1,10 @@
 # Release v1.3.2
 
+# Bug fixes
+* It use to install protobuf 4.22.1 if install with TensorFlow 2.12, which is
+  not compatible with KerasTuner. We limited the version to <=3.20. Now it is
+  fixed.
+
 # Release v1.3.1
 
 ## Bug fixes
