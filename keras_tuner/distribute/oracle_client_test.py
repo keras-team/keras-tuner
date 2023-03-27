@@ -28,6 +28,7 @@ from tensorflow import keras
 import keras_tuner
 from keras_tuner.distribute import oracle_client
 from keras_tuner.distribute import utils as dist_utils
+from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.test_utils import mock_distribute
 from keras_tuner.tuners import randomsearch
 
@@ -151,7 +152,9 @@ def test_client_no_attribute_error():
             client.unknown_attribute
 
 
-def test_should_not_report_update_trial_return_running():
+@mock.patch("keras_tuner.distribute.oracle_client.OracleClient.get_space")
+def test_should_not_report_update_trial_return_running(get_space):
+    get_space.return_value = hp_module.HyperParameters()
     with mock.patch.object(os, "environ", mock_distribute.MockEnvVars()):
         port = str(portpicker.pick_unused_port())
         os.environ["KERASTUNER_ORACLE_IP"] = "127.0.0.1"
@@ -165,4 +168,4 @@ def test_should_not_report_update_trial_return_running():
         )
         client = oracle_client.OracleClient(oracle)
         client.should_report = False
-        assert client.update_trial("a", {"score": 100}) == "RUNNING"
+        assert client.update_trial("a", {"score": 100}).status == "RUNNING"

@@ -83,8 +83,8 @@ class OracleClient:
                 wait_for_ready=True,
             )
             if not self.multi_worker:
-                return trial_module.TrialStatus.from_proto(response.status)
-        return "RUNNING"
+                return trial_module.Trial.from_proto(response.trial)
+        return trial_module.Trial(self.get_space(), status="RUNNING")
 
     def end_trial(self, trial):
         if self.should_report:

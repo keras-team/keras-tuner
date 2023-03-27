@@ -4,7 +4,9 @@
 * The `Tuner.results_summary()` did not print error messages for failed trials
   and did not display `Objective` information correctly. It is now fixed.
 * The `BayesianOptimization` would break when not specifying the
-* `num_initial_points` and overriding `.run_trial()`. It is now fixed.
+  `num_initial_points` and overriding `.run_trial()`. It is now fixed.
+* TensorFlow 2.12 would break because the different protobuf version. It is now
+  fixed.
 
 # Release v1.3.0
 

@@ -45,11 +45,10 @@ class OracleServicer(service_pb2_grpc.OracleServicer):
         return service_pb2.CreateTrialResponse(trial=trial.to_proto())
 
     def UpdateTrial(self, request, context):
-        status = self.oracle.update_trial(
+        trial = self.oracle.update_trial(
             request.trial_id, request.metrics, step=request.step
         )
-        status_proto = trial_module.TrialStatus.to_proto(status)
-        return service_pb2.UpdateTrialResponse(status=status_proto)
+        return service_pb2.UpdateTrialResponse(trial=trial.to_proto())
 
     def EndTrial(self, request, context):
         trial = trial_module.Trial.from_proto(request.trial)

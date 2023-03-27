@@ -35,11 +35,11 @@ def test_trial_proto():
     assert not proto.HasField("score")
 
     new_trial = trial_module.Trial.from_proto(proto)
-    assert new_trial.status == "COMPLETED"
+    assert new_trial.status == trial.status
     assert new_trial.hyperparameters.get("a") == 3
-    assert new_trial.trial_id == "trial1"
-    assert new_trial.score is None
-    assert new_trial.best_step == 0
+    assert new_trial.trial_id == trial.trial_id
+    assert new_trial.score == trial.score
+    assert new_trial.best_step == trial.best_step
 
     trial.score = -10
     trial.best_step = 3

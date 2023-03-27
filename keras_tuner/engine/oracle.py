@@ -371,7 +371,7 @@ class Oracle(stateful.Stateful):
             trial.metrics.update(metric_name, metric_value, step=step)
         self._save_trial(trial)
         # TODO: To signal early stopping, set Trial.status to "STOPPED".
-        return trial.status
+        return trial
 
     def _check_consecutive_failures(self):
         # For thread safety, check all trials for consecutive failures.
