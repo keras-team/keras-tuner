@@ -17,7 +17,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = "1.3.1dev"
+__version__ = "1.3.1"
 
 setup(
     name="keras-tuner",
