@@ -33,4 +33,4 @@ from keras_tuner.utils import check_tf_version
 
 check_tf_version()
 
-__version__ = "1.3.2"
+__version__ = "1.3.3dev"
