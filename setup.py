@@ -17,7 +17,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = "1.3.2dev"
+__version__ = "1.3.2"
 
 setup(
     name="keras-tuner",
@@ -31,6 +31,7 @@ setup(
         "tensorflow>=2.0",
         "requests",
         "kt-legacy",
+        "protobuf<=3.20",
     ],
     extras_require={
         "tests": [
@@ -46,7 +47,6 @@ setup(
             "namex",
             "scikit-learn",
             "scipy",
-            "protobuf==3.20",
             "grpcio-tools==1.30",
         ],
         "bayesian": [
