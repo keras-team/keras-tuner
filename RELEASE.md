@@ -1,3 +1,5 @@
+# Release v1.3.2
+
 # Release v1.3.1
 
 ## Bug fixes
