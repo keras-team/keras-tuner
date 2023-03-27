@@ -1,5 +1,9 @@
 # Release v1.3.3
 
+# Bug fixes
+* KerasTuner would install protobuf 3.19 with `protobuf<=3.20`. We want to
+  install `3.20.3`, so we changed it to `protobuf<=3.20.3`. It is now fixed.
+
 # Release v1.3.2
 
 # Bug fixes
