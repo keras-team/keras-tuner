@@ -17,10 +17,9 @@ import os
 
 import grpc
 
+from keras_tuner import protos
 from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine import trial as trial_module
-from keras_tuner.protos import service_pb2
-from keras_tuner.protos import service_pb2_grpc
 
 
 class OracleClient:
@@ -32,7 +31,7 @@ class OracleClient:
         ip_addr = os.environ["KERASTUNER_ORACLE_IP"]
         port = os.environ["KERASTUNER_ORACLE_PORT"]
         channel = grpc.insecure_channel(f"{ip_addr}:{port}")
-        self.stub = service_pb2_grpc.OracleStub(channel)
+        self.stub = protos.get_service_grpc().OracleStub(channel)
         self.tuner_id = os.environ["KERASTUNER_TUNER_ID"]
 
         # In multi-worker mode, only the chief of each cluster should report
@@ -53,14 +52,14 @@ class OracleClient:
 
     def get_space(self):
         response = self.stub.GetSpace(
-            service_pb2.GetSpaceRequest(), wait_for_ready=True
+            protos.get_service().GetSpaceRequest(), wait_for_ready=True
         )
         return hp_module.HyperParameters.from_proto(response.hyperparameters)
 
     def update_space(self, hyperparameters):
         if self.should_report:
             self.stub.UpdateSpace(
-                service_pb2.UpdateSpaceRequest(
+                protos.get_service().UpdateSpaceRequest(
                     hyperparameters=hyperparameters.to_proto()
                 ),
                 wait_for_ready=True,
@@ -68,7 +67,7 @@ class OracleClient:
 
     def create_trial(self, tuner_id):
         response = self.stub.CreateTrial(
-            service_pb2.CreateTrialRequest(tuner_id=tuner_id),
+            protos.get_service().CreateTrialRequest(tuner_id=tuner_id),
             wait_for_ready=True,
         )
         return trial_module.Trial.from_proto(response.trial)
@@ -77,7 +76,7 @@ class OracleClient:
         # TODO: support early stopping in multi-worker.
         if self.should_report:
             response = self.stub.UpdateTrial(
-                service_pb2.UpdateTrialRequest(
+                protos.get_service().UpdateTrialRequest(
                     trial_id=trial_id, metrics=metrics, step=step
                 ),
                 wait_for_ready=True,
@@ -89,19 +88,20 @@ class OracleClient:
     def end_trial(self, trial):
         if self.should_report:
             self.stub.EndTrial(
-                service_pb2.EndTrialRequest(trial=trial.to_proto()),
+                protos.get_service().EndTrialRequest(trial=trial.to_proto()),
                 wait_for_ready=True,
             )
 
     def get_trial(self, trial_id):
         response = self.stub.GetTrial(
-            service_pb2.GetTrialRequest(trial_id=trial_id), wait_for_ready=True
+            protos.get_service().GetTrialRequest(trial_id=trial_id),
+            wait_for_ready=True,
         )
         return trial_module.Trial.from_proto(response.trial)
 
     def get_best_trials(self, num_trials=1):
         response = self.stub.GetBestTrials(
-            service_pb2.GetBestTrialsRequest(num_trials=num_trials),
+            protos.get_service().GetBestTrialsRequest(num_trials=num_trials),
             wait_for_ready=True,
         )
         return [

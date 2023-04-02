@@ -24,8 +24,6 @@ import tensorflow as tf
 from keras_tuner import config as config_module
 from keras_tuner import errors
 from keras_tuner import utils
-from keras_tuner.distribute import oracle_chief
-from keras_tuner.distribute import oracle_client
 from keras_tuner.distribute import utils as dist_utils
 from keras_tuner.engine import hypermodel as hm_module
 from keras_tuner.engine import oracle as oracle_module
@@ -137,9 +135,15 @@ class BaseTuner(stateful.Stateful):
         # Run in distributed mode.
         if dist_utils.is_chief_oracle():
             # Blocks forever.
+            # Avoid import at the top, to avoid inconsistent protobuf versions.
+            from keras_tuner.distribute import oracle_chief
+
             oracle_chief.start_server(self.oracle)
         elif dist_utils.has_chief_oracle():
             # Proxies requests to the chief oracle.
+            # Avoid import at the top, to avoid inconsistent protobuf versions.
+            from keras_tuner.distribute import oracle_client
+
             self.oracle = oracle_client.OracleClient(self.oracle)
 
         # In parallel tuning, everything below in __init__() is for workers

@@ -13,3 +13,21 @@
 # limitations under the License.
 
 """KerasTuner protos."""
+
+
+def get_proto():
+    from keras_tuner.protos import keras_tuner_pb2
+
+    return keras_tuner_pb2
+
+
+def get_service():
+    from keras_tuner.protos import service_pb2
+
+    return service_pb2
+
+
+def get_service_grpc():
+    from keras_tuner.protos import service_pb2_grpc
+
+    return service_pb2_grpc

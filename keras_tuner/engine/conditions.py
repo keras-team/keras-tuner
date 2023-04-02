@@ -18,8 +18,8 @@ import abc
 
 import six
 
+from keras_tuner import protos
 from keras_tuner import utils
-from keras_tuner.protos import keras_tuner_pb2
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -131,19 +131,23 @@ class Parent(Condition):
         print(self.values[0])
         if isinstance(self.values[0], six.string_types):
             values = [
-                keras_tuner_pb2.Value(string_value=v) for v in self.values
+                protos.get_proto().Value(string_value=v) for v in self.values
             ]
         elif isinstance(self.values[0], bool):
             values = [
-                keras_tuner_pb2.Value(boolean_value=v) for v in self.values
+                protos.get_proto().Value(boolean_value=v) for v in self.values
             ]
         elif isinstance(self.values[0], six.integer_types):
-            values = [keras_tuner_pb2.Value(int_value=v) for v in self.values]
+            values = [
+                protos.get_proto().Value(int_value=v) for v in self.values
+            ]
         else:
-            values = [keras_tuner_pb2.Value(float_value=v) for v in self.values]
+            values = [
+                protos.get_proto().Value(float_value=v) for v in self.values
+            ]
 
-        return keras_tuner_pb2.Condition(
-            parent=keras_tuner_pb2.Condition.Parent(
+        return protos.get_proto().Condition(
+            parent=protos.get_proto().Condition.Parent(
                 name=self.name, values=values
             )
         )

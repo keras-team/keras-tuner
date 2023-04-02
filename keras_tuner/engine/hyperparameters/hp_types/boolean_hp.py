@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from keras_tuner import protos
 from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import conditions as conditions_mod
 from keras_tuner.engine.hyperparameters import hyperparameter
-from keras_tuner.protos import keras_tuner_pb2
 
 
 @keras_tuner_export("keras_tuner.engine.hyperparameters.Boolean")
@@ -61,7 +61,7 @@ class Boolean(hyperparameter.HyperParameter):
         )
 
     def to_proto(self):
-        return keras_tuner_pb2.Boolean(
+        return protos.get_proto().Boolean(
             name=self.name,
             default=self.default,
             conditions=[c.to_proto() for c in self.conditions],

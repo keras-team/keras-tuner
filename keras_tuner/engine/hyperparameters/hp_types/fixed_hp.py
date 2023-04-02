@@ -14,10 +14,10 @@
 
 import six
 
+from keras_tuner import protos
 from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import conditions as conditions_mod
 from keras_tuner.engine.hyperparameters import hyperparameter
-from keras_tuner.protos import keras_tuner_pb2
 
 
 @keras_tuner_export("keras_tuner.engine.hyperparameters.Fixed")
@@ -83,15 +83,15 @@ class Fixed(hyperparameter.HyperParameter):
         if isinstance(self.value, bool):
             # Check bool first as bool is subclass of int.
             # So bool is also six.integer_types.
-            value = keras_tuner_pb2.Value(boolean_value=self.value)
+            value = protos.get_proto().Value(boolean_value=self.value)
         elif isinstance(self.value, six.integer_types):
-            value = keras_tuner_pb2.Value(int_value=self.value)
+            value = protos.get_proto().Value(int_value=self.value)
         elif isinstance(self.value, float):
-            value = keras_tuner_pb2.Value(float_value=self.value)
+            value = protos.get_proto().Value(float_value=self.value)
         elif isinstance(self.value, six.string_types):
-            value = keras_tuner_pb2.Value(string_value=self.value)
+            value = protos.get_proto().Value(string_value=self.value)
 
-        return keras_tuner_pb2.Fixed(
+        return protos.get_proto().Fixed(
             name=self.name,
             value=value,
             conditions=[c.to_proto() for c in self.conditions],
