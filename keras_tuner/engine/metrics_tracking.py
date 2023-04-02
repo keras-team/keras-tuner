@@ -18,7 +18,7 @@ import numpy as np
 import six
 from tensorflow import keras
 
-from keras_tuner.protos import keras_tuner_pb2
+from keras_tuner import protos
 
 
 class MetricObservation:
@@ -67,7 +67,7 @@ class MetricObservation:
         return f"MetricObservation(value={self.value}, step={self.step})"
 
     def to_proto(self):
-        return keras_tuner_pb2.MetricObservation(
+        return protos.get_proto().MetricObservation(
             value=self.value, step=self.step
         )
 
@@ -169,7 +169,7 @@ class MetricHistory:
         return instance
 
     def to_proto(self):
-        return keras_tuner_pb2.MetricHistory(
+        return protos.get_proto().MetricHistory(
             observations=[obs.to_proto() for obs in self.get_history()],
             maximize=self.direction == "max",
         )
@@ -277,7 +277,7 @@ class MetricsTracker:
         return instance
 
     def to_proto(self):
-        return keras_tuner_pb2.MetricsTracker(
+        return protos.get_proto().MetricsTracker(
             metrics={
                 name: metric_history.to_proto()
                 for name, metric_history in self.metrics.items()

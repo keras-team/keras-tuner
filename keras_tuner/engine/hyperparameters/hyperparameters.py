@@ -19,11 +19,11 @@ import copy
 
 import six
 
+from keras_tuner import protos
 from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import conditions as conditions_mod
 from keras_tuner.engine.hyperparameters import hp_types
 from keras_tuner.engine.hyperparameters import hyperparameter as hp_module
-from keras_tuner.protos import keras_tuner_pb2
 
 
 @keras_tuner_export("keras_tuner.HyperParameters")
@@ -608,7 +608,7 @@ class HyperParameters:
         hps = cls()
 
         space = []
-        if isinstance(proto, keras_tuner_pb2.HyperParameters.Values):
+        if isinstance(proto, protos.get_proto().HyperParameters.Values):
             # Allows passing in only values, space becomes `Fixed`.
             space.extend(
                 hp_types.Fixed(name, getattr(value, value.WhichOneof("kind")))
@@ -643,7 +643,7 @@ class HyperParameters:
 
         hps.merge(space)
 
-        if isinstance(proto, keras_tuner_pb2.HyperParameters.Values):
+        if isinstance(proto, protos.get_proto().HyperParameters.Values):
             values = proto.values
         else:
             values = proto.values.values
@@ -675,26 +675,26 @@ class HyperParameters:
         values = {}
         for name, value in self.values.items():
             if isinstance(value, bool):
-                val = keras_tuner_pb2.Value(boolean_value=value)
+                val = protos.get_proto().Value(boolean_value=value)
             elif isinstance(value, float):
-                val = keras_tuner_pb2.Value(float_value=value)
+                val = protos.get_proto().Value(float_value=value)
             elif isinstance(value, six.integer_types):
-                val = keras_tuner_pb2.Value(int_value=value)
+                val = protos.get_proto().Value(int_value=value)
             elif isinstance(value, six.string_types):
-                val = keras_tuner_pb2.Value(string_value=value)
+                val = protos.get_proto().Value(string_value=value)
             else:
                 raise ValueError(f"Unrecognized value type: {value}")
             values[name] = val
 
-        return keras_tuner_pb2.HyperParameters(
-            space=keras_tuner_pb2.HyperParameters.Space(
+        return protos.get_proto().HyperParameters(
+            space=protos.get_proto().HyperParameters.Space(
                 fixed_space=fixed_space,
                 float_space=float_space,
                 int_space=int_space,
                 choice_space=choice_space,
                 boolean_space=boolean_space,
             ),
-            values=keras_tuner_pb2.HyperParameters.Values(values=values),
+            values=protos.get_proto().HyperParameters.Values(values=values),
         )
 
     @contextlib.contextmanager

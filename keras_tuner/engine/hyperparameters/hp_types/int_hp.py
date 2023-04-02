@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from keras_tuner import protos
 from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import conditions as conditions_mod
 from keras_tuner.engine.hyperparameters import hp_utils
 from keras_tuner.engine.hyperparameters.hp_types import numerical
-from keras_tuner.protos import keras_tuner_pb2
 
 
 def _check_int(val, arg):
@@ -173,7 +173,7 @@ class Int(numerical.Numerical):
         )
 
     def to_proto(self):
-        return keras_tuner_pb2.Int(
+        return protos.get_proto().Int(
             name=self.name,
             min_value=self.min_value,
             max_value=self.max_value,

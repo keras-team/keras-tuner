@@ -14,8 +14,8 @@
 
 import numpy as np
 
+from keras_tuner import protos
 from keras_tuner.engine import hyperparameters as hp_module
-from keras_tuner.protos import keras_tuner_pb2
 
 
 def test_float():
@@ -143,7 +143,7 @@ def test_float_proto():
     assert proto.name == "a"
     assert proto.min_value == -10.0
     assert proto.max_value == 10.0
-    assert proto.sampling == keras_tuner_pb2.Sampling.LINEAR
+    assert proto.sampling == protos.get_proto().Sampling.LINEAR
     assert proto.default == 3.0
     # Zero is the default, gets converted to `None` in `from_proto`.
     assert proto.step == 0.0

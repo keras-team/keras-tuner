@@ -18,50 +18,51 @@ from concurrent import futures
 
 import grpc
 
+from keras_tuner import protos
 from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine import trial as trial_module
-from keras_tuner.protos import service_pb2
-from keras_tuner.protos import service_pb2_grpc
 
 
-class OracleServicer(service_pb2_grpc.OracleServicer):
+class OracleServicer(protos.get_service_grpc().OracleServicer):
     def __init__(self, oracle):
         self.oracle = oracle
         self.stop_triggered = False
 
     def GetSpace(self, request, context):
         hps = self.oracle.get_space()
-        return service_pb2.GetSpaceResponse(hyperparameters=hps.to_proto())
+        return protos.get_service().GetSpaceResponse(
+            hyperparameters=hps.to_proto()
+        )
 
     def UpdateSpace(self, request, context):
         hps = hp_module.HyperParameters.from_proto(request.hyperparameters)
         self.oracle.update_space(hps)
-        return service_pb2.UpdateSpaceResponse()
+        return protos.get_service().UpdateSpaceResponse()
 
     def CreateTrial(self, request, context):
         trial = self.oracle.create_trial(request.tuner_id)
         if trial.status == trial_module.TrialStatus.STOPPED:
             self.stop_triggered = True
-        return service_pb2.CreateTrialResponse(trial=trial.to_proto())
+        return protos.get_service().CreateTrialResponse(trial=trial.to_proto())
 
     def UpdateTrial(self, request, context):
         trial = self.oracle.update_trial(
             request.trial_id, request.metrics, step=request.step
         )
-        return service_pb2.UpdateTrialResponse(trial=trial.to_proto())
+        return protos.get_service().UpdateTrialResponse(trial=trial.to_proto())
 
     def EndTrial(self, request, context):
         trial = trial_module.Trial.from_proto(request.trial)
         self.oracle.end_trial(trial)
-        return service_pb2.EndTrialResponse()
+        return protos.get_service().EndTrialResponse()
 
     def GetTrial(self, request, context):
         trial = self.oracle.get_trial(request.trial_id)
-        return service_pb2.GetTrialResponse(trial=trial.to_proto())
+        return protos.get_service().GetTrialResponse(trial=trial.to_proto())
 
     def GetBestTrials(self, request, context):
         trials = self.oracle.get_best_trials(request.num_trials)
-        return service_pb2.GetBestTrialsResponse(
+        return protos.get_service().GetBestTrialsResponse(
             trials=[trial.to_proto() for trial in trials]
         )
 
@@ -72,7 +73,9 @@ def start_server(oracle):
     port = os.environ["KERASTUNER_ORACLE_PORT"]
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
     oracle_servicer = OracleServicer(oracle)
-    service_pb2_grpc.add_OracleServicer_to_server(oracle_servicer, server)
+    protos.get_service_grpc().add_OracleServicer_to_server(
+        oracle_servicer, server
+    )
     server.add_insecure_port(f"{ip_addr}:{port}")
     server.start()
     while True:

@@ -14,9 +14,9 @@
 
 import pytest
 
+from keras_tuner import protos
 from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine.hyperparameters import hp_types
-from keras_tuner.protos import keras_tuner_pb2
 
 
 def test_int_sampling_arg():
@@ -84,7 +84,7 @@ def test_int_proto():
     assert proto.name == "a"
     assert proto.min_value == 1
     assert proto.max_value == 100
-    assert proto.sampling == keras_tuner_pb2.Sampling.LOG
+    assert proto.sampling == protos.get_proto().Sampling.LOG
     # Proto stores the implicit default.
     assert proto.default == 1
     assert proto.step == 0

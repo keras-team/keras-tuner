@@ -21,10 +21,10 @@ import time
 
 import tensorflow as tf
 
+from keras_tuner import protos
 from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine import metrics_tracking
 from keras_tuner.engine import stateful
-from keras_tuner.protos import keras_tuner_pb2
 
 
 class TrialStatus:
@@ -46,7 +46,7 @@ class TrialStatus:
 
     @staticmethod
     def to_proto(status):
-        ts = keras_tuner_pb2.TrialStatus
+        ts = protos.get_proto().TrialStatus
         if status is None:
             return ts.UNKNOWN
         elif status == TrialStatus.RUNNING:
@@ -66,7 +66,7 @@ class TrialStatus:
 
     @staticmethod
     def from_proto(proto):
-        ts = keras_tuner_pb2.TrialStatus
+        ts = protos.get_proto().TrialStatus
         if proto == ts.UNKNOWN:
             return None
         elif proto == ts.RUNNING:
@@ -177,12 +177,12 @@ class Trial(stateful.Stateful):
 
     def to_proto(self):
         if self.score is not None:
-            score = keras_tuner_pb2.Trial.Score(
+            score = protos.get_proto().Trial.Score(
                 value=self.score, step=self.best_step
             )
         else:
             score = None
-        proto = keras_tuner_pb2.Trial(
+        proto = protos.get_proto().Trial(
             trial_id=self.trial_id,
             hyperparameters=self.hyperparameters.to_proto(),
             score=score,

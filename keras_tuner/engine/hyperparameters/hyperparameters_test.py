@@ -15,8 +15,8 @@
 import pytest
 from tensorflow import keras
 
+from keras_tuner import protos
 from keras_tuner.engine import hyperparameters as hp_module
-from keras_tuner.protos import keras_tuner_pb2
 
 
 def test_hyperparameters():
@@ -288,11 +288,11 @@ def test_hyperparameters_proto():
 
 
 def test_hyperparameters_values_proto():
-    values = keras_tuner_pb2.HyperParameters.Values(
+    values = protos.get_proto().HyperParameters.Values(
         values={
-            "a": keras_tuner_pb2.Value(int_value=1),
-            "b": keras_tuner_pb2.Value(float_value=2.0),
-            "c": keras_tuner_pb2.Value(string_value="3"),
+            "a": protos.get_proto().Value(int_value=1),
+            "b": protos.get_proto().Value(float_value=2.0),
+            "c": protos.get_proto().Value(string_value="3"),
         }
     )
 

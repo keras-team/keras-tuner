@@ -14,15 +14,15 @@
 
 import math
 
-from keras_tuner.protos import keras_tuner_pb2
+from keras_tuner import protos
 
 
 def sampling_from_proto(sampling):
-    if sampling == keras_tuner_pb2.Sampling.LINEAR:
+    if sampling == protos.get_proto().Sampling.LINEAR:
         return "linear"
-    if sampling == keras_tuner_pb2.Sampling.LOG:
+    if sampling == protos.get_proto().Sampling.LOG:
         return "log"
-    if sampling == keras_tuner_pb2.Sampling.REVERSE_LOG:
+    if sampling == protos.get_proto().Sampling.REVERSE_LOG:
         return "reverse_log"
     raise ValueError(
         "Expected sampling to be one of predefined proto values. "
@@ -32,11 +32,11 @@ def sampling_from_proto(sampling):
 
 def sampling_to_proto(sampling):
     if sampling == "linear":
-        return keras_tuner_pb2.Sampling.LINEAR
+        return protos.get_proto().Sampling.LINEAR
     if sampling == "log":
-        return keras_tuner_pb2.Sampling.LOG
+        return protos.get_proto().Sampling.LOG
     if sampling == "reverse_log":
-        return keras_tuner_pb2.Sampling.REVERSE_LOG
+        return protos.get_proto().Sampling.REVERSE_LOG
     raise ValueError(
         "Expected sampling to be 'linear', 'log', or 'reverse_log'. "
         f"Received: '{sampling}'."

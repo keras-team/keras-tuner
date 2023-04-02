@@ -14,11 +14,11 @@
 
 import six
 
+from keras_tuner import protos
 from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import conditions as conditions_mod
 from keras_tuner.engine.hyperparameters import hp_utils
 from keras_tuner.engine.hyperparameters import hyperparameter
-from keras_tuner.protos import keras_tuner_pb2
 
 
 @keras_tuner_export("keras_tuner.engine.hyperparameters.Choice")
@@ -131,16 +131,20 @@ class Choice(hyperparameter.HyperParameter):
     def to_proto(self):
         if isinstance(self.values[0], six.string_types):
             values = [
-                keras_tuner_pb2.Value(string_value=v) for v in self.values
+                protos.get_proto().Value(string_value=v) for v in self.values
             ]
-            default = keras_tuner_pb2.Value(string_value=self.default)
+            default = protos.get_proto().Value(string_value=self.default)
         elif isinstance(self.values[0], six.integer_types):
-            values = [keras_tuner_pb2.Value(int_value=v) for v in self.values]
-            default = keras_tuner_pb2.Value(int_value=self.default)
+            values = [
+                protos.get_proto().Value(int_value=v) for v in self.values
+            ]
+            default = protos.get_proto().Value(int_value=self.default)
         else:
-            values = [keras_tuner_pb2.Value(float_value=v) for v in self.values]
-            default = keras_tuner_pb2.Value(float_value=self.default)
-        return keras_tuner_pb2.Choice(
+            values = [
+                protos.get_proto().Value(float_value=v) for v in self.values
+            ]
+            default = protos.get_proto().Value(float_value=self.default)
+        return protos.get_proto().Choice(
             name=self.name,
             ordered=self.ordered,
             values=values,
