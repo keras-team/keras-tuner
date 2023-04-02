@@ -30,8 +30,9 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('setup.py') }}
       - name: Install dependencies
         run: |
-          pip install tf-nightly --progress-bar off --upgrade
           pip install -e ".[tests]" --progress-bar off --upgrade
+          pip uninstall tensorflow keras -y
+          pip install tf-nightly --progress-bar off --upgrade
       - name: Test with pytest
         run: |
           pytest
