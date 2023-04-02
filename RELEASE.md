@@ -1,3 +1,8 @@
+# Release v1.3.4
+# Bug fixes
+* If you have a protobuf version > 3.20, it would through an error when import
+  KerasTuner. It is now fixed.
+
 # Release v1.3.3
 
 # Bug fixes
