@@ -47,7 +47,6 @@ setup(
             "namex",
             "scikit-learn",
             "scipy",
-            "grpcio-tools==1.30",
         ],
         "bayesian": [
             "scikit-learn",
