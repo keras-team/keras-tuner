@@ -31,7 +31,6 @@ setup(
         "tensorflow>=2.0",
         "requests",
         "kt-legacy",
-        "protobuf<=3.20.3",
     ],
     extras_require={
         "tests": [
