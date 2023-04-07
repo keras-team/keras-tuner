@@ -1,4 +1,7 @@
 # Release v1.3.5
+# Bug fixes
+* KerasTuner used to require protobuf version to be under 3.20. The limit is
+  removed. Now, it requires protobuf>=4 if you use parallel tuning.
 
 # Release v1.3.4
 # Bug fixes
