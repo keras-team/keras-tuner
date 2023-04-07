@@ -14,20 +14,37 @@
 
 """KerasTuner protos."""
 
+from contextlib import contextmanager
+
+import sys
+
+
+@contextmanager
+def protobuf_check():
+    try:
+        yield
+    except ImportError:
+        from google import protobuf
+
+        raise ImportError(
+            "keras_tuner parallel tuning requires protobuf>=4, "
+            f"but got protobuf=={protobuf.__version__}."
+        )  # pragma: no cover
+
 
 def get_proto():
-    from keras_tuner.protos import keras_tuner_pb2
-
+    with protobuf_check():
+        from keras_tuner.protos import keras_tuner_pb2
     return keras_tuner_pb2
 
 
 def get_service():
-    from keras_tuner.protos import service_pb2
-
+    with protobuf_check():
+        from keras_tuner.protos import service_pb2
     return service_pb2
 
 
 def get_service_grpc():
-    from keras_tuner.protos import service_pb2_grpc
-
+    with protobuf_check():
+        from keras_tuner.protos import service_pb2_grpc
     return service_pb2_grpc
