@@ -27,6 +27,6 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('setup.py') }}
       - name: Install dependencies
         run: |
-          pip install -e ".[tests]" --progress-bar off --upgrade
+          pip install -e ".[tensorflow-cpu,tests]" --progress-bar off --upgrade
       - name: Run the guides
         run: bash shell/run_guides.sh
