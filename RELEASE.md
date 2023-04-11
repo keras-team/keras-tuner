@@ -9,6 +9,8 @@
   to install TensorFlow either separately with KerasTuner or with
   `pip install keras_tuner[tensorflow]`. This change is because some people may
   want to use KerasTuner with `tensorflow-cpu` instead of `tensorflow`.
+* Remove the legacy import name of `kerastuner`. From now on, only
+  `import keras_tuner` is supported.
 
 ## Bug fixes
 * KerasTuner used to require protobuf version to be under 3.20. The limit is
