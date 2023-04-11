@@ -28,7 +28,7 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('setup.py') }}
       - name: Install dependencies
         run: |
-          pip install -e ".[tests]" --progress-bar off --upgrade
+          pip install -e ".[tensorflow-cpu,tests]" --progress-bar off --upgrade
       - name: Test with pytest
         run: |
           pytest --cov=keras_tuner --cov-report xml:coverage.xml
@@ -57,7 +57,7 @@ jobs:
         run: |
           pip install protobuf==3.20.1
           pip install "tensorflow<2.1"
-          pip install -e ".[tests]" --progress-bar off --upgrade
+          pip install -e ".[tensorflow-cpu,tests]" --progress-bar off --upgrade
       - name: Test with pytest
         run: |
           pytest keras_tuner/integration_tests/legacy_import_test.py
@@ -82,7 +82,7 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('setup.py') }}
       - name: Install dependencies
         run: |
-          pip install -e ".[tests]" --progress-bar off --upgrade
+          pip install -e ".[tensorflow-cpu,tests]" --progress-bar off --upgrade
       - name: Lint
         run: bash shell/lint.sh
   guides:
@@ -107,7 +107,7 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('setup.py') }}
       - name: Install dependencies
         run: |
-          pip install -e ".[tests]" --progress-bar off --upgrade
+          pip install -e ".[tensorflow-cpu,tests]" --progress-bar off --upgrade
       - name: Run the guides
         run: bash shell/run_guides.sh
   deploy:
