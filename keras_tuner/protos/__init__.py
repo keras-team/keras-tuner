@@ -28,7 +28,8 @@ def protobuf_check():
 
         raise ImportError(
             "keras_tuner parallel tuning requires protobuf>=4, "
-            f"but got protobuf=={protobuf.__version__}."
+            f"but got protobuf=={protobuf.__version__}. "
+            "Only Tensorflow 2.12 and above are compatible with protobuf>=4."
         )  # pragma: no cover
 
 
