@@ -28,11 +28,16 @@ setup(
     version=__version__,
     install_requires=[
         "packaging",
-        "tensorflow>=2.0",
         "requests",
         "kt-legacy",
     ],
     extras_require={
+        "tensorflow": [
+            "tensorflow>=2.0",
+        ],
+        "tensorflow-cpu": [
+            "tensorflow-cpu>=2.0",
+        ],
         "tests": [
             "black",
             "flake8",
