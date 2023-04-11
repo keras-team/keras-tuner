@@ -29,7 +29,6 @@ setup(
     install_requires=[
         "packaging",
         "requests",
-        "kt-legacy",
     ],
     extras_require={
         "tensorflow": [
