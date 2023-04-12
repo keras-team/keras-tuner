@@ -1,10 +1,6 @@
 # Release v1.4.0
 
 ## Breaking changes
-* KerasTuner parallel tuning now requires TensorFlow 2.12+. This is because
-  KerasTuner now uses protobuf 4.x, which is only compatible with TensorFlow
-  2.12. TensorFlow 2.11 and below require protobuf<=3.19. The non-parallel
-  features are not affected.
 * Removed TensorFlow from the required dependencies of KerasTuner. The user need
   to install TensorFlow either separately with KerasTuner or with
   `pip install keras_tuner[tensorflow]`. This change is because some people may
@@ -14,7 +10,7 @@
 
 ## Bug fixes
 * KerasTuner used to require protobuf version to be under 3.20. The limit is
-  removed. Now, it requires protobuf>=4 if you use parallel tuning.
+  removed. Now, it support both protobuf 3 and 4.
 
 # Release v1.3.4
 
