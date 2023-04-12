@@ -12,25 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""KerasTuner protos."""
-
-from contextlib import contextmanager
-
-# v3 is generated with protobuf==3.20.3 and grpcio-tools==1.48.0
-# v4 is generated with protobuf==4.22.1 and grpcio-tools==1.53.0
-try:
-    from keras_tuner.protos import v4 as protos
-except ImportError:
-    from keras_tuner.protos import v3 as protos
-
-
-def get_proto():
-    return protos.keras_tuner_pb2
-
-
-def get_service():
-    return protos.service_pb2
-
-
-def get_service_grpc():
-    return protos.service_pb2_grpc
+from keras_tuner.protos.v3 import keras_tuner_pb2_grpc
+from keras_tuner.protos.v3 import keras_tuner_pb2
+from keras_tuner.protos.v3 import service_pb2
+from keras_tuner.protos.v3 import service_pb2_grpc
