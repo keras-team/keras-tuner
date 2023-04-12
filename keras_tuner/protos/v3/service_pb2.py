@@ -27,7 +27,7 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-from keras_tuner.protos import (
+from keras_tuner.protos.v3 import (
     keras_tuner_pb2 as keras__tuner_dot_protos_dot_keras__tuner__pb2,
 )
 

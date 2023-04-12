@@ -11,3 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from keras_tuner.protos.v4 import keras_tuner_pb2_grpc
+from keras_tuner.protos.v4 import keras_tuner_pb2
+from keras_tuner.protos.v4 import service_pb2
+from keras_tuner.protos.v4 import service_pb2_grpc

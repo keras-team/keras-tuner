@@ -16,7 +16,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-from keras_tuner.protos import (
+from keras_tuner.protos.v4 import (
     service_pb2 as keras__tuner_dot_protos_dot_service__pb2,
 )
 
