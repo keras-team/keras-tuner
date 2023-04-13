@@ -23,12 +23,12 @@ Official Website: [https://keras.io/keras_tuner/](https://keras.io/keras_tuner/)
 
 ## Installation
 
-KerasTuner requires **Python 3.7+** and **TensorFlow 2.0+**.
+KerasTuner requires **Python 3.8+** and **TensorFlow 2.0+**.
 
 Install the latest release:
 
 ```
-pip install keras-tuner --upgrade
+pip install keras-tuner
 ```
 
 You can also check out other versions in our

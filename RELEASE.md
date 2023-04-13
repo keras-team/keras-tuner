@@ -1,4 +1,4 @@
-# Release v1.4.0
+# Release v1.3.5
 
 ## Breaking changes
 * Removed TensorFlow from the required dependencies of KerasTuner. The user need
