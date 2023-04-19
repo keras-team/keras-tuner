@@ -163,6 +163,11 @@ class Oracle(stateful.Stateful):
             number of consecutive failed `Trial`s. When this number is reached,
             the search will be stopped. A `Trial` is marked as failed when none
             of the retries succeeded.
+        max_collisions: Integer. Defaults to 20. Maximum number of identical
+            values that can be generated before we consider the space to be
+            exhausted. Increasing this value, increases the probability of
+            executing all possible combinations generated with the
+            `HyperParameters`, you would obtain the maximum number of trails.
     """
 
     def __init__(
@@ -175,6 +180,7 @@ class Oracle(stateful.Stateful):
         seed=None,
         max_retries_per_trial=0,
         max_consecutive_failed_trials=3,
+        max_collisions=20,
     ):
         self.objective = obj_module.create_objective(objective)
         self.max_trials = max_trials
@@ -214,11 +220,11 @@ class Oracle(stateful.Stateful):
         self._seed_state = self.seed
         # Hashes of values in the trials, which only hashes the active values.
         self._tried_so_far = set()
-        # Dictionary mapping trial_id to the the hash of the values.
+        # Dictionary mapping trial_id to the hash of the values.
         self._id_to_hash = collections.defaultdict(lambda: None)
         # Maximum number of identical values that can be generated
         # before we consider the space to be exhausted.
-        self._max_collisions = 20
+        self._max_collisions = max_collisions
 
         # Set in `BaseTuner` via `set_project_dir`.
         self.directory = None
