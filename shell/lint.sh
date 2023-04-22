@@ -1,16 +1,16 @@
-isort -c .
+isort -c keras_tuner
 if ! [ $? -eq 0 ]
 then
   echo "Please run \"sh shell/format.sh\" to format the code."
   exit 1
 fi
-flake8 .
+flake8 keras_tuner
 if ! [ $? -eq 0 ]
 then
   echo "Please fix the code style issue."
   exit 1
 fi
-black --check .
+black --check keras_tuner
 if ! [ $? -eq 0 ]
 then
   echo "Please run \"sh shell/format.sh\" to format the code."

@@ -1,5 +1,5 @@
-isort .
-black .
+isort keras_tuner
+black keras_tuner
 
 for i in $(find keras_tuner -name '*.py') # or whatever other pattern...
 do
@@ -10,4 +10,4 @@ do
   fi
 done
 
-flake8 .
+flake8 keras_tuner
