@@ -31,7 +31,10 @@ You may also use any other environment as long as you install the dependencies i
 Be sure that you have the same environment as us, we recommend you to install like this:
 
 ```shell
-pip install -e .[tests]
+pip install --upgrade pip
+pip install -e ".[tensorflow-cpu,tests]"
+echo "sh shell/lint.sh" > .git/hooks/pre-commit
+chmod a+x .git/hooks/pre-commit
 ```
 
 ### Option 1: GitHub Codespaces
