@@ -272,7 +272,7 @@ def test_hyperband_load_weights(tmp_path):
     # compare the weights
     assert len(new_model_weights) == len(best_model_round_0_weights)
     assert all(
-        np.alltrue(new_weight == best_old_weight)
+        np.all(new_weight == best_old_weight)
         for new_weight, best_old_weight in zip(
             new_model_weights, best_model_round_0_weights
         )
