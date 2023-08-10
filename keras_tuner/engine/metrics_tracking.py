@@ -234,7 +234,6 @@ class MetricsTracker:
         return self.metrics[name].get_history()
 
     def set_history(self, name, observations):
-        assert type(observations) == list
         if not self.exists(name):
             self.register(name)
         self.metrics[name].set_history(observations)
