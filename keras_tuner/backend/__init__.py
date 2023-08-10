@@ -11,23 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+Keras backend module.
 
-import pytest
+This module adds a temporarily Keras API surface that is fully under KerasTuner
+control. This allows us to switch between `keras_core` and `tf.keras`, as well
+as add shims to support older version of `tf.keras`.
+
+- `config`: check which backend is being run.
+- `keras`: The full `keras` API (via `keras_core` or `tf.keras`).
+- `ops`: `keras_core.ops`, always tf backed if using `tf.keras`.
+- `random`: `keras_core.random`, always tf backed if using `tf.keras`.
+"""
 
 from keras_tuner.backend import config
+from keras_tuner.backend import io
 from keras_tuner.backend import keras
-
-
-@pytest.fixture(autouse=True)
-def set_seeds_before_tests():
-    """Test wrapper to set the seed before each test.
-
-    This wrapper runs for all the tests in the test suite.
-    """
-    keras.utils.set_random_seed(0)
-    # Use channels_first for torch backend.
-    if config.backend() == "torch":
-        keras.backend.set_image_data_format("channels_first")
-    else:
-        keras.backend.set_image_data_format("channels_last")
-    yield
+from keras_tuner.backend import ops
+from keras_tuner.backend import random

@@ -12,22 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
+from keras_tuner.backend.config import multi_backend
 
-from keras_tuner.backend import config
-from keras_tuner.backend import keras
-
-
-@pytest.fixture(autouse=True)
-def set_seeds_before_tests():
-    """Test wrapper to set the seed before each test.
-
-    This wrapper runs for all the tests in the test suite.
-    """
-    keras.utils.set_random_seed(0)
-    # Use channels_first for torch backend.
-    if config.backend() == "torch":
-        keras.backend.set_image_data_format("channels_first")
-    else:
-        keras.backend.set_image_data_format("channels_last")
-    yield
+if multi_backend():
+    from keras_core.random import *  # noqa: F403, F401
+else:
+    from keras_core.src.backend.tensorflow.random import *  # noqa: F403, F401

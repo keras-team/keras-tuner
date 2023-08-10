@@ -17,7 +17,6 @@ import os
 import time
 
 import pytest
-import tensorflow as tf
 
 from keras_tuner.test_utils import mock_distribute
 
@@ -35,14 +34,14 @@ def test_mock_distribute(tmp_path):
             # a server.
             time.sleep(2)
         fname = os.path.join(str(tmp_path), tuner_id)
-        with tf.io.gfile.GFile(fname, "w") as f:
+        with open(fname, "w") as f:
             f.write(tuner_id)
 
     mock_distribute.mock_distribute(process_fn, num_workers=3)
 
     for tuner_id in {"chief", "worker0", "worker1", "worker2"}:
         fname = os.path.join(str(tmp_path), tuner_id)
-        with tf.io.gfile.GFile(fname, "r") as f:
+        with open(fname, "r") as f:
             assert f.read() == tuner_id
 
 

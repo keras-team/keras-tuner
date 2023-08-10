@@ -13,9 +13,9 @@
 # limitations under the License.
 
 import pytest
-from tensorflow import keras
 
 from keras_tuner import protos
+from keras_tuner.backend import keras
 from keras_tuner.engine import hyperparameters as hp_module
 
 
@@ -148,7 +148,7 @@ def test_build_with_conditional_scope():
             }
 
         params = v1_params if model == "v1" else v2_params
-        inputs = keras.Input(10)
+        inputs = keras.Input(shape=(10,))
         x = inputs
         for _ in range(params["layers"]):
             x = keras.layers.Dense(params["units"])(x)

@@ -13,31 +13,57 @@
 # limitations under the License.
 
 
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers
-
 from keras_tuner.api_export import keras_tuner_export
-
-try:
-    from tensorflow.keras.layers.experimental import (  # isort:skip
-        preprocessing,
-    )  # pytype: disable=import-error
-except ImportError:  # pragma: no cover
-    preprocessing = None  # pragma: no cover
-
+from keras_tuner.backend import keras
+from keras_tuner.backend import ops
+from keras_tuner.backend import random
+from keras_tuner.backend.keras import layers
 from keras_tuner.engine import hypermodel
 
 # dict of functions that create layers for transforms.
 # Each function takes a factor (0 to 1) for the strength
 # of the transform.
-if preprocessing is not None:
-    TRANSFORMS = {
-        "translate_x": lambda x: preprocessing.RandomTranslation(x, 0),
-        "translate_y": lambda y: preprocessing.RandomTranslation(0, y),
-        "rotate": preprocessing.RandomRotation,
-        "contrast": preprocessing.RandomContrast,
-    }
+TRANSFORMS = {
+    "translate_x": lambda x: layers.RandomTranslation(x, 0),
+    "translate_y": lambda y: layers.RandomTranslation(0, y),
+    "rotate": layers.RandomRotation,
+    "contrast": layers.RandomContrast,
+}
+
+
+@keras.saving.register_keras_serializable(package="keras_tuner")
+class RandAugment(keras.layers.Layer):
+    """A single RandAugment layer."""
+
+    def __init__(self, layers, factors):
+        super().__init__()
+        self.layers = layers
+        self.factors = factors
+
+    def call(self, inputs):
+        x = inputs
+        batch_size = ops.shape(x)[0]
+        # selection tensor determines operation for each sample.
+        selection = ops.cast(
+            random.uniform((batch_size, 1, 1, 1), maxval=len(self.layers)),
+            dtype="int32",
+        )
+
+        for i, layer in enumerate(self.layers):
+            factor = self.factors[i]
+            if factor == 0:
+                continue
+            transform_layer = TRANSFORMS[layer](factor)
+            x_trans = transform_layer(x)
+
+            # For each sample, apply the transform if and only if
+            # selection matches the transform index `i`
+            x = ops.where(ops.equal(i, selection), x_trans, x)
+
+        return x
+
+    def compute_output_shape(self, input_shape):
+        return input_shape
 
 
 @keras_tuner_export("keras_tuner.applications.HyperImageAugment")
@@ -137,12 +163,6 @@ class HyperImageAugment(hypermodel.HyperModel):
         augment_layers=3,
         **kwargs,
     ):
-        if preprocessing is None:
-            raise ImportError(
-                "HyperImageAugment requires tensorflow>=2.3.0, "
-                f"but the current version is {tf.__version__}."
-            )
-
         if input_shape is None and input_tensor is None:
             raise ValueError(
                 "You must specify either `input_shape` or `input_tensor`."
@@ -208,27 +228,14 @@ class HyperImageAugment(hypermodel.HyperModel):
         )
         x = inputs
         for _ in range(augment_layers):
-            # selection tensor determines operation for each sample.
-            batch_size = tf.shape(x)[0]
-            selection = tf.random.uniform(
-                [batch_size, 1, 1, 1],
-                maxval=len(self.transforms),
-                dtype="int32",
-            )
-
+            factors = []
             for i, (transform, (f_min, f_max)) in enumerate(self.transforms):
                 # Factor for each transform is determined per each trial.
                 factor = hp.Float(
                     f"factor_{transform}", f_min, f_max, default=f_min
                 )
-                if factor == 0:
-                    continue
-                transform_layer = TRANSFORMS[transform](factor)
-                x_trans = transform_layer(x)
-
-                # For each sample, apply the transform if and only if
-                # selection matches the transform index `i`
-                x = tf.where(tf.equal(i, selection), x_trans, x)
+                factors.append(factor)
+            x = RandAugment([layer for layer, _ in self.transforms], factors)(x)
         return x
 
     def _build_fixedaug_layers(self, inputs, hp):

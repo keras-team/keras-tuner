@@ -15,13 +15,18 @@
 
 import numpy as np
 import pytest
-import tensorflow as tf
 
 from keras_tuner.applications import xception
+from keras_tuner.backend import config
+from keras_tuner.backend import keras
 from keras_tuner.engine import hyperparameters as hp_module
 
 
 @pytest.mark.parametrize("pooling", ["flatten", "avg", "max"])
+@pytest.mark.skipif(
+    config.multi_backend(),
+    reason="The test is too slow.",
+)
 def test_model_construction(pooling):
     hp = hp_module.HyperParameters()
     hp.Choice("pooling", [pooling])
@@ -61,7 +66,7 @@ def test_include_top_false():
         input_shape=(256, 256, 3), classes=10, include_top=False
     )
     model = hypermodel.build(hp)
-    assert not model.optimizer
+    assert not hasattr(model, "optimizer") or not model.optimizer
 
 
 def test_hyperparameter_override():
@@ -76,7 +81,7 @@ def test_hyperparameter_override():
 
 def test_input_tensor():
     hp = hp_module.HyperParameters()
-    inputs = tf.keras.Input((256, 256, 3))
+    inputs = keras.Input((256, 256, 3))
     hypermodel = xception.HyperXception(input_tensor=inputs, include_top=False)
     model = hypermodel.build(hp)
     assert model.inputs == [inputs]

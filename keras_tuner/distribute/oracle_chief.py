@@ -84,14 +84,5 @@ def start_server(oracle):
 
         if oracle_servicer.stop_triggered:
             while oracle.ongoing_trials:
-                time.sleep(10)  # pragma: no cover
-
-            print(
-                "Oracle server on chief is exiting in 40s."
-                "The chief will go on with post-search code."
-            )
-            # Wait for another 30s for all the subsequent calls from workers to
-            # come
-            time.sleep(30)
-            server.stop(10)
+                time.sleep(2)  # pragma: no cover
             break

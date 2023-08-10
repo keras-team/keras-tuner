@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from tensorflow import keras
-
 from keras_tuner import utils
+from keras_tuner.backend import keras
 from keras_tuner.engine.hyperparameters.hp_types.boolean_hp import Boolean
 from keras_tuner.engine.hyperparameters.hp_types.choice_hp import Choice
 from keras_tuner.engine.hyperparameters.hp_types.fixed_hp import Fixed

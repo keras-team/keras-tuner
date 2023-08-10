@@ -14,8 +14,7 @@
 
 import random
 
-from tensorflow import keras
-
+from keras_tuner.backend import keras
 from keras_tuner.engine import hypermodel
 from keras_tuner.engine import trial as trial_module
 from keras_tuner.tuners import gridsearch

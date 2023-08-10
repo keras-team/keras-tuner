@@ -12,33 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
 
 import numpy as np
 import pytest
-import tensorflow as tf
 
 import keras_tuner
+from keras_tuner.backend import keras
 from keras_tuner.engine import tuner_utils
 from keras_tuner.tuners import hyperband as hyperband_module
 
+INPUT_DIM = 5
+
 
 def build_model(hp):
-    model = tf.keras.Sequential()
+    model = keras.Sequential()
     for i in range(hp.Int("layers", 1, 3)):
         model.add(
-            tf.keras.layers.Dense(
+            keras.layers.Dense(
                 hp.Int(f"units{str(i)}", 1, 5), activation="relu"
             )
         )
 
         model.add(
-            tf.keras.layers.Lambda(
-                lambda x: x + hp.Float(f"bias{str(i)}", -1, 1)
-            )
+            keras.layers.Lambda(lambda x: x + hp.Float(f"bias{str(i)}", -1, 1))
         )
 
-    model.add(tf.keras.layers.Dense(1, activation="sigmoid"))
+    model.add(keras.layers.Dense(1, activation="sigmoid"))
+    model.build(input_shape=(None, INPUT_DIM))
     model.compile("sgd", "mse")
     return model
 
@@ -185,15 +185,13 @@ def test_hyperband_integration(tmp_path):
         directory=tmp_path,
     )
 
-    x, y = np.ones((2, 5)), np.ones((2, 1))
+    x, y = np.ones((2, INPUT_DIM)), np.ones((2, 1))
     tuner.search(x, y, validation_data=(x, y))
 
     # Make sure Oracle is registering new HPs.
     updated_hps = tuner.oracle.get_space().values
     assert "units1" in updated_hps
     assert "bias1" in updated_hps
-
-    tf.get_logger().setLevel(logging.ERROR)
 
     best_score = tuner.oracle.get_best_trials()[0].score
     best_model = tuner.get_best_models()[0]
@@ -210,7 +208,7 @@ def test_hyperband_save_and_restore(tmp_path):
         directory=tmp_path,
     )
 
-    x, y = np.ones((2, 5)), np.ones((2, 1))
+    x, y = np.ones((2, INPUT_DIM)), np.ones((2, 1))
     tuner.search(x, y, validation_data=(x, y))
 
     num_trials = len(tuner.oracle.trials)
@@ -235,7 +233,7 @@ def test_hyperband_load_weights(tmp_path):
         factor=2,
         directory=tmp_path,
     )
-    x, y = np.ones((2, 5)), np.ones((2, 1))
+    x, y = np.ones((2, INPUT_DIM)), np.ones((2, 1))
     nb_brackets = tuner.oracle._get_num_brackets()
     assert nb_brackets == 2
     nb_models_round_0 = tuner.oracle._get_size(bracket_num=1, round_num=0)
@@ -272,7 +270,7 @@ def test_hyperband_load_weights(tmp_path):
     # compare the weights
     assert len(new_model_weights) == len(best_model_round_0_weights)
     assert all(
-        np.all(new_weight == best_old_weight)
+        np.all(np.array(new_weight) == np.array(best_old_weight))
         for new_weight, best_old_weight in zip(
             new_model_weights, best_model_round_0_weights
         )

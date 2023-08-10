@@ -14,38 +14,23 @@
 
 """Hypertunable version of EfficientNet based on Keras.applications."""
 
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers
-
 from keras_tuner.api_export import keras_tuner_export
+from keras_tuner.backend import keras
+from keras_tuner.backend import ops
+from keras_tuner.backend.keras import layers
 from keras_tuner.engine import hypermodel
 
-try:
-    from tensorflow.keras.applications import (  # isort:skip
-        efficientnet,
-    )  # pytype: disable=import-error
-except ImportError:  # pragma: no cover
-    efficientnet = None  # pragma: no cover
-
-try:
-    from tensorflow.keras.layers.experimental import (  # isort:skip
-        preprocessing,
-    )  # pytype: disable=import-error
-except ImportError:  # pragma: no cover
-    preprocessing = None  # pragma: no cover
-
-if efficientnet is not None:
-    EFFICIENTNET_MODELS = {
-        "B0": efficientnet.EfficientNetB0,
-        "B1": efficientnet.EfficientNetB1,
-        "B2": efficientnet.EfficientNetB2,
-        "B3": efficientnet.EfficientNetB3,
-        "B4": efficientnet.EfficientNetB4,
-        "B5": efficientnet.EfficientNetB5,
-        "B6": efficientnet.EfficientNetB6,
-        "B7": efficientnet.EfficientNetB7,
-    }
+efficientnet = keras.applications.efficientnet
+EFFICIENTNET_MODELS = {
+    "B0": efficientnet.EfficientNetB0,
+    "B1": efficientnet.EfficientNetB1,
+    "B2": efficientnet.EfficientNetB2,
+    "B3": efficientnet.EfficientNetB3,
+    "B4": efficientnet.EfficientNetB4,
+    "B5": efficientnet.EfficientNetB5,
+    "B6": efficientnet.EfficientNetB6,
+    "B7": efficientnet.EfficientNetB7,
+}
 
 EFFICIENTNET_IMG_SIZE = {
     "B0": 224,
@@ -90,11 +75,6 @@ class HyperEfficientNet(hypermodel.HyperModel):
         augmentation_model=None,
         **kwargs,
     ):
-        if preprocessing is None:
-            raise ImportError(
-                "HyperEfficientNet requires tensorflow>=2.3.0, "
-                f"but the current version is {tf.__version__}."
-            )
         if not isinstance(
             augmentation_model, (hypermodel.HyperModel, keras.Model, type(None))
         ):
@@ -121,7 +101,7 @@ class HyperEfficientNet(hypermodel.HyperModel):
 
     def build(self, hp):
         if self.input_tensor is not None:
-            inputs = tf.keras.utils.get_source_inputs(self.input_tensor)
+            inputs = keras.utils.get_source_inputs(self.input_tensor)
             x = self.input_tensor
         else:
             inputs = layers.Input(shape=self.input_shape)
@@ -141,9 +121,12 @@ class HyperEfficientNet(hypermodel.HyperModel):
         )
         img_size = EFFICIENTNET_IMG_SIZE[version]
 
-        x = preprocessing.Resizing(
-            img_size, img_size, interpolation="bilinear"
-        )(x)
+        x = ops.image.resize(
+            x,
+            (img_size, img_size),
+            interpolation="bilinear",
+            data_format=keras.backend.image_data_format(),
+        )
         efficientnet_model = EFFICIENTNET_MODELS[version](
             include_top=False, input_tensor=x
         )
@@ -183,7 +166,7 @@ class HyperEfficientNet(hypermodel.HyperModel):
         learning_rate = hp.Choice(
             "learning_rate", [0.1, 0.01, 0.001], default=0.01
         )
-        optimizer = tf.keras.optimizers.SGD(
+        optimizer = keras.optimizers.SGD(
             momentum=0.1, learning_rate=learning_rate
         )
 

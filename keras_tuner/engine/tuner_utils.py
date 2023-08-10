@@ -19,12 +19,12 @@ import statistics
 from datetime import datetime
 
 import numpy as np
-from tensorboard.plugins.hparams import api as hparams_api
-from tensorflow import keras
 
+from keras_tuner import backend
 from keras_tuner import errors
 from keras_tuner import utils
-from keras_tuner.distribute import file_utils
+from keras_tuner.backend import config
+from keras_tuner.backend import keras
 from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine import objective as obj_module
 
@@ -172,13 +172,16 @@ class SaveBestEpoch(keras.callbacks.Callback):
             self._save_model()
 
     def _save_model(self):
+        if config.backend() != "tensorflow":
+            self.model.save_weights(self.filepath)
+            return
         # Create temporary saved model files on non-chief workers.
-        write_filepath = file_utils.write_filepath(
+        write_filepath = backend.io.write_filepath(
             self.filepath, self.model.distribute_strategy
         )
         self.model.save_weights(write_filepath)
         # Remove temporary saved model files on non-chief workers.
-        file_utils.remove_temp_dir_with_filepath(
+        backend.io.remove_temp_dir_with_filepath(
             write_filepath, self.model.distribute_strategy
         )
 
@@ -312,7 +315,7 @@ def get_best_step(results, objective):
     return 0
 
 
-def convert_hyperparams_to_hparams(hyperparams):
+def convert_hyperparams_to_hparams(hyperparams, hparams_api):
     """Converts KerasTuner HyperParameters to TensorBoard HParams."""
     hparams = {}
     for hp in hyperparams.space:

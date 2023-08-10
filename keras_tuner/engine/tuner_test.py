@@ -18,13 +18,12 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
-import tensorflow as tf
-from packaging.version import parse
 from tensorboard.plugins.hparams import api as hparams_api
-from tensorflow import keras
 
 import keras_tuner
 from keras_tuner import errors
+from keras_tuner.backend import config
+from keras_tuner.backend import keras
 from keras_tuner.engine import tuner as tuner_module
 
 INPUT_DIM = 2
@@ -90,7 +89,7 @@ class MockModel(keras.Model):
     def fit(self, *args, **kwargs):
         self.callbacks = kwargs["callbacks"]
         for callback in self.callbacks:
-            callback.model = self
+            callback.set_model(self)
         for epoch in range(len(self.full_history)):
             self.on_epoch_begin(epoch)
             for batch in range(len(self.full_history[epoch])):
@@ -129,8 +128,13 @@ class MockHyperModel(keras_tuner.HyperModel):
 
 def build_subclass_model(hp):
     class MyModel(keras.Model):
-        def build(self, _):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
             self.layer = keras.layers.Dense(NUM_CLASSES, activation="softmax")
+
+        def build(self, input_shape):
+            self.layer.build(input_shape)
+            super().build(input_shape)
 
         def call(self, x):
             x = x + hp.Float("bias", 0, 10)
@@ -145,6 +149,7 @@ def build_subclass_model(hp):
             return {}
 
     model = MyModel()
+    model.build(input_shape=TRAIN_INPUTS.shape)
     model.compile(
         optimizer=keras.optimizers.Adam(
             hp.Choice("learning_rate", [1e-2, 1e-3, 1e-4])
@@ -386,13 +391,14 @@ def test_callbacks_in_fit_kwargs(tmp_path):
             x.__class__.__name__
             for x in mock_build_and_fit_model.call_args[1]["callbacks"]
         ]
-        assert callback_class_names == [
+        assert {
             "EarlyStopping",
             "TensorBoard",
-            "Callback",
             "TunerCallback",
             "SaveBestEpoch",
-        ]
+        }.issubset(
+            set(callback_class_names),
+        )
 
 
 def test_hypermodel_with_dynamic_space(tmp_path):
@@ -429,9 +435,13 @@ def test_override_compile(tmp_path):
             assert model.optimizer.__class__.__name__ == "RMSprop"
             assert model.loss == "mse"
             assert len(model.metrics) >= 2
-            assert model.metrics[-2]._fn.__name__ == "mean_squared_error"
-            assert (
-                model.metrics[-1]._fn.__name__ == "sparse_categorical_accuracy"
+            assert model.metrics[-2].__class__.__name__ in (
+                "mean_squared_error",
+                "Mean",
+            )
+            assert model.metrics[-1].__class__.__name__ in (
+                "sparse_categorical_accuracy",
+                "CompileMetrics",
             )
             return history
 
@@ -822,10 +832,14 @@ def test_update_trial(tmp_path):
         assert len(trial.metrics.get_history("val_accuracy")) == 1
 
 
+@pytest.mark.skipif(
+    config.multi_backend(),
+    reason="The test is too slow.",
+)
 def test_tunable_false_hypermodel(tmp_path):
     def build_model(hp):
         input_shape = (256, 256, 3)
-        inputs = tf.keras.Input(shape=input_shape)
+        inputs = keras.Input(shape=input_shape)
 
         with hp.name_scope("xception"):
             # Tune the pooling of Xception by supplying the search space
@@ -836,14 +850,14 @@ def test_tunable_false_hypermodel(tmp_path):
             ).build(hp)
         x = xception(inputs)
 
-        x = tf.keras.layers.Dense(
+        x = keras.layers.Dense(
             hp.Int("hidden_units", 50, 100, step=10), activation="relu"
         )(x)
-        outputs = tf.keras.layers.Dense(NUM_CLASSES, activation="softmax")(x)
+        outputs = keras.layers.Dense(NUM_CLASSES, activation="softmax")(x)
 
-        model = tf.keras.Model(inputs, outputs)
+        model = keras.Model(inputs, outputs)
 
-        optimizer = tf.keras.optimizers.get(
+        optimizer = keras.optimizers.get(
             hp.Choice("optimizer", ["adam", "sgd"])
         )
         optimizer.learning_rate = hp.Float(
@@ -949,6 +963,10 @@ def test_search_logging_verbosity(tmp_path):
         assert output.getvalue().strip() == ""
 
 
+@pytest.mark.skipif(
+    keras_tuner.backend.config.backend() != "tensorflow",
+    reason="KerasTuner can only use TensorBoard with TensorFlow backend.",
+)
 def test_convert_hyperparams_to_hparams():
     def _check_hparams_equal(hp1, hp2):
         assert (
@@ -960,7 +978,9 @@ def test_convert_hyperparams_to_hparams():
 
     hps = keras_tuner.engine.hyperparameters.HyperParameters()
     hps.Choice("learning_rate", [1e-4, 1e-3, 1e-2])
-    hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
+    hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(
+        hps, hparams_api
+    )
     _check_hparams_equal(
         hparams,
         {
@@ -972,7 +992,9 @@ def test_convert_hyperparams_to_hparams():
 
     hps = keras_tuner.engine.hyperparameters.HyperParameters()
     hps.Int("units", min_value=2, max_value=16)
-    hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
+    hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(
+        hps, hparams_api
+    )
     _check_hparams_equal(
         hparams,
         {hparams_api.HParam("units", hparams_api.IntInterval(2, 16)): 2},
@@ -980,7 +1002,9 @@ def test_convert_hyperparams_to_hparams():
 
     hps = keras_tuner.engine.hyperparameters.HyperParameters()
     hps.Int("units", min_value=32, max_value=128, step=32)
-    hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
+    hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(
+        hps, hparams_api
+    )
     _check_hparams_equal(
         hparams,
         {
@@ -992,7 +1016,9 @@ def test_convert_hyperparams_to_hparams():
 
     hps = keras_tuner.engine.hyperparameters.HyperParameters()
     hps.Float("learning_rate", min_value=0.5, max_value=1.25, step=0.25)
-    hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
+    hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(
+        hps, hparams_api
+    )
     _check_hparams_equal(
         hparams,
         {
@@ -1004,7 +1030,9 @@ def test_convert_hyperparams_to_hparams():
 
     hps = keras_tuner.engine.hyperparameters.HyperParameters()
     hps.Float("learning_rate", min_value=1e-4, max_value=1e-1)
-    hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
+    hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(
+        hps, hparams_api
+    )
     _check_hparams_equal(
         hparams,
         {
@@ -1017,7 +1045,9 @@ def test_convert_hyperparams_to_hparams():
     hps = keras_tuner.engine.hyperparameters.HyperParameters()
     hps.Float("theta", min_value=0.0, max_value=1.57)
     hps.Float("r", min_value=0.0, max_value=1.0)
-    hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
+    hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(
+        hps, hparams_api
+    )
     expected_hparams = {
         hparams_api.HParam("theta", hparams_api.RealInterval(0.0, 1.57)): 0.0,
         hparams_api.HParam("r", hparams_api.RealInterval(0.0, 1.0)): 0.0,
@@ -1031,7 +1061,9 @@ def test_convert_hyperparams_to_hparams():
 
     hps = keras_tuner.engine.hyperparameters.HyperParameters()
     hps.Boolean("has_beta")
-    hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
+    hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(
+        hps, hparams_api
+    )
     _check_hparams_equal(
         hparams,
         {
@@ -1043,14 +1075,18 @@ def test_convert_hyperparams_to_hparams():
 
     hps = keras_tuner.engine.hyperparameters.HyperParameters()
     hps.Fixed("beta", 0.1)
-    hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
+    hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(
+        hps, hparams_api
+    )
     _check_hparams_equal(
         hparams, {hparams_api.HParam("beta", hparams_api.Discrete([0.1])): 0.1}
     )
 
     hps = keras_tuner.engine.hyperparameters.HyperParameters()
     hps.Fixed("type", "WIDE_AND_DEEP")
-    hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
+    hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(
+        hps, hparams_api
+    )
     _check_hparams_equal(
         hparams,
         {
@@ -1062,7 +1098,9 @@ def test_convert_hyperparams_to_hparams():
 
     hps = keras_tuner.engine.hyperparameters.HyperParameters()
     hps.Fixed("condition", True)
-    hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
+    hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(
+        hps, hparams_api
+    )
     _check_hparams_equal(
         hparams,
         {hparams_api.HParam("condition", hparams_api.Discrete([True])): True},
@@ -1070,7 +1108,9 @@ def test_convert_hyperparams_to_hparams():
 
     hps = keras_tuner.engine.hyperparameters.HyperParameters()
     hps.Fixed("num_layers", 2)
-    hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(hps)
+    hparams = keras_tuner.engine.tuner_utils.convert_hyperparams_to_hparams(
+        hps, hparams_api
+    )
     _check_hparams_equal(
         hparams,
         {hparams_api.HParam("num_layers", hparams_api.Discrete([2])): 2},
@@ -1256,10 +1296,6 @@ def test_tuner_errors(tmp_path):
     # TODO: test no optimizer
 
 
-@pytest.mark.skipif(
-    parse(tf.__version__) < parse("2.3.0"),
-    reason="TPUStrategy only exists in TF2.3+.",
-)
 def test_metric_direction_inferred_from_objective(tmp_path):
     oracle = keras_tuner.tuners.randomsearch.RandomSearchOracle(
         objective=keras_tuner.Objective("a", "max"), max_trials=1

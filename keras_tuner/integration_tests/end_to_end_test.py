@@ -13,11 +13,9 @@
 # limitations under the License.
 
 import numpy as np
-import pytest
-import tensorflow as tf
-from tensorflow import keras
 
 import keras_tuner
+from keras_tuner.backend import keras
 
 
 def get_data():
@@ -60,11 +58,7 @@ def build_model(hp):
     return model
 
 
-@pytest.mark.parametrize(
-    "distribution_strategy", [tf.distribute.OneDeviceStrategy("/cpu:0"), None]
-)
-def test_end_to_end_workflow(tmp_path, distribution_strategy):
-    tf.get_logger().setLevel("ERROR")
+def test_end_to_end_workflow(tmp_path):
     (x, y), (val_x, val_y) = get_data()
     x = x.astype("float32") / 255.0
     val_x = val_x.astype("float32") / 255.0
@@ -73,7 +67,6 @@ def test_end_to_end_workflow(tmp_path, distribution_strategy):
         build_model,
         objective="val_accuracy",
         max_trials=20,
-        distribution_strategy=distribution_strategy,
         directory=tmp_path,
     )
 

@@ -16,9 +16,9 @@ import random
 
 import numpy as np
 import pytest
-from tensorflow.keras import losses
-from tensorflow.keras import metrics
 
+from keras_tuner.backend.keras import losses
+from keras_tuner.backend.keras import metrics
 from keras_tuner.engine import metrics_tracking
 
 

@@ -16,9 +16,9 @@ import inspect
 
 import numpy as np
 import six
-from tensorflow import keras
 
 from keras_tuner import protos
+from keras_tuner.backend import keras
 
 
 class MetricObservation:
@@ -372,6 +372,8 @@ def infer_metric_direction(metric):
         name = metric.__class__.__name__
         if name == "MeanMetricWrapper":
             name = metric._fn.__name__  # pragma: no cover
+    elif isinstance(metric, str):
+        name = metric
     else:
         name = metric.__name__
 

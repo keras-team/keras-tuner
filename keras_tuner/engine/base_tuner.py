@@ -19,8 +19,7 @@ import os
 import traceback
 import warnings
 
-import tensorflow as tf
-
+from keras_tuner import backend
 from keras_tuner import config as config_module
 from keras_tuner import errors
 from keras_tuner import utils
@@ -116,17 +115,15 @@ class BaseTuner(stateful.Stateful):
         self.project_name = project_name or "untitled_project"
         self.oracle._set_project_dir(self.directory, self.project_name)
 
-        if overwrite and tf.io.gfile.exists(self.project_dir):
-            tf.io.gfile.rmtree(self.project_dir)
+        if overwrite and backend.io.exists(self.project_dir):
+            backend.io.rmtree(self.project_dir)
 
         # To support tuning distribution.
         self.tuner_id = os.environ.get("KERASTUNER_TUNER_ID", "tuner0")
 
         # Reloading state.
-        if not overwrite and tf.io.gfile.exists(self._get_tuner_fname()):
-            tf.get_logger().info(
-                f"Reloading Tuner from {self._get_tuner_fname()}"
-            )
+        if not overwrite and backend.io.exists(self._get_tuner_fname()):
+            print(f"Reloading Tuner from {self._get_tuner_fname()}")
             self.reload()
         else:
             # Only populate initial space if not reloading.
@@ -212,15 +209,16 @@ class BaseTuner(stateful.Stateful):
             **fit_kwargs: Keyword arguments that should be passed to
               `run_trial`, for example the training and validation data.
         """
+        verbose = "auto"
         if "verbose" in fit_kwargs:
-            self._display.verbose = fit_kwargs.get("verbose")
+            verbose = fit_kwargs.get("verbose")
+            self._display.verbose = verbose
         self.on_search_begin()
         while True:
             self.pre_create_trial()
             trial = self.oracle.create_trial(self.tuner_id)
             if trial.status == trial_module.TrialStatus.STOPPED:
                 # Oracle triggered exit.
-                tf.get_logger().info("Oracle triggered exit")
                 break
             if trial.status == trial_module.TrialStatus.IDLE:
                 # Oracle is calculating, resend request.

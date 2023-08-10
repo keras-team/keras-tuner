@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import numpy as np
-import tensorflow as tf
 
+from keras_tuner.backend import keras
 from keras_tuner.engine import tuner as tuner_module
 from keras_tuner.tuners import randomsearch
 
@@ -23,15 +23,15 @@ def test_update_space(tmp_path):
     # Tests that HyperParameters added after the first call to `build_model`
     # are sent to the Oracle via oracle.update_space.
     def build_model(hp):
-        model = tf.keras.Sequential()
+        model = keras.Sequential()
         for i in range(hp.Int("layers", 0, 2)):
             model.add(
-                tf.keras.layers.Dense(
+                keras.layers.Dense(
                     units=hp.Int(f"units_{str(i)}", 2, 4, 2), activation="relu"
                 )
             )
 
-        model.add(tf.keras.layers.Dense(1, activation="sigmoid"))
+        model.add(keras.layers.Dense(1, activation="sigmoid"))
         model.compile("adam", loss="binary_crossentropy", metrics=["accuracy"])
         return model
 

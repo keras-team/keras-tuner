@@ -14,7 +14,6 @@
 """Tests for distributed tuning."""
 
 import copy
-import logging
 import os
 import threading
 from unittest import mock
@@ -22,10 +21,9 @@ from unittest import mock
 import numpy as np
 import portpicker
 import pytest
-import tensorflow as tf
-from tensorflow import keras
 
 import keras_tuner
+from keras_tuner.backend import keras
 from keras_tuner.distribute import oracle_client
 from keras_tuner.distribute import utils as dist_utils
 from keras_tuner.engine import hyperparameters as hp_module
@@ -41,12 +39,12 @@ class SimpleTuner(keras_tuner.engine.base_tuner.BaseTuner):
 
     def save_model(self, trial_id, score, step=0):
         save_path = os.path.join(self.project_dir, trial_id)
-        with tf.io.gfile.GFile(save_path, "w") as f:
+        with open(save_path, "w") as f:
             f.write(str(score))
 
     def load_model(self, trial):
         save_path = os.path.join(self.project_dir, trial.trial_id)
-        with tf.io.gfile.GFile(save_path, "r") as f:
+        with open(save_path, "r") as f:
             score = int(f.read())
         return score
 
@@ -124,7 +122,6 @@ def test_random_search(tmp_path):
 
         # Suppress warnings about optimizer state not being restored by
         # tf.keras.
-        tf.get_logger().setLevel(logging.ERROR)
 
         trials = tuner.oracle.get_best_trials(2)
         assert trials[0].score <= trials[1].score

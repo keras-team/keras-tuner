@@ -17,7 +17,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = "1.3.5"
+__version__ = "1.4.0"
 
 setup(
     name="keras-tuner",
@@ -27,6 +27,7 @@ setup(
     license="Apache License 2.0",
     version=__version__,
     install_requires=[
+        "keras-core",
         "packaging",
         "requests",
         "kt-legacy",
