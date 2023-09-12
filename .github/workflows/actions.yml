@@ -6,6 +6,10 @@ on:
   pull_request:
   release:
     types: [created]
+
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Run tests
