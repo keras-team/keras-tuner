@@ -384,9 +384,9 @@ class Oracle(stateful.Stateful):
                 consecutive_failures = 0
             if consecutive_failures == self.max_consecutive_failed_trials:
                 raise RuntimeError(
-                    "Number of consecutive failures excceeded the limit "
+                    "Number of consecutive failures exceeded the limit "
                     f"of {self.max_consecutive_failed_trials}.\n"
-                    + trial.message
+                    + (trial.message or "")
                 )
 
     @synchronized
