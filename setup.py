@@ -37,10 +37,10 @@ def get_version(rel_path):
 
 HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
-if os.path.exists("keras_core/version.py"):
-    VERSION = get_version("keras_core/version.py")
+if os.path.exists("keras_tuner/version.py"):
+    VERSION = get_version("keras_tuner/version.py")
 else:
-    VERSION = get_version("keras_core/__init__.py")
+    VERSION = get_version("keras_tuner/__init__.py")
 
 setup(
     name="keras-tuner",
