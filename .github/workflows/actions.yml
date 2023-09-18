@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   build:
-    name: Run tests
+    name: Test the code with tf.keras
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -33,6 +33,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -e ".[tensorflow-cpu,tests]" --progress-bar off --upgrade
+          pip install jax
       - name: Test with pytest
         run: |
           pytest --cov=keras_tuner --cov-report xml:coverage.xml
