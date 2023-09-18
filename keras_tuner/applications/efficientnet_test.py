@@ -15,55 +15,54 @@
 
 import numpy as np
 import pytest
-import tensorflow as tf
-from packaging.version import parse
 
 from keras_tuner.applications import efficientnet
+from keras_tuner.backend import config
+from keras_tuner.backend import keras
 from keras_tuner.engine import hypermodel as hm_module
 from keras_tuner.engine import hyperparameters as hp_module
 
+if config.backend() == "torch":
+    keras.backend.set_image_data_format("channels_first")
+else:
+    keras.backend.set_image_data_format("channels_last")
 
-@pytest.mark.skipif(
-    parse(tf.__version__) < parse("2.3.0"),
-    reason="Preprocessing layers and "
-    "applications.efficientnet only exist in TF2.3+.",
-)
+if keras.backend.image_data_format() == "channels_last":
+    INPUT_SHAPE_32 = (32, 32, 3)
+    INPUT_SHAPE_224 = (224, 224, 3)
+    INPUT_SHAPE_256 = (256, 256, 3)
+else:
+    INPUT_SHAPE_32 = (3, 32, 32)
+    INPUT_SHAPE_224 = (3, 224, 224)
+    INPUT_SHAPE_256 = (3, 256, 256)
+
+
 @pytest.mark.parametrize("version", ["B0", "B1"])
+@pytest.mark.skipif(
+    config.multi_backend(),
+    reason="The test is too slow.",
+)
 def test_model_construction(version):
     hp = hp_module.HyperParameters()
     hp.Choice("version", [version])
     hypermodel = efficientnet.HyperEfficientNet(
-        input_shape=(32, 32, 3), classes=10
+        input_shape=INPUT_SHAPE_32, classes=10
     )
     model = hypermodel.build(hp)
     assert hp.values["version"] == version
     assert model.layers
     assert model.name == "EfficientNet"
     assert model.output_shape == (None, 10)
-    model.train_on_batch(np.ones((1, 32, 32, 3)), np.ones((1, 10)))
-    out = model.predict(np.ones((1, 32, 32, 3)))
+    model.build(input_shape=(32, 32, 3))
+    model.train_on_batch(np.ones((1,) + INPUT_SHAPE_32), np.ones((1, 10)))
+    out = model.predict(np.ones((1,) + INPUT_SHAPE_32))
     assert out.shape == (1, 10)
 
 
-def test_tf_version_too_low_error():
-    pp_module = efficientnet.preprocessing
-    efficientnet.preprocessing = None
-
-    with pytest.raises(ImportError, match="HyperEfficientNet requires"):
-        efficientnet.HyperEfficientNet()
-
-    efficientnet.preprocessing = pp_module
-
-
-@pytest.mark.skipif(
-    parse(tf.__version__) < parse("2.3.0"),
-    reason="Preprocessing layers and "
-    "applications.efficientnet only exist in TF2.3+.",
-)
 def test_hyperparameter_existence_and_defaults():
     hp = hp_module.HyperParameters()
     hypermodel = efficientnet.HyperEfficientNet(
-        input_shape=(224, 224, 3), classes=10
+        input_shape=INPUT_SHAPE_224, classes=10
     )
     hypermodel.build(hp)
     assert hp.get("version") == "B0"
@@ -72,41 +71,26 @@ def test_hyperparameter_existence_and_defaults():
     assert hp.get("pooling") == "avg"
 
 
-@pytest.mark.skipif(
-    parse(tf.__version__) < parse("2.3.0"),
-    reason="Preprocessing layers and "
-    "applications.efficientnet only exist in TF2.3+.",
-)
 def test_hyperparameter_override():
     hp = hp_module.HyperParameters()
     hp.Choice("version", ["B1"])
     hp.Fixed("top_dropout_rate", 0.5)
     hypermodel = efficientnet.HyperEfficientNet(
-        input_shape=(256, 256, 3), classes=10
+        input_shape=INPUT_SHAPE_256, classes=10
     )
     hypermodel.build(hp)
     assert hp.get("version") == "B1"
     assert hp.get("top_dropout_rate") == 0.5
 
 
-@pytest.mark.skipif(
-    parse(tf.__version__) < parse("2.3.0"),
-    reason="Preprocessing layers and "
-    "applications.efficientnet only exist in TF2.3+.",
-)
 def test_input_tensor():
     hp = hp_module.HyperParameters()
-    inputs = tf.keras.Input(shape=(256, 256, 3))
+    inputs = keras.Input(shape=INPUT_SHAPE_256)
     hypermodel = efficientnet.HyperEfficientNet(input_tensor=inputs, classes=10)
     model = hypermodel.build(hp)
     assert model.inputs == [inputs]
 
 
-@pytest.mark.skipif(
-    parse(tf.__version__) < parse("2.3.0"),
-    reason="Preprocessing layers and "
-    "applications.efficientnet only exist in TF2.3+.",
-)
 def test_override_compiling_phase():
     class MyHyperEfficientNet(efficientnet.HyperEfficientNet):
         def _compile(self, model, hp):
@@ -115,13 +99,11 @@ def test_override_compiling_phase():
                 "optimizer", ["adam", "sgd"], default="adam"
             )
             if optimizer_name == "sgd":
-                optimizer = tf.keras.optimizers.SGD(
+                optimizer = keras.optimizers.SGD(
                     momentum=0.1, learning_rate=learning_rate
                 )
             elif optimizer_name == "adam":
-                optimizer = tf.keras.optimizers.Adam(
-                    learning_rate=learning_rate
-                )
+                optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
             model.compile(
                 optimizer=optimizer,
                 loss="categorical_crossentropy",
@@ -129,91 +111,61 @@ def test_override_compiling_phase():
             )
 
     hp = hp_module.HyperParameters()
-    hypermodel = MyHyperEfficientNet(input_shape=(32, 32, 3), classes=5)
+    hypermodel = MyHyperEfficientNet(input_shape=INPUT_SHAPE_32, classes=5)
     hypermodel.build(hp)
     assert "learning_rate" not in hp.values
     assert hp.values["optimizer"] == "adam"
 
 
-@pytest.mark.skipif(
-    parse(tf.__version__) < parse("2.3.0"),
-    reason="Preprocessing layers and "
-    "applications.efficientnet only exist in TF2.3+.",
-)
 def test_augmentation_param_invalid_input():
     with pytest.raises(ValueError):
         efficientnet.HyperEfficientNet(
-            input_shape=(32, 32, 3), classes=10, augmentation_model=0
+            input_shape=INPUT_SHAPE_32, classes=10, augmentation_model=0
         )
 
 
-@pytest.mark.skipif(
-    parse(tf.__version__) < parse("2.3.0"),
-    reason="Preprocessing layers and "
-    "applications.efficientnet only exist in TF2.3+.",
-)
 def test_augmentation_param_fixed_model():
     hp = hp_module.HyperParameters()
-    aug_model = tf.keras.Sequential(name="aug")
+    aug_model = keras.Sequential([keras.layers.RandomRotation(1.0)], name="aug")
     hypermodel = efficientnet.HyperEfficientNet(
-        input_shape=(32, 32, 3), classes=10, augmentation_model=aug_model
+        input_shape=INPUT_SHAPE_32, classes=10, augmentation_model=aug_model
     )
     model = hypermodel.build(hp)
     assert model.layers[1].name == "aug"
 
 
-@pytest.mark.skipif(
-    parse(tf.__version__) < parse("2.3.0"),
-    reason="Preprocessing layers and "
-    "applications.efficientnet only exist in TF2.3+.",
-)
 def test_augmentation_param_hyper_model():
     class HyperAug(hm_module.HyperModel):
         def build(self, hp):
-            model = tf.keras.Sequential(name="aug")
+            model = keras.Sequential(name="aug")
             scaling_factor = hp.Choice("scaling_factor", [1])
-            model.add(tf.keras.layers.Lambda(lambda x: x * scaling_factor))
+            model.add(keras.layers.Lambda(lambda x: x * scaling_factor))
             return model
 
     hp = hp_module.HyperParameters()
     aug_hm = HyperAug()
     hypermodel = efficientnet.HyperEfficientNet(
-        input_shape=(32, 32, 3), classes=10, augmentation_model=aug_hm
+        input_shape=INPUT_SHAPE_32, classes=10, augmentation_model=aug_hm
     )
     model = hypermodel.build(hp)
     assert model.layers[1].name == "aug"
     assert hp.values["scaling_factor"] == 1
 
 
-@pytest.mark.skipif(
-    parse(tf.__version__) < parse("2.3.0"),
-    reason="Preprocessing layers and "
-    "applications.efficientnet only exist in TF2.3+.",
-)
 def test_pooling_is_max():
     hp = hp_module.HyperParameters()
     hp.values["pooling"] = "max"
     hypermodel = efficientnet.HyperEfficientNet(
-        input_shape=(32, 32, 3), classes=10
+        input_shape=INPUT_SHAPE_32, classes=10
     )
     hypermodel.build(hp)
 
 
-@pytest.mark.skipif(
-    parse(tf.__version__) < parse("2.3.0"),
-    reason="Preprocessing layers and "
-    "applications.efficientnet only exist in TF2.3+.",
-)
 def test_no_classes_raise_error():
     with pytest.raises(ValueError, match="classes"):
-        efficientnet.HyperEfficientNet(input_shape=(32, 32, 3))
+        efficientnet.HyperEfficientNet(input_shape=INPUT_SHAPE_32)
 
 
-@pytest.mark.skipif(
-    parse(tf.__version__) < parse("2.3.0"),
-    reason="Preprocessing layers and "
-    "applications.efficientnet only exist in TF2.3+.",
-)
 def test_no_input_shape_tensor_raise_error():
     with pytest.raises(ValueError, match="input_tensor"):
         efficientnet.HyperEfficientNet(classes=10)

@@ -29,8 +29,4 @@ from keras_tuner.tuners import GridSearch
 from keras_tuner.tuners import Hyperband
 from keras_tuner.tuners import RandomSearch
 from keras_tuner.tuners import SklearnTuner
-from keras_tuner.utils import check_tf_version
-
-check_tf_version()
-
-__version__ = "1.3.5"
+from keras_tuner.version import __version__

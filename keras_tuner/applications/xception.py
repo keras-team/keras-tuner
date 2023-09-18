@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import layers
 
 from keras_tuner.api_export import keras_tuner_export
+from keras_tuner.backend import keras
+from keras_tuner.backend import ops
+from keras_tuner.backend.keras import layers
 from keras_tuner.engine import hypermodel
 
 
@@ -72,7 +72,7 @@ class HyperXception(hypermodel.HyperModel):
 
         # Model definition.
         if self.input_tensor is not None:
-            inputs = tf.keras.utils.get_source_inputs(self.input_tensor)
+            inputs = keras.utils.get_source_inputs(self.input_tensor)
             x = self.input_tensor
         else:
             inputs = layers.Input(shape=self.input_shape)
@@ -148,7 +148,8 @@ def sep_conv(x, num_filters, kernel_size=(3, 3), activation="relu"):
             kernel_size,
             activation="selu",
             padding="same",
-            kernel_initializer="lecun_normal",
+            depthwise_initializer="lecun_normal",
+            pointwise_initializer="lecun_normal",
         )(x)
     elif activation == "relu":
         x = layers.SeparableConv2D(
@@ -175,7 +176,7 @@ def residual(
             strides=pool_strides,
             padding="same",
         )(x)
-    elif num_filters != keras.backend.int_shape(x)[-1]:
+    elif num_filters != ops.shape(x)[-1]:
         res = layers.Conv2D(num_filters, kernel_size=(1, 1), padding="same")(x)
     else:
         res = x
@@ -225,7 +226,7 @@ def dense(x, dims, activation="relu", batchnorm=True, dropout_rate=0):
             bias_initializer="zeros",
         )(x)
         if dropout_rate:
-            x = layers.AlphaDropout(dropout_rate)(x)
+            x = layers.Dropout(dropout_rate)(x)
     elif activation == "relu":
         x = layers.Dense(dims, activation="relu")(x)
         if batchnorm:

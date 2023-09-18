@@ -18,7 +18,6 @@ import os
 import pickle
 
 import numpy as np
-import tensorflow as tf
 
 try:
     import pandas as pd  # pytype: disable=import-error
@@ -32,6 +31,7 @@ try:
 except ImportError:  # pragma: no cover
     sklearn = None  # pragma: no cover
 
+from keras_tuner import backend
 from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import base_tuner
 
@@ -214,10 +214,10 @@ class SklearnTuner(base_tuner.BaseTuner):
 
     def save_model(self, trial_id, model, step=0):
         fname = os.path.join(self.get_trial_dir(trial_id), "model.pickle")
-        with tf.io.gfile.GFile(fname, "wb") as f:
+        with backend.io.File(fname, "wb") as f:
             pickle.dump(model, f)
 
     def load_model(self, trial):
         fname = os.path.join(self.get_trial_dir(trial.trial_id), "model.pickle")
-        with tf.io.gfile.GFile(fname, "rb") as f:
+        with backend.io.File(fname, "rb") as f:
             return pickle.load(f)

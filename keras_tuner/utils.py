@@ -13,11 +13,8 @@
 # limitations under the License.
 """KerasTuner utilities."""
 
-
-import warnings
-
-import tensorflow as tf
-from packaging.version import parse
+from keras_tuner import backend
+from keras_tuner.backend import keras
 
 # Check if we are in a ipython/colab environement
 try:
@@ -42,47 +39,32 @@ def try_clear():
 
 def create_directory(path, remove_existing=False):
     # Create the directory if it doesn't exist.
-    if not tf.io.gfile.exists(path):
-        tf.io.gfile.makedirs(path)
+    if not backend.io.exists(path):
+        backend.io.makedirs(path)
 
     # If it does exist, and remove_existing is specified,
     # the directory will be removed and recreated.
     elif remove_existing:
-        tf.io.gfile.rmtree(path)
-        tf.io.gfile.makedirs(path)
-
-
-def check_tf_version():
-    if parse(tf.__version__) < parse("2.0.0"):
-        warnings.warn(
-            "The Tensorflow package version needs to be at least 2.0.0 \n"
-            "for AutoKeras to run. Currently, your TensorFlow version is \n"
-            f"{tf.__version__}. Please upgrade with \n"
-            "`$ pip install --upgrade tensorflow`. \n"
-            "You can use `pip freeze` to check afterwards that everything is "
-            "ok.",
-            ImportWarning,
-        )
+        backend.io.rmtree(path)
+        backend.io.makedirs(path)
 
 
 def serialize_keras_object(obj):
-    if hasattr(tf.keras.utils, "legacy"):
-        return tf.keras.utils.legacy.serialize_keras_object(  # pragma: no cover
+    if hasattr(keras.utils, "legacy"):
+        return keras.utils.legacy.serialize_keras_object(  # pragma: no cover
             obj
         )
     else:
-        return tf.keras.utils.serialize_keras_object(obj)  # pragma: no cover
+        return keras.utils.serialize_keras_object(obj)  # pragma: no cover
 
 
 def deserialize_keras_object(config, module_objects=None, custom_objects=None):
-    if hasattr(tf.keras.utils, "legacy"):
-        return (  # pragma: no cover
-            tf.keras.utils.legacy.deserialize_keras_object(
-                config, custom_objects, module_objects
-            )
+    if hasattr(keras.utils, "legacy"):
+        return keras.utils.legacy.deserialize_keras_object(  # pragma: no cover
+            config, custom_objects, module_objects
         )
     else:
-        return tf.keras.utils.deserialize_keras_object(  # pragma: no cover
+        return keras.utils.deserialize_keras_object(  # pragma: no cover
             config, custom_objects, module_objects
         )
 

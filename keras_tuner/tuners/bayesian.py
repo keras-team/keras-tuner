@@ -257,6 +257,7 @@ class BayesianOptimizationOracle(oracle_module.Oracle):
                 x_h = np.array(vector).reshape((1, -1))
                 y_h_mean, y_h_std = self.gpr.predict(x_h, return_std=True)
                 # Give a pessimistic estimate of the ongoing trial.
+                y_h_mean = np.array(y_h_mean).flatten()
                 score = y_h_mean[0] + y_h_std[0]
             elif trial.status == "COMPLETED":
                 score = trial.score

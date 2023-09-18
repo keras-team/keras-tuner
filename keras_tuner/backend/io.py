@@ -12,8 +12,55 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This is forked from Keras:
+
+import glob as built_in_glob
+import os
+import shutil
+
+from keras_tuner.backend import config
+
+if config.backend() == "tensorflow":
+    import tensorflow as tf
+else:
+    tf = None
+
+
+def exists(path):
+    if tf is None:
+        return os.path.exists(path)
+    return tf.io.gfile.exists(path)
+
+
+def rmtree(path):
+    if tf is None:
+        return shutil.rmtree(path)
+    return tf.io.gfile.rmtree(path)
+
+
+def File(filename, mode):
+    if tf is None:
+        file = open(filename, mode)
+    else:
+        file = tf.io.gfile.GFile(filename, mode)
+
+    return file
+
+
+def glob(path):
+    if tf is None:
+        return built_in_glob.glob(path)
+    return tf.io.gfile.glob(path)
+
+
+def makedirs(path):
+    if tf is None:
+        return os.makedirs(path, exist_ok=True)
+    return tf.io.gfile.makedirs(path)
+
+
+# The following code is forked from Keras:
 # https://github.com/keras-team/keras/blob/master/keras/distribute/distributed_file_utils.py
+
 """Utilities that help manage directory path in distributed settings.
 
 In multi-worker training, the need to write a file to distributed file
@@ -47,11 +94,6 @@ Experimental. API is subject to change.
 """
 
 
-import os
-
-import tensorflow as tf
-
-
 def _get_base_dirpath(strategy):
     task_id = strategy.extended._task_id  # pylint: disable=protected-access
     return f"workertemp_{str(task_id)}"
@@ -82,6 +124,9 @@ def write_dirpath(dirpath, strategy):
     Returns:
         The writing dir path that should be used to save with distribution.
     """
+    if tf is None:
+        return
+
     if strategy is None:
         # Infer strategy if not given.
         strategy = tf.distribute.get_strategy()
@@ -108,6 +153,9 @@ def remove_temp_dirpath(dirpath, strategy):
             the temporary dirpath used with distribution.
         strategy: The tf.distribute strategy object currently used.
     """
+    if tf is None:
+        return
+
     if strategy is None:
         # Infer strategy if not given.
         strategy = tf.distribute.get_strategy()
@@ -138,6 +186,9 @@ def write_filepath(filepath, strategy):
     Returns:
         The writing filepath that should be used to save file with distribution.
     """
+    if tf is None:
+        return
+
     dirpath = os.path.dirname(filepath)
     base = os.path.basename(filepath)
     return os.path.join(write_dirpath(dirpath, strategy), base)
@@ -151,4 +202,7 @@ def remove_temp_dir_with_filepath(filepath, strategy):
             the temporary filepath used with distribution.
         strategy: The tf.distribute strategy object currently used.
     """
+    if tf is None:
+        return
+
     remove_temp_dirpath(os.path.dirname(filepath), strategy)

@@ -16,7 +16,7 @@
 
 import json
 
-import tensorflow as tf
+from keras_tuner import backend
 
 
 class Stateful:
@@ -64,7 +64,7 @@ class Stateful:
         """
         state = self.get_state()
         state_json = json.dumps(state)
-        with tf.io.gfile.GFile(fname, "w") as f:
+        with backend.io.File(fname, "w") as f:
             f.write(state_json)
         return str(fname)
 
@@ -74,7 +74,7 @@ class Stateful:
         Args:
             fname: A string, the file name to restore from.
         """
-        with tf.io.gfile.GFile(fname, "r") as f:
+        with backend.io.File(fname, "r") as f:
             state_data = f.read()
         state = json.loads(state_data)
         self.set_state(state)

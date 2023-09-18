@@ -19,8 +19,7 @@ import json
 import random
 import time
 
-import tensorflow as tf
-
+from keras_tuner import backend
 from keras_tuner import protos
 from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine import metrics_tracking
@@ -170,7 +169,7 @@ class Trial(stateful.Stateful):
 
     @classmethod
     def load(cls, fname):
-        with tf.io.gfile.GFile(fname, "r") as f:
+        with backend.io.File(fname, "r") as f:
             trial_data = f.read()
         state_data = json.loads(trial_data)
         return cls.from_state(state_data)

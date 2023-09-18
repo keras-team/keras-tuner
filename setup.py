@@ -14,19 +14,45 @@
 
 """Setup script."""
 
+import os
+import pathlib
+
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = "1.3.5"
+
+def read(rel_path):
+    here = os.path.abspath(os.path.dirname(__file__))
+    with open(os.path.join(here, rel_path)) as fp:
+        return fp.read()
+
+
+def get_version(rel_path):
+    for line in read(rel_path).splitlines():
+        if line.startswith("__version__"):
+            delim = '"' if '"' in line else "'"
+            return line.split(delim)[1]
+    raise RuntimeError("Unable to find version string.")
+
+
+HERE = pathlib.Path(__file__).parent
+README = (HERE / "README.md").read_text()
+if os.path.exists("keras_tuner/version.py"):
+    VERSION = get_version("keras_tuner/version.py")
+else:
+    VERSION = get_version("keras_tuner/__init__.py")
 
 setup(
     name="keras-tuner",
     description="A Hyperparameter Tuning Library for Keras",
+    long_description_content_type="text/markdown",
+    long_description=README,
     url="https://github.com/keras-team/keras-tuner",
     author="The KerasTuner authors",
     license="Apache License 2.0",
-    version=__version__,
+    version=VERSION,
     install_requires=[
+        "keras-core",
         "packaging",
         "requests",
         "kt-legacy",

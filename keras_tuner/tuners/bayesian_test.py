@@ -16,27 +16,27 @@ import math
 
 import numpy as np
 import pytest
-import tensorflow as tf
 
 import keras_tuner
+from keras_tuner.backend import keras
 from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine import trial as trial_module
 from keras_tuner.tuners import bayesian as bo_module
 
 
 def build_model(hp):
-    model = tf.keras.Sequential()
-    model.add(tf.keras.layers.Flatten(input_shape=(2, 2)))
+    model = keras.Sequential()
+    model.add(keras.layers.Flatten(input_shape=(2, 2)))
     for i in range(3):
         model.add(
-            tf.keras.layers.Dense(
+            keras.layers.Dense(
                 units=hp.Int(f"units_{str(i)}", 2, 4, 2), activation="relu"
             )
         )
 
-    model.add(tf.keras.layers.Dense(2, activation="softmax"))
+    model.add(keras.layers.Dense(2, activation="softmax"))
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(
+        optimizer=keras.optimizers.Adam(
             hp.Choice("learning_rate", [1e-2, 1e-3, 1e-4])
         ),
         loss="sparse_categorical_crossentropy",

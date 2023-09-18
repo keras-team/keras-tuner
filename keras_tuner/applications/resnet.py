@@ -14,12 +14,10 @@
 
 """Hypertunable version of ResNet."""
 
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras import backend
-from tensorflow.keras import layers
-
 from keras_tuner.api_export import keras_tuner_export
+from keras_tuner.backend import keras
+from keras_tuner.backend import ops
+from keras_tuner.backend.keras import layers
 from keras_tuner.engine import hypermodel
 
 
@@ -80,10 +78,12 @@ class HyperResNet(hypermodel.HyperModel):
         use_bias = version != "next"
 
         # Model definition.
-        bn_axis = 3 if backend.image_data_format() == "channels_last" else 1
+        bn_axis = (
+            3 if keras.backend.image_data_format() == "channels_last" else 1
+        )
 
         if self.input_tensor is not None:
-            inputs = tf.keras.utils.get_source_inputs(self.input_tensor)
+            inputs = keras.utils.get_source_inputs(self.input_tensor)
             x = self.input_tensor
         else:
             inputs = layers.Input(shape=self.input_shape)
@@ -166,7 +166,7 @@ def block1(x, filters, kernel_size=3, stride=1, conv_shortcut=True, name=None):
     Returns:
         Output tensor for the residual block.
     """
-    bn_axis = 3 if backend.image_data_format() == "channels_last" else 1
+    bn_axis = 3 if keras.backend.image_data_format() == "channels_last" else 1
 
     if conv_shortcut is True:
         shortcut = layers.Conv2D(
@@ -243,7 +243,7 @@ def block2(x, filters, kernel_size=3, stride=1, conv_shortcut=False, name=None):
     Returns:
         Output tensor for the residual block.
     """
-    bn_axis = 3 if backend.image_data_format() == "channels_last" else 1
+    bn_axis = 3 if keras.backend.image_data_format() == "channels_last" else 1
 
     preact = layers.BatchNormalization(
         axis=bn_axis, epsilon=1.001e-5, name=f"{name}_preact_bn"
@@ -335,7 +335,7 @@ def block3(
     Returns:
         Output tensor for the residual block.
     """
-    bn_axis = 3 if backend.image_data_format() == "channels_last" else 1
+    bn_axis = 3 if keras.backend.image_data_format() == "channels_last" else 1
 
     if conv_shortcut is True:
         shortcut = layers.Conv2D(
@@ -370,19 +370,28 @@ def block3(
         name=f"{name}_2_conv",
     )(x)
 
-    x_shape = backend.int_shape(x)[1:-1]
-    x = layers.Reshape(x_shape + (groups, c, c))(x)
-    output_shape = (
-        x_shape + (groups, c) if backend.backend() == "theano" else None
-    )
+    if bn_axis == 3:
+        x_shape = ops.shape(x)[1:-1]
+        x = layers.Reshape(x_shape + (groups, c, c))(x)
+        output_shape = x_shape + (groups, c)
+        x = layers.Lambda(
+            lambda x: sum(x[:, :, :, :, i] for i in range(c)),
+            name=f"{name}_2_reduce",
+            output_shape=output_shape,
+        )(x)
 
-    x = layers.Lambda(
-        lambda x: sum(x[:, :, :, :, i] for i in range(c)),
-        output_shape=output_shape,
-        name=f"{name}_2_reduce",
-    )(x)
+        x = layers.Reshape(x_shape + (filters,))(x)
+    else:
+        x_shape = ops.shape(x)[2:]
+        x = layers.Reshape((groups, c, c) + x_shape)(x)
+        output_shape = (groups, c) + x_shape
+        x = layers.Lambda(
+            lambda x: sum(x[:, :, i, :, :] for i in range(c)),
+            name=f"{name}_2_reduce",
+            output_shape=output_shape,
+        )(x)
 
-    x = layers.Reshape(x_shape + (filters,))(x)
+        x = layers.Reshape((filters,) + x_shape)(x)
 
     x = layers.BatchNormalization(
         axis=bn_axis, epsilon=1.001e-5, name=f"{name}_2_bn"

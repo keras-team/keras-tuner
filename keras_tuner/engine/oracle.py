@@ -22,8 +22,8 @@ import threading
 import warnings
 
 import numpy as np
-import tensorflow as tf
 
+from keras_tuner import backend
 from keras_tuner import utils
 from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import hyperparameters as hp_module
@@ -403,11 +403,6 @@ class Oracle(stateful.Stateful):
                 needed.). `trial.message` is an optional string, which is the
                 error message if the trial status is `"INVALID"` or `"FAILED"`.
         """
-        for tuner_id, ongoing_trial in self.ongoing_trials.items():
-            if ongoing_trial.trial_id == trial.trial_id:
-                self.ongoing_trials.pop(tuner_id)
-                break
-
         # To support parallel tuning, the information in the `trial` argument is
         # synced back to the `Oracle`. Update the self.trials with the given
         # trial.
@@ -435,6 +430,13 @@ class Oracle(stateful.Stateful):
 
         self._save_trial(trial)
         self.save()
+
+        # Pop the ongoing trial at last, which would notify the chief server to
+        # stop when ongoing_trials is empty.
+        for tuner_id, ongoing_trial in self.ongoing_trials.items():
+            if ongoing_trial.trial_id == trial.trial_id:
+                self.ongoing_trials.pop(tuner_id)
+                break
 
     def _retry(self, trial):
         """Send the trial for retry if needed.
@@ -584,7 +586,7 @@ class Oracle(stateful.Stateful):
 
     def reload(self):
         # Reload trials from their own files.
-        trial_fnames = tf.io.gfile.glob(
+        trial_fnames = backend.io.glob(
             os.path.join(self._project_dir, "trial_*", "trial.json")
         )
         for fname in trial_fnames:
