@@ -33,7 +33,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -e ".[tensorflow-cpu,tests]" --progress-bar off --upgrade
-          pip install jax
+          pip install jax[cpu]
       - name: Test with pytest
         run: |
           pytest --cov=keras_tuner --cov-report xml:coverage.xml
