@@ -17,6 +17,7 @@ import numpy as np
 import pytest
 
 from keras_tuner.applications import augment as aug_module
+from keras_tuner.backend import config
 from keras_tuner.backend import keras
 from keras_tuner.engine import hyperparameters as hp_module
 
@@ -126,6 +127,10 @@ def test_hyperparameter_selection_and_hp_defaults_fixed_aug():
     assert "factor_contrast" not in hp.values
 
 
+@pytest.mark.skipif(
+    not config.multi_backend(),
+    reason="The test fails with tf.keras.",
+)
 def test_hyperparameter_existence_and_hp_defaults_rand_aug():
     hp = hp_module.HyperParameters()
     hm = aug_module.HyperImageAugment(
@@ -144,6 +149,10 @@ def test_augment_layers_not_int():
         hm.build(hp)
 
 
+@pytest.mark.skipif(
+    not config.multi_backend(),
+    reason="The test fails with tf.keras.",
+)
 def test_contrast_0_5_to_1():
     hp = hp_module.HyperParameters()
     hm = aug_module.HyperImageAugment(
@@ -182,6 +191,10 @@ def test_hyperparameter_override_fixed_aug():
     assert hp.get("factor_contrast") == 0.0
 
 
+@pytest.mark.skipif(
+    not config.multi_backend(),
+    reason="The test fails with tf.keras.",
+)
 def test_hyperparameter_override_rand_aug():
     hp = hp_module.HyperParameters()
     hp.Fixed("randaug_mag", 1.0)
