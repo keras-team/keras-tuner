@@ -31,5 +31,6 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -e ".[tensorflow-cpu,tests]" --progress-bar off --upgrade
+          pip install jax[cpu] --progress-bar off --upgrade
       - name: Run the guides
         run: bash shell/run_guides.sh
