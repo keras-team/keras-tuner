@@ -72,7 +72,9 @@ jobs:
         env:
           KERAS_BACKEND: ${{ matrix.backend }}
         run: |
-          pytest
+          pytest --cov=keras_tuner --cov-report xml:coverage.xml
+      - name: Codecov
+        uses: codecov/codecov-action@v3
   format:
     name: Check the code format
     runs-on: ubuntu-latest
