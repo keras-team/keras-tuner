@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """KerasTuner utilities."""
+import json
 
 from keras_tuner import backend
 from keras_tuner.backend import keras
@@ -75,3 +76,33 @@ def to_list(values):
     if isinstance(values, tuple):
         return list(values)
     return [values]
+
+
+def save_json(path, obj):
+    """Save Python object to a json file.
+
+    Args:
+        path: String. The path to the json file.
+        obj: Object. The Python object to be saved.
+
+    Returns:
+        The json string format of the object.
+    """
+    obj_str = json.dumps(obj)
+    with backend.io.File(path, "w") as f:
+        f.write(obj_str)
+    return obj_str
+
+
+def load_json(path):
+    """Load json from file.
+
+    Args:
+        path: String. The path to the json file.
+
+    Returns:
+        A Python object.
+    """
+    with backend.io.File(path, "r") as f:
+        obj_str = f.read()
+    return json.loads(obj_str)

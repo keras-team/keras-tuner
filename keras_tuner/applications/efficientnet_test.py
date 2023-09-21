@@ -53,7 +53,6 @@ def test_model_construction(version):
     assert model.layers
     assert model.name == "EfficientNet"
     assert model.output_shape == (None, 10)
-    model.build(input_shape=(32, 32, 3))
     model.train_on_batch(np.ones((1,) + INPUT_SHAPE_32), np.ones((1, 10)))
     out = model.predict(np.ones((1,) + INPUT_SHAPE_32))
     assert out.shape == (1, 10)
