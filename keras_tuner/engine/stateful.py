@@ -14,9 +14,7 @@
 "Tuner base class."
 
 
-import json
-
-from keras_tuner import backend
+from keras_tuner import utils
 
 
 class Stateful:
@@ -62,11 +60,7 @@ class Stateful:
         Returns:
             String. The serialized state of the object.
         """
-        state = self.get_state()
-        state_json = json.dumps(state)
-        with backend.io.File(fname, "w") as f:
-            f.write(state_json)
-        return str(fname)
+        return utils.save_json(fname, self.get_state())
 
     def reload(self, fname):
         """Reloads this object using `set_state`.
@@ -74,7 +68,4 @@ class Stateful:
         Args:
             fname: A string, the file name to restore from.
         """
-        with backend.io.File(fname, "r") as f:
-            state_data = f.read()
-        state = json.loads(state_data)
-        self.set_state(state)
+        self.set_state(utils.load_json(fname))

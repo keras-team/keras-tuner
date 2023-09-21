@@ -1,3 +1,13 @@
+# Release v1.4.0
+
+## Breaking changes
+* All private APIs are hidden under `keras_tuner.src.*`. For example, if you use
+  `keras_tuner.some_private_api`, it will now be
+  `keras_tuner.src.some_private_api`.
+
+## New features
+* Support Keras Core with multi-backend.
+
 # Release v1.3.5
 
 ## Breaking changes

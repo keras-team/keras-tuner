@@ -24,8 +24,8 @@ import numpy as np
 
 from keras_tuner import backend
 from keras_tuner import errors
+from keras_tuner import utils
 from keras_tuner.api_export import keras_tuner_export
-from keras_tuner.backend import config
 from keras_tuner.backend import keras
 from keras_tuner.engine import base_tuner
 from keras_tuner.engine import tuner_utils
@@ -224,6 +224,13 @@ class Tuner(base_tuner.BaseTuner):
         hp = trial.hyperparameters
         model = self._try_build(hp)
         results = self.hypermodel.fit(hp, model, *args, **kwargs)
+
+        # Save the build config for model loading later.
+        utils.save_json(
+            self._get_build_config_fname(trial.trial_id),
+            model.get_build_config(),
+        )
+
         tuner_utils.validate_trial_results(
             results, self.oracle.objective, "HyperModel.fit()"
         )
@@ -303,6 +310,13 @@ class Tuner(base_tuner.BaseTuner):
 
     def load_model(self, trial):
         model = self._try_build(trial.hyperparameters)
+
+        # Build model to create the weights.
+        if not model.built:
+            model.build_from_config(
+                utils.load_json(self._get_build_config_fname(trial.trial_id))
+            )
+
         # Reload best checkpoint.
         # Only load weights to avoid loading `custom_objects`.
         with maybe_distribute(self.distribution_strategy):
@@ -424,7 +438,14 @@ class Tuner(base_tuner.BaseTuner):
         return os.path.join(
             # Each checkpoint is saved in its own directory.
             self.get_trial_dir(trial_id),
-            "checkpoint.weights.h5" if config.multi_backend() else "checkpoint",
+            "checkpoint.weights.h5",
+        )
+
+    def _get_build_config_fname(self, trial_id):
+        return os.path.join(
+            # Each checkpoint is saved in its own directory.
+            self.get_trial_dir(trial_id),
+            "build_config.json",
         )
 
 

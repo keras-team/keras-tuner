@@ -149,7 +149,6 @@ def build_subclass_model(hp):
             return {}
 
     model = MyModel()
-    model.build(input_shape=TRAIN_INPUTS.shape)
     model.compile(
         optimizer=keras.optimizers.Adam(
             hp.Choice("learning_rate", [1e-2, 1e-3, 1e-4])

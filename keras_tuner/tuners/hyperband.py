@@ -14,6 +14,7 @@
 import copy
 import math
 
+from keras_tuner import utils
 from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import oracle as oracle_module
 from keras_tuner.engine import tuner as tuner_module
@@ -429,5 +430,8 @@ class Hyperband(tuner_module.Tuner):
         if "tuner/trial_id" in hp.values:
             trial_id = hp.values["tuner/trial_id"]
             # Load best checkpoint from this trial.
+            model.build_from_config(
+                utils.load_json(self._get_build_config_fname(trial_id))
+            )
             model.load_weights(self._get_checkpoint_fname(trial_id))
         return model
