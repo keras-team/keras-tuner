@@ -26,6 +26,7 @@ from keras_tuner import backend
 from keras_tuner import errors
 from keras_tuner import utils
 from keras_tuner.api_export import keras_tuner_export
+from keras_tuner.backend import config
 from keras_tuner.backend import keras
 from keras_tuner.engine import base_tuner
 from keras_tuner.engine import tuner_utils
@@ -438,7 +439,7 @@ class Tuner(base_tuner.BaseTuner):
         return os.path.join(
             # Each checkpoint is saved in its own directory.
             self.get_trial_dir(trial_id),
-            "checkpoint.weights.h5",
+            "checkpoint.weights.h5" if config.multi_backend() else "checkpoint",
         )
 
     def _get_build_config_fname(self, trial_id):
