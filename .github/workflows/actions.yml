@@ -136,7 +136,7 @@ jobs:
         python-version: '3.10'
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip setuptools wheel twine
+        python -m pip install --upgrade pip setuptools wheel twine namex
     - name: Build a binary wheel and a source tarball
       run: >-
         python pip_build.py
