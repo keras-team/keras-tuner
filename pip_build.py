@@ -16,7 +16,7 @@ to_copy = [
 
 
 def ignore_files(_, filenames):
-    return [f for f in filenames if f.endswith("_test.py")]
+    return [f for f in filenames if "test" in f]
 
 
 def build():
