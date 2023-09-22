@@ -83,6 +83,7 @@ setup(
             "scipy",
         ],
         "build": [
+            "tensorflow-cpu",
             "namex",
             "build",
         ],
