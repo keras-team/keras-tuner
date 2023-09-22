@@ -125,7 +125,7 @@ jobs:
       - name: Run the guides
         run: bash shell/run_guides.sh
   deploy:
-    # needs: [build, format,multibackend]
+    needs: [build, format,multibackend]
     if: github.event_name == 'release' && github.event.action == 'created'
     runs-on: ubuntu-latest
     steps:
