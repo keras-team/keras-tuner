@@ -1,3 +1,8 @@
+# Release v1.4.1
+
+## Bug fixes
+* Could not do `from keras_tuner.engine import base_tuner`. It is now fixed.
+
 # Release v1.4.0
 
 ## Breaking changes
