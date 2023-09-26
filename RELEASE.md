@@ -1,3 +1,8 @@
+# Release v1.4.2
+
+## Bug fixes
+* Could not do `from keras_tuner.engine import trial`. It is now fixed.
+
 # Release v1.4.1
 
 ## Bug fixes
