@@ -20,11 +20,13 @@ import time
 
 from keras_tuner import protos
 from keras_tuner import utils
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine import metrics_tracking
 from keras_tuner.engine import stateful
 
 
+@keras_tuner_export(["keras_tuner.engine.trial.TrialStatus"])
 class TrialStatus:
     # The Trial may start to run.
     RUNNING = "RUNNING"
@@ -83,6 +85,7 @@ class TrialStatus:
             raise ValueError(f"Unknown status {proto}")
 
 
+@keras_tuner_export(["keras_tuner.engine.trial.Trial"])
 class Trial(stateful.Stateful):
     """The runs with the same set of hyperparameter values.
 
