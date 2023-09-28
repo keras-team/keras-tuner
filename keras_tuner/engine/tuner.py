@@ -227,10 +227,11 @@ class Tuner(base_tuner.BaseTuner):
         results = self.hypermodel.fit(hp, model, *args, **kwargs)
 
         # Save the build config for model loading later.
-        utils.save_json(
-            self._get_build_config_fname(trial.trial_id),
-            model.get_build_config(),
-        )
+        if backend.config.multi_backend():
+            utils.save_json(
+                self._get_build_config_fname(trial.trial_id),
+                model.get_build_config(),
+            )
 
         tuner_utils.validate_trial_results(
             results, self.oracle.objective, "HyperModel.fit()"
@@ -313,7 +314,7 @@ class Tuner(base_tuner.BaseTuner):
         model = self._try_build(trial.hyperparameters)
 
         # Build model to create the weights.
-        if not model.built:
+        if backend.config.multi_backend() and not model.built:
             model.build_from_config(
                 utils.load_json(self._get_build_config_fname(trial.trial_id))
             )
