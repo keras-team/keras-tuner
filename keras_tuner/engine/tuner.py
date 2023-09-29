@@ -32,7 +32,13 @@ from keras_tuner.engine import base_tuner
 from keras_tuner.engine import tuner_utils
 
 
-@keras_tuner_export(["keras_tuner.Tuner", "keras_tuner.tuners.Tuner"])
+@keras_tuner_export(
+    [
+        "keras_tuner.Tuner",
+        "keras_tuner.tuners.Tuner",
+        "keras_tuner.engine.tuner.Tuner",
+    ]
+)
 class Tuner(base_tuner.BaseTuner):
     """Tuner class for Keras models.
 
