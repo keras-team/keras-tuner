@@ -17,6 +17,7 @@ import numpy as np
 import pytest
 
 import keras_tuner
+from keras_tuner import backend
 from keras_tuner import utils
 from keras_tuner.backend import keras
 from keras_tuner.engine import tuner_utils
@@ -262,9 +263,12 @@ def test_hyperband_load_weights(tmp_path):
     best_trial_round_0_id = hp["tuner/trial_id"]
     best_hp_round_0 = tuner.oracle.trials[best_trial_round_0_id].hyperparameters
     best_model_round_0 = tuner._try_build(best_hp_round_0)
-    best_model_round_0.build_from_config(
-        utils.load_json(tuner._get_build_config_fname(best_trial_round_0_id))
-    )
+    if backend.config.multi_backend():
+        best_model_round_0.build_from_config(
+            utils.load_json(
+                tuner._get_build_config_fname(best_trial_round_0_id)
+            )
+        )
     best_model_round_0.load_weights(
         tuner._get_checkpoint_fname(best_trial_round_0_id)
     )
