@@ -265,7 +265,9 @@ def test_hyperband_load_weights(tmp_path):
     best_model_round_0 = tuner._try_build(best_hp_round_0)
     if backend.config.multi_backend():
         best_model_round_0.build_from_config(
-            utils.load_json(tuner._get_build_config_fname(best_trial_round_0_id))
+            utils.load_json(
+                tuner._get_build_config_fname(best_trial_round_0_id)
+            )
         )
     best_model_round_0.load_weights(
         tuner._get_checkpoint_fname(best_trial_round_0_id)
