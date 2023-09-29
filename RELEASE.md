@@ -1,3 +1,10 @@
+# Release v1.4.3
+
+## Bug fixes
+* Could not do `from keras_tuner.engine.tuner import Tuner`. It is now fixed.
+* When TensorFlow version is low, it would error out with keras models have no
+  attributed called `get_build_config`. It is now fixed.
+
 # Release v1.4.2
 
 ## Bug fixes
