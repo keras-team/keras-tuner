@@ -466,6 +466,7 @@ def maybe_compute_model_size(model):
 
 
 @contextlib.contextmanager
+@keras_tuner_export("keras_tuner.engine.tuner.maybe_distribute")
 def maybe_distribute(distribution_strategy):
     """Distributes if distribution_strategy is set."""
     if distribution_strategy is None:
