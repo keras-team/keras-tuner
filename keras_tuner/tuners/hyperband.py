@@ -101,6 +101,11 @@ class HyperbandOracle(oracle_module.Oracle):
             number of consecutive failed `Trial`s. When this number is reached,
             the search will be stopped. A `Trial` is marked as failed when none
             of the retries succeeded.
+        max_collisions: Integer. Defaults to 20. Maximum number of identical
+            values that can be generated before we consider the space to be
+            exhausted. Increasing this value, increases the probability of
+            executing all possible combinations generated with the
+            `HyperParameters`, you would obtain the maximum number of trails.
     """
 
     def __init__(
@@ -115,6 +120,7 @@ class HyperbandOracle(oracle_module.Oracle):
         tune_new_entries=True,
         max_retries_per_trial=0,
         max_consecutive_failed_trials=3,
+        max_collisions=20,
     ):
         super().__init__(
             objective=objective,
@@ -124,6 +130,7 @@ class HyperbandOracle(oracle_module.Oracle):
             seed=seed,
             max_retries_per_trial=max_retries_per_trial,
             max_consecutive_failed_trials=max_consecutive_failed_trials,
+            max_collisions=max_collisions,
         )
         if factor < 2:
             raise ValueError("factor needs to be a int larger than 1.")
@@ -386,6 +393,11 @@ class Hyperband(tuner_module.Tuner):
             number of consecutive failed `Trial`s. When this number is reached,
             the search will be stopped. A `Trial` is marked as failed when none
             of the retries succeeded.
+        max_collisions: Integer. Defaults to 20. Maximum number of identical
+            values that can be generated before we consider the space to be
+            exhausted. Increasing this value, increases the probability of
+            executing all possible combinations generated with the
+            `HyperParameters`, you would obtain the maximum number of trails.
         **kwargs: Keyword arguments relevant to all `Tuner` subclasses.
             Please see the docstring for `Tuner`.
     """
@@ -403,6 +415,7 @@ class Hyperband(tuner_module.Tuner):
         allow_new_entries=True,
         max_retries_per_trial=0,
         max_consecutive_failed_trials=3,
+        max_collisions=20,
         **kwargs
     ):
         oracle = HyperbandOracle(
@@ -416,6 +429,7 @@ class Hyperband(tuner_module.Tuner):
             allow_new_entries=allow_new_entries,
             max_retries_per_trial=max_retries_per_trial,
             max_consecutive_failed_trials=max_consecutive_failed_trials,
+            max_collisions=max_collisions,
         )
         super().__init__(oracle=oracle, hypermodel=hypermodel, **kwargs)
 

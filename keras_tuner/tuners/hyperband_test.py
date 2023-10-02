@@ -44,6 +44,26 @@ def build_model(hp):
     return model
 
 
+def build_model_hyperparameters(hp):
+    # It generates 16 combinations, 8 (learning_rate) * 2 (nesterov) = 16
+    model = tf.keras.Sequential()
+    model.add(tf.keras.layers.Dense(1, activation="relu"))
+    model.add(tf.keras.layers.Dense(1, activation="sigmoid"))
+    hp_learning_rate = hp.Choice(
+        "learning_rate",
+        values=[1e-01, 1e-02, 1e-03, 1e-04, 1e-05, 1e-06, 1e-07, 1e-08],
+    )
+    hp_nesterov = hp.Boolean("nesterov")
+    model.compile(
+        tf.keras.optimizers.SGD(
+            hp_learning_rate,
+            hp_nesterov,
+        ),
+        "mse",
+    )
+    return model
+
+
 def test_hyperband_oracle_bracket_configs(tmp_path):
     oracle = hyperband_module.HyperbandOracle(
         objective=keras_tuner.Objective("score", "max"),
@@ -326,3 +346,63 @@ def test_exhausted_values_during_init_bracket(tmp_path):
 
     trial_1 = oracle.create_trial("a")
     assert trial_1.status == "STOPPED"
+
+
+def test_hyperband_max_collisions(tmp_path):
+    x, y = np.ones((2, 5)), np.ones((2, 1))
+
+    # Checks when teh max collisions is equal to 1, get 5 trials.
+    tuner = hyperband_module.Hyperband(
+        objective="val_loss",
+        hypermodel=build_model_hyperparameters,
+        max_epochs=20,
+        factor=20,
+        seed=42,
+        max_collisions=1,
+        directory=tmp_path,
+    )
+    tuner.search(x, y, validation_data=(x, y))
+    total_trials = len(tuner.get_best_models(999999))
+    assert total_trials == 5
+
+    # Checks when teh max collisions is equal to 3, get 11 trials.
+    tuner = hyperband_module.Hyperband(
+        objective="val_loss",
+        hypermodel=build_model_hyperparameters,
+        max_epochs=20,
+        factor=20,
+        seed=42,
+        max_collisions=3,
+        directory=tmp_path,
+    )
+    tuner.search(x, y, validation_data=(x, y))
+    total_trials = len(tuner.get_best_models(999999))
+    assert total_trials == 11
+
+    # Checks when teh max collisions is equal to 4, get 14 trials.
+    tuner = hyperband_module.Hyperband(
+        objective="val_loss",
+        hypermodel=build_model_hyperparameters,
+        max_epochs=20,
+        factor=20,
+        seed=42,
+        max_collisions=4,
+        directory=tmp_path,
+    )
+    tuner.search(x, y, validation_data=(x, y))
+    total_trials = len(tuner.get_best_models(999999))
+    assert total_trials == 14
+
+    # Checks when teh max collisions is equal to 19, get 16 trials.
+    tuner = hyperband_module.Hyperband(
+        objective="val_loss",
+        hypermodel=build_model_hyperparameters,
+        max_epochs=20,
+        factor=20,
+        seed=42,
+        max_collisions=19,
+        directory=tmp_path,
+    )
+    tuner.search(x, y, validation_data=(x, y))
+    total_trials = len(tuner.get_best_models(999999))
+    assert total_trials == 16
