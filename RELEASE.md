@@ -1,3 +1,10 @@
+# Release v1.4.4
+
+## Bug fixes
+* Could not do `from keras_tuner.engine.hyperparameters import serialize`. It is now fixed.
+* Could not do `from keras_tuner.engine.hyperparameters import deserialize`. It is now fixed.
+* Could not do `from keras_tuner.engine.tuner import maybe_distribute`. It is now fixed.
+
 # Release v1.4.3
 
 ## Bug fixes

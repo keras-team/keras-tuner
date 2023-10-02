@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from keras_tuner import utils
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.backend import keras
 from keras_tuner.engine.hyperparameters import hp_types
 from keras_tuner.engine.hyperparameters.hp_types import Boolean
@@ -31,9 +32,11 @@ OBJECTS = hp_types.OBJECTS + (
 ALL_CLASSES = {cls.__name__: cls for cls in OBJECTS}
 
 
+@keras_tuner_export("keras_tuner.engine.hyperparameters.deserialize")
 def deserialize(config):
     return utils.deserialize_keras_object(config, module_objects=ALL_CLASSES)
 
 
+@keras_tuner_export("keras_tuner.engine.hyperparameters.serialize")
 def serialize(obj):
     return utils.serialize_keras_object(obj)
