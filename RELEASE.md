@@ -1,3 +1,9 @@
+# Release v1.4.5
+
+## Bug fixes
+* When running in parallel, the client oracle used to wait forever when the
+  chief oracle is not responding. Now, it is fixed.
+
 # Release v1.4.4
 
 ## Bug fixes
