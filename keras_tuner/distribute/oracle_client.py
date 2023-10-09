@@ -21,6 +21,8 @@ from keras_tuner import protos
 from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine import trial as trial_module
 
+TIMEOUT = 5 * 60  # 5 mins
+
 
 class OracleClient:
     """Wraps an `Oracle` on a worker to send requests to the chief."""
@@ -52,7 +54,9 @@ class OracleClient:
 
     def get_space(self):
         response = self.stub.GetSpace(
-            protos.get_service().GetSpaceRequest(), wait_for_ready=True
+            protos.get_service().GetSpaceRequest(),
+            wait_for_ready=True,
+            timeout=TIMEOUT,
         )
         return hp_module.HyperParameters.from_proto(response.hyperparameters)
 
@@ -63,12 +67,14 @@ class OracleClient:
                     hyperparameters=hyperparameters.to_proto()
                 ),
                 wait_for_ready=True,
+                timeout=TIMEOUT,
             )
 
     def create_trial(self, tuner_id):
         response = self.stub.CreateTrial(
             protos.get_service().CreateTrialRequest(tuner_id=tuner_id),
             wait_for_ready=True,
+            timeout=TIMEOUT,
         )
         return trial_module.Trial.from_proto(response.trial)
 
@@ -80,6 +86,7 @@ class OracleClient:
                     trial_id=trial_id, metrics=metrics, step=step
                 ),
                 wait_for_ready=True,
+                timeout=TIMEOUT,
             )
             if not self.multi_worker:
                 return trial_module.Trial.from_proto(response.trial)
@@ -90,12 +97,14 @@ class OracleClient:
             self.stub.EndTrial(
                 protos.get_service().EndTrialRequest(trial=trial.to_proto()),
                 wait_for_ready=True,
+                timeout=TIMEOUT,
             )
 
     def get_trial(self, trial_id):
         response = self.stub.GetTrial(
             protos.get_service().GetTrialRequest(trial_id=trial_id),
             wait_for_ready=True,
+            timeout=TIMEOUT,
         )
         return trial_module.Trial.from_proto(response.trial)
 
@@ -103,6 +112,7 @@ class OracleClient:
         response = self.stub.GetBestTrials(
             protos.get_service().GetBestTrialsRequest(num_trials=num_trials),
             wait_for_ready=True,
+            timeout=TIMEOUT,
         )
         return [
             trial_module.Trial.from_proto(trial) for trial in response.trials
