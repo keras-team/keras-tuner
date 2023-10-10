@@ -132,7 +132,7 @@ class BaseTuner(stateful.Stateful):
             self._populate_initial_space()
 
         # Run in distributed mode.
-        if dist_utils.has_chief_oracle():
+        if dist_utils.has_chief_oracle() and not dist_utils.is_chief_oracle():
             # Proxies requests to the chief oracle.
             # Avoid import at the top, to avoid inconsistent protobuf versions.
             from keras_tuner.distribute import oracle_client
@@ -216,6 +216,7 @@ class BaseTuner(stateful.Stateful):
             from keras_tuner.distribute import oracle_chief
 
             oracle_chief.start_server(self.oracle)
+            return
 
         self.on_search_begin()
         while True:

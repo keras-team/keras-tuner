@@ -110,6 +110,7 @@ def test_random_search(tmp_path):
             max_trials=10,
             directory=tmp_path,
         )
+        tuner.search(x, y, validation_data=(x, y), epochs=1, batch_size=2)
 
         # Only worker makes it to this point, server runs until thread stops.
         assert dist_utils.has_chief_oracle()
@@ -117,8 +118,6 @@ def test_random_search(tmp_path):
         assert isinstance(
             tuner.oracle, keras_tuner.distribute.oracle_client.OracleClient
         )
-
-        tuner.search(x, y, validation_data=(x, y), epochs=1, batch_size=2)
 
         # Suppress warnings about optimizer state not being restored by
         # tf.keras.
