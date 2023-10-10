@@ -447,4 +447,6 @@ def test_overwrite_false_resume(tmp_path):
 def test_display_format_duration_large_d():
     oracle = gridsearch.GridSearchOracle()
     d = datetime.datetime(2020, 5, 17) - datetime.datetime(2020, 5, 10)
+    oracle.verbose = "auto"
     assert oracle_module.Display(oracle).format_duration(d) == "7d 00h 00m 00s"
+    assert oracle.verbose == 1

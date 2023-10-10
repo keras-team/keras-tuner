@@ -179,13 +179,6 @@ class Display(stateful.Stateful):
 
         utils.try_clear()
 
-        # try:
-        #     current_start_time = self.trial_start[trial.trial_id]
-        #     current_trial_number = self.trial_number[trial.trial_id]
-        # except KeyError:
-        #     current_start_time =
-        #     current_trial_number = self.trial_number[trial.trial_id]
-
         time_taken_str = self.format_duration(
             datetime.now() - self.trial_start[trial.trial_id]
         )
@@ -379,7 +372,7 @@ class Oracle(stateful.Stateful):
 
     @property
     def verbose(self):
-        self._display.verbose
+        return self._display.verbose
 
     @verbose.setter
     def verbose(self, value):
