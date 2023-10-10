@@ -16,13 +16,11 @@
 
 import collections
 import statistics
-from datetime import datetime
 
 import numpy as np
 
 from keras_tuner import backend
 from keras_tuner import errors
-from keras_tuner import utils
 from keras_tuner.backend import config
 from keras_tuner.backend import keras
 from keras_tuner.engine import hyperparameters as hp_module
@@ -46,100 +44,6 @@ class TunerCallback(keras.callbacks.Callback):
 
     def on_epoch_end(self, epoch, logs=None):
         self.tuner.on_epoch_end(self.trial, self.model, epoch, logs=logs)
-
-
-# TODO: Add more extensive display.
-class Display:
-    def __init__(self, oracle, verbose=1):
-        self.verbose = verbose
-        self.oracle = oracle
-        self.col_width = 18
-
-        # Start time for the overall search
-        self.search_start = None
-
-        # Start time of the latest trial
-        self.trial_start = None
-
-    def on_trial_begin(self, trial):
-        if self.verbose >= 1:
-            self.trial_number = int(trial.trial_id) + 1
-            print()
-            print(f"Search: Running Trial #{self.trial_number}")
-            print()
-
-            self.trial_start = datetime.now()
-            if self.search_start is None:
-                self.search_start = self.trial_start
-
-            self.show_hyperparameter_table(trial)
-            print()
-
-    def on_trial_end(self, trial):
-        if self.verbose < 1:
-            return
-        utils.try_clear()
-
-        time_taken_str = self.format_duration(datetime.now() - self.trial_start)
-        print(f"Trial {self.trial_number} Complete [{time_taken_str}]")
-
-        if trial.score is not None:
-            print(f"{self.oracle.objective.name}: {trial.score}")
-
-        print()
-        best_trials = self.oracle.get_best_trials()
-        best_score = best_trials[0].score if len(best_trials) > 0 else None
-        print(f"Best {self.oracle.objective.name} So Far: {best_score}")
-
-        time_elapsed_str = self.format_duration(
-            datetime.now() - self.search_start
-        )
-        print(f"Total elapsed time: {time_elapsed_str}")
-
-    def show_hyperparameter_table(self, trial):
-        template = "{{0:{0}}}|{{1:{0}}}|{{2}}".format(self.col_width)
-        best_trials = self.oracle.get_best_trials()
-        best_trial = best_trials[0] if len(best_trials) > 0 else None
-        if trial.hyperparameters.values:
-            print(
-                template.format("Value", "Best Value So Far", "Hyperparameter")
-            )
-            for hp, value in trial.hyperparameters.values.items():
-                best_value = (
-                    best_trial.hyperparameters.values.get(hp)
-                    if best_trial
-                    else "?"
-                )
-                print(
-                    template.format(
-                        self.format_value(value),
-                        self.format_value(best_value),
-                        hp,
-                    )
-                )
-        else:
-            print("default configuration")
-
-    def format_value(self, val):
-        if isinstance(val, (int, float)) and not isinstance(val, bool):
-            return f"{val:.5g}"
-        val_str = str(val)
-        if len(val_str) > self.col_width:
-            val_str = f"{val_str[:self.col_width - 3]}..."
-        return val_str
-
-    def format_duration(self, d):
-        s = round(d.total_seconds())
-        d = s // 86400
-        s %= 86400
-        h = s // 3600
-        s %= 3600
-        m = s // 60
-        s %= 60
-
-        if d > 0:
-            return f"{d:d}d {h:02d}h {m:02d}m {s:02d}s"
-        return f"{h:02d}h {m:02d}m {s:02d}s"
 
 
 class SaveBestEpoch(keras.callbacks.Callback):

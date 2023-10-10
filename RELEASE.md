@@ -3,6 +3,11 @@
 ## Bug fixes
 * When running in parallel, the client oracle used to wait forever when the
   chief oracle is not responding. Now, it is fixed.
+* When running in parallel, the client would call the chief after calling
+  `oracle.end_trial()`, when the chief have already ended. Now, it is fixed.
+* When running in parallel, the chief used to start to block in
+  `tuner.__init__()`. However, it makes more sense to block when calling
+  `tuner.search()`. Now, it is fixed.
 
 # Release v1.4.4
 

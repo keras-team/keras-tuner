@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import datetime
 import threading
 import time
 
@@ -21,6 +22,7 @@ import pytest
 import keras_tuner
 from keras_tuner.engine import oracle as oracle_module
 from keras_tuner.engine import trial as trial_module
+from keras_tuner.tuners import gridsearch
 
 
 class OracleStub(oracle_module.Oracle):
@@ -440,3 +442,11 @@ def test_overwrite_false_resume(tmp_path):
     assert (
         oracle.get_trial(trial_id).status == trial_module.TrialStatus.COMPLETED
     )
+
+
+def test_display_format_duration_large_d():
+    oracle = gridsearch.GridSearchOracle()
+    d = datetime.datetime(2020, 5, 17) - datetime.datetime(2020, 5, 10)
+    oracle.verbose = "auto"
+    assert oracle_module.Display(oracle).format_duration(d) == "7d 00h 00m 00s"
+    assert oracle.verbose == 1
