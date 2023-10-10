@@ -132,23 +132,12 @@ class BaseTuner(stateful.Stateful):
             self._populate_initial_space()
 
         # Run in distributed mode.
-        if dist_utils.is_chief_oracle():
-            # Blocks forever.
-            # Avoid import at the top, to avoid inconsistent protobuf versions.
-            from keras_tuner.distribute import oracle_chief
-
-            oracle_chief.start_server(self.oracle)
-        elif dist_utils.has_chief_oracle():
+        if dist_utils.has_chief_oracle():
             # Proxies requests to the chief oracle.
             # Avoid import at the top, to avoid inconsistent protobuf versions.
             from keras_tuner.distribute import oracle_client
 
             self.oracle = oracle_client.OracleClient(self.oracle)
-
-        # In parallel tuning, everything below in __init__() is for workers
-        # only.
-        # Logs etc
-        self._display = tuner_utils.Display(oracle=self.oracle)
 
     def _activate_all_conditions(self):
         # Lists of stacks of conditions used during `explore_space()`.
@@ -211,10 +200,23 @@ class BaseTuner(stateful.Stateful):
             **fit_kwargs: Keyword arguments that should be passed to
               `run_trial`, for example the training and validation data.
         """
-        verbose = "auto"
         if "verbose" in fit_kwargs:
             verbose = fit_kwargs.get("verbose")
-            self._display.verbose = verbose
+
+            # Only set verbosity on chief or when not running in parallel.
+            if (
+                not dist_utils.has_chief_oracle()
+                or dist_utils.is_chief_oracle()
+            ):
+                self.oracle.verbose = verbose
+
+        if dist_utils.is_chief_oracle():
+            # Blocks until all the trials are finished.
+            # Avoid import at the top, to avoid inconsistent protobuf versions.
+            from keras_tuner.distribute import oracle_chief
+
+            oracle_chief.start_server(self.oracle)
+
         self.on_search_begin()
         while True:
             self.pre_create_trial()
@@ -324,7 +326,7 @@ class BaseTuner(stateful.Stateful):
         Args:
             trial: A `Trial` instance.
         """
-        self._display.on_trial_begin(self.oracle.get_trial(trial.trial_id))
+        pass
 
     def on_trial_end(self, trial):
         """Called at the end of a trial.
@@ -333,8 +335,6 @@ class BaseTuner(stateful.Stateful):
             trial: A `Trial` instance.
         """
         self.oracle.end_trial(trial)
-        # Display needs the updated trial scored by the Oracle.
-        self._display.on_trial_end(self.oracle.get_trial(trial.trial_id))
         self.save()
 
     def on_search_begin(self):

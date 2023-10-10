@@ -1357,7 +1357,10 @@ def test_correct_display_trial_number(tmp_path):
     new_tuner.search(
         TRAIN_INPUTS, TRAIN_TARGETS, validation_data=(VAL_INPUTS, VAL_TARGETS)
     )
-    assert len(new_tuner.oracle.trials) == new_tuner._display.trial_number
+    new_tuner.oracle._display.trial_number.items()
+    assert len(new_tuner.oracle.trials) == max(
+        new_tuner.oracle._display.trial_number.values()
+    )
 
 
 def test_error_on_unknown_objective_direction(tmp_path):
