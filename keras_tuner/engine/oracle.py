@@ -246,7 +246,7 @@ class Display(stateful.Stateful):
         return f"{h:02d}h {m:02d}m {s:02d}s"
 
 
-@keras_tuner_export("keras_tuner.Oracle")
+@keras_tuner_export(["keras_tuner.Oracle", "keras_tuner.engine.oracle.Oracle"])
 class Oracle(stateful.Stateful):
     """Implements a hyperparameter optimization algorithm.
 
