@@ -18,6 +18,7 @@ import numpy as np
 import six
 
 from keras_tuner import protos
+from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.backend import keras
 
 
@@ -321,6 +322,9 @@ _MAX_METRIC_FNS = (
 )
 
 
+@keras_tuner_export(
+    "keras_tuner.engine.metrics_tracking.infer_metric_direction",
+)
 def infer_metric_direction(metric):
     # Handle str input and get canonical object.
     if isinstance(metric, six.string_types):

@@ -9,6 +9,10 @@
   `tuner.__init__()`. However, it makes more sense to block when calling
   `tuner.search()`. Now, it is fixed.
 * Could not do `from keras_tuner.engine.hypermodel import HyperModel`. It is now fixed.
+* Could not do `from keras_tuner.engine.hyperparameters import HyperParameters`. It is now fixed.
+* Could not do `from keras_tuner.engine.metrics_tracking import infer_metric_direction`. It is now fixed.
+* Could not do `from keras_tuner.engine.oracle import Objective`. It is now fixed.
+* Could not do `from keras_tuner.engine.oracle import Oracle`. It is now fixed.
 
 # Release v1.4.4
 

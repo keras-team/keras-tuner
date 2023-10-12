@@ -26,7 +26,12 @@ from keras_tuner.engine.hyperparameters import hp_types
 from keras_tuner.engine.hyperparameters import hyperparameter as hp_module
 
 
-@keras_tuner_export("keras_tuner.HyperParameters")
+@keras_tuner_export(
+    [
+        "keras_tuner.HyperParameters",
+        "keras_tuner.engine.hyperparameters.HyperParameters",
+    ]
+)
 class HyperParameters:
     """Container for both a hyperparameter space, and current values.
 

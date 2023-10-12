@@ -16,7 +16,9 @@ from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import metrics_tracking
 
 
-@keras_tuner_export("keras_tuner.Objective")
+@keras_tuner_export(
+    ["keras_tuner.Objective", "keras_tuner.engine.oracle.Objective"]
+)
 class Objective:
     """The objective for optimization during tuning.
 
