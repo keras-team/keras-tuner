@@ -316,7 +316,7 @@ class BayesianOptimization(tuner_module.Tuner):
     Args:
         hypermodel: Instance of `HyperModel` class (or callable that takes
             hyperparameters and returns a `Model` instance). It is optional
-            when `Tuner.run_trial()` is overriden and does not use
+            when `Tuner.run_trial()` is overridden and does not use
             `self.hypermodel`.
         objective: A string, `keras_tuner.Objective` instance, or a list of
             `keras_tuner.Objective`s and strings. If a string, the direction of
