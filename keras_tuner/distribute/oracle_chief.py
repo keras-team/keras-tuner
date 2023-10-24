@@ -80,7 +80,7 @@ def start_server(oracle):
     server.start()
     while True:
         # The server does not block otherwise.
-        time.sleep(5)
+        time.sleep(1)
 
         if oracle_servicer.stop_triggered:
             while oracle.ongoing_trials:
