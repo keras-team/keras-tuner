@@ -1,3 +1,9 @@
+# Release v1.4.6
+
+## Breaking changes
+
+## Bug fixes
+
 # Release v1.4.5
 
 ## Bug fixes
