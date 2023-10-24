@@ -108,9 +108,12 @@ def mock_distribute(fn, num_workers=2):
             worker_thread.start()
             worker_threads.append(worker_thread)
 
+        # Wait for chief and clients to finish
         for worker_thread in worker_threads:
             worker_thread.join()
+        chief_thread.join()
 
+        # Re-raise exceptions from chief and clients.
         if chief_thread.raised_exception:
             six.reraise(*chief_thread.raised_exception)
         for worker_thread in worker_threads:
