@@ -60,7 +60,20 @@ class MockEnvVars(dict):
 
 
 def mock_distribute(fn, num_workers=2):
-    """Runs `fn` in multiple processes, setting appropriate env vars."""
+    """Runs `fn` in multiple processes env vars for chief and clients.
+
+    This function does not directly use any KerasTuner components, but only set
+    up the corresponding environment variables for each of the threads. The
+    environment variables are used by KerasTuner to check if the current thread
+    is the chief or a client.
+
+    All the exceptions, in the chief and all the clients, are collected raised
+    in the main thread afterwards.
+
+    Arguments:
+        fn: Callable. The function to be called.
+        num_workers: Int. The number of clients.
+    """
     port = str(portpicker.pick_unused_port())
     with mock.patch.object(os, "environ", MockEnvVars()):
 
