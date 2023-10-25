@@ -244,5 +244,7 @@ def test_chief_should_wait_for_clients(tmp_path):
         tuner = MyTuner(oracle=MyOracle(max_trials=1), directory=tmp_path)
         tuner.search(verbose=0)
 
-    mock_distribute.mock_distribute(_the_func, num_workers=2)
+    mock_distribute.mock_distribute(
+        _the_func, num_workers=2, wait_for_chief=True
+    )
     oracle_client.TIMEOUT = timeout

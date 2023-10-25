@@ -15,7 +15,6 @@
 
 import copy
 import os
-import threading
 from unittest import mock
 
 import numpy as np
@@ -51,7 +50,6 @@ class SimpleTuner(keras_tuner.engine.base_tuner.BaseTuner):
 
 def test_base_tuner_distribution(tmp_path):
     num_workers = 3
-    barrier = threading.Barrier(num_workers)
 
     def _test_base_tuner():
         def build_model(hp):
@@ -66,21 +64,15 @@ def test_base_tuner_distribution(tmp_path):
         )
         tuner.search()
 
-        # Only worker makes it to this point, server runs until thread stops.
-        assert dist_utils.has_chief_oracle()
-        assert not dist_utils.is_chief_oracle()
-        assert isinstance(
-            tuner.oracle, keras_tuner.distribute.oracle_client.OracleClient
-        )
+        if dist_utils.is_chief_oracle():
+            # Model is just a score.
+            scores = tuner.get_best_models(10)
+            assert len(scores)
+            assert scores == sorted(copy.copy(scores), reverse=True)
 
-        barrier.wait(60)
-
-        # Model is just a score.
-        scores = tuner.get_best_models(10)
-        assert len(scores)
-        assert scores == sorted(copy.copy(scores), reverse=True)
-
-    mock_distribute.mock_distribute(_test_base_tuner, num_workers=num_workers)
+    mock_distribute.mock_distribute(
+        _test_base_tuner, num_workers=num_workers, wait_for_chief=True
+    )
 
 
 def test_random_search(tmp_path):
@@ -122,7 +114,9 @@ def test_random_search(tmp_path):
             models = tuner.get_best_models(2)
             assert models[0].evaluate(x, y) <= models[1].evaluate(x, y)
 
-    mock_distribute.mock_distribute(_test_random_search, num_workers)
+    mock_distribute.mock_distribute(
+        _test_random_search, num_workers, wait_for_chief=True
+    )
 
 
 def test_client_no_attribute_error():
