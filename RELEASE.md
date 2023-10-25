@@ -1,8 +1,8 @@
 # Release v1.4.6
 
-## Breaking changes
-
 ## Bug fixes
+* When running in parallel, the chief may exit before some client ask for
+  another trial, which informs the client to exit. Now, it is fixed.
 
 # Release v1.4.5
 
