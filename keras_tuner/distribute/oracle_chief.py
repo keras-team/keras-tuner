@@ -21,7 +21,6 @@ import grpc
 from keras_tuner import protos
 from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine import trial as trial_module
-from keras_tuner.engine.oracle import synchronized
 
 
 class OracleServicer(protos.get_service_grpc().OracleServicer):
@@ -42,7 +41,11 @@ class OracleServicer(protos.get_service_grpc().OracleServicer):
 
     def CreateTrial(self, request, context):
         trial = self.oracle.create_trial(request.tuner_id)
-        if trial.status == trial_module.TrialStatus.STOPPED:
+        if (
+            trial.status == trial_module.TrialStatus.STOPPED
+            and len(self.oracle.ongoing_trials) == 0
+            and len(self.oracle.tuner_ids) == 0
+        ):
             self.stop_triggered = True
         return protos.get_service().CreateTrialResponse(trial=trial.to_proto())
 
@@ -68,11 +71,6 @@ class OracleServicer(protos.get_service_grpc().OracleServicer):
         )
 
 
-@synchronized
-def exit_chief(oracle):
-    return len(oracle.ongoing_trials) == 0 and len(oracle.tuner_ids) == 0
-
-
 def start_server(oracle):
     """Starts the `OracleServicer` used to manage distributed requests."""
     ip_addr = os.environ["KERASTUNER_ORACLE_IP"]
@@ -89,6 +87,5 @@ def start_server(oracle):
         time.sleep(1)
 
         if oracle_servicer.stop_triggered:
-            while not exit_chief(oracle):
-                time.sleep(2)  # pragma: no cover
+            server.stop(0)
             break
