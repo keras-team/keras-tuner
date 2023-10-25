@@ -14,6 +14,7 @@
 
 import os
 import pickle
+import time
 
 import numpy as np
 import pytest
@@ -21,7 +22,9 @@ from sklearn import linear_model
 
 import keras_tuner
 from keras_tuner import errors
+from keras_tuner.distribute import oracle_client
 from keras_tuner.engine import base_tuner
+from keras_tuner.test_utils import mock_distribute
 from keras_tuner.tuners import gridsearch
 from keras_tuner.tuners import randomsearch
 
@@ -219,3 +222,28 @@ def test_unrecognized_arguments_raise_value_error(tmp_path):
             max_trials=200,
             unrecognized=3,
         )
+
+
+@pytest.mark.skip(reason="Pending bug fix.")
+def test_chief_should_wait_for_clients(tmp_path):
+    timeout = oracle_client.TIMEOUT
+    oracle_client.TIMEOUT = 5
+
+    class MyOracle(randomsearch.RandomSearchOracle):
+        @keras_tuner.synchronized
+        def end_trial(self, trial):
+            super().end_trial(trial)
+            time.sleep(10)
+
+    class MyTuner(base_tuner.BaseTuner):
+        def run_trial(self, trial, *args, **kwargs):
+            trial.hyperparameters.Boolean("foo")
+            trial.hyperparameters.Boolean("bar")
+            return np.random.rand()
+
+    def _the_func():
+        tuner = MyTuner(oracle=MyOracle(max_trials=1), directory=tmp_path)
+        tuner.search(verbose=0)
+
+    mock_distribute.mock_distribute(_the_func, num_workers=2)
+    oracle_client.TIMEOUT = timeout
