@@ -224,16 +224,15 @@ def test_unrecognized_arguments_raise_value_error(tmp_path):
         )
 
 
-@pytest.mark.skip(reason="Pending bug fix.")
 def test_chief_should_wait_for_clients(tmp_path):
     timeout = oracle_client.TIMEOUT
-    oracle_client.TIMEOUT = 5
+    oracle_client.TIMEOUT = 10
 
     class MyOracle(randomsearch.RandomSearchOracle):
         @keras_tuner.synchronized
         def end_trial(self, trial):
             super().end_trial(trial)
-            time.sleep(10)
+            time.sleep(5)
 
     class MyTuner(base_tuner.BaseTuner):
         def run_trial(self, trial, *args, **kwargs):
@@ -245,5 +244,7 @@ def test_chief_should_wait_for_clients(tmp_path):
         tuner = MyTuner(oracle=MyOracle(max_trials=1), directory=tmp_path)
         tuner.search(verbose=0)
 
-    mock_distribute.mock_distribute(_the_func, num_workers=2)
+    mock_distribute.mock_distribute(
+        _the_func, num_workers=2, wait_for_chief=True
+    )
     oracle_client.TIMEOUT = timeout

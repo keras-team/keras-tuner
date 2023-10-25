@@ -59,7 +59,7 @@ class MockEnvVars(dict):
         return name in self.thread_local.environ
 
 
-def mock_distribute(fn, num_workers=2):
+def mock_distribute(fn, num_workers=2, wait_for_chief=False):
     """Runs `fn` in multiple processes env vars for chief and clients.
 
     This function does not directly use any KerasTuner components, but only set
@@ -73,6 +73,8 @@ def mock_distribute(fn, num_workers=2):
     Arguments:
         fn: Callable. The function to be called.
         num_workers: Int. The number of clients.
+        wait_for_chief: Boolean. Default to False. Whether to wait for the chief
+            thread to finish before ending the test.
     """
     port = str(portpicker.pick_unused_port())
     with mock.patch.object(os, "environ", MockEnvVars()):
@@ -108,9 +110,13 @@ def mock_distribute(fn, num_workers=2):
             worker_thread.start()
             worker_threads.append(worker_thread)
 
+        # Wait for chief and clients to finish
         for worker_thread in worker_threads:
             worker_thread.join()
+        if wait_for_chief:
+            chief_thread.join()
 
+        # Re-raise exceptions from chief and clients.
         if chief_thread.raised_exception:
             six.reraise(*chief_thread.raised_exception)
         for worker_thread in worker_threads:

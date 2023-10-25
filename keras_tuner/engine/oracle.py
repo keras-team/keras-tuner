@@ -342,6 +342,8 @@ class Oracle(stateful.Stateful):
         self._run_times = collections.defaultdict(lambda: 0)
         # Used as a queue of trial_id to retry
         self._retry_queue = []
+        # Client Tuner IDs
+        self.tuner_ids = set()
 
         self.seed = seed or random.randint(1, 10000)
         self._seed_state = self.seed
@@ -449,6 +451,9 @@ class Oracle(stateful.Stateful):
         if tuner_id in self.ongoing_trials:
             return self.ongoing_trials[tuner_id]
 
+        # Record all running client Tuner IDs.
+        self.tuner_ids.add(tuner_id)
+
         # Pick the Trials waiting for retry first.
         if len(self._retry_queue) > 0:
             trial = self.trials[self._retry_queue.pop()]
@@ -490,6 +495,10 @@ class Oracle(stateful.Stateful):
             self._save_trial(trial)
             self.save()
             self._display.on_trial_begin(trial)
+
+        # Remove the client Tuner ID when triggered the client to exit
+        if status == trial_module.TrialStatus.STOPPED:
+            self.tuner_ids.remove(tuner_id)
 
         return trial
 
