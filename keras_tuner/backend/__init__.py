@@ -27,3 +27,4 @@ from keras_tuner.backend import config
 from keras_tuner.backend import io
 from keras_tuner.backend import keras
 from keras_tuner.backend import ops
+from keras_tuner.backend import random
