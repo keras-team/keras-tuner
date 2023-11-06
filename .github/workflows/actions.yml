@@ -32,7 +32,8 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('setup.py') }}
       - name: Install dependencies
         run: |
-          pip install -e ".[tensorflow-cpu,tests]" --progress-bar off --upgrade
+          pip install -e ".[tests]" --progress-bar off --upgrade
+          pip install tensorflow-cpu==2.14.0
           pip install jax[cpu]
       - name: Test with pytest
         run: |
@@ -64,11 +65,11 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('setup.py') }}
       - name: Install dependencies
         run: |
-          pip install -e ".[tensorflow-cpu,tests]" --progress-bar off --upgrade
+          pip install -e ".[tests]" --progress-bar off --upgrade
           pip install torch>=2.0.1+cpu --progress-bar off
           pip install jax[cpu] --progress-bar off
           pip uninstall keras -y
-          pip install keras-nightly==3.0.0.dev2023110403
+          pip install tf-nightly==2.16.0.dev20231103
       - name: Test with pytest
         env:
           KERAS_BACKEND: ${{ matrix.backend }}

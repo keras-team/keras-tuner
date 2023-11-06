@@ -16,9 +16,8 @@ import keras
 
 
 def _multi_backend():
-    if hasattr(keras, "__version__") and keras.__version__.startswith("3."):
-        return True
-    return False
+    version_fn = getattr(keras, "version", None)
+    return version_fn and version_fn().startswith("3.")
 
 
 _MULTI_BACKEND = _multi_backend()
