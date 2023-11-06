@@ -12,41 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import keras_core
-
 from keras_tuner.backend.config import multi_backend
 
 if multi_backend():
-    from keras_core.src.ops import *  # noqa: F403, F401
+    from keras.src.ops import *  # noqa: F403, F401
 else:
-    from keras_core.src.backend.tensorflow import *  # noqa: F403, F401
-    from keras_core.src.backend.tensorflow.core import *  # noqa: F403, F401
-    from keras_core.src.backend.tensorflow.math import *  # noqa: F403, F401
-    from keras_core.src.backend.tensorflow.nn import *  # noqa: F403, F401
-    from keras_core.src.backend.tensorflow.numpy import *  # noqa: F403, F401
+    import tensorflow as tf
+    from tensorflow import cast  # noqa: F403, F401
 
+    def any_symbolic_tensors(args=None, kwargs=None):
+        args = args or ()
+        kwargs = kwargs or {}
+        for x in tf.nest.flatten((args, kwargs)):
+            if "KerasTensor" in x.__class__.__name__:
+                return True
+        return False
 
-if keras_core.config.backend() == "tensorflow" or not multi_backend():
-
-    def take_along_axis(x, indices, axis=None):
-        import tensorflow as tf
-
-        # TODO: move this workaround for dynamic shapes into keras-core.
-        if axis < 0:
-            axis = axis + indices.shape.rank
-        # If all shapes after axis are 1, squeeze them off and use tf.gather.
-        # tf.gather plays nicer with dynamic shapes in compiled functions.
-        leftover_axes = list(range(axis + 1, indices.shape.rank))
-        static_shape = indices.shape.as_list()
-        squeezable = True
-        for i in leftover_axes:
-            if static_shape[i] != 1:
-                squeezable = False
-        if squeezable:
-            if leftover_axes:
-                indices = tf.squeeze(indices, leftover_axes)
-            return tf.gather(x, indices, batch_dims=axis)
-        # Otherwise, fall back to the tfnp call.
-        return keras_core.src.backend.tensorflow.numpy.take_along_axis(
-            x, indices, axis=axis
+    def shape(x):
+        if any_symbolic_tensors((x,)):
+            return x.shape
+        dynamic = tf.shape(x)
+        static = x.shape.as_list()
+        return tuple(
+            dynamic[i] if s is None else s for i, s in enumerate(static)
         )

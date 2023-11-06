@@ -15,6 +15,6 @@
 from keras_tuner.backend.config import multi_backend
 
 if multi_backend():
-    from keras_core.random import *  # noqa: F403, F401
+    from keras.random import *  # noqa: F403, F401
 else:
-    from keras_core.src.backend.tensorflow.random import *  # noqa: F403, F401
+    from tensorflow.random import *  # noqa: F403, F401

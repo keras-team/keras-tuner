@@ -15,13 +15,12 @@
 Keras backend module.
 
 This module adds a temporarily Keras API surface that is fully under KerasTuner
-control. This allows us to switch between `keras_core` and `tf.keras`, as well
+control. This allows us to switch between Keras 3 and `tf.keras`, as well
 as add shims to support older version of `tf.keras`.
 
 - `config`: check which backend is being run.
-- `keras`: The full `keras` API (via `keras_core` or `tf.keras`).
-- `ops`: `keras_core.ops`, always tf backed if using `tf.keras`.
-- `random`: `keras_core.random`, always tf backed if using `tf.keras`.
+- `keras`: The full `keras` API (via `keras` 3 or `tf.keras`).
+- `ops`: `keras.ops`, always tf backed if using `tf.keras`.
 """
 
 from keras_tuner.backend import config

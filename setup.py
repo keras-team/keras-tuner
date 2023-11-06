@@ -52,7 +52,7 @@ setup(
     license="Apache License 2.0",
     version=VERSION,
     install_requires=[
-        "keras-core",
+        "keras",
         "packaging",
         "requests",
         "kt-legacy",
