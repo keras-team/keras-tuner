@@ -67,7 +67,8 @@ jobs:
           pip install -e ".[tensorflow-cpu,tests]" --progress-bar off --upgrade
           pip install torch>=2.0.1+cpu --progress-bar off
           pip install jax[cpu] --progress-bar off
-          pip install -e ".[tensorflow-cpu,tests]" --progress-bar off --upgrade
+          pip uninstall keras -y
+          pip install keras-nightly==3.0.0.dev2023110403
       - name: Test with pytest
         env:
           KERAS_BACKEND: ${{ matrix.backend }}
