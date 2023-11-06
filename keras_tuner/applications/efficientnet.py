@@ -16,7 +16,6 @@
 
 from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.backend import keras
-from keras_tuner.backend import ops
 from keras_tuner.backend.keras import layers
 from keras_tuner.engine import hypermodel
 
@@ -121,12 +120,7 @@ class HyperEfficientNet(hypermodel.HyperModel):
         )
         img_size = EFFICIENTNET_IMG_SIZE[version]
 
-        x = ops.image.resize(
-            x,
-            (img_size, img_size),
-            interpolation="bilinear",
-            data_format=keras.backend.image_data_format(),
-        )
+        x = layers.Resizing(img_size, img_size, interpolation="bilinear")(x)
         efficientnet_model = EFFICIENTNET_MODELS[version](
             include_top=False, input_tensor=x
         )
