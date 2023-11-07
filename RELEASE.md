@@ -4,6 +4,10 @@
 * When running in parallel, the chief may exit before some client ask for
   another trial, which informs the client to exit. Now, it is fixed.
 
+## New features
+* Updated the dependency from `keras-core` to `keras` version 3 and above. Also
+  support `keras` version 2 for backward compatibility.
+
 # Release v1.4.5
 
 ## Bug fixes
@@ -14,18 +18,25 @@
 * When running in parallel, the chief used to start to block in
   `tuner.__init__()`. However, it makes more sense to block when calling
   `tuner.search()`. Now, it is fixed.
-* Could not do `from keras_tuner.engine.hypermodel import HyperModel`. It is now fixed.
-* Could not do `from keras_tuner.engine.hyperparameters import HyperParameters`. It is now fixed.
-* Could not do `from keras_tuner.engine.metrics_tracking import infer_metric_direction`. It is now fixed.
-* Could not do `from keras_tuner.engine.oracle import Objective`. It is now fixed.
+* Could not do `from keras_tuner.engine.hypermodel import HyperModel`. It is now
+  fixed.
+* Could not do `from keras_tuner.engine.hyperparameters import HyperParameters`.
+  It is now fixed.
+* Could not do `from keras_tuner.engine.metrics_tracking import
+  infer_metric_direction`. It is now fixed.
+* Could not do `from keras_tuner.engine.oracle import Objective`. It is now
+  fixed.
 * Could not do `from keras_tuner.engine.oracle import Oracle`. It is now fixed.
 
 # Release v1.4.4
 
 ## Bug fixes
-* Could not do `from keras_tuner.engine.hyperparameters import serialize`. It is now fixed.
-* Could not do `from keras_tuner.engine.hyperparameters import deserialize`. It is now fixed.
-* Could not do `from keras_tuner.engine.tuner import maybe_distribute`. It is now fixed.
+* Could not do `from keras_tuner.engine.hyperparameters import serialize`. It is
+  now fixed.
+* Could not do `from keras_tuner.engine.hyperparameters import deserialize`. It
+  is now fixed.
+* Could not do `from keras_tuner.engine.tuner import maybe_distribute`. It is
+  now fixed.
 
 # Release v1.4.3
 
@@ -126,7 +137,8 @@
 * If you implemented your own `Oracle` and overrided `Oracle.end_trial()`, you
   need to change the signature of the function from
   `Oracle.end_trial(trial.trial_id, trial.status)` to `Oracle.end_trial(trial)`.
-* The default value of the `step` argument in `keras_tuner.HyperParameters.Int()` is
+* The default value of the `step` argument in
+* `keras_tuner.HyperParameters.Int()` is
   changed to `None`, which was `1` before. No change in default behavior.
 * The default value of the `sampling` argument in
   `keras_tuner.HyperParameters.Int()` is changed to `"linear"`, which was `None`
@@ -136,8 +148,8 @@
   `None` before. No change in default behavior.
 * If you explicitly rely on protobuf values, the new protobuf bug fix may affect
   you.
-* Changed the mechanism of how a random sample is drawn for a hyperparameter. They
-  now all start from a random value between 0 and 1, and convert the value
+* Changed the mechanism of how a random sample is drawn for a hyperparameter.
+  They now all start from a random value between 0 and 1, and convert the value
   to a random sample.
 
 ## New features
@@ -147,8 +159,8 @@
   and `Oracle` initializers, `max_retries_per_trial` and
   `max_consecutive_failed_trials`.
 * You can now mark a `Trial` as failed by
-  `raise keras_tuner.FailedTrialError("error message.")` in `HyperModel.build()`,
-  `HyperModel.fit()`, or your model build function.
+  `raise keras_tuner.FailedTrialError("error message.")` in
+  `HyperModel.build()`, `HyperModel.fit()`, or your model build function.
 * Provides better error messages for invalid configs for `Int` and `Float` type
   hyperparameters.
 * A decorator `@keras_tuner.synchronized` is added to decorate the methods in
@@ -166,5 +178,5 @@
   dimension`, but it defaults to 2. This is now fixed.
 * It would through an error when using a concrete Keras optimizer object to
   override the `HyperModel` compile arg. This is now fixed.
-* Workers might crash due to `Oracle` reloading when running in parallel. This is
-  now fixed.
+* Workers might crash due to `Oracle` reloading when running in parallel. This
+  is now fixed.
