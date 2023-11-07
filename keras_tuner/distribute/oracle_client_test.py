@@ -79,22 +79,18 @@ def test_random_search(tmp_path):
     # TensorFlow model building and execution is not thread-safe.
     num_workers = 1
 
+    x = np.random.uniform(-1, 1, size=(2, 5))
+    y = np.ones((2,))
+
     def _test_random_search():
         def build_model(hp):
             model = keras.Sequential()
-            model.add(keras.layers.Dense(3, input_shape=(5,)))
-            for i in range(hp.Int("num_layers", 1, 3)):
-                model.add(
-                    keras.layers.Dense(
-                        hp.Int("num_units_%i" % i, 1, 3), activation="relu"
-                    )
-                )
-            model.add(keras.layers.Dense(1, activation="sigmoid"))
-            model.compile("sgd", "binary_crossentropy")
+            model.add(
+                keras.layers.Dense(hp.Int("num_units", 1, 3), input_shape=(5,))
+            )
+            model.add(keras.layers.Dense(1))
+            model.compile(loss="mse")
             return model
-
-        x = np.random.uniform(-1, 1, size=(2, 5))
-        y = np.ones((2, 1))
 
         tuner = keras_tuner.tuners.RandomSearch(
             hypermodel=build_model,
@@ -102,7 +98,9 @@ def test_random_search(tmp_path):
             max_trials=10,
             directory=tmp_path,
         )
-        tuner.search(x, y, validation_data=(x, y), epochs=1, batch_size=2)
+        tuner.search(
+            x, y, validation_data=(x, y), epochs=1, batch_size=2, verbose=0
+        )
 
         # Suppress warnings about optimizer state not being restored by
         # tf.keras.
@@ -112,7 +110,9 @@ def test_random_search(tmp_path):
             assert trials[0].score <= trials[1].score
 
             models = tuner.get_best_models(2)
-            assert models[0].evaluate(x, y) <= models[1].evaluate(x, y)
+            assert models[0].evaluate(x, y, verbose=0) <= models[1].evaluate(
+                x, y, verbose=0
+            )
 
     mock_distribute.mock_distribute(
         _test_random_search, num_workers, wait_for_chief=True
