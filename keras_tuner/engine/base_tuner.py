@@ -215,6 +215,7 @@ class BaseTuner(stateful.Stateful):
             # Avoid import at the top, to avoid inconsistent protobuf versions.
             from keras_tuner.distribute import oracle_chief
 
+            self.save()
             oracle_chief.start_server(self.oracle)
             return
 
