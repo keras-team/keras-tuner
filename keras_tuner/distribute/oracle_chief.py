@@ -90,5 +90,5 @@ def start_server(oracle):
 
         if oracle_servicer.stop_triggered:
             while not exit_chief(oracle):
-                time.sleep(2)  # pragma: no cover
+                time.sleep(20)  # pragma: no cover
             break
