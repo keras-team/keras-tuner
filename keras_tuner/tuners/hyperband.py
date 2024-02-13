@@ -403,7 +403,7 @@ class Hyperband(tuner_module.Tuner):
         allow_new_entries=True,
         max_retries_per_trial=0,
         max_consecutive_failed_trials=3,
-        **kwargs
+        **kwargs,
     ):
         oracle = HyperbandOracle(
             objective,

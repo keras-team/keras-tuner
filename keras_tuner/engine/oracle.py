@@ -133,9 +133,11 @@ class Display(stateful.Stateful):
 
     def get_state(self):
         return {
-            "search_start": self.search_start.isoformat()
-            if self.search_start is not None
-            else self.search_start,
+            "search_start": (
+                self.search_start.isoformat()
+                if self.search_start is not None
+                else self.search_start
+            ),
             "trial_start": {
                 key: value.isoformat()
                 for key, value in self.trial_start.items()

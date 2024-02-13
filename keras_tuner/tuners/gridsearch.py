@@ -281,7 +281,6 @@ class GridSearchOracle(oracle_module.Oracle):
             combination), it returns None. The return values only include the
             active ones.
         """
-
         hps = self.get_space()
         all_values = {}
         for hp in hps.space:
