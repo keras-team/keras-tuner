@@ -61,7 +61,7 @@ GetSpaceRequest = _reflection.GeneratedProtocolMessageType(
     (_message.Message,),
     {
         "DESCRIPTOR": _GETSPACEREQUEST,
-        "__module__": "keras_tuner.protos.service_pb2"
+        "__module__": "keras_tuner.protos.service_pb2",
         # @@protoc_insertion_point(class_scope:keras_tuner.GetSpaceRequest)
     },
 )
@@ -72,7 +72,7 @@ GetSpaceResponse = _reflection.GeneratedProtocolMessageType(
     (_message.Message,),
     {
         "DESCRIPTOR": _GETSPACERESPONSE,
-        "__module__": "keras_tuner.protos.service_pb2"
+        "__module__": "keras_tuner.protos.service_pb2",
         # @@protoc_insertion_point(class_scope:keras_tuner.GetSpaceResponse)
     },
 )
@@ -83,7 +83,7 @@ UpdateSpaceRequest = _reflection.GeneratedProtocolMessageType(
     (_message.Message,),
     {
         "DESCRIPTOR": _UPDATESPACEREQUEST,
-        "__module__": "keras_tuner.protos.service_pb2"
+        "__module__": "keras_tuner.protos.service_pb2",
         # @@protoc_insertion_point(class_scope:keras_tuner.UpdateSpaceRequest)
     },
 )
@@ -94,7 +94,7 @@ UpdateSpaceResponse = _reflection.GeneratedProtocolMessageType(
     (_message.Message,),
     {
         "DESCRIPTOR": _UPDATESPACERESPONSE,
-        "__module__": "keras_tuner.protos.service_pb2"
+        "__module__": "keras_tuner.protos.service_pb2",
         # @@protoc_insertion_point(class_scope:keras_tuner.UpdateSpaceResponse)
     },
 )
@@ -105,7 +105,7 @@ CreateTrialRequest = _reflection.GeneratedProtocolMessageType(
     (_message.Message,),
     {
         "DESCRIPTOR": _CREATETRIALREQUEST,
-        "__module__": "keras_tuner.protos.service_pb2"
+        "__module__": "keras_tuner.protos.service_pb2",
         # @@protoc_insertion_point(class_scope:keras_tuner.CreateTrialRequest)
     },
 )
@@ -116,7 +116,7 @@ CreateTrialResponse = _reflection.GeneratedProtocolMessageType(
     (_message.Message,),
     {
         "DESCRIPTOR": _CREATETRIALRESPONSE,
-        "__module__": "keras_tuner.protos.service_pb2"
+        "__module__": "keras_tuner.protos.service_pb2",
         # @@protoc_insertion_point(class_scope:keras_tuner.CreateTrialResponse)
     },
 )
@@ -131,12 +131,12 @@ UpdateTrialRequest = _reflection.GeneratedProtocolMessageType(
             (_message.Message,),
             {
                 "DESCRIPTOR": _UPDATETRIALREQUEST_METRICSENTRY,
-                "__module__": "keras_tuner.protos.service_pb2"
+                "__module__": "keras_tuner.protos.service_pb2",
                 # @@protoc_insertion_point(class_scope:keras_tuner.UpdateTrialRequest.MetricsEntry)
             },
         ),
         "DESCRIPTOR": _UPDATETRIALREQUEST,
-        "__module__": "keras_tuner.protos.service_pb2"
+        "__module__": "keras_tuner.protos.service_pb2",
         # @@protoc_insertion_point(class_scope:keras_tuner.UpdateTrialRequest)
     },
 )
@@ -148,7 +148,7 @@ UpdateTrialResponse = _reflection.GeneratedProtocolMessageType(
     (_message.Message,),
     {
         "DESCRIPTOR": _UPDATETRIALRESPONSE,
-        "__module__": "keras_tuner.protos.service_pb2"
+        "__module__": "keras_tuner.protos.service_pb2",
         # @@protoc_insertion_point(class_scope:keras_tuner.UpdateTrialResponse)
     },
 )
@@ -159,7 +159,7 @@ EndTrialRequest = _reflection.GeneratedProtocolMessageType(
     (_message.Message,),
     {
         "DESCRIPTOR": _ENDTRIALREQUEST,
-        "__module__": "keras_tuner.protos.service_pb2"
+        "__module__": "keras_tuner.protos.service_pb2",
         # @@protoc_insertion_point(class_scope:keras_tuner.EndTrialRequest)
     },
 )
@@ -170,7 +170,7 @@ EndTrialResponse = _reflection.GeneratedProtocolMessageType(
     (_message.Message,),
     {
         "DESCRIPTOR": _ENDTRIALRESPONSE,
-        "__module__": "keras_tuner.protos.service_pb2"
+        "__module__": "keras_tuner.protos.service_pb2",
         # @@protoc_insertion_point(class_scope:keras_tuner.EndTrialResponse)
     },
 )
@@ -181,7 +181,7 @@ GetBestTrialsRequest = _reflection.GeneratedProtocolMessageType(
     (_message.Message,),
     {
         "DESCRIPTOR": _GETBESTTRIALSREQUEST,
-        "__module__": "keras_tuner.protos.service_pb2"
+        "__module__": "keras_tuner.protos.service_pb2",
         # @@protoc_insertion_point(class_scope:keras_tuner.GetBestTrialsRequest)
     },
 )
@@ -192,7 +192,7 @@ GetBestTrialsResponse = _reflection.GeneratedProtocolMessageType(
     (_message.Message,),
     {
         "DESCRIPTOR": _GETBESTTRIALSRESPONSE,
-        "__module__": "keras_tuner.protos.service_pb2"
+        "__module__": "keras_tuner.protos.service_pb2",
         # @@protoc_insertion_point(class_scope:keras_tuner.GetBestTrialsResponse)
     },
 )
@@ -203,7 +203,7 @@ GetTrialRequest = _reflection.GeneratedProtocolMessageType(
     (_message.Message,),
     {
         "DESCRIPTOR": _GETTRIALREQUEST,
-        "__module__": "keras_tuner.protos.service_pb2"
+        "__module__": "keras_tuner.protos.service_pb2",
         # @@protoc_insertion_point(class_scope:keras_tuner.GetTrialRequest)
     },
 )
@@ -214,7 +214,7 @@ GetTrialResponse = _reflection.GeneratedProtocolMessageType(
     (_message.Message,),
     {
         "DESCRIPTOR": _GETTRIALRESPONSE,
-        "__module__": "keras_tuner.protos.service_pb2"
+        "__module__": "keras_tuner.protos.service_pb2",
         # @@protoc_insertion_point(class_scope:keras_tuner.GetTrialResponse)
     },
 )
