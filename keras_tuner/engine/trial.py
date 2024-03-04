@@ -43,6 +43,7 @@ class TrialStatus:
     COMPLETED = "COMPLETED"
     # The Trial is failed. No more retries needed.
     FAILED = "FAILED"
+    SKIPPED = "SKIPPED"
 
     @staticmethod
     def to_proto(status):
@@ -61,6 +62,8 @@ class TrialStatus:
             return ts.COMPLETED
         elif status == TrialStatus.FAILED:
             return ts.FAILED
+        elif status == TrialStatus.SKIPPED:
+            return ts.SKIPPED
         else:
             raise ValueError(f"Unknown status {status}")
 
@@ -81,6 +84,8 @@ class TrialStatus:
             return TrialStatus.COMPLETED
         elif proto == ts.FAILED:
             return TrialStatus.FAILED
+        elif proto == ts.SKIPPED:
+            return TrialStatus.SKIPPED
         else:
             raise ValueError(f"Unknown status {proto}")
 

@@ -40,6 +40,11 @@ class FailedTrialError(Exception):
     pass
 
 
+@keras_tuner_export(["keras_tuner.errors.SkipModelError"])
+class SkipModelError(Exception):
+    pass
+
+
 @keras_tuner_export(["keras_tuner.errors.FatalError"])
 class FatalError(Exception):
     """A fatal error during search to terminate the program.
