@@ -69,7 +69,7 @@ jobs:
           pip install torch>=2.0.1+cpu --progress-bar off
           pip install jax[cpu] --progress-bar off
           pip uninstall keras -y
-          pip install tf-nightly==2.16.0.dev20231103
+          pip install tensorflow==2.16.0rc0
       - name: Test with pytest
         env:
           KERAS_BACKEND: ${{ matrix.backend }}

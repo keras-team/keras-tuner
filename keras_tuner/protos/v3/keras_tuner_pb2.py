@@ -76,7 +76,7 @@ Value = _reflection.GeneratedProtocolMessageType(
     (_message.Message,),
     {
         "DESCRIPTOR": _VALUE,
-        "__module__": "keras_tuner.protos.keras_tuner_pb2"
+        "__module__": "keras_tuner.protos.keras_tuner_pb2",
         # @@protoc_insertion_point(class_scope:keras_tuner.Value)
     },
 )
@@ -87,7 +87,7 @@ Float = _reflection.GeneratedProtocolMessageType(
     (_message.Message,),
     {
         "DESCRIPTOR": _FLOAT,
-        "__module__": "keras_tuner.protos.keras_tuner_pb2"
+        "__module__": "keras_tuner.protos.keras_tuner_pb2",
         # @@protoc_insertion_point(class_scope:keras_tuner.Float)
     },
 )
@@ -98,7 +98,7 @@ Int = _reflection.GeneratedProtocolMessageType(
     (_message.Message,),
     {
         "DESCRIPTOR": _INT,
-        "__module__": "keras_tuner.protos.keras_tuner_pb2"
+        "__module__": "keras_tuner.protos.keras_tuner_pb2",
         # @@protoc_insertion_point(class_scope:keras_tuner.Int)
     },
 )
@@ -109,7 +109,7 @@ Choice = _reflection.GeneratedProtocolMessageType(
     (_message.Message,),
     {
         "DESCRIPTOR": _CHOICE,
-        "__module__": "keras_tuner.protos.keras_tuner_pb2"
+        "__module__": "keras_tuner.protos.keras_tuner_pb2",
         # @@protoc_insertion_point(class_scope:keras_tuner.Choice)
     },
 )
@@ -120,7 +120,7 @@ Boolean = _reflection.GeneratedProtocolMessageType(
     (_message.Message,),
     {
         "DESCRIPTOR": _BOOLEAN,
-        "__module__": "keras_tuner.protos.keras_tuner_pb2"
+        "__module__": "keras_tuner.protos.keras_tuner_pb2",
         # @@protoc_insertion_point(class_scope:keras_tuner.Boolean)
     },
 )
@@ -131,7 +131,7 @@ Fixed = _reflection.GeneratedProtocolMessageType(
     (_message.Message,),
     {
         "DESCRIPTOR": _FIXED,
-        "__module__": "keras_tuner.protos.keras_tuner_pb2"
+        "__module__": "keras_tuner.protos.keras_tuner_pb2",
         # @@protoc_insertion_point(class_scope:keras_tuner.Fixed)
     },
 )
@@ -146,7 +146,7 @@ HyperParameters = _reflection.GeneratedProtocolMessageType(
             (_message.Message,),
             {
                 "DESCRIPTOR": _HYPERPARAMETERS_SPACE,
-                "__module__": "keras_tuner.protos.keras_tuner_pb2"
+                "__module__": "keras_tuner.protos.keras_tuner_pb2",
                 # @@protoc_insertion_point(class_scope:keras_tuner.HyperParameters.Space)
             },
         ),
@@ -159,17 +159,17 @@ HyperParameters = _reflection.GeneratedProtocolMessageType(
                     (_message.Message,),
                     {
                         "DESCRIPTOR": _HYPERPARAMETERS_VALUES_VALUESENTRY,
-                        "__module__": "keras_tuner.protos.keras_tuner_pb2"
+                        "__module__": "keras_tuner.protos.keras_tuner_pb2",
                         # @@protoc_insertion_point(class_scope:keras_tuner.HyperParameters.Values.ValuesEntry)
                     },
                 ),
                 "DESCRIPTOR": _HYPERPARAMETERS_VALUES,
-                "__module__": "keras_tuner.protos.keras_tuner_pb2"
+                "__module__": "keras_tuner.protos.keras_tuner_pb2",
                 # @@protoc_insertion_point(class_scope:keras_tuner.HyperParameters.Values)
             },
         ),
         "DESCRIPTOR": _HYPERPARAMETERS,
-        "__module__": "keras_tuner.protos.keras_tuner_pb2"
+        "__module__": "keras_tuner.protos.keras_tuner_pb2",
         # @@protoc_insertion_point(class_scope:keras_tuner.HyperParameters)
     },
 )
@@ -183,7 +183,7 @@ MetricObservation = _reflection.GeneratedProtocolMessageType(
     (_message.Message,),
     {
         "DESCRIPTOR": _METRICOBSERVATION,
-        "__module__": "keras_tuner.protos.keras_tuner_pb2"
+        "__module__": "keras_tuner.protos.keras_tuner_pb2",
         # @@protoc_insertion_point(class_scope:keras_tuner.MetricObservation)
     },
 )
@@ -194,7 +194,7 @@ MetricHistory = _reflection.GeneratedProtocolMessageType(
     (_message.Message,),
     {
         "DESCRIPTOR": _METRICHISTORY,
-        "__module__": "keras_tuner.protos.keras_tuner_pb2"
+        "__module__": "keras_tuner.protos.keras_tuner_pb2",
         # @@protoc_insertion_point(class_scope:keras_tuner.MetricHistory)
     },
 )
@@ -209,12 +209,12 @@ MetricsTracker = _reflection.GeneratedProtocolMessageType(
             (_message.Message,),
             {
                 "DESCRIPTOR": _METRICSTRACKER_METRICSENTRY,
-                "__module__": "keras_tuner.protos.keras_tuner_pb2"
+                "__module__": "keras_tuner.protos.keras_tuner_pb2",
                 # @@protoc_insertion_point(class_scope:keras_tuner.MetricsTracker.MetricsEntry)
             },
         ),
         "DESCRIPTOR": _METRICSTRACKER,
-        "__module__": "keras_tuner.protos.keras_tuner_pb2"
+        "__module__": "keras_tuner.protos.keras_tuner_pb2",
         # @@protoc_insertion_point(class_scope:keras_tuner.MetricsTracker)
     },
 )
@@ -230,12 +230,12 @@ Trial = _reflection.GeneratedProtocolMessageType(
             (_message.Message,),
             {
                 "DESCRIPTOR": _TRIAL_SCORE,
-                "__module__": "keras_tuner.protos.keras_tuner_pb2"
+                "__module__": "keras_tuner.protos.keras_tuner_pb2",
                 # @@protoc_insertion_point(class_scope:keras_tuner.Trial.Score)
             },
         ),
         "DESCRIPTOR": _TRIAL,
-        "__module__": "keras_tuner.protos.keras_tuner_pb2"
+        "__module__": "keras_tuner.protos.keras_tuner_pb2",
         # @@protoc_insertion_point(class_scope:keras_tuner.Trial)
     },
 )
@@ -251,12 +251,12 @@ Condition = _reflection.GeneratedProtocolMessageType(
             (_message.Message,),
             {
                 "DESCRIPTOR": _CONDITION_PARENT,
-                "__module__": "keras_tuner.protos.keras_tuner_pb2"
+                "__module__": "keras_tuner.protos.keras_tuner_pb2",
                 # @@protoc_insertion_point(class_scope:keras_tuner.Condition.Parent)
             },
         ),
         "DESCRIPTOR": _CONDITION,
-        "__module__": "keras_tuner.protos.keras_tuner_pb2"
+        "__module__": "keras_tuner.protos.keras_tuner_pb2",
         # @@protoc_insertion_point(class_scope:keras_tuner.Condition)
     },
 )
