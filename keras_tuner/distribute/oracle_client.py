@@ -21,7 +21,14 @@ from keras_tuner import protos
 from keras_tuner.engine import hyperparameters as hp_module
 from keras_tuner.engine import trial as trial_module
 
-TIMEOUT = 5 * 60  # 5 mins
+# The timeout is so high to prevent a rare race condition from happening.
+# We need clients to wait till chief oracle server starts. This normally takes
+# a few minutes, but sometimes might take longer.
+# See https://github.com/keras-team/keras-tuner/issues/990 for more details.
+# Initially we didn't have any timeout. It was introduced to avoid tuner jobs
+# hanging forever if chief oracle stops responding.
+# See https://github.com/keras-team/keras-tuner/pull/957.
+TIMEOUT = 60 * 60  # 60 mins
 
 
 class OracleClient:
