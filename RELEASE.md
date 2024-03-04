@@ -1,6 +1,8 @@
 # Release v1.4.7
 
 ## Bug fixes
+* Changed the chief server waiting time before shutting down to 60 minutes
+  by default.
 
 ## New features
 
