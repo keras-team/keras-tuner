@@ -39,7 +39,7 @@ class OracleClient:
 
         ip_addr = os.environ["KERASTUNER_ORACLE_IP"]
         port = os.environ["KERASTUNER_ORACLE_PORT"]
-        channel = grpc.insecure_channel(f"{ip_addr}:{port}")
+        channel = grpc.insecure_channel(f"{ip_addr}:{port}", options=(('grpc.enable_http_proxy', 0),))
         self.stub = protos.get_service_grpc().OracleStub(channel)
         self.tuner_id = os.environ["KERASTUNER_TUNER_ID"]
 
