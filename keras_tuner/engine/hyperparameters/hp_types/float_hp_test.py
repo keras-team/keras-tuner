@@ -66,16 +66,7 @@ def test_float_log_with_float_step():
     )
     assert np.allclose(
         list(rg.values),
-        [
-            0.1,
-            0.11,
-            0.121,
-            0.1331,
-            0.14641,
-            0.161051,
-            0.1771561,
-            0.19487171
-        ]
+        [0.1, 0.11, 0.121, 0.1331, 0.14641, 0.161051, 0.1771561, 0.19487171],
     )
 
 
@@ -103,16 +94,7 @@ def test_float_reverse_log_with_float_step():
 
     assert np.allclose(
         list(rg.values),
-        [
-            0.2,
-            0.19,
-            0.179,
-            0.1669,
-            0.15359,
-            0.138949,
-            0.1228439,
-            0.10512829
-        ]
+        [0.2, 0.19, 0.179, 0.1669, 0.15359, 0.138949, 0.1228439, 0.10512829],
     )
 
 
@@ -213,20 +195,7 @@ def test_float_values_property_with_float_step():
     values = list(hp_module.Float("float", 0, 1, 0.1).values)
     assert len(values) == 11
     assert np.allclose(
-        values,
-        [
-            0.0,
-            0.1,
-            0.2,
-            0.3,
-            0.4,
-            0.5,
-            0.6,
-            0.7,
-            0.8,
-            0.9,
-            1.0
-        ]
+        values, [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
     )
     assert isinstance(values[0], float)
 
