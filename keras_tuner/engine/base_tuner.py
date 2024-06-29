@@ -283,6 +283,8 @@ class BaseTuner(stateful.Stateful):
 
             if isinstance(e, errors.FailedTrialError):
                 trial.status = trial_module.TrialStatus.FAILED
+            elif isinstance(e, errors.SkipModelError):
+                trial.status = trial_module.TrialStatus.SKIPPED
             else:
                 trial.status = trial_module.TrialStatus.INVALID
 
