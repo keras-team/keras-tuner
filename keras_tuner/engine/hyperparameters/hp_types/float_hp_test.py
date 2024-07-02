@@ -60,6 +60,16 @@ def test_float_log_with_step():
     assert rg.prob_to_value(0.3) == 0.1
 
 
+def test_float_log_with_float_step():
+    rg = hp_module.Float(
+        "rg", min_value=0.1, max_value=0.19487171, step=1.1, sampling="log"
+    )
+    assert np.allclose(
+        list(rg.values),
+        [0.1, 0.11, 0.121, 0.1331, 0.14641, 0.161051, 0.1771561, 0.19487171],
+    )
+
+
 def test_float_reverse_log_with_step():
     rg = hp_module.Float(
         "rg", min_value=0.01, max_value=100, step=10, sampling="reverse_log"
@@ -75,6 +85,17 @@ def test_float_reverse_log_with_step():
         )
     assert abs(rg.value_to_prob(99.91) - 0.3) < 1e-4
     assert abs(rg.prob_to_value(0.3) - 99.91) < 1e-4
+
+
+def test_float_reverse_log_with_float_step():
+    rg = hp_module.Float(
+        "rg", min_value=0.1, max_value=0.2, step=1.1, sampling="reverse_log"
+    )
+
+    assert np.allclose(
+        list(rg.values),
+        [0.2, 0.19, 0.179, 0.1669, 0.15359, 0.138949, 0.1228439, 0.10512829],
+    )
 
 
 def test_sampling_zero_length_intervals():
@@ -170,7 +191,17 @@ def test_float_values_property_with_step():
     ]
 
 
+def test_float_values_property_with_float_step():
+    values = list(hp_module.Float("float", 0, 1, 0.1).values)
+    assert len(values) == 11
+    assert np.allclose(
+        values, [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    )
+    assert isinstance(values[0], float)
+
+
 def test_float_values_property_without_step():
+    assert len(list(hp_module.Float("float", 0, 1).values)) == 10
     assert len(list(hp_module.Float("float", 2, 4).values)) == 10
     assert len(list(hp_module.Float("float", 2, 20).values)) == 10
     assert (
