@@ -261,10 +261,8 @@ class MetricsTracker:
 
     def get_config(self):
         return {
-            "metrics": {
-                name: metric_history.get_config()
-                for name, metric_history in self.metrics.items()
-            }
+            name: metric_history.get_config()
+            for name, metric_history in self.metrics.items()
         }
 
     @classmethod
@@ -272,7 +270,7 @@ class MetricsTracker:
         instance = cls()
         instance.metrics = {
             name: MetricHistory.from_config(metric_history)
-            for name, metric_history in config["metrics"].items()
+            for name, metric_history in config.items()
         }
         return instance
 

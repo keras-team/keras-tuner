@@ -303,3 +303,18 @@ def test_metric_direction_inference():
         metrics_tracking.infer_metric_direction("weighted_binary_accuracy")
         == "max"
     )
+
+
+def test_get_config():
+    # quick test for the shape of the dictionary created.
+    tracker_instance = metrics_tracking.MetricsTracker(
+        metrics=[metrics.CategoricalAccuracy(), metrics.MeanSquaredError()]
+    )
+    config = tracker_instance.get_config()
+    expected_keys = config.keys()
+    assert len(expected_keys) == 2
+    for key in config:
+        sub_keys = config[key]
+        assert len(sub_keys) == 2
+        assert "observations" in sub_keys
+        assert "direction" in sub_keys
