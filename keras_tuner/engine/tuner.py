@@ -87,6 +87,7 @@ class Tuner(base_tuner.BaseTuner):
             depending on random initialization, hence it is often a good idea
             to run several executions per trial in order to evaluate the
             performance of a given set of hyperparameter values.
+        executions_reduction: "mean" | "best".
         **kwargs: Arguments for `BaseTuner`.
 
     Attributes:

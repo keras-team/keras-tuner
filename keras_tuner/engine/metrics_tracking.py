@@ -36,11 +36,10 @@ class MetricObservation:
         step: Int. The step of the evaluation, for example, the epoch number.
     """
 
-    def __init__(self, value, step):
+    def __init__(self, value):
         if not isinstance(value, list):
             value = [value]
         self.value = value
-        self.step = step
 
     def append(self, value):
         if not isinstance(value, list):
@@ -51,7 +50,7 @@ class MetricObservation:
         return np.mean(self.value)
 
     def get_config(self):
-        return {"value": self.value, "step": self.step}
+        return {"value": self.value}
 
     @classmethod
     def from_config(cls, config):
@@ -59,22 +58,20 @@ class MetricObservation:
 
     def __eq__(self, other):
         return (
-            other.value == self.value and other.step == self.step
+            other.value == self.value
             if isinstance(other, MetricObservation)
             else False
         )
 
     def __repr__(self):
-        return f"MetricObservation(value={self.value}, step={self.step})"
+        return f"MetricObservation(value={self.value})"
 
     def to_proto(self):
-        return protos.get_proto().MetricObservation(
-            value=self.value, step=self.step
-        )
+        return protos.get_proto().MetricObservation(value=self.value)
 
     @classmethod
     def from_proto(cls, proto):
-        return cls(value=list(proto.value), step=proto.step)
+        return cls(value=list(proto.value))
 
 
 class MetricHistory:
@@ -97,34 +94,41 @@ class MetricHistory:
         # Mapping step to `MetricObservation`.
         self._observations = {}
 
-    def update(self, value, step):
-        if step in self._observations:
-            self._observations[step].append(value)
+    def update(self, value, exec_index):
+        if exec_index in self._observations:
+            self._observations[exec_index].append(value)
         else:
-            self._observations[step] = MetricObservation(value, step=step)
+            self._observations[exec_index] = MetricObservation(value)
 
     def get_best_value(self):
-        values = [obs.mean() for obs in self._observations.values()]
+        # 2D array for a specific metric.
+        values = [obs.value for obs in self._observations.values()]
         if not values:
             return None
         return (
-            np.nanmin(values) if self.direction == "min" else np.nanmax(values)
+            np.nanmin(values, (0, 1))
+            if self.direction == "min"
+            else np.nanmax(values, (0, 1))
         )
 
     def get_best_step(self):
+        # returns a 2D location.
         best_value = self.get_best_value()
         if best_value is None:
             return None
-        for obs in self._observations.values():
-            if obs.mean() == best_value:
-                return obs.step
+
+        for exec_idx, obs in enumerate(self._observations.values()):
+            for val_idx, value in enumerate(obs.value):
+                if value == best_value:
+                    return (exec_idx, val_idx)
 
     def get_history(self):
-        return sorted(self._observations.values(), key=lambda obs: obs.step)
+        # return sorted(self._observations.values())
+        return self._observations.values()
 
     def set_history(self, observations):
         for obs in observations:
-            self.update(obs.value, step=obs.step)
+            self.update(obs.value)
 
     def get_statistics(self):
         history = self.get_history()
@@ -218,13 +222,17 @@ class MetricsTracker:
             direction = "min"
         self.metrics[name] = MetricHistory(direction)
 
-    def update(self, name, value, step=0):
-        value = float(value)
+    def update(self, name, value, exec_idx=0):
+        value = (
+            [float(v) for v in value]
+            if isinstance(value, list)
+            else [float(value)]
+        )
         if not self.exists(name):
             self.register(name)
 
         prev_best = self.metrics[name].get_best_value()
-        self.metrics[name].update(value, step=step)
+        self.metrics[name].update(value, exec_idx)
         new_best = self.metrics[name].get_best_value()
 
         improved = new_best != prev_best

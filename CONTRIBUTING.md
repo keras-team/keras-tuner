@@ -48,8 +48,7 @@ Press `F1` key. Enter `Remote-Containers: Open Folder in Container` to open the 
 The environment is already setup there.
 
 ## Run Tests
-You can simply open any `*_test.py` file under the `tests` directory,
-and wait a few seconds, you will see the test tab on the left of the window.
+You can simply open any `*_test.py` file, and wait a few seconds, you will see the test tab on the left of the window.
 We use PyTest for the tests, you may also use the `pytest` command to run the tests.
 
 ## Code Style

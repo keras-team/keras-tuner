@@ -104,11 +104,12 @@ def average_metrics_dicts(metrics_dicts):
     return averaged_metrics
 
 
-def _get_best_value_and_best_epoch_from_history(history, objective):
+def _get_best_value_and_best_epoch_from_history(history_dict, objective):
+    # note that history_dict is a history-like dict (like history.history)
     # A dictionary to record the metric values through epochs.
     # Usage: epoch_metric[epoch_number][metric_name] == metric_value
     epoch_metrics = collections.defaultdict(dict)
-    for metric_name, epoch_values in history.history.items():
+    for metric_name, epoch_values in history_dict.items():
         for epoch, value in enumerate(epoch_values):
             epoch_metrics[epoch][metric_name] = value
     best_epoch = 0
@@ -124,28 +125,25 @@ def _get_best_value_and_best_epoch_from_history(history, objective):
 
 
 def convert_to_metrics_dict(results, objective):
-    """Convert any supported results type to a metrics dictionary."""
+    """Convert any supported results type to a metrics dictionary or list of."""
     # List of multiple exectuion results to be averaged.
     # Check this case first to deal each case individually to check for errors.
     if isinstance(results, list):
-        return average_metrics_dicts(
-            [convert_to_metrics_dict(elem, objective) for elem in results]
-        )
+        processed_dicts = [
+            convert_to_metrics_dict(elem, objective) for elem in results
+        ]
+        return processed_dicts
 
     # Single value.
     if isinstance(results, (int, float, np.floating)):
-        return {objective.name: float(results)}
-
+        return [{objective.name: float(results)}]
     # A dictionary.
     if isinstance(results, dict):
         return results
 
     # A History.
     if isinstance(results, keras.callbacks.History):
-        best_value, _ = _get_best_value_and_best_epoch_from_history(
-            results, objective
-        )
-        return best_value
+        return results.history
 
 
 def validate_trial_results(results, objective, func_name):
@@ -212,7 +210,7 @@ def get_best_step(results, objective):
     # A History.
     if isinstance(results, keras.callbacks.History):
         _, best_epoch = _get_best_value_and_best_epoch_from_history(
-            results, objective
+            results.history, objective
         )
         return best_epoch
 

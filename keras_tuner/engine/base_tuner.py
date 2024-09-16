@@ -71,6 +71,9 @@ class BaseTuner(stateful.Stateful):
         overwrite: Boolean, defaults to `False`. If `False`, reloads an
             existing project of the same name if one is found. Otherwise,
             overwrites the project.
+        executions_reduction: "mean" | "best" | None. By default it's returned
+        the mean of the best epoch steps, you can also use get the best,
+        or None. The None option returns all executions.
         **kwargs: Arguments for backward compatibility.
 
     Attributes:
@@ -85,6 +88,7 @@ class BaseTuner(stateful.Stateful):
         directory=None,
         project_name=None,
         overwrite=False,
+        executions_reduction="mean",
         **kwargs,
     ):
         if not isinstance(oracle, oracle_module.Oracle):
@@ -122,7 +126,7 @@ class BaseTuner(stateful.Stateful):
 
         # To support tuning distribution.
         self.tuner_id = os.environ.get("KERASTUNER_TUNER_ID", "tuner0")
-
+        self.executions_reduction = executions_reduction
         # Reloading state.
         if not overwrite and backend.io.exists(self._get_tuner_fname()):
             print(f"Reloading Tuner from {self._get_tuner_fname()}")
@@ -260,13 +264,9 @@ class BaseTuner(stateful.Stateful):
         ),
         self.oracle.update_trial(
             trial.trial_id,
-            # Convert to dictionary before calling `update_trial()`
+            # convert to dict or list[dict] before calling `update_trial()`
             # to pass it from gRPC.
-            tuner_utils.convert_to_metrics_dict(
-                results,
-                self.oracle.objective,
-            ),
-            step=tuner_utils.get_best_step(results, self.oracle.objective),
+            tuner_utils.convert_to_metrics_dict(results, self.oracle.objective),
         )
 
     def _try_run_and_update_trial(self, trial, *fit_args, **fit_kwargs):

@@ -505,7 +505,7 @@ class Oracle(stateful.Stateful):
         return trial
 
     @synchronized
-    def update_trial(self, trial_id, metrics, step=0):
+    def update_trial(self, trial_id, metrics):
         """Used by a worker to report the status of a trial.
 
         Args:
@@ -520,14 +520,17 @@ class Oracle(stateful.Stateful):
             Trial object.
         """
         trial = self.trials[trial_id]
-        self._check_objective_found(metrics)
-        for metric_name, metric_value in metrics.items():
-            if not trial.metrics.exists(metric_name):
-                direction = _maybe_infer_direction_from_objective(
-                    self.objective, metric_name
-                )
-                trial.metrics.register(metric_name, direction=direction)
-            trial.metrics.update(metric_name, metric_value, step=step)
+        if not isinstance(metrics, list):
+            metrics = [metrics]
+        for exec_idx, metric_exec in enumerate(metrics):
+            self._check_objective_found(metric_exec)
+            for metric_name, metric_value in metric_exec.items():
+                if not trial.metrics.exists(metric_name):
+                    direction = _maybe_infer_direction_from_objective(
+                        self.objective, metric_name
+                    )
+                    trial.metrics.register(metric_name, direction=direction)
+                trial.metrics.update(metric_name, metric_value, exec_idx)
         self._save_trial(trial)
         # TODO: To signal early stopping, set Trial.status to "STOPPED".
         return trial
