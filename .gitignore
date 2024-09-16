@@ -25,3 +25,5 @@ tmp.py
 htmlcov
 old_code/
 docs/sources
+hello/
+test.py

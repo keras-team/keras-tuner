@@ -13,6 +13,9 @@
 # limitations under the License.
 
 import inspect
+from typing import Dict
+from typing import List
+from typing import Union
 
 import numpy as np
 import six
@@ -22,8 +25,8 @@ from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.backend import keras
 
 
-class MetricObservation:
-    """Metric value at a given step of training across multiple executions.
+class ExecutionMetric:
+    """Metric value at a given execution.
 
     If the model is trained multiple
     times (multiple executions), KerasTuner records the value of each
@@ -32,25 +35,22 @@ class MetricObservation:
     to one execution.
 
     Args:
-        value: Float or a list of floats. The evaluated metric values.
+        value: The evaluated metric values.
         step: Int. The step of the evaluation, for example, the epoch number.
     """
 
-    def __init__(self, value):
+    def __init__(self, value: Union[float | list[float]]):
         if not isinstance(value, list):
             value = [value]
         self.value = value
 
-    def append(self, value):
+    def append(self, value: Union[float | list[float]]):
         if not isinstance(value, list):
             value = [value]
         self.value += value
 
-    def mean(self):
-        return np.mean(self.value)
-
     def get_config(self):
-        return {"value": self.value}
+        return self.value
 
     @classmethod
     def from_config(cls, config):
@@ -59,15 +59,15 @@ class MetricObservation:
     def __eq__(self, other):
         return (
             other.value == self.value
-            if isinstance(other, MetricObservation)
+            if isinstance(other, ExecutionMetric)
             else False
         )
 
     def __repr__(self):
-        return f"MetricObservation(value={self.value})"
+        return f"ExecutionMetric(value={self.value})"
 
     def to_proto(self):
-        return protos.get_proto().MetricObservation(value=self.value)
+        return protos.get_proto().ExecutionMetric(value=self.value)
 
     @classmethod
     def from_proto(cls, proto):
@@ -77,7 +77,7 @@ class MetricObservation:
 class MetricHistory:
     """Record of multiple executions of a single metric.
 
-    It contains a collection of `MetricObservation` instances.
+    It contains a collection of `ExecutionMetric` instances.
 
     Args:
         direction: String. The direction of the metric to optimize. The value
@@ -91,73 +91,76 @@ class MetricHistory:
                 '{"min", "max"}, but got: %s' % (direction,)
             )
         self.direction = direction
-        # Mapping step to `MetricObservation`.
-        self._observations = {}
+        self._current_best_value: Union[float, None] = None
+        self._executions: List[ExecutionMetric] = []
 
-    def update(self, value, exec_index):
-        if exec_index in self._observations:
-            self._observations[exec_index].append(value)
-        else:
-            self._observations[exec_index] = MetricObservation(value)
+    def append_execution(self, value):
+        self._executions.append(ExecutionMetric(value))
 
     def get_best_value(self):
-        # 2D array for a specific metric.
-        values = [obs.value for obs in self._observations.values()]
-        if not values:
+        # store best value in state, to make comparison fast.
+        last_values = self.get_last_value()
+        if not last_values and not self._current_best_value:
             return None
-        return (
-            np.nanmin(values, (0, 1))
-            if self.direction == "min"
-            else np.nanmax(values, (0, 1))
-        )
 
-    def get_best_step(self):
+        # we update this value if necessary.
+        current = self._current_best_value
+        if self.direction == "min":
+            last = float(np.nanmin(last_values))
+            if current is None or last < current:
+                current = last
+        else:
+            last = float(np.nanmax(last_values))
+            if current is None or last > current:
+                current = last
+
+        self._current_best_value = current
+        return current
+
+    def get_best_location(self):
         # returns a 2D location.
         best_value = self.get_best_value()
         if best_value is None:
             return None
 
-        for exec_idx, obs in enumerate(self._observations.values()):
-            for val_idx, value in enumerate(obs.value):
+        for exec_idx, values in enumerate(self.get_executions_values()):
+            for val_idx, value in enumerate(values):
                 if value == best_value:
                     return (exec_idx, val_idx)
 
-    def get_history(self):
-        # return sorted(self._observations.values())
-        return self._observations.values()
+    def get_executions_values(self):
+        if len(self._executions) > 0:
+            return [execution.value for execution in self._executions]
+        return None
 
-    def set_history(self, observations):
-        for obs in observations:
-            self.update(obs.value)
+    def get_history(self):
+        return self._executions
 
     def get_statistics(self):
-        history = self.get_history()
-        history_values = [obs.mean() for obs in history]
-        return (
-            {
-                "min": float(np.nanmin(history_values)),
-                "max": float(np.nanmax(history_values)),
-                "mean": float(np.nanmean(history_values)),
-                "median": float(np.nanmedian(history_values)),
-                "var": float(np.nanvar(history_values)),
-                "std": float(np.nanstd(history_values)),
+        values = self.get_executions_values()
+        if len(values) != 0:
+            return {
+                "min": float(np.nanmin(values, (0, 1))),
+                "max": float(np.nanmax(values, (0, 1))),
+                "mean": float(np.nanmean(values, (1))),
+                "median": float(np.nanmedian(values, (1))),
+                "var": float(np.nanvar(values, (1))),
+                "std": float(np.nanstd(values, (1))),
             }
-            if len(history_values)
-            else {}
-        )
+        else:
+            return None
 
     def get_last_value(self):
-        history = self.get_history()
-        if history:
-            last_obs = history[-1]
-            return last_obs.mean()
+        values = self.get_executions_values()
+        if isinstance(values, list) and len(values) != 0:
+            return values[-1]
         else:
             return None
 
     def get_config(self):
         config = {
             "direction": self.direction,
-            "observations": [obs.get_config() for obs in self.get_history()],
+            "executions": [obs.get_config() for obs in self.get_history()],
         }
 
         return config
@@ -166,16 +169,13 @@ class MetricHistory:
     def from_config(cls, config):
         instance = cls(config["direction"])
         instance.set_history(
-            [
-                MetricObservation.from_config(obs)
-                for obs in config["observations"]
-            ]
+            [ExecutionMetric.from_config(obs) for obs in config["executions"]]
         )
         return instance
 
     def to_proto(self):
         return protos.get_proto().MetricHistory(
-            observations=[obs.to_proto() for obs in self.get_history()],
+            executions=[obs.to_proto() for obs in self.get_executions_values()],
             maximize=self.direction == "max",
         )
 
@@ -184,7 +184,7 @@ class MetricHistory:
         direction = "max" if proto.maximize else "min"
         instance = cls(direction)
         instance.set_history(
-            [MetricObservation.from_proto(p) for p in proto.observations]
+            [ExecutionMetric.from_proto(p) for p in proto.executions]
         )
         return instance
 
@@ -192,7 +192,7 @@ class MetricHistory:
 class MetricsTracker:
     """Record of the values of multiple executions of all metrics.
 
-    It contains `MetricHistory` instances for the metrics.
+    It contains `MetricHistory` instances for the metrics. An "all-tracker".
 
     Args:
         metrics: List of strings of the names of the metrics.
@@ -200,10 +200,10 @@ class MetricsTracker:
 
     def __init__(self, metrics=None):
         # str -> MetricHistory
-        self.metrics = {}
+        self.metrics: Dict[str, MetricHistory] = {}
         self.register_metrics(metrics)
 
-    def exists(self, name):
+    def exists(self, name: str):
         return name in self.metrics
 
     def register_metrics(self, metrics=None):
@@ -211,7 +211,7 @@ class MetricsTracker:
         for metric in metrics:
             self.register(metric.name)
 
-    def register(self, name, direction=None):
+    def register(self, name: str, direction=None):
         if self.exists(name):
             raise ValueError(f"Metric already exists: {name}")
         if direction is None:
@@ -222,7 +222,7 @@ class MetricsTracker:
             direction = "min"
         self.metrics[name] = MetricHistory(direction)
 
-    def update(self, name, value, exec_idx=0):
+    def update(self, name: str, value: Union[float, list[float]]):
         value = (
             [float(v) for v in value]
             if isinstance(value, list)
@@ -231,8 +231,8 @@ class MetricsTracker:
         if not self.exists(name):
             self.register(name)
 
-        prev_best = self.metrics[name].get_best_value()
-        self.metrics[name].update(value, exec_idx)
+        prev_best = self.metrics[name]._current_best_value
+        self.metrics[name].append_execution(value)
         new_best = self.metrics[name].get_best_value()
 
         improved = new_best != prev_best
@@ -240,30 +240,30 @@ class MetricsTracker:
 
     def get_history(self, name):
         self._assert_exists(name)
-        return self.metrics[name].get_history()
+        return self.metrics[name].get_executions_values()
 
-    def set_history(self, name, observations):
+    def set_history(self, name: str, execution: Union[List[float], float]):
         if not self.exists(name):
             self.register(name)
-        self.metrics[name].set_history(observations)
+        self.metrics[name].append_execution(execution)
 
-    def get_best_value(self, name):
+    def get_best_value(self, name: str):
         self._assert_exists(name)
         return self.metrics[name].get_best_value()
 
-    def get_best_step(self, name):
+    def get_best_step(self, name: str):
         self._assert_exists(name)
-        return self.metrics[name].get_best_step()
+        return self.metrics[name].get_best_location()
 
-    def get_statistics(self, name):
+    def get_statistics(self, name: str):
         self._assert_exists(name)
         return self.metrics[name].get_statistics()
 
-    def get_last_value(self, name):
+    def get_last_value(self, name: str):
         self._assert_exists(name)
         return self.metrics[name].get_last_value()
 
-    def get_direction(self, name):
+    def get_direction(self, name: str):
         self._assert_exists(name)
         return self.metrics[name].direction
 

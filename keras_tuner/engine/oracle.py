@@ -420,7 +420,7 @@ class Oracle(stateful.Stateful):
         )
         self.score_trial(trial)
 
-    def score_trial(self, trial):
+    def score_trial(self, trial: trial_module.Trial):
         """Score a completed `Trial`.
 
         This method can be overridden in subclasses to provide a score for
@@ -522,7 +522,7 @@ class Oracle(stateful.Stateful):
         trial = self.trials[trial_id]
         if not isinstance(metrics, list):
             metrics = [metrics]
-        for exec_idx, metric_exec in enumerate(metrics):
+        for metric_exec in metrics:
             self._check_objective_found(metric_exec)
             for metric_name, metric_value in metric_exec.items():
                 if not trial.metrics.exists(metric_name):
@@ -530,7 +530,7 @@ class Oracle(stateful.Stateful):
                         self.objective, metric_name
                     )
                     trial.metrics.register(metric_name, direction=direction)
-                trial.metrics.update(metric_name, metric_value, exec_idx)
+                trial.metrics.update(metric_name, metric_value)
         self._save_trial(trial)
         # TODO: To signal early stopping, set Trial.status to "STOPPED".
         return trial
@@ -552,7 +552,7 @@ class Oracle(stateful.Stateful):
                 )
 
     @synchronized
-    def end_trial(self, trial):
+    def end_trial(self, trial: trial_module.Trial):
         """Logistics when a `Trial` finished running.
 
         Record the `Trial` information and end the trial or send it for retry.

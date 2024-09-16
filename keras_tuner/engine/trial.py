@@ -116,7 +116,7 @@ class Trial(stateful.Stateful):
 
         self.metrics = metrics_tracking.MetricsTracker()
         self.score = None
-        self.best_step = 0
+        self.best_step = None
         self.status = status
         self.message = message
 
