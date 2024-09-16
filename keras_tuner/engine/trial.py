@@ -17,6 +17,8 @@
 import hashlib
 import random
 import time
+from typing import Tuple
+from typing import Union
 
 from keras_tuner import protos
 from keras_tuner import utils
@@ -112,11 +114,13 @@ class Trial(stateful.Stateful):
         message=None,
     ):
         self.hyperparameters = hyperparameters
-        self.trial_id = generate_trial_id() if trial_id is None else trial_id
+        self.trial_id: str = (
+            generate_trial_id() if trial_id is None else trial_id
+        )
 
         self.metrics = metrics_tracking.MetricsTracker()
-        self.score = None
-        self.best_step = None
+        self.score: Union[float, None] = None
+        self.best_step: Union[Tuple[int, int], None] = None
         self.status = status
         self.message = message
 

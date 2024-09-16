@@ -84,7 +84,7 @@ def synchronized(func, *args, **kwargs):
     ```
     """
 
-    def backward_compatible_end_trial(self, trial_id, status):
+    def backward_compatible_end_trial(self, trial_id: str, status):
         trial = trial_module.Trial(self.get_space(), trial_id, status)
         return [self, trial], {}
 
@@ -705,7 +705,10 @@ class Oracle(stateful.Stateful):
             "hyperparameters": self.hyperparameters.get_config(),
             "start_order": self.start_order,
             "end_order": self.end_order,
-            "run_times": self._run_times,
+            "retries": {
+                trial_id: int(value) - 1
+                for trial_id, value in self._run_times.items()
+            },
             "retry_queue": self._retry_queue,
             "seed": self.seed,
             "seed_state": self._seed_state,
@@ -726,7 +729,12 @@ class Oracle(stateful.Stateful):
         self.start_order = state["start_order"]
         self.end_order = state["end_order"]
         self._run_times = collections.defaultdict(lambda: 0)
-        self._run_times.update(state["run_times"])
+        self._run_times.update(
+            {
+                trial_id: int(value) + 1
+                for trial_id, value in state["retries"].items()
+            },
+        )
         self._retry_queue = state["retry_queue"]
         self.seed = state["seed"]
         self._seed_state = state["seed_state"]
