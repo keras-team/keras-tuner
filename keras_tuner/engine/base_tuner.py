@@ -239,7 +239,9 @@ class BaseTuner(stateful.Stateful):
             self.on_trial_end(trial)
         self.on_search_end()
 
-    def _run_and_update_trial(self, trial, *fit_args, **fit_kwargs):
+    def _run_and_update_trial(
+        self, trial: trial_module.Trial, *fit_args, **fit_kwargs
+    ):
         results = self.run_trial(trial, *fit_args, **fit_kwargs)
         if self.oracle.get_trial(trial.trial_id).metrics.exists(
             self.oracle.objective.name
@@ -264,7 +266,7 @@ class BaseTuner(stateful.Stateful):
         ),
         self.oracle.update_trial(
             trial.trial_id,
-            # convert to dict or list[dict] before calling `update_trial()`
+            # convert to dict | list[dict] before calling `update_trial()`
             # to pass it from gRPC.
             tuner_utils.convert_to_metrics_dict(results, self.oracle.objective),
         )

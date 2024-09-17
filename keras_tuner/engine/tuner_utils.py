@@ -137,13 +137,17 @@ def convert_to_metrics_dict(results, objective):
     # Single value.
     if isinstance(results, (int, float, np.floating)):
         return [{objective.name: float(results)}]
-    # A dictionary.
-    if isinstance(results, dict):
+    elif isinstance(results, dict):
+        # A dictionary.
         return results
-
-    # A History.
-    if isinstance(results, keras.callbacks.History):
+    elif isinstance(results, keras.callbacks.History):
+        # A History.
         return results.history
+    else:
+        raise ValueError(
+            "Results must be number, dict, KerasHistory or list."
+            f"but found type: {type(results)}"
+        )
 
 
 def validate_trial_results(results, objective, func_name):

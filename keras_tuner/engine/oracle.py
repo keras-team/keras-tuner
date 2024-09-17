@@ -21,6 +21,9 @@ import random
 import threading
 import warnings
 from datetime import datetime
+from typing import Dict
+from typing import List
+from typing import Union
 
 import numpy as np
 
@@ -114,140 +117,6 @@ def synchronized(func, *args, **kwargs):
     return wrapped_func
 
 
-# TODO: Add more extensive display.
-class Display(stateful.Stateful):
-    def __init__(self, oracle, verbose=1):
-        self.verbose = verbose
-        self.oracle = oracle
-        self.col_width = 18
-
-        # Start time for the overall search
-        self.search_start = None
-
-        # Start time of the trials
-        # {trial_id: start_time}
-        self.trial_start = {}
-        # Trial number of the trials, starting from #1.
-        # {trial_id: trial_number}
-        self.trial_number = {}
-
-    def get_state(self):
-        return {
-            "search_start": (
-                self.search_start.isoformat()
-                if self.search_start is not None
-                else self.search_start
-            ),
-            "trial_start": {
-                key: value.isoformat()
-                for key, value in self.trial_start.items()
-            },
-            "trial_number": self.trial_number,
-        }
-
-    def set_state(self, state):
-        self.search_start = (
-            datetime.fromisoformat(state["search_start"])
-            if state["search_start"] is not None
-            else state["search_start"]
-        )
-        self.trial_start = {
-            key: datetime.fromisoformat(value)
-            for key, value in state["trial_start"].items()
-        }
-
-        self.trial_number = state["trial_number"]
-
-    def on_trial_begin(self, trial):
-        if self.verbose < 1:
-            return
-
-        start_time = datetime.now()
-        self.trial_start[trial.trial_id] = start_time
-        if self.search_start is None:
-            self.search_start = start_time
-        current_number = len(self.oracle.trials)
-        self.trial_number[trial.trial_id] = current_number
-
-        print()
-        print(f"Search: Running Trial #{current_number}")
-        print()
-        self.show_hyperparameter_table(trial)
-        print()
-
-    def on_trial_end(self, trial):
-        if self.verbose < 1:
-            return
-
-        utils.try_clear()
-
-        time_taken_str = self.format_duration(
-            datetime.now() - self.trial_start[trial.trial_id]
-        )
-        print(
-            f"Trial {self.trial_number[trial.trial_id]} "
-            f"Complete [{time_taken_str}]"
-        )
-
-        if trial.score is not None:
-            print(f"{self.oracle.objective.name}: {trial.score}")
-
-        print()
-        best_trials = self.oracle.get_best_trials()
-        best_score = best_trials[0].score if len(best_trials) > 0 else None
-        print(f"Best {self.oracle.objective.name} So Far: {best_score}")
-
-        time_elapsed_str = self.format_duration(
-            datetime.now() - self.search_start
-        )
-        print(f"Total elapsed time: {time_elapsed_str}")
-
-    def show_hyperparameter_table(self, trial):
-        template = "{{0:{0}}}|{{1:{0}}}|{{2}}".format(self.col_width)
-        best_trials = self.oracle.get_best_trials()
-        best_trial = best_trials[0] if len(best_trials) > 0 else None
-        if trial.hyperparameters.values:
-            print(
-                template.format("Value", "Best Value So Far", "Hyperparameter")
-            )
-            for hp, value in trial.hyperparameters.values.items():
-                best_value = (
-                    best_trial.hyperparameters.values.get(hp)
-                    if best_trial
-                    else "?"
-                )
-                print(
-                    template.format(
-                        self.format_value(value),
-                        self.format_value(best_value),
-                        hp,
-                    )
-                )
-        else:
-            print("default configuration")
-
-    def format_value(self, val):
-        if isinstance(val, (int, float)) and not isinstance(val, bool):
-            return f"{val:.5g}"
-        val_str = str(val)
-        if len(val_str) > self.col_width:
-            val_str = f"{val_str[:self.col_width - 3]}..."
-        return val_str
-
-    def format_duration(self, d):
-        s = round(d.total_seconds())
-        d = s // 86400
-        s %= 86400
-        h = s // 3600
-        s %= 3600
-        m = s // 60
-        s %= 60
-
-        if d > 0:
-            return f"{d:d}d {h:02d}h {m:02d}m {s:02d}s"
-        return f"{h:02d}h {m:02d}m {s:02d}s"
-
-
 @keras_tuner_export(["keras_tuner.Oracle", "keras_tuner.engine.oracle.Oracle"])
 class Oracle(stateful.Stateful):
     """Implements a hyperparameter optimization algorithm.
@@ -333,7 +202,7 @@ class Oracle(stateful.Stateful):
         self.tune_new_entries = tune_new_entries
 
         # trial_id -> Trial
-        self.trials = {}
+        self.trials: Dict[str, trial_module.Trial] = {}
         # tuner_id -> Trial
         self.ongoing_trials = {}
         # List of trial_ids in the order of the trials start
@@ -412,7 +281,7 @@ class Oracle(stateful.Stateful):
         """
         raise NotImplementedError
 
-    def _score_trial(self, trial):
+    def _score_trial(self, trial: trial_module.Trial):
         warnings.warn(
             "The `_score_trial` method is deprecated, "
             "please use `score_trial`.",
@@ -505,21 +374,25 @@ class Oracle(stateful.Stateful):
         return trial
 
     @synchronized
-    def update_trial(self, trial_id, metrics):
+    def update_trial(
+        self,
+        trial_id,
+        metrics: (
+            List[Dict[str, Union[list[float] | float]]]
+            | Dict[str, Union[list[str, float] | float]]
+        ),
+    ):
         """Used by a worker to report the status of a trial.
 
         Args:
             trial_id: A string, a previously seen trial id.
-            metrics: Dict. The keys are metric names, and the values are this
-                trial's metric values.
-            step: Optional float, reporting intermediate results. The current
-                value in a timeseries representing the state of the trial. This
-                is the value that `metrics` will be associated with.
+            metrics: Each dict's keys are metric names, and the values
+            are the executions' metric values.
 
         Returns:
             Trial object.
         """
-        trial = self.trials[trial_id]
+        trial: trial_module.Trial = self.trials[trial_id]
         if not isinstance(metrics, list):
             metrics = [metrics]
         for metric_exec in metrics:
@@ -531,6 +404,7 @@ class Oracle(stateful.Stateful):
                     )
                     trial.metrics.register(metric_name, direction=direction)
                 trial.metrics.update(metric_name, metric_value)
+        # TODO: averaging requests by user should occur here, before saving.
         self._save_trial(trial)
         # TODO: To signal early stopping, set Trial.status to "STOPPED".
         return trial
@@ -790,14 +664,17 @@ class Oracle(stateful.Stateful):
         s = "".join(f"{str(k)}={str(values[k])}" for k in keys)
         return hashlib.sha256(s.encode("utf-8")).hexdigest()[:32]
 
-    def _check_objective_found(self, metrics):
+    def _check_objective_found(self, metrics: Dict):
+        # objective must be a subset of metrics
         if isinstance(self.objective, obj_module.MultiObjective):
+            # list of names from dict
             objective_names = list(self.objective.name_to_direction.keys())
-        else:
+        else:  # single name to list
+            if not self.objective or not self.objective.name:
+                raise ValueError("No objective name found. Did you define one?")
             objective_names = [self.objective.name]
-        for metric_name in metrics.keys():
-            if metric_name in objective_names:
-                objective_names.remove(metric_name)
+        # only leave objectives that are not in metrics.
+        objective_names = [obj for obj in objective_names if obj not in metrics]
         if objective_names:
             raise ValueError(
                 "Objective value missing in metrics reported to "
@@ -805,12 +682,12 @@ class Oracle(stateful.Stateful):
                 f"found: {metrics.keys()}"
             )
 
-    def _get_trial_dir(self, trial_id):
+    def _get_trial_dir(self, trial_id: str):
         dirname = os.path.join(self._project_dir, f"trial_{str(trial_id)}")
         utils.create_directory(dirname)
         return dirname
 
-    def _save_trial(self, trial):
+    def _save_trial(self, trial: trial_module.Trial):
         # Write trial status to trial directory
         trial_id = trial.trial_id
         trial.save(os.path.join(self._get_trial_dir(trial_id), "trial.json"))
@@ -865,6 +742,140 @@ class Oracle(stateful.Stateful):
             # have been removed already.
             if old_hash_value in self._tried_so_far:
                 self._tried_so_far.remove(old_hash_value)
+
+
+# TODO: Add more extensive display.
+class Display(stateful.Stateful):
+    def __init__(self, oracle: Oracle, verbose=1):
+        self.verbose = verbose
+        self.oracle = oracle
+        self.col_width = 18
+
+        # Start time for the overall search
+        self.search_start = None
+
+        # Start time of the trials
+        # {trial_id: start_time}
+        self.trial_start = {}
+        # Trial number of the trials, starting from #1.
+        # {trial_id: trial_number}
+        self.trial_number = {}
+
+    def get_state(self):
+        return {
+            "search_start": (
+                self.search_start.isoformat()
+                if self.search_start is not None
+                else self.search_start
+            ),
+            "trial_start": {
+                key: value.isoformat()
+                for key, value in self.trial_start.items()
+            },
+            "trial_number": self.trial_number,
+        }
+
+    def set_state(self, state):
+        self.search_start = (
+            datetime.fromisoformat(state["search_start"])
+            if state["search_start"] is not None
+            else state["search_start"]
+        )
+        self.trial_start = {
+            key: datetime.fromisoformat(value)
+            for key, value in state["trial_start"].items()
+        }
+
+        self.trial_number = state["trial_number"]
+
+    def on_trial_begin(self, trial):
+        if self.verbose < 1:
+            return
+
+        start_time = datetime.now()
+        self.trial_start[trial.trial_id] = start_time
+        if self.search_start is None:
+            self.search_start = start_time
+        current_number = len(self.oracle.trials)
+        self.trial_number[trial.trial_id] = current_number
+
+        print()
+        print(f"Search: Running Trial #{current_number}")
+        print()
+        self.show_hyperparameter_table(trial)
+        print()
+
+    def on_trial_end(self, trial):
+        if self.verbose < 1:
+            return
+
+        utils.try_clear()
+
+        time_taken_str = self.format_duration(
+            datetime.now() - self.trial_start[trial.trial_id]
+        )
+        print(
+            f"Trial {self.trial_number[trial.trial_id]} "
+            f"Complete [{time_taken_str}]"
+        )
+
+        if trial.score is not None:
+            print(f"{self.oracle.objective.name}: {trial.score}")
+
+        print()
+        best_trials = self.oracle.get_best_trials()
+        best_score = best_trials[0].score if len(best_trials) > 0 else None
+        print(f"Best {self.oracle.objective.name} So Far: {best_score}")
+
+        time_elapsed_str = self.format_duration(
+            datetime.now() - self.search_start
+        )
+        print(f"Total elapsed time: {time_elapsed_str}")
+
+    def show_hyperparameter_table(self, trial):
+        template = "{{0:{0}}}|{{1:{0}}}|{{2}}".format(self.col_width)
+        best_trials = self.oracle.get_best_trials()
+        best_trial = best_trials[0] if len(best_trials) > 0 else None
+        if trial.hyperparameters.values:
+            print(
+                template.format("Value", "Best Value So Far", "Hyperparameter")
+            )
+            for hp, value in trial.hyperparameters.values.items():
+                best_value = (
+                    best_trial.hyperparameters.values.get(hp)
+                    if best_trial
+                    else "?"
+                )
+                print(
+                    template.format(
+                        self.format_value(value),
+                        self.format_value(best_value),
+                        hp,
+                    )
+                )
+        else:
+            print("default configuration")
+
+    def format_value(self, val):
+        if isinstance(val, (int, float)) and not isinstance(val, bool):
+            return f"{val:.5g}"
+        val_str = str(val)
+        if len(val_str) > self.col_width:
+            val_str = f"{val_str[:self.col_width - 3]}..."
+        return val_str
+
+    def format_duration(self, d):
+        s = round(d.total_seconds())
+        d = s // 86400
+        s %= 86400
+        h = s // 3600
+        s %= 3600
+        m = s // 60
+        s %= 60
+
+        if d > 0:
+            return f"{d:d}d {h:02d}h {m:02d}m {s:02d}s"
+        return f"{h:02d}h {m:02d}m {s:02d}s"
 
 
 def _maybe_infer_direction_from_objective(objective, metric_name):
