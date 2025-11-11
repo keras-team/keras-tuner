@@ -1,6 +1,6 @@
 # KerasTuner
 
-[![](https://github.com/keras-team/keras-tuner/workflows/Tests/badge.svg?branch=master)](https://github.com/keras-team/keras-tuner/actions?query=workflow%3ATests+branch%3Amaster)
+[![](https://github.com/keras-team/keras-tuner/workflows/Tests/badge.svg)](https://github.com/keras-team/keras-tuner/actions?query=workflow%3ATests+branch%3Amaster)
 [![codecov](https://codecov.io/gh/keras-team/keras-tuner/branch/master/graph/badge.svg)](https://codecov.io/gh/keras-team/keras-tuner)
 [![PyPI version](https://badge.fury.io/py/keras-tuner.svg)](https://badge.fury.io/py/keras-tuner)
 
