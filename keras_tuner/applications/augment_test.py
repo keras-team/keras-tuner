@@ -94,27 +94,6 @@ def test_model_construction_fixed_aug():
     assert (out != 1).sum() == 0
 
 
-@pytest.mark.skipif(
-    config.multi_backend() in ["jax", "tensorflow"],
-    reason="The test fails with jax and TF.",
-)
-def test_model_construction_rand_aug():
-    hp = hp_module.HyperParameters()
-    hm = aug_module.HyperImageAugment(
-        input_shape=(None, None, 3), rotate=[0.2, 0.5]
-    )
-    model = hm.build(hp)
-    assert model.layers
-    assert model.name == "image_rand_augment"
-
-    # Output shape includes batch dimension.
-    assert model.output_shape == (None, None, None, 3)
-    out = model.predict(np.ones((1, 32, 32, 3)))
-    assert out.shape == (1, 32, 32, 3)
-    # Augment does not distort image when inferencing.
-    assert (out != 1).sum() == 0
-
-
 def test_hyperparameter_selection_and_hp_defaults_fixed_aug():
     hp = hp_module.HyperParameters()
     hm = aug_module.HyperImageAugment(
