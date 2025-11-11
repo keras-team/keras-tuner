@@ -450,3 +450,9 @@ def test_display_format_duration_large_d():
     oracle.verbose = "auto"
     assert oracle_module.Display(oracle).format_duration(d) == "7d 00h 00m 00s"
     assert oracle.verbose == 1
+
+
+def test_display_col_width() -> None:
+    oracle = gridsearch.GridSearchOracle()
+    oracle.col_width = 10
+    assert oracle_module.Display(oracle).col_width == 10

@@ -116,10 +116,10 @@ def synchronized(func, *args, **kwargs):
 
 # TODO: Add more extensive display.
 class Display(stateful.Stateful):
-    def __init__(self, oracle, verbose=1):
+    def __init__(self, oracle, verbose=1, col_width=18):
         self.verbose = verbose
         self.oracle = oracle
-        self.col_width = 18
+        self.col_width = col_width
 
         # Start time for the overall search
         self.search_start = None
@@ -383,6 +383,14 @@ class Oracle(stateful.Stateful):
         if value == "auto":
             value = 1
         self._display.verbose = value
+
+    @property
+    def col_width(self):
+        return self._display.col_width
+
+    @col_width.setter
+    def col_width(self, value):
+        self._display.col_width = value
 
     def _populate_space(self, trial_id):
         warnings.warn(
