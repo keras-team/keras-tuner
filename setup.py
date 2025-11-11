@@ -79,6 +79,7 @@ setup(
             "namex",
             "scikit-learn",
             "scipy",
+            "tensorboard",
         ],
         "bayesian": [
             "scikit-learn",
