@@ -183,7 +183,7 @@ class HyperImageAugment(hypermodel.HyperModel):
                 augment_layers_min = augment_layers[0]
                 augment_layers_max = augment_layers[1]
             except TypeError:
-                augment_layers_min = 0
+                augment_layers_min = 1
                 augment_layers_max = augment_layers
             if not (
                 isinstance(augment_layers_min, int)

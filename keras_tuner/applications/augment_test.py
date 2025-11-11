@@ -61,20 +61,20 @@ def test_input_requirement():
     assert model.built
 
 
-def test_model_construction_factor_zero():
+def test_model_construction_factor_one():
     hp = hp_module.HyperParameters()
     hm = aug_module.HyperImageAugment(input_shape=(None, None, 3))
     model = hm.build(hp)
     # augment_layers search default space [0, 4], with default zero.
-    assert len(model.layers) == 1
+    assert len(model.layers) == 2
 
     hp = hp_module.HyperParameters()
     hm = aug_module.HyperImageAugment(
-        input_shape=(None, None, 3), augment_layers=0
+        input_shape=(None, None, 3), augment_layers=1
     )
     model = hm.build(hp)
     # factors default all zero, the model should only have input layer
-    assert len(model.layers) == 1
+    assert len(model.layers) == 2
 
 
 def test_model_construction_fixed_aug():
