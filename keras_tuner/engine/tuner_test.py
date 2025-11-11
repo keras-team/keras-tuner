@@ -18,7 +18,11 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
-from tensorboard.plugins.hparams import api as hparams_api
+
+try:
+    from tensorboard.plugins.hparams import api as hparams_api
+except ImportError:
+    hparams_api = None
 
 import keras_tuner
 from keras_tuner import errors
@@ -1562,4 +1566,7 @@ def test_callback_cannot_be_deep_copied(tmp_path):
         errors.FatalValueError,
         match="All callbacks used during a search should be deep-copyable",
     ):
+        tuner.search(callbacks=[keras_tuner])
+        tuner.search(callbacks=[keras_tuner])
+        tuner.search(callbacks=[keras_tuner])
         tuner.search(callbacks=[keras_tuner])
