@@ -56,6 +56,8 @@ setup(
         "packaging",
         "requests",
         "kt-legacy",
+        "grpcio",
+        "protobuf",
     ],
     extras_require={
         "tensorflow": [
