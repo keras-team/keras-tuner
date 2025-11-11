@@ -248,7 +248,7 @@ class BaseTuner(stateful.Stateful):
                 "`self.oracle.update_trial(trial_id, metrics)` "
                 "in `Tuner.run_trial()` to report the metrics is deprecated, "
                 "and will be removed in the future."
-                "Please remove the call and do 'return metrics' "
+                "Please remove the call and do 'return_metrics' "
                 "in `Tuner.run_trial()` instead. ",
                 DeprecationWarning,
                 stacklevel=2,
