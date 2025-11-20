@@ -20,6 +20,7 @@ import copy
 import six
 
 from keras_tuner import protos
+from keras_tuner import errors
 from keras_tuner.api_export import keras_tuner_export
 from keras_tuner.engine import conditions as conditions_mod
 from keras_tuner.engine.hyperparameters import hp_types
@@ -254,6 +255,12 @@ class HyperParameters:
             return True
         except (KeyError, ValueError):
             return False
+
+    def skip_model(self, message):
+        if len(self._hps) == 0:
+            # Registration stage
+            return
+        raise errors.SkipModelError(message)
 
     def Choice(
         self,
