@@ -104,12 +104,20 @@ class MetricHistory:
             self._observations[step] = MetricObservation(value, step=step)
 
     def get_best_value(self):
-        values = [obs.mean() for obs in self._observations.values()]
-        if not values:
+        if not self._observations:
             return None
-        return (
-            np.nanmin(values) if self.direction == "min" else np.nanmax(values)
-        )
+        all_values = []
+        for obs in self._observations.values():
+            all_values.extend(obs.value)
+
+        if not all_values:
+            return None
+    
+        # Check if EVERY value is NaN to avoid RuntimeWarning from numpy
+        if all(np.isnan(v) for v in all_values):
+            return np.nan
+
+        return np.nanmin(all_values) if self.direction == "min" else np.nanmax(all_values)
 
     def get_best_step(self):
         best_value = self.get_best_value()
