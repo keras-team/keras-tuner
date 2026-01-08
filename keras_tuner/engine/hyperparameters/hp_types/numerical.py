@@ -116,7 +116,7 @@ class Numerical(hyperparameter.HyperParameter):
         """Get the total number of possible values using step."""
         if self.sampling == "linear":
             # +1 so that max_value may be sampled.
-            return int((self.max_value - self.min_value) // self.step + 1)
+            return int((self.max_value - self.min_value) / self.step + 1)
         # For log and reverse_log
         # +1 so that max_value may be sampled.
         return (
