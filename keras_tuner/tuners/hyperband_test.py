@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
+import gc
 import numpy as np
 import pytest
 
@@ -282,6 +283,9 @@ def test_hyperband_load_weights(tmp_path):
             new_model_weights, best_model_round_0_weights
         )
     )
+    del new_model
+    del best_model_round_0
+    gc.collect()
 
 
 def test_factor_less_than_2_error():
