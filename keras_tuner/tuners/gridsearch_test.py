@@ -279,7 +279,7 @@ def test_grid_search_oracle_state_round_trip_resumes_search(tmp_path):
 
 def test_grid_search_oracle_set_state_recovers_from_legacy_state(tmp_path):
     """A state dict written by an older keras-tuner that did not persist the
-    GridSearch bookkeeping must still rehydrate without KeyError — the new
+    GridSearch bookkeeping must still rehydrate without KeyError, the new
     set_state lazily rebuilds `_ordered_ids` from `start_order`."""
     from keras_tuner.engine import hyperparameters as hp_module
     from keras_tuner.tuners.gridsearch import GridSearchOracle
