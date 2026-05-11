@@ -225,3 +225,88 @@ def test_linked_list():
     assert linked_list.next("1") == "3"
     assert linked_list.next("3") == "4"
     assert linked_list.next("4") is None
+
+
+def test_grid_search_oracle_state_round_trip_resumes_search(tmp_path):
+    """Regression test for #1055: GridSearchOracle.get_state / set_state must
+    persist `_ordered_ids` and `_populate_next` so a fresh-process resume
+    (``GridSearch(..., overwrite=False)`` after a kernel restart) doesn't
+    KeyError on the first completed trial."""
+    from keras_tuner.engine import hyperparameters as hp_module
+    from keras_tuner.tuners.gridsearch import GridSearchOracle
+
+    hps = hp_module.HyperParameters()
+    hps.Boolean("b1")
+    hps.Boolean("b2")
+
+    def make_oracle():
+        return GridSearchOracle(
+            objective="val_loss",
+            max_trials=10,
+            hyperparameters=hps,
+        )
+
+    # Drive the search through a couple of completed trials so the LinkedList
+    # and the populate-next queue actually have non-empty state.
+    oracle = make_oracle()
+    trial_1 = oracle.create_trial(tuner_id="1")
+    trial_2 = oracle.create_trial(tuner_id="2")
+    trial_1.status = trial_module.TrialStatus.COMPLETED
+    trial_2.status = trial_module.TrialStatus.COMPLETED
+    oracle.end_trial(trial_1)
+    oracle.end_trial(trial_2)
+    assert len(oracle._ordered_ids._memory) >= 2
+
+    # Round-trip through get_state / set_state on a brand-new oracle (mimics
+    # process restart + reload-from-disk).
+    state = oracle.get_state()
+    fresh_oracle = make_oracle()
+    fresh_oracle.trials = oracle.trials
+    fresh_oracle.set_state(state)
+
+    # Resumed oracle's LinkedList must contain the same trial ids.
+    assert fresh_oracle._ordered_ids._memory == oracle._ordered_ids._memory
+    assert fresh_oracle._populate_next == oracle._populate_next
+
+    # And the next create_trial must NOT raise KeyError from _ordered_ids.next.
+    trial_3 = fresh_oracle.create_trial(tuner_id="3")
+    assert trial_3.status in (
+        trial_module.TrialStatus.RUNNING,
+        trial_module.TrialStatus.IDLE,
+        trial_module.TrialStatus.STOPPED,
+    )
+
+
+def test_grid_search_oracle_set_state_recovers_from_legacy_state(tmp_path):
+    """A state dict written by an older keras-tuner that did not persist the
+    GridSearch bookkeeping must still rehydrate without KeyError — the new
+    set_state lazily rebuilds `_ordered_ids` from `start_order`."""
+    from keras_tuner.engine import hyperparameters as hp_module
+    from keras_tuner.tuners.gridsearch import GridSearchOracle
+
+    hps = hp_module.HyperParameters()
+    hps.Boolean("b1")
+
+    oracle = GridSearchOracle(
+        objective="val_loss",
+        max_trials=5,
+        hyperparameters=hps,
+    )
+    trial_1 = oracle.create_trial(tuner_id="1")
+    trial_1.status = trial_module.TrialStatus.COMPLETED
+    oracle.end_trial(trial_1)
+
+    # Build a "legacy" state by dropping the new keys, then round-trip.
+    state = oracle.get_state()
+    state.pop("ordered_ids", None)
+    state.pop("populate_next", None)
+
+    fresh_oracle = GridSearchOracle(
+        objective="val_loss",
+        max_trials=5,
+        hyperparameters=hps,
+    )
+    fresh_oracle.trials = oracle.trials
+    fresh_oracle.set_state(state)
+    # Rebuilt from start_order rather than directly from the missing key.
+    assert fresh_oracle._ordered_ids._memory == list(oracle.start_order)
