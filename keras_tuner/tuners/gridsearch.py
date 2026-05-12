@@ -323,10 +323,6 @@ class GridSearchOracle(oracle_module.Oracle):
         self._populate_next.append(trial.trial_id)
 
     def get_state(self):
-        # Persist the GridSearch-specific bookkeeping in addition to the base
-        # Oracle state so that a fresh process resuming a search (e.g.
-        # `GridSearch(..., overwrite=False)` after a kernel restart) keeps
-        # working without `KeyError` from `_ordered_ids.next()` (#1055).
         state = super().get_state()
         state["ordered_ids"] = list(self._ordered_ids._memory)
         state["populate_next"] = list(self._populate_next)
@@ -334,9 +330,6 @@ class GridSearchOracle(oracle_module.Oracle):
 
     def set_state(self, state):
         super().set_state(state)
-        # Older state files (saved by versions <= 1.4.8) did not include the
-        # new keys. Lazily rebuild `_ordered_ids` from `start_order` so we
-        # remain compatible with checkpoints written before this fix.
         self._ordered_ids = LinkedList()
         ordered_ids = state.get("ordered_ids")
         if ordered_ids is None:
@@ -347,8 +340,6 @@ class GridSearchOracle(oracle_module.Oracle):
             prev_id = trial_id
         populate_next = state.get("populate_next")
         if populate_next is None:
-            # Match the workaround in #1055: seed with the most recent
-            # completed trial so end_trial-driven progression resumes.
             populate_next = [self.end_order[-1]] if self.end_order else []
         self._populate_next = list(populate_next)
 

@@ -246,8 +246,6 @@ def test_grid_search_oracle_state_round_trip_resumes_search(tmp_path):
             hyperparameters=hps,
         )
 
-    # Drive the search through a couple of completed trials so the LinkedList
-    # and the populate-next queue actually have non-empty state.
     oracle = make_oracle()
     trial_1 = oracle.create_trial(tuner_id="1")
     trial_2 = oracle.create_trial(tuner_id="2")
@@ -257,18 +255,14 @@ def test_grid_search_oracle_state_round_trip_resumes_search(tmp_path):
     oracle.end_trial(trial_2)
     assert len(oracle._ordered_ids._memory) >= 2
 
-    # Round-trip through get_state / set_state on a brand-new oracle (mimics
-    # process restart + reload-from-disk).
     state = oracle.get_state()
     fresh_oracle = make_oracle()
     fresh_oracle.trials = oracle.trials
     fresh_oracle.set_state(state)
 
-    # Resumed oracle's LinkedList must contain the same trial ids.
     assert fresh_oracle._ordered_ids._memory == oracle._ordered_ids._memory
     assert fresh_oracle._populate_next == oracle._populate_next
 
-    # And the next create_trial must NOT raise KeyError from _ordered_ids.next.
     trial_3 = fresh_oracle.create_trial(tuner_id="3")
     assert trial_3.status in (
         trial_module.TrialStatus.RUNNING,
@@ -278,9 +272,6 @@ def test_grid_search_oracle_state_round_trip_resumes_search(tmp_path):
 
 
 def test_grid_search_oracle_set_state_recovers_from_legacy_state(tmp_path):
-    """A state dict written by an older keras-tuner that did not persist the
-    GridSearch bookkeeping must still rehydrate without KeyError, the new
-    set_state lazily rebuilds `_ordered_ids` from `start_order`."""
     from keras_tuner.engine import hyperparameters as hp_module
     from keras_tuner.tuners.gridsearch import GridSearchOracle
 
@@ -296,7 +287,6 @@ def test_grid_search_oracle_set_state_recovers_from_legacy_state(tmp_path):
     trial_1.status = trial_module.TrialStatus.COMPLETED
     oracle.end_trial(trial_1)
 
-    # Build a "legacy" state by dropping the new keys, then round-trip.
     state = oracle.get_state()
     state.pop("ordered_ids", None)
     state.pop("populate_next", None)
@@ -308,5 +298,4 @@ def test_grid_search_oracle_set_state_recovers_from_legacy_state(tmp_path):
     )
     fresh_oracle.trials = oracle.trials
     fresh_oracle.set_state(state)
-    # Rebuilt from start_order rather than directly from the missing key.
     assert fresh_oracle._ordered_ids._memory == list(oracle.start_order)
