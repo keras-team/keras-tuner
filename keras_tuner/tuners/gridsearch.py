@@ -322,6 +322,27 @@ class GridSearchOracle(oracle_module.Oracle):
         # For not blocking _populate_space, we push it regardless of the status.
         self._populate_next.append(trial.trial_id)
 
+    def get_state(self):
+        state = super().get_state()
+        state["ordered_ids"] = list(self._ordered_ids._memory)
+        state["populate_next"] = list(self._populate_next)
+        return state
+
+    def set_state(self, state):
+        super().set_state(state)
+        self._ordered_ids = LinkedList()
+        ordered_ids = state.get("ordered_ids")
+        if ordered_ids is None:
+            ordered_ids = list(self.start_order)
+        prev_id = None
+        for trial_id in ordered_ids:
+            self._ordered_ids.insert(trial_id, prev_id)
+            prev_id = trial_id
+        populate_next = state.get("populate_next")
+        if populate_next is None:
+            populate_next = [self.end_order[-1]] if self.end_order else []
+        self._populate_next = list(populate_next)
+
 
 @keras_tuner_export(["keras_tuner.GridSearch", "keras_tuner.tuners.GridSearch"])
 class GridSearch(tuner_module.Tuner):
