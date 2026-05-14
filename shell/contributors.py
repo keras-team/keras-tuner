@@ -7,6 +7,8 @@ from io import BytesIO
 import requests
 from PIL import Image
 
+REQUEST_TIMEOUT_SECONDS = 10
+
 
 def main(directory):
     contributors = []
@@ -38,7 +40,9 @@ def main(directory):
 
     for index, contributor in enumerate(contributors):
         file_name = os.path.join(directory, str(index) + ".jpeg")
-        response = requests.get(contributor["avatar_url"])
+        response = requests.get(
+            contributor["avatar_url"], timeout=REQUEST_TIMEOUT_SECONDS
+        )
         file = open(file_name, "wb")
         file.write(response.content)
         file.close()
