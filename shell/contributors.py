@@ -43,6 +43,7 @@ def main(directory):
         response = requests.get(
             contributor["avatar_url"], timeout=REQUEST_TIMEOUT_SECONDS
         )
+        response.raise_for_status()
         file = open(file_name, "wb")
         file.write(response.content)
         file.close()
