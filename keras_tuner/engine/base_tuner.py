@@ -115,6 +115,7 @@ class BaseTuner(stateful.Stateful):
         # Ops and metadata
         self.directory = directory or "."
         self.project_name = project_name or "untitled_project"
+        self._validate_project_path(self.directory, self.project_name)
         self.oracle._set_project_dir(self.directory, self.project_name)
 
         if overwrite and backend.io.exists(self.project_dir):
@@ -122,6 +123,7 @@ class BaseTuner(stateful.Stateful):
 
         # To support tuning distribution.
         self.tuner_id = os.environ.get("KERASTUNER_TUNER_ID", "tuner0")
+        self._validate_tuner_id(self.tuner_id)
 
         # Reloading state.
         if not overwrite and backend.io.exists(self._get_tuner_fname()):
@@ -470,6 +472,38 @@ class BaseTuner(stateful.Stateful):
         dirname = os.path.join(str(self.project_dir), f"trial_{str(trial_id)}")
         utils.create_directory(dirname)
         return dirname
+
+    @staticmethod
+    def _validate_project_path(directory, project_name):
+        """Validates that directory and project_name do not contain path traversal.
+
+        Raises:
+            ValueError: If path traversal sequences or absolute paths are detected.
+        """
+        for name, segment in (("directory", str(directory)), ("project_name", str(project_name))):
+            if ".." in segment:
+                raise ValueError(
+                    f"Path traversal is not allowed in {name}. Received: {segment!r}"
+                )
+            # Reject absolute paths in project_name to prevent writing outside CWD
+            if name == "project_name" and os.path.isabs(segment):
+                raise ValueError(
+                    f"Absolute paths are not allowed in {name}. Received: {segment!r}"
+                )
+
+    @staticmethod
+    def _validate_tuner_id(tuner_id):
+        """Validates that tuner_id does not contain path traversal sequences.
+
+        Raises:
+            ValueError: If path traversal sequences or path separators are detected.
+        """
+        tuner_id_str = str(tuner_id)
+        if ".." in tuner_id_str or "/" in tuner_id_str or "\\" in tuner_id_str:
+            raise ValueError(
+                f"tuner_id cannot contain path separators or traversal sequences. "
+                f"Received: {tuner_id_str!r}"
+            )
 
     def _get_tuner_fname(self):
         return os.path.join(str(self.project_dir), f"{str(self.tuner_id)}.json")

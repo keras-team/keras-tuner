@@ -248,3 +248,99 @@ def test_chief_should_wait_for_clients(tmp_path):
         _the_func, num_workers=2, wait_for_chief=True
     )
     oracle_client.TIMEOUT = timeout
+
+
+
+def test_directory_path_traversal_raises_value_error(tmp_path):
+    def build_model(hp):
+        hp.Boolean("a")
+
+    with pytest.raises(ValueError, match="Path traversal"):
+        gridsearch.GridSearch(
+            directory="../evil",
+            hypermodel=build_model,
+            max_trials=1,
+        )
+
+
+def test_project_name_path_traversal_raises_value_error(tmp_path):
+    def build_model(hp):
+        hp.Boolean("a")
+
+    with pytest.raises(ValueError, match="Path traversal"):
+        gridsearch.GridSearch(
+            directory=tmp_path,
+            project_name="../../evil",
+            hypermodel=build_model,
+            max_trials=1,
+        )
+
+
+def test_tuner_id_path_traversal_raises_value_error(tmp_path):
+    def build_model(hp):
+        hp.Boolean("a")
+
+    import os
+    original_tuner_id = os.environ.get("KERASTUNER_TUNER_ID")
+    try:
+        os.environ["KERASTUNER_TUNER_ID"] = "../../../evil"
+        with pytest.raises(ValueError, match="tuner_id"):
+            gridsearch.GridSearch(
+                directory=tmp_path,
+                hypermodel=build_model,
+                max_trials=1,
+            )
+    finally:
+        if original_tuner_id is not None:
+            os.environ["KERASTUNER_TUNER_ID"] = original_tuner_id
+        else:
+            os.environ.pop("KERASTUNER_TUNER_ID", None)
+
+
+def test_valid_directory_and_project_name_succeeds(tmp_path):
+    def build_model(hp):
+        hp.Boolean("a")
+
+    # These should not raise
+    tuner = gridsearch.GridSearch(
+        directory=tmp_path,
+        project_name="my_project",
+        hypermodel=build_model,
+        max_trials=1,
+    )
+    assert tuner.directory == str(tmp_path)
+    assert tuner.project_name == "my_project"
+
+
+def test_project_name_absolute_path_raises_value_error(tmp_path):
+    def build_model(hp):
+        hp.Boolean("a")
+
+    with pytest.raises(ValueError, match="Absolute paths"):
+        gridsearch.GridSearch(
+            directory=tmp_path,
+            project_name="/etc",
+            hypermodel=build_model,
+            max_trials=1,
+        )
+
+
+def test_tuner_id_forward_slash_raises_value_error(tmp_path):
+    def build_model(hp):
+        hp.Boolean("a")
+
+    import os
+    original_tuner_id = os.environ.get("KERASTUNER_TUNER_ID")
+    try:
+        os.environ["KERASTUNER_TUNER_ID"] = "evil/tuner"
+        with pytest.raises(ValueError, match="tuner_id"):
+            gridsearch.GridSearch(
+                directory=tmp_path,
+                hypermodel=build_model,
+                max_trials=1,
+            )
+    finally:
+        if original_tuner_id is not None:
+            os.environ["KERASTUNER_TUNER_ID"] = original_tuner_id
+        else:
+            os.environ.pop("KERASTUNER_TUNER_ID", None)
