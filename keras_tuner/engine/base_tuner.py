@@ -15,6 +15,7 @@
 
 
 import copy
+import ntpath
 import os
 import traceback
 import warnings
@@ -485,8 +486,14 @@ class BaseTuner(stateful.Stateful):
                 raise ValueError(
                     f"Path traversal is not allowed in {name}. Received: {segment!r}"
                 )
-            # Reject absolute paths in project_name to prevent writing outside CWD
-            if name == "project_name" and os.path.isabs(segment):
+            if (
+                name == "project_name"
+                and (
+                    os.path.isabs(segment)
+                    or ntpath.isabs(segment)
+                    or ntpath.splitdrive(segment)[0]
+                )
+            ):
                 raise ValueError(
                     f"Absolute paths are not allowed in {name}. Received: {segment!r}"
                 )

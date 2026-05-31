@@ -325,6 +325,24 @@ def test_project_name_absolute_path_raises_value_error(tmp_path):
         )
 
 
+@pytest.mark.parametrize(
+    "project_name", ["C:\\Windows", "C:Windows", "\\Windows"]
+)
+def test_project_name_windows_absolute_path_raises_value_error(
+    tmp_path, project_name
+):
+    def build_model(hp):
+        hp.Boolean("a")
+
+    with pytest.raises(ValueError, match="Absolute paths"):
+        gridsearch.GridSearch(
+            directory=tmp_path,
+            project_name=project_name,
+            hypermodel=build_model,
+            max_trials=1,
+        )
+
+
 def test_tuner_id_forward_slash_raises_value_error(tmp_path):
     def build_model(hp):
         hp.Boolean("a")
