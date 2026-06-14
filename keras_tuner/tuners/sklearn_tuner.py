@@ -16,6 +16,7 @@ import collections
 import inspect
 import os
 import pickle
+import warnings
 
 import numpy as np
 
@@ -55,6 +56,24 @@ class SklearnTuner(base_tuner.BaseTuner):
     """Tuner for Scikit-learn Models.
 
     Performs cross-validated hyperparameter search for Scikit-learn models.
+
+    **Security note — pickle trust boundary:** fitted models are persisted to
+    disk using Python's `pickle` module (one ``model.pickle`` file per trial
+    under ``{directory}/{project_name}/trial_*/``).  When you call
+    `get_best_models()` or resume a search with ``overwrite=False``, those
+    files are deserialized with `pickle.load`.  Pickle deserialization can
+    execute arbitrary code, so **the project directory must be trusted**: do
+    not load or resume a project directory from an untrusted or
+    shared-writable source.  This is a known limitation of persisting fitted
+    sklearn estimators; see the scikit-learn documentation on model
+    persistence for alternatives if you need safer serialization
+    (https://scikit-learn.org/stable/model_persistence.html).
+
+    Note: the standard `keras_tuner.Tuner` (for Keras models) deliberately
+    avoids full deserialization by using `model.load_weights()` instead of
+    loading the entire model object.  No equivalent safe-load path exists for
+    arbitrary sklearn estimators, which is why pickle is used here and why
+    trusting the project directory is required.
 
     Examples:
 
@@ -213,11 +232,43 @@ class SklearnTuner(base_tuner.BaseTuner):
         return {name: np.mean(values) for name, values in metrics.items()}
 
     def save_model(self, trial_id, model, step=0):
+        """Saves a fitted sklearn model to disk using pickle.
+
+        Note: the serialized file (``model.pickle``) must be stored in a
+        trusted directory.  See the class-level security note for details.
+
+        Args:
+            trial_id: The id of the `Trial` corresponding to this Model.
+            model: The fitted sklearn model to save.
+            step: Integer, for models that train over multiple iterations.
+        """
         fname = os.path.join(self.get_trial_dir(trial_id), "model.pickle")
         with backend.io.File(fname, "wb") as f:
             pickle.dump(model, f)
 
     def load_model(self, trial):
+        """Loads a fitted sklearn model from a pickle file on disk.
+
+        **Security note:** this method deserializes a ``model.pickle`` file
+        from the project directory using `pickle.load`, which can execute
+        arbitrary code.  Only call this method (directly or via
+        `get_best_models()`) when the project directory is trusted and not
+        writable by untrusted parties.
+
+        Args:
+            trial: A `Trial` instance, the trial whose model to load.
+
+        Returns:
+            The fitted sklearn model associated with the trial.
+        """
         fname = os.path.join(self.get_trial_dir(trial.trial_id), "model.pickle")
+        warnings.warn(
+            "SklearnTuner is about to deserialize a fitted model from "
+            f"'{fname}' using pickle.load. Pickle deserialization can execute "
+            "arbitrary code. Ensure the project directory is trusted and not "
+            "writable by untrusted parties before proceeding.",
+            UserWarning,
+            stacklevel=2,
+        )
         with backend.io.File(fname, "rb") as f:
             return pickle.load(f)
