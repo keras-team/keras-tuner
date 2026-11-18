@@ -19,9 +19,11 @@ jobs:
         backend: [tensorflow, jax, torch]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - name: Set up Python 3.10
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: '3.10'
       - name: Get pip cache dir
@@ -30,19 +32,22 @@ jobs:
           python -m pip install --upgrade pip setuptools
           echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
       - name: pip cache
-        uses: actions/cache@v3
+        # zizmor: ignore[cache-poisoning]
+        uses: actions/cache@58c1e461ab4154b5b12d40cb0e84792b845ab8ba # v3.4.1
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
           key: ${{ runner.os }}-pip-${{ hashFiles('setup.py') }}
       - name: Install dependencies
+        env:
+          MATRIX_BACKEND: ${{ matrix.backend }}
         run: |
           pip install -e ".[tests]" --progress-bar off --upgrade
-          if [ "${{ matrix.backend }}" = "tensorflow" ]; then
+          if [ "${MATRIX_BACKEND}" = "tensorflow" ]; then
             pip uninstall keras -y
             pip install tensorflow-cpu
-          elif [ "${{ matrix.backend }}" = "jax" ]; then
+          elif [ "${MATRIX_BACKEND}" = "jax" ]; then
             pip install jax[cpu] --progress-bar off
-          elif [ "${{ matrix.backend }}" = "torch" ]; then
+          elif [ "${MATRIX_BACKEND}" = "torch" ]; then
             pip install torch>=2.0.1+cpu --progress-bar off
           fi
       - name: Test with pytest
@@ -51,7 +56,7 @@ jobs:
         run: |
           pytest --cov=keras_tuner --cov-report xml:coverage.xml
       - name: Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@ab904c41d6ece82784817410c45d8b8c02684457 # v3.1.6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
@@ -61,9 +66,11 @@ jobs:
     name: Check the code format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - name: Set up Python 3.10
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: '3.10'
       - name: Get pip cache dir
@@ -72,7 +79,8 @@ jobs:
           python -m pip install --upgrade pip setuptools
           echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
       - name: pip cache
-        uses: actions/cache@v3
+        # zizmor: ignore[cache-poisoning]
+        uses: actions/cache@58c1e461ab4154b5b12d40cb0e84792b845ab8ba # v3.4.1
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
           key: ${{ runner.os }}-pip-${{ hashFiles('setup.py') }}
@@ -86,9 +94,11 @@ jobs:
     if: github.event_name == 'release' && github.event.action == 'created'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - name: Set up Python 3.10
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: '3.10'
       - name: Get pip cache dir
@@ -97,7 +107,8 @@ jobs:
           python -m pip install --upgrade pip setuptools
           echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
       - name: pip cache
-        uses: actions/cache@v3
+        # zizmor: ignore[cache-poisoning]
+        uses: actions/cache@58c1e461ab4154b5b12d40cb0e84792b845ab8ba # v3.4.1
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
           key: ${{ runner.os }}-pip-${{ hashFiles('setup.py') }}
@@ -110,10 +121,15 @@ jobs:
     needs: [format,multibackend]
     if: github.event_name == 'release' && github.event.action == 'created'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      with:
+        persist-credentials: false
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
       with:
         python-version: '3.10'
     - name: Get pip cache dir
@@ -122,7 +138,8 @@ jobs:
         python -m pip install --upgrade pip setuptools
         echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
     - name: pip cache
-      uses: actions/cache@v3
+      # zizmor: ignore[cache-poisoning]
+      uses: actions/cache@58c1e461ab4154b5b12d40cb0e84792b845ab8ba # v3.4.1
       with:
         path: ${{ steps.pip-cache.outputs.dir }}
         key: ${{ runner.os }}-pip-${{ hashFiles('setup.py') }}
@@ -133,7 +150,78 @@ jobs:
     - name: Build a binary wheel and a source tarball
       run: >-
         python pip_build.py
-    - name: Publish distribution to PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
+    - name: Authenticate to Google Cloud (OSS Exit Gate)
+      uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
       with:
-        password: ${{ secrets.PYPI_PASSWORD  }}
+        workload_identity_provider: 'projects/305452601764/locations/global/workloadIdentityPools/builders/providers/github'
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+
+    - name: Clean up failed staging attempt for this exact version (if any)
+      id: exit_gate_cleanup
+      run: |
+        set -euo pipefail
+        PKG_VER=$(python3 - <<'PY'
+        import email, glob, tarfile, zipfile
+        files = sorted(glob.glob("dist/**/*.whl", recursive=True) + glob.glob("dist/**/*.tar.gz", recursive=True))
+        assert files, "No distributions found in dist/"
+        f = files[0]
+        if f.endswith(".whl"):
+          with zipfile.ZipFile(f) as zf:
+            meta = [n for n in zf.namelist() if n.endswith(".dist-info/METADATA")][0]
+            raw = zf.read(meta).decode()
+        else:
+          with tarfile.open(f) as tf:
+            info = [m for m in tf.getmembers() if m.name.endswith("/PKG-INFO") or m.name == "PKG-INFO"][0]
+            raw = tf.extractfile(info).read().decode()
+        print(email.message_from_string(raw)["Version"].strip())
+        PY
+        )
+        echo "pkg_ver=${PKG_VER}" >> "$GITHUB_OUTPUT"
+        if gcloud artifacts versions describe "${PKG_VER}" \
+          --package="keras-tuner" \
+          --project="oss-exit-gate-prod" \
+          --location="us" \
+          --repository="keras-tuner--pypi" >/dev/null 2>&1; then
+          gcloud artifacts versions delete "${PKG_VER}" \
+            --package="keras-tuner" \
+            --project="oss-exit-gate-prod" \
+            --location="us" \
+            --repository="keras-tuner--pypi" \
+            --quiet
+        fi
+
+    - name: Stage distributions to OSS Exit Gate and upload manifest
+      env:
+        PKG_VER: ${{ steps.exit_gate_cleanup.outputs.pkg_ver }}
+        RUN_ID: ${{ github.run_id }}
+        RUN_ATTEMPT: ${{ github.run_attempt }}
+      run: |
+        set -euo pipefail
+        shopt -s globstar nullglob
+        DIST_FILES=(dist/**/*.whl dist/**/*.tar.gz)
+        python3 -m pip install --upgrade twine
+        TWINE_PASSWORD="$(gcloud auth print-access-token)"
+        python3 -m twine upload \
+          --repository-url "https://us-python.pkg.dev/oss-exit-gate-prod/keras-tuner--pypi/" \
+          -u oauth2accesstoken \
+          -p "${TWINE_PASSWORD}" \
+          "${DIST_FILES[@]}"
+        cat <<EOF > manifest.json
+        {
+          "publish_all": false,
+          "publishing_groups": [
+            {
+              "packages": [
+                {
+                  "name": "keras-tuner",
+                  "version": "${PKG_VER}"
+                }
+              ]
+            }
+          ]
+        }
+        EOF
+        gcloud storage cp manifest.json \
+          "gs://oss-exit-gate-prod-projects-bucket/keras-tuner/pypi/manifests/manifest-${PKG_VER}-${RUN_ID}-${RUN_ATTEMPT}.json"
